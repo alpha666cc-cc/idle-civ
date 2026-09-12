@@ -2,6 +2,7 @@ export type BuildingKey =
   | "people"
   | "house"
   | "farm"
+  | "lumber-yard"
   | "quarry"
   | "gold-mine"
   | "market"
@@ -19,6 +20,12 @@ export type BuildingCost = {
   factor: number;
 };
 
+export type BuildingEffects = {
+  housingProvided?: number;
+  resourceMultiplier?: { resource: ResourceKey; factor: number };
+  resourceDrain?: { resource: ResourceKey; amount: number };
+};
+
 export class BuildingDefinition {
   readonly key: BuildingKey;
   readonly name: string;
@@ -26,6 +33,7 @@ export class BuildingDefinition {
   readonly costs: BuildingCost[];
   readonly available: boolean;
   readonly maxCount: number;
+  readonly effects: BuildingEffects;
 
   constructor(
     key: BuildingKey,
@@ -34,6 +42,7 @@ export class BuildingDefinition {
     costs: BuildingCost[],
     available: boolean,
     maxCount = 10,
+    effects: BuildingEffects = {},
   ) {
     this.key = key;
     this.name = name;
@@ -41,6 +50,7 @@ export class BuildingDefinition {
     this.costs = costs;
     this.available = available;
     this.maxCount = maxCount;
+    this.effects = effects;
   }
 
   costAt(buildingsAlreadyBuilt: number): BuildingCost[] {
@@ -61,47 +71,65 @@ export const buildingDefinitions: BuildingDefinition[] = [
   new BuildingDefinition(
     "people",
     "People",
-    "+1 population",
-    [{ resource: "food", base: 10, factor: 1.3 }],
+    "+1 population, -1 food / sec",
+    [{ resource: "food", base: 10, factor: 1.25 }],
     true,
+    10,
+    { resourceDrain: { resource: "food", amount: 1 } },
   ),
   new BuildingDefinition(
     "house",
     "House",
-    "+12 housing",
-    [{ resource: "wood", base: 80, factor: 1.15 }],
+    "+10 max population",
+    [{ resource: "wood", base: 10, factor: 1.3 }],
     true,
+    10,
+    { housingProvided: 10 },
   ),
   new BuildingDefinition(
     "farm",
     "Farm",
-    "+6 food / min",
+    "+10% food gain",
     [
-      { resource: "wood", base: 120, factor: 1.18 },
-      { resource: "food", base: 40, factor: 1.1 },
+      { resource: "food", base: 10, factor: 1.25 },
+      { resource: "wood", base: 10, factor: 1.25 },
     ],
     true,
+    10,
+    { resourceMultiplier: { resource: "food", factor: 1.1 } },
+  ),
+  new BuildingDefinition(
+    "lumber-yard",
+    "Lumber Yard",
+    "+10% wood gain",
+    [
+      { resource: "wood", base: 10, factor: 1.25 },
+      { resource: "stone", base: 5, factor: 1.25 },
+    ],
+    true,
+    10,
+    { resourceMultiplier: { resource: "wood", factor: 1.1 } },
   ),
   new BuildingDefinition(
     "quarry",
     "Quarry",
-    "+4 stone / min",
-    [
-      { resource: "wood", base: 160, factor: 1.18 },
-      { resource: "stone", base: 60, factor: 1.12 },
-    ],
+    "+10% stone gain",
+    [{ resource: "stone", base: 20, factor: 1.3 }],
     true,
+    10,
+    { resourceMultiplier: { resource: "stone", factor: 1.1 } },
   ),
   new BuildingDefinition(
     "gold-mine",
     "Gold Mine",
-    "+2 gold / min",
+    "+10% gold gain",
     [
-      { resource: "wood", base: 240, factor: 1.2 },
-      { resource: "stone", base: 140, factor: 1.16 },
-      { resource: "gold", base: 40, factor: 1.1 },
+      { resource: "wood", base: 100, factor: 1.25 },
+      { resource: "stone", base: 50, factor: 1.3 },
     ],
     true,
+    10,
+    { resourceMultiplier: { resource: "gold", factor: 1.1 } },
   ),
   new BuildingDefinition(
     "market",
@@ -116,13 +144,14 @@ export const buildingDefinitions: BuildingDefinition[] = [
   new BuildingDefinition(
     "town-hall",
     "Town Hall",
-    "+1 civic slot",
+    "+10 max Houses",
     [
-      { resource: "wood", base: 500, factor: 1.25 },
-      { resource: "stone", base: 500, factor: 1.2 },
-      { resource: "gold", base: 100, factor: 1.15 },
+      { resource: "wood", base: 1000, factor: 1.25 },
+      { resource: "stone", base: 500, factor: 1.25 },
+      { resource: "gold", base: 500, factor: 1.25 },
     ],
     true,
+    10,
   ),
   new BuildingDefinition(
     "smithy",

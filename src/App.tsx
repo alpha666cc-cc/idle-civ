@@ -65,13 +65,17 @@ const resourcePresentation: Record<
   gold: { icon: Coins, tone: "amber" },
 };
 
-const resources: ResourcePresentation[] = resourceDefinitions.map(
-  (resource) => ({
+const productionOrder: ResourceKey[] = ["food", "wood", "stone", "gold"];
+const resources: ResourcePresentation[] = productionOrder.map((key) => {
+  const resource = resourceDefinitions.find(
+    (definition) => definition.key === key,
+  )!;
+  return {
     key: resource.key,
     label: resource.label,
     ...resourcePresentation[resource.key],
-  }),
-);
+  };
+});
 
 const summaryResources: SummaryResource[] = [
   { key: "population", label: "Population", icon: Users, tone: "teal" },
@@ -87,6 +91,7 @@ const buildingPresentation: Record<string, { icon: LucideIcon; tone: string }> =
     people: { icon: Users, tone: "teal" },
     house: { icon: Building2, tone: "teal" },
     farm: { icon: Wheat, tone: "gold" },
+    "lumber-yard": { icon: Leaf, tone: "green" },
     quarry: { icon: Pickaxe, tone: "slate" },
     "gold-mine": { icon: Coins, tone: "amber" },
     market: { icon: Landmark, tone: "red" },
@@ -107,6 +112,9 @@ const buildings: BuildingPresentation[] = buildingDefinitions.map(
   }),
 );
 
+const formatResourceAmount = (amount: number): string =>
+  Math.floor(amount).toLocaleString();
+
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("Production");
   const [notice, setNotice] = useState(
@@ -120,6 +128,7 @@ function App() {
   const {
     resources: resourceAmounts,
     population,
+    maximumPopulation,
     workers,
     availableWorkers,
   } = gameState;
@@ -247,8 +256,11 @@ function App() {
                       ? `${availableWorkers}/${population}`
                       : key === "science"
                         ? 0
-                        : resourceAmounts[key]}
+                        : formatResourceAmount(resourceAmounts[key])}
                   </strong>
+                  {key === "population" && (
+                    <small>capacity {maximumPopulation}</small>
+                  )}
                 </div>
               </button>
             ))}
@@ -316,7 +328,9 @@ function App() {
                     </span>
                     <span>
                       <strong>{label}</strong>
-                      <small>{resourceAmounts[key]} stored</small>
+                      <small>
+                        {formatResourceAmount(resourceAmounts[key])} stored
+                      </small>
                     </span>
                     <span className="gather-action">+1</span>
                   </button>
