@@ -18,11 +18,13 @@ import {
   Wheat,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import Details, { type DetailsResource } from "./components/Details";
+import { buildingDefinitions } from "./game/buildings";
+import { CivilizationState } from "./game/civilizationState";
+import { resourceDefinitions, type ResourceKey } from "./game/resources";
 
-type Tab = "Resources" | "Upgrades" | "Army" | "Research" | "Settings";
-type ResourceKey = "food" | "wood" | "stone" | "gold";
-
-type Resource = {
+type Tab = "Production" | "Upgrades" | "Army" | "Research" | "Settings";
+type ResourcePresentation = {
   key: ResourceKey;
   label: string;
   icon: LucideIcon;
@@ -36,29 +38,40 @@ type SummaryResource = {
   tone: string;
 };
 
-type Building = {
+type BuildingPresentation = {
+  key: string;
   name: string;
   description: string;
-  cost: string;
   icon: LucideIcon;
   tone: string;
   available: boolean;
 };
 
 const tabs: { label: Tab; icon: LucideIcon }[] = [
-  { label: "Resources", icon: Leaf },
+  { label: "Production", icon: Leaf },
   { label: "Upgrades", icon: ArrowUpRight },
   { label: "Army", icon: Swords },
   { label: "Research", icon: BookOpen },
   { label: "Settings", icon: Settings },
 ];
 
-const resources: Resource[] = [
-  { key: "wood", label: "Wood", icon: Leaf, tone: "green" },
-  { key: "stone", label: "Stone", icon: Pickaxe, tone: "slate" },
-  { key: "food", label: "Food", icon: Wheat, tone: "gold" },
-  { key: "gold", label: "Gold", icon: Coins, tone: "amber" },
-];
+const resourcePresentation: Record<
+  ResourceKey,
+  Omit<ResourcePresentation, "key" | "label">
+> = {
+  wood: { icon: Leaf, tone: "green" },
+  stone: { icon: Pickaxe, tone: "slate" },
+  food: { icon: Wheat, tone: "gold" },
+  gold: { icon: Coins, tone: "amber" },
+};
+
+const resources: ResourcePresentation[] = resourceDefinitions.map(
+  (resource) => ({
+    key: resource.key,
+    label: resource.label,
+    ...resourcePresentation[resource.key],
+  }),
+);
 
 const summaryResources: SummaryResource[] = [
   { key: "population", label: "Population", icon: Users, tone: "teal" },
@@ -69,133 +82,57 @@ const summaryResources: SummaryResource[] = [
   { key: "science", label: "Science", icon: Sparkles, tone: "violet" },
 ];
 
-const buildings: Building[] = [
+const buildingPresentation: Record<string, { icon: LucideIcon; tone: string }> =
   {
-    name: "House",
-    description: "+12 housing",
-    cost: "80 wood",
-    icon: Building2,
-    tone: "teal",
-    available: true,
-  },
-  {
-    name: "Farm",
-    description: "+6 food / min",
-    cost: "120 wood",
-    icon: Wheat,
-    tone: "gold",
-    available: true,
-  },
-  {
-    name: "Quarry",
-    description: "+4 stone / min",
-    cost: "160 wood",
-    icon: Pickaxe,
-    tone: "slate",
-    available: true,
-  },
-  {
-    name: "Gold Mine",
-    description: "+2 gold / min",
-    cost: "240 stone",
-    icon: Coins,
-    tone: "amber",
-    available: true,
-  },
-  {
-    name: "Market",
-    description: "Trade resources",
-    cost: "300 wood",
-    icon: Landmark,
-    tone: "red",
-    available: true,
-  },
-  {
-    name: "Town Hall",
-    description: "+1 civic slot",
-    cost: "500 stone",
-    icon: Castle,
-    tone: "violet",
-    available: true,
-  },
-  {
-    name: "Smithy",
-    description: "Unlocks equipment",
-    cost: "360 wood",
-    icon: Hammer,
-    tone: "orange",
-    available: true,
-  },
-  {
-    name: "Barracks",
-    description: "Train units",
-    cost: "420 stone",
-    icon: Shield,
-    tone: "blue",
-    available: true,
-  },
-  {
-    name: "Academy",
-    description: "+3 science / min",
-    cost: "520 gold",
-    icon: BookOpen,
-    tone: "pink",
-    available: true,
-  },
-  {
-    name: "Monument",
-    description: "Coming soon",
-    cost: "Locked",
-    icon: Landmark,
-    tone: "locked",
-    available: false,
-  },
-];
+    people: { icon: Users, tone: "teal" },
+    house: { icon: Building2, tone: "teal" },
+    farm: { icon: Wheat, tone: "gold" },
+    quarry: { icon: Pickaxe, tone: "slate" },
+    "gold-mine": { icon: Coins, tone: "amber" },
+    market: { icon: Landmark, tone: "red" },
+    "town-hall": { icon: Castle, tone: "violet" },
+    smithy: { icon: Hammer, tone: "orange" },
+    barracks: { icon: Shield, tone: "blue" },
+    academy: { icon: BookOpen, tone: "pink" },
+    monument: { icon: Landmark, tone: "locked" },
+  };
+
+const buildings: BuildingPresentation[] = buildingDefinitions.map(
+  (building) => ({
+    key: building.key,
+    name: building.name,
+    description: building.description,
+    available: building.available,
+    ...buildingPresentation[building.key],
+  }),
+);
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>("Resources");
-  const [builtBuildings, setBuiltBuildings] = useState<string[]>([
-    "House",
-    "Farm",
-  ]);
+  const [activeTab, setActiveTab] = useState<Tab>("Production");
   const [notice, setNotice] = useState(
     "The first settlers have found fertile ground.",
   );
-  const [resourceAmounts, setResourceAmounts] = useState<
-    Record<ResourceKey, number>
-  >({ food: 0, wood: 0, stone: 0, gold: 0 });
-  const [population] = useState(0);
-  const [workers, setWorkers] = useState<Record<ResourceKey, number>>({
-    food: 0,
-    wood: 0,
-    stone: 0,
-    gold: 0,
-  });
-
-  const assignedWorkers = Object.values(workers).reduce(
-    (total, count) => total + count,
-    0,
+  const [gameState, setGameState] = useState(() => new CivilizationState());
+  const [selectedResource, setSelectedResource] = useState<ResourceKey | null>(
+    null,
   );
-  const availableWorkers = population - assignedWorkers;
+
+  const {
+    resources: resourceAmounts,
+    population,
+    workers,
+    availableWorkers,
+  } = gameState;
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setResourceAmounts((current) => {
-        const next = { ...current };
-        for (const resource of resources) {
-          next[resource.key] += workers[resource.key];
-        }
-        return next;
-      });
+      setGameState((current) => current.tick());
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [workers]);
+  }, []);
 
   const gatherResource = (resourceKey: ResourceKey) => {
-    setResourceAmounts((current) => ({
-      ...current,
-      [resourceKey]: current[resourceKey] + 1,
-    }));
+    setGameState((current) => current.gather(resourceKey));
   };
 
   const changeWorkers = (resourceKey: ResourceKey, change: number) => {
@@ -203,25 +140,39 @@ function App() {
       setNotice("No unassigned population is available for this task yet.");
       return;
     }
-    if (change < 0 && workers[resourceKey] <= 0) return;
-    setWorkers((current) => ({
-      ...current,
-      [resourceKey]: current[resourceKey] + change,
-    }));
+    setGameState((current) =>
+      change > 0
+        ? current.assignWorker(resourceKey)
+        : current.unassignWorker(resourceKey),
+    );
   };
 
-  const buyBuilding = (building: Building) => {
+  const buyBuilding = (building: BuildingPresentation) => {
     if (!building.available) {
       setNotice(`${building.name} will unlock as your civilization advances.`);
       return;
     }
-    if (builtBuildings.includes(building.name)) {
-      setNotice(`${building.name} is already part of your settlement.`);
+    if (!gameState.canBuild(building.key)) {
+      setNotice(`You need more resources to build ${building.name}.`);
       return;
     }
-    setBuiltBuildings((current) => [...current, building.name]);
+    setGameState((current) => current.build(building.key));
     setNotice(`${building.name} founded. Your settlement grows stronger.`);
   };
+
+  const openResourceDetails = (resourceKey: ResourceKey) => {
+    setSelectedResource(resourceKey);
+  };
+
+  const selectedResourceDefinition = resources.find(
+    ({ key }) => key === selectedResource,
+  );
+  const selectedFactors = selectedResource
+    ? gameState.getFactors(selectedResource)
+    : null;
+  const selectedRate = selectedResource
+    ? gameState.computeResourceRate(selectedResource)
+    : 0;
 
   return (
     <main className="app-shell">
@@ -258,7 +209,7 @@ function App() {
             >
               <Icon size={17} strokeWidth={1.8} />
               <span>{label}</span>
-              {label === "Resources" && <span className="active-dot" />}
+              {label === "Production" && <span className="active-dot" />}
             </button>
           ))}
         </nav>
@@ -272,7 +223,20 @@ function App() {
           </div>
           <div className="resource-list">
             {summaryResources.map(({ key, label, icon: Icon, tone }) => (
-              <div className="resource-row" key={key}>
+              <button
+                className="resource-row summary-resource-button"
+                key={key}
+                onClick={() => {
+                  if (key !== "population" && key !== "science")
+                    openResourceDetails(key);
+                }}
+                disabled={key === "population" || key === "science"}
+                title={
+                  key === "population" || key === "science"
+                    ? undefined
+                    : `Open ${label} details`
+                }
+              >
                 <div className={`resource-icon ${tone}`}>
                   <Icon size={16} strokeWidth={1.8} />
                 </div>
@@ -280,13 +244,13 @@ function App() {
                   <span>{label}</span>
                   <strong>
                     {key === "population"
-                      ? population
+                      ? `${availableWorkers}/${population}`
                       : key === "science"
                         ? 0
                         : resourceAmounts[key]}
                   </strong>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </section>
@@ -314,7 +278,7 @@ function App() {
             <div>
               <p className="eyebrow">The valley of first light</p>
               <h2>
-                {activeTab === "Resources"
+                {activeTab === "Production"
                   ? "Shape a civilization from the soil."
                   : activeTab}
               </h2>
@@ -330,14 +294,11 @@ function App() {
             </div>
           </div>
 
-          <section
-            className="resource-workbench"
-            aria-label="Resource gathering"
-          >
+          <section className="production-workbench" aria-label="Production">
             <div className="workbench-heading">
               <div>
                 <p className="eyebrow">Available actions</p>
-                <h3>Gather resources</h3>
+                <h3>Produce resources</h3>
               </div>
               <span>
                 <Users size={14} /> {availableWorkers} workers available
@@ -384,6 +345,17 @@ function App() {
             </div>
           </section>
 
+          {selectedResource &&
+            selectedFactors &&
+            selectedResourceDefinition && (
+              <Details
+                resource={selectedResourceDefinition as DetailsResource}
+                factors={selectedFactors}
+                rate={selectedRate}
+                onClose={() => setSelectedResource(null)}
+              />
+            )}
+
           <div className="map-stage">
             <div className="sun-disc" />
             <div className="mountain mountain-back" />
@@ -424,7 +396,9 @@ function App() {
             <p className="eyebrow">Settlement</p>
             <h2>Build</h2>
           </div>
-          <span className="building-count">{builtBuildings.length} / 10</span>
+          <span className="building-count">
+            {gameState.builtBuildings.length} built
+          </span>
         </div>
         <p className="panel-description">
           Lay the foundations of your growing civilization.
@@ -432,7 +406,10 @@ function App() {
         <div className="building-grid">
           {buildings.map((building) => {
             const Icon = building.icon;
-            const isBuilt = builtBuildings.includes(building.name);
+            const isBuilt = gameState.builtBuildings.includes(building.key);
+            const buildingCount = gameState.builtBuildings.filter(
+              (builtKey) => builtKey === building.key,
+            ).length;
             return (
               <button
                 className={`building-card ${isBuilt ? "built" : ""} ${!building.available ? "locked" : ""}`}
@@ -444,8 +421,13 @@ function App() {
                 </span>
                 <span className="building-info">
                   <strong>{building.name}</strong>
-                  <small>{building.description}</small>
-                  <em>{isBuilt ? "Built" : building.cost}</em>
+                  <small>
+                    {building.description} · {buildingCount}/
+                    {gameState.getBuildingMax(building.key)}
+                  </small>
+                  <em>
+                    {gameState.formatBuildingCost(building.key, buildingCount)}
+                  </em>
                 </span>
                 {isBuilt && <span className="built-check">✓</span>}
               </button>

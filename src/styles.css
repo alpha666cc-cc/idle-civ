@@ -201,6 +201,20 @@ button:focus-visible {
 .resource-row:hover {
   background: rgba(255, 255, 255, 0.035);
 }
+.summary-resource-button {
+  width: 100%;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.summary-resource-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+.summary-resource-button:disabled {
+  cursor: default;
+}
 .resource-icon,
 .building-icon {
   display: grid;
@@ -396,7 +410,7 @@ button:focus-visible {
   color: #718078;
   font-size: 13px;
 }
-.resource-workbench {
+.production-workbench {
   margin-top: 27px;
   padding: 17px;
   background: rgba(255, 255, 255, 0.3);
@@ -508,25 +522,171 @@ button:focus-visible {
     500 11px "DM Mono",
     monospace;
 }
-.resource-workbench .worker-controls {
+.production-workbench .worker-controls {
   flex: 0 0 auto;
   border-color: rgba(83, 105, 80, 0.18);
 }
-.resource-workbench .worker-controls button {
+.production-workbench .worker-controls button {
   color: #607b49;
   background: #d6dfca;
 }
-.resource-workbench .worker-controls button:hover:not(:disabled) {
+.production-workbench .worker-controls button:hover:not(:disabled) {
   color: #33462e;
   background: #c6d5b8;
 }
-.resource-workbench .worker-controls button:disabled {
+.production-workbench .worker-controls button:disabled {
   color: #9ca79b;
   background: #e0e4da;
 }
-.resource-workbench .worker-controls span {
+.production-workbench .worker-controls span {
   color: #4d5e4e;
   background: #edf0e7;
+}
+.modal-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(25, 34, 29, 0.55);
+  backdrop-filter: blur(3px);
+}
+.resource-modal {
+  width: min(390px, 100%);
+  padding: 20px;
+  color: #2e3a32;
+  background: #f2f3eb;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 55px rgba(19, 28, 23, 0.3);
+}
+.resource-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+.resource-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.resource-modal-title h3 {
+  margin: 5px 0 0;
+  font:
+    600 24px "Playfair Display",
+    serif;
+}
+.resource-modal-title .resource-icon {
+  width: 34px;
+  height: 34px;
+  margin: 0;
+}
+.modal-close {
+  display: grid;
+  place-items: center;
+  padding: 5px;
+  border: 0;
+  color: #708077;
+  background: transparent;
+  cursor: pointer;
+}
+.modal-close:hover {
+  color: #2f4435;
+  background: #e0e5d9;
+}
+.rate-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 23px;
+  padding: 14px;
+  background: #e0e7d7;
+  border-left: 3px solid #9bb953;
+}
+.rate-summary span {
+  color: #708077;
+  font:
+    10px "DM Mono",
+    monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.rate-summary strong {
+  color: #557337;
+  font:
+    600 18px "DM Mono",
+    monospace;
+}
+.factor-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+  margin-top: 18px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid #d5dbd0;
+}
+.factor-tabs button {
+  padding: 8px 6px;
+  border: 0;
+  color: #87938a;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+}
+.factor-tabs button span {
+  margin-left: 4px;
+  color: #a1aaa0;
+  font:
+    9px "DM Mono",
+    monospace;
+}
+.factor-tabs button.active {
+  color: #3f5a3c;
+  background: #dfe8d3;
+}
+.factor-tabs button.active span {
+  color: #76934a;
+}
+.factor-list {
+  display: grid;
+  gap: 5px;
+  min-height: 76px;
+  padding-top: 9px;
+}
+.factor-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 7px;
+  background: #e7eae1;
+}
+.factor-source-icon {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  color: #708b55;
+  background: #d6e2c7;
+}
+.factor-source {
+  flex: 1;
+  color: #56665b;
+  font:
+    11px "DM Mono",
+    monospace;
+}
+.factor-row strong {
+  color: #4f713c;
+  font:
+    500 12px "DM Mono",
+    monospace;
+}
+.empty-factors {
+  margin: 12px 0;
+  color: #929b92;
+  font-size: 11px;
+  text-align: center;
 }
 .season-badge {
   align-self: flex-start;
