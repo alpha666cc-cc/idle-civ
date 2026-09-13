@@ -416,6 +416,48 @@ button:focus-visible {
   background: rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(67, 86, 68, 0.12);
 }
+.dev-tools-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 27px 0;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(67, 86, 68, 0.12);
+}
+.dev-tools-panel h3 {
+  margin: 6px 0 5px;
+  color: #344239;
+  font:
+    600 20px "Playfair Display",
+    serif;
+}
+.dev-tools-copy {
+  margin: 0;
+  color: #78877b;
+  font-size: 11px;
+}
+.dev-tools-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #68786d;
+  font:
+    10px "DM Mono",
+    monospace;
+  white-space: nowrap;
+}
+.dev-tools-control input {
+  width: 82px;
+  padding: 8px;
+  border: 1px solid #c4d0bd;
+  color: #3f573d;
+  background: #edf1e8;
+  font:
+    12px "DM Mono",
+    monospace;
+}
 .workbench-heading {
   display: flex;
   align-items: center;

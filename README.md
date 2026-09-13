@@ -1,4 +1,19 @@
-# React + TypeScript + Vite
+# Idle Civ
+
+Civilization-themed idle game built with React, TypeScript, and Vite.
+
+See the [project roadmap](docs/roadmap.md) for the planned data-driven definitions, save formats, action multipliers, statistics, and achievements.
+
+## Development
+
+```powershell
+npm install
+npm run dev
+```
+
+The repository also includes VS Code Run and Debug configuration under `.vscode/`.
+
+## Template notes
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 

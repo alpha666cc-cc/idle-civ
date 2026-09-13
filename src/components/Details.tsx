@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Coins, Leaf, Pickaxe, Sparkles, Users, Wheat, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
-  baseResourceGenerator,
+  ResourceDefinition,
   type ResourceFactor,
   type ResourceFactors,
 } from "../game/resources";
@@ -28,9 +28,9 @@ const factorLabels: Record<FactorTab, string> = {
   drain: "Drain",
 };
 
-const sourceIcon = (source: string): LucideIcon => {
+const sourceIcon = (source: ResourceFactor[0]): LucideIcon => {
+  if (source instanceof ResourceDefinition) return Users;
   const normalizedSource = source.toLowerCase();
-  if (source === baseResourceGenerator) return Users;
   if (normalizedSource.includes("lumber") || normalizedSource.includes("wood"))
     return Leaf;
   if (normalizedSource.includes("farm") || normalizedSource.includes("food"))
@@ -45,6 +45,9 @@ const sourceIcon = (source: string): LucideIcon => {
     return Sparkles;
   return Sparkles;
 };
+
+const sourceLabel = (source: ResourceFactor[0]): string =>
+  source instanceof ResourceDefinition ? source.label : source;
 
 const formatFactorValue = (tab: FactorTab, value: number): string =>
   tab === "multiplicative" ? `×${value}` : value > 0 ? `+${value}` : `${value}`;
@@ -123,7 +126,7 @@ export default function Details({
                   <span className="factor-source-icon">
                     <SourceIcon size={16} strokeWidth={1.8} />
                   </span>
-                  <span className="factor-source">{source}</span>
+                  <span className="factor-source">{sourceLabel(source)}</span>
                   <strong>{formatFactorValue(factorTab, value)}</strong>
                 </div>
               );

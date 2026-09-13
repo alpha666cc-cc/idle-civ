@@ -13,6 +13,7 @@ export type BuildingKey =
   | "monument";
 
 import type { ResourceKey } from "./resources";
+import { GameObject } from "./gameObject";
 
 export type BuildingCost = {
   resource: ResourceKey;
@@ -26,7 +27,7 @@ export type BuildingEffects = {
   resourceDrain?: { resource: ResourceKey; amount: number };
 };
 
-export class BuildingDefinition {
+export class BuildingDefinition extends GameObject {
   readonly key: BuildingKey;
   readonly name: string;
   readonly description: string;
@@ -44,6 +45,7 @@ export class BuildingDefinition {
     maxCount = 10,
     effects: BuildingEffects = {},
   ) {
+    super(key, description);
     this.key = key;
     this.name = name;
     this.description = description;
@@ -72,7 +74,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "people",
     "People",
     "+1 population, -1 food / sec",
-    [{ resource: "food", base: 10, factor: 1.25 }],
+    [{ resource: "food", base: 10, factor: 1.2 }],
     true,
     10,
     { resourceDrain: { resource: "food", amount: 1 } },

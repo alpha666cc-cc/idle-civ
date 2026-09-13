@@ -1,10 +1,11 @@
 import {
+  computeResourceRate,
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
-  baseResourceGenerator,
-  computeResourceRate,
   resourceDefinitions,
+  type CapacityResourceKey,
+  type ProductionResourceKey,
   type ResourceAmounts,
   type ResourceFactor,
   type ResourceFactorMap,
@@ -12,69 +13,66 @@ import {
   type ResourceKey,
   type WorkerAssignments,
 } from "./resources";
+import { WorkerProduction } from "./workerProduction";
 import {
   buildingDefinitions,
   type BuildingCost,
   type BuildingKey,
 } from "./buildings";
 
-type BuildingLimitOverrides = Partial<Record<BuildingKey, number>>;
 type BuildingCostOverrides = Partial<Record<BuildingKey, BuildingCost[]>>;
-type BuildingCapacities = Record<BuildingKey, number>;
 
-const initialBuildingCapacities = (): BuildingCapacities => {
-  const capacities = Object.fromEntries(
-    buildingDefinitions.map((building) => [building.key, building.maxCount]),
-  ) as BuildingCapacities;
-  capacities.people = 0;
-  return capacities;
-};
+const capacityKey = (buildingKey: BuildingKey): CapacityResourceKey =>
+  `${buildingKey}Capacity` as CapacityResourceKey;
 
 export class CivilizationState {
   readonly resources: ResourceAmounts;
   readonly workers: WorkerAssignments;
   readonly builtBuildings: string[];
   readonly resourceFactors: ResourceFactorMap;
-  readonly buildingLimitOverrides: BuildingLimitOverrides;
   readonly buildingCostOverrides: BuildingCostOverrides;
-  readonly buildingCapacities: BuildingCapacities;
+  readonly autoClicksPerSecond: number;
 
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
     workers: WorkerAssignments = emptyWorkerAssignments(),
     builtBuildings: string[] = [],
     resourceFactors: ResourceFactorMap = emptyResourceFactors(),
-    buildingLimitOverrides: BuildingLimitOverrides = {},
     buildingCostOverrides: BuildingCostOverrides = {},
-    buildingCapacities?: BuildingCapacities,
+    autoClicksPerSecond = 0,
   ) {
     this.resources = resources;
     this.workers = workers;
     this.builtBuildings = builtBuildings;
     this.resourceFactors = resourceFactors;
-    this.buildingLimitOverrides = buildingLimitOverrides;
     this.buildingCostOverrides = buildingCostOverrides;
-    const capacities = buildingCapacities ?? initialBuildingCapacities();
-    if (!buildingCapacities) {
-      capacities.people +=
-        builtBuildings.filter((key) => key === "house").length * 10;
-      capacities.house +=
-        builtBuildings.filter((key) => key === "town-hall").length * 10;
-    }
-    this.buildingCapacities = capacities;
+    this.autoClicksPerSecond = autoClicksPerSecond;
+
+    const houses = this.buildingCount("house");
+    const townHalls = this.buildingCount("town-hall");
+    this.resources.peopleCapacity = Math.max(
+      this.resources.peopleCapacity,
+      houses * 10,
+    );
+    this.resources.houseCapacity = Math.max(
+      this.resources.houseCapacity,
+      10 + townHalls * 10,
+    );
+    this.resources.population = builtBuildings.filter(
+      (key) => key === "people",
+    ).length;
   }
 
   get population(): number {
-    return this.builtBuildings.filter((buildingKey) => buildingKey === "people")
-      .length;
+    return this.resources.population;
   }
 
   get maximumPopulation(): number {
-    return this.buildingCapacities.people;
+    return this.resources.peopleCapacity;
   }
 
   get housingCapacity(): number {
-    return this.maximumPopulation;
+    return this.resources.peopleCapacity;
   }
 
   get assignedWorkers(): number {
@@ -88,7 +86,22 @@ export class CivilizationState {
     return this.population - this.assignedWorkers;
   }
 
+  getWorkerProduction(resourceKey: ProductionResourceKey): WorkerProduction {
+    const definition = resourceDefinitions.find(
+      ({ key }) => key === resourceKey,
+    );
+    return new WorkerProduction(
+      resourceKey,
+      definition?.label ?? resourceKey,
+      this.workers[resourceKey],
+      definition?.productionPerWorker ?? 1,
+      this.autoClicksPerSecond,
+      1,
+    );
+  }
+
   gather(resourceKey: ResourceKey): CivilizationState {
+    if (!(resourceKey in this.resources)) return this;
     const amount = this.computeClickGain(resourceKey);
     return this.withResources({
       ...this.resources,
@@ -96,16 +109,18 @@ export class CivilizationState {
     });
   }
 
-  assignWorker(resourceKey: ResourceKey): CivilizationState {
-    if (this.availableWorkers <= 0) return this;
+  assignWorker(resourceKey: ProductionResourceKey): CivilizationState {
+    if (!(resourceKey in this.workers) || this.availableWorkers <= 0)
+      return this;
     return this.withWorkers({
       ...this.workers,
       [resourceKey]: this.workers[resourceKey] + 1,
     });
   }
 
-  unassignWorker(resourceKey: ResourceKey): CivilizationState {
-    if (this.workers[resourceKey] <= 0) return this;
+  unassignWorker(resourceKey: ProductionResourceKey): CivilizationState {
+    if (!(resourceKey in this.workers) || this.workers[resourceKey] <= 0)
+      return this;
     return this.withWorkers({
       ...this.workers,
       [resourceKey]: this.workers[resourceKey] - 1,
@@ -125,53 +140,51 @@ export class CivilizationState {
 
   getFactors(resourceKey: ResourceKey): ResourceFactors {
     const factors = this.resourceFactors[resourceKey];
-    const definition = resourceDefinitions.find(
-      ({ key }) => key === resourceKey,
+    const workerProduction = this.getWorkerProduction(
+      resourceKey as ProductionResourceKey,
     );
-    const workerFactor: ResourceFactor = [
-      baseResourceGenerator,
-      this.workers[resourceKey] * (definition?.productionPerWorker ?? 1),
-    ];
+    const buildingFactors: ResourceFactors = {
+      additional: [],
+      multiplicative: [],
+      drain: [],
+    };
 
-    const buildingFactors = buildingDefinitions.flatMap((building) => {
+    for (const building of buildingDefinitions) {
       const count = this.buildingCount(building.key);
-      const factors: ResourceFactors = {
-        additional: [],
-        multiplicative: [],
-        drain: [],
-      };
-      if (
-        count > 0 &&
-        building.effects.resourceMultiplier?.resource === resourceKey
-      ) {
-        factors.multiplicative.push([
+      if (count === 0) continue;
+      if (building.effects.resourceMultiplier?.resource === resourceKey) {
+        buildingFactors.multiplicative.push([
           building.key,
           building.effects.resourceMultiplier.factor ** count,
         ]);
       }
-      if (
-        count > 0 &&
-        building.effects.resourceDrain?.resource === resourceKey
-      ) {
-        factors.drain.push([
+      if (building.effects.resourceDrain?.resource === resourceKey) {
+        buildingFactors.drain.push([
           building.key,
           building.effects.resourceDrain.amount * count,
         ]);
       }
-      return factors;
-    });
+    }
 
     return {
-      ...factors,
-      additional: [workerFactor, ...factors.additional],
+      additional: [
+        [workerProduction, workerProduction.workerProduction],
+        ...(workerProduction.autoClickProduction > 0
+          ? [
+              [
+                "dev auto clicker",
+                workerProduction.autoClickProduction,
+              ] as ResourceFactor,
+            ]
+          : []),
+        ...factors.additional,
+        ...buildingFactors.additional,
+      ],
       multiplicative: [
         ...factors.multiplicative,
-        ...buildingFactors.flatMap(({ multiplicative }) => multiplicative),
+        ...buildingFactors.multiplicative,
       ],
-      drain: [
-        ...factors.drain,
-        ...buildingFactors.flatMap(({ drain }) => drain),
-      ],
+      drain: [...factors.drain, ...buildingFactors.drain],
     };
   }
 
@@ -181,26 +194,29 @@ export class CivilizationState {
 
   computeClickGain(resourceKey: ResourceKey): number {
     const factors = this.getFactors(resourceKey);
+    const definition = resourceDefinitions.find(
+      ({ key }) => key === resourceKey,
+    );
     return computeResourceRate({
-      additional: [
-        ["manual click", 1],
-        ...factors.additional.filter(
-          ([source]) => source !== baseResourceGenerator,
-        ),
-      ],
+      additional: [["manual click", definition?.productionPerWorker ?? 1]],
       multiplicative: factors.multiplicative,
       drain: [],
     });
   }
 
-  private buildingCount(buildingKey: string): number {
-    return this.builtBuildings.filter((key) => key === buildingKey).length;
+  setAutoClicksPerSecond(autoClicksPerSecond: number): CivilizationState {
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      Math.max(0, autoClicksPerSecond),
+    );
   }
 
   getBuildingMax(buildingKey: string): number {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return 0;
-    return this.buildingCapacities[building.key];
+    return this.resources[capacityKey(building.key)];
   }
 
   getBuildingCost(
@@ -229,29 +245,22 @@ export class CivilizationState {
     buildingKey: BuildingKey,
     additionalSlots: number,
   ): CivilizationState {
-    const capacities = {
-      ...this.buildingCapacities,
-      [buildingKey]: this.getBuildingMax(buildingKey) + additionalSlots,
+    const resources = {
+      ...this.resources,
+      [capacityKey(buildingKey)]:
+        this.getBuildingMax(buildingKey) + additionalSlots,
     };
-    return this.withBuildingUpgrades(
-      this.buildingLimitOverrides,
-      this.buildingCostOverrides,
-      capacities,
-    );
+    return this.withState(resources, this.buildingCostOverrides);
   }
 
   upgradeBuildingCosts(
     buildingKey: BuildingKey,
     costs: BuildingCost[],
   ): CivilizationState {
-    return this.withBuildingUpgrades(
-      this.buildingLimitOverrides,
-      {
-        ...this.buildingCostOverrides,
-        [buildingKey]: costs,
-      },
-      this.buildingCapacities,
-    );
+    return this.withState(this.resources, {
+      ...this.buildingCostOverrides,
+      [buildingKey]: costs,
+    });
   }
 
   addFactor(
@@ -260,74 +269,55 @@ export class CivilizationState {
     factor: ResourceFactor,
   ): CivilizationState {
     const factors = this.resourceFactors[resourceKey];
-    const updatedFactors: ResourceFactorMap = {
+    return this.withResourceFactors({
       ...this.resourceFactors,
       [resourceKey]: {
         ...factors,
         [factorType]: [...factors[factorType], factor],
       },
-    };
-    return this.withResourceFactors(updatedFactors);
+    });
   }
 
   build(buildingKey: string): CivilizationState {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
-    if (!building || !building.available) {
-      return this;
-    }
-
-    const builtCount = this.builtBuildings.filter(
-      (key) => key === buildingKey,
-    ).length;
+    if (!building || !building.available) return this;
+    const builtCount = this.buildingCount(building.key);
     if (builtCount >= this.getBuildingMax(building.key)) return this;
-    if (buildingKey === "people" && this.population >= this.maximumPopulation) {
+    if (buildingKey === "people" && this.population >= this.maximumPopulation)
       return this;
-    }
     const cost = this.getBuildingCost(building.key, builtCount);
-    if (cost.some(({ resource, base }) => this.resources[resource] < base)) {
+    if (cost.some(({ resource, base }) => this.resources[resource] < base))
       return this;
-    }
 
     const resources = { ...this.resources };
-    for (const { resource, base } of cost) {
-      resources[resource] -= base;
-    }
-    return new CivilizationState(
-      resources,
-      this.workers,
-      [...this.builtBuildings, buildingKey],
-      this.resourceFactors,
-      this.buildingLimitOverrides,
-      this.buildingCostOverrides,
-      this.capacitiesAfterBuilding(building.key),
-    );
+    for (const { resource, base } of cost) resources[resource] -= base;
+    resources.population += buildingKey === "people" ? 1 : 0;
+    if (buildingKey === "house") resources.peopleCapacity += 10;
+    if (buildingKey === "town-hall") resources.houseCapacity += 10;
+    return this.withState(resources, this.buildingCostOverrides, [
+      ...this.builtBuildings,
+      buildingKey,
+    ]);
   }
 
   canBuild(buildingKey: string): boolean {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building || !building.available) return false;
-    const builtCount = this.builtBuildings.filter(
-      (key) => key === buildingKey,
-    ).length;
-    if (builtCount >= this.getBuildingMax(building.key)) return false;
-    if (buildingKey === "people" && this.population >= this.maximumPopulation) {
+    const count = this.buildingCount(building.key);
+    if (count >= this.getBuildingMax(building.key)) return false;
+    if (buildingKey === "people" && this.population >= this.maximumPopulation)
       return false;
-    }
-    return this.getBuildingCost(building.key, builtCount).every(
+    return this.getBuildingCost(building.key, count).every(
       ({ resource, base }) => this.resources[resource] >= base,
     );
   }
 
+  private buildingCount(buildingKey: string): number {
+    return this.builtBuildings.filter((key) => key === buildingKey).length;
+  }
+
   private withResources(resources: ResourceAmounts): CivilizationState {
-    return new CivilizationState(
-      resources,
-      this.workers,
-      this.builtBuildings,
-      this.resourceFactors,
-      this.buildingLimitOverrides,
-      this.buildingCostOverrides,
-      this.buildingCapacities,
-    );
+    return this.withState(resources, this.buildingCostOverrides);
   }
 
   private withWorkers(workers: WorkerAssignments): CivilizationState {
@@ -336,9 +326,8 @@ export class CivilizationState {
       workers,
       this.builtBuildings,
       this.resourceFactors,
-      this.buildingLimitOverrides,
       this.buildingCostOverrides,
-      this.buildingCapacities,
+      this.autoClicksPerSecond,
     );
   }
 
@@ -350,34 +339,24 @@ export class CivilizationState {
       this.workers,
       this.builtBuildings,
       resourceFactors,
-      this.buildingLimitOverrides,
       this.buildingCostOverrides,
-      this.buildingCapacities,
+      this.autoClicksPerSecond,
     );
   }
 
-  private withBuildingUpgrades(
-    buildingLimitOverrides: BuildingLimitOverrides,
-    buildingCostOverrides: BuildingCostOverrides,
-    buildingCapacities: BuildingCapacities,
+  private withState(
+    resources: ResourceAmounts,
+    costOverrides: BuildingCostOverrides,
+    builtBuildings = this.builtBuildings,
+    autoClicksPerSecond = this.autoClicksPerSecond,
   ): CivilizationState {
     return new CivilizationState(
-      this.resources,
+      resources,
       this.workers,
-      this.builtBuildings,
+      builtBuildings,
       this.resourceFactors,
-      buildingLimitOverrides,
-      buildingCostOverrides,
-      buildingCapacities,
+      costOverrides,
+      autoClicksPerSecond,
     );
-  }
-
-  private capacitiesAfterBuilding(
-    buildingKey: BuildingKey,
-  ): BuildingCapacities {
-    const capacities = { ...this.buildingCapacities };
-    if (buildingKey === "house") capacities.people += 10;
-    if (buildingKey === "town-hall") capacities.house += 10;
-    return capacities;
   }
 }

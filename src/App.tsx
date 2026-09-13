@@ -16,23 +16,34 @@ import {
   Swords,
   Users,
   Wheat,
+  Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Details, { type DetailsResource } from "./components/Details";
 import { buildingDefinitions } from "./game/buildings";
 import { CivilizationState } from "./game/civilizationState";
-import { resourceDefinitions, type ResourceKey } from "./game/resources";
+import {
+  resourceDefinitions,
+  type ProductionResourceKey,
+  type ResourceKey,
+} from "./game/resources";
 
-type Tab = "Production" | "Upgrades" | "Army" | "Research" | "Settings";
+type Tab =
+  | "Production"
+  | "Upgrades"
+  | "Army"
+  | "Research"
+  | "Settings"
+  | "Dev Tools";
 type ResourcePresentation = {
-  key: ResourceKey;
+  key: ProductionResourceKey;
   label: string;
   icon: LucideIcon;
   tone: string;
 };
 
 type SummaryResource = {
-  key: ResourceKey | "population" | "science";
+  key: ResourceKey;
   label: string;
   icon: LucideIcon;
   tone: string;
@@ -53,10 +64,11 @@ const tabs: { label: Tab; icon: LucideIcon }[] = [
   { label: "Army", icon: Swords },
   { label: "Research", icon: BookOpen },
   { label: "Settings", icon: Settings },
+  { label: "Dev Tools", icon: Wrench },
 ];
 
 const resourcePresentation: Record<
-  ResourceKey,
+  ProductionResourceKey,
   Omit<ResourcePresentation, "key" | "label">
 > = {
   wood: { icon: Leaf, tone: "green" },
@@ -65,15 +77,20 @@ const resourcePresentation: Record<
   gold: { icon: Coins, tone: "amber" },
 };
 
-const productionOrder: ResourceKey[] = ["food", "wood", "stone", "gold"];
+const productionOrder: ProductionResourceKey[] = [
+  "food",
+  "wood",
+  "stone",
+  "gold",
+];
 const resources: ResourcePresentation[] = productionOrder.map((key) => {
   const resource = resourceDefinitions.find(
     (definition) => definition.key === key,
   )!;
   return {
-    key: resource.key,
+    key: resource.key as ProductionResourceKey,
     label: resource.label,
-    ...resourcePresentation[resource.key],
+    ...resourcePresentation[resource.key as ProductionResourceKey],
   };
 });
 
@@ -140,11 +157,14 @@ function App() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const gatherResource = (resourceKey: ResourceKey) => {
+  const gatherResource = (resourceKey: ProductionResourceKey) => {
     setGameState((current) => current.gather(resourceKey));
   };
 
-  const changeWorkers = (resourceKey: ResourceKey, change: number) => {
+  const changeWorkers = (
+    resourceKey: ProductionResourceKey,
+    change: number,
+  ) => {
     if (change > 0 && availableWorkers <= 0) {
       setNotice("No unassigned population is available for this task yet.");
       return;
@@ -173,9 +193,9 @@ function App() {
     setSelectedResource(resourceKey);
   };
 
-  const selectedResourceDefinition = resources.find(
-    ({ key }) => key === selectedResource,
-  );
+  const selectedResourceDefinition =
+    resources.find(({ key }) => key === selectedResource) ??
+    summaryResources.find(({ key }) => key === selectedResource);
   const selectedFactors = selectedResource
     ? gameState.getFactors(selectedResource)
     : null;
@@ -236,15 +256,9 @@ function App() {
                 className="resource-row summary-resource-button"
                 key={key}
                 onClick={() => {
-                  if (key !== "population" && key !== "science")
-                    openResourceDetails(key);
+                  openResourceDetails(key);
                 }}
-                disabled={key === "population" || key === "science"}
-                title={
-                  key === "population" || key === "science"
-                    ? undefined
-                    : `Open ${label} details`
-                }
+                title={`Open ${label} details`}
               >
                 <div className={`resource-icon ${tone}`}>
                   <Icon size={16} strokeWidth={1.8} />
@@ -254,9 +268,7 @@ function App() {
                   <strong>
                     {key === "population"
                       ? `${availableWorkers}/${population}`
-                      : key === "science"
-                        ? 0
-                        : formatResourceAmount(resourceAmounts[key])}
+                      : formatResourceAmount(resourceAmounts[key])}
                   </strong>
                   {key === "population" && (
                     <small>capacity {maximumPopulation}</small>
@@ -305,6 +317,35 @@ function App() {
               <small>Clear skies</small>
             </div>
           </div>
+
+          {activeTab === "Dev Tools" && (
+            <section className="dev-tools-panel" aria-label="Developer tools">
+              <div>
+                <p className="eyebrow">Simulation controls</p>
+                <h3>Auto clicker</h3>
+                <p className="dev-tools-copy">
+                  Generate clicks per second for every WorkerProduction
+                  resource.
+                </p>
+              </div>
+              <label className="dev-tools-control">
+                <span>Clicks / second</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={gameState.autoClicksPerSecond}
+                  onChange={(event) =>
+                    setGameState((current) =>
+                      current.setAutoClicksPerSecond(
+                        Number(event.target.value),
+                      ),
+                    )
+                  }
+                />
+              </label>
+            </section>
+          )}
 
           <section className="production-workbench" aria-label="Production">
             <div className="workbench-heading">
