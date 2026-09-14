@@ -205,7 +205,10 @@ export class CivilizationState {
   /** Buy every building that is currently affordable and under its cap, one pass in definition order. */
   autoBuyBuildings(): CivilizationState {
     return buildingDefinitions.reduce<CivilizationState>((state, building) => {
-      const next = state.build(building.key);
+      const next = state.build(
+        building.key,
+        state.getMaxAffordableBuildings(building.key),
+      );
       return next === state ? state : next;
     }, this);
   }
