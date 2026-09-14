@@ -111,21 +111,31 @@ export class CivilizationState {
     });
   }
 
-  assignWorker(resourceKey: ProductionResourceKey): CivilizationState {
+  assignWorker(
+    resourceKey: ProductionResourceKey,
+    count: number = 1,
+  ): CivilizationState {
     if (!(resourceKey in this.workers) || this.availableWorkers <= 0)
       return this;
+    const actualCount = Math.min(count, this.availableWorkers);
+    if (actualCount <= 0) return this;
     return this.withWorkers({
       ...this.workers,
-      [resourceKey]: this.workers[resourceKey] + 1,
+      [resourceKey]: this.workers[resourceKey] + actualCount,
     });
   }
 
-  unassignWorker(resourceKey: ProductionResourceKey): CivilizationState {
+  unassignWorker(
+    resourceKey: ProductionResourceKey,
+    count: number = 1,
+  ): CivilizationState {
     if (!(resourceKey in this.workers) || this.workers[resourceKey] <= 0)
       return this;
+    const actualCount = Math.min(count, this.workers[resourceKey]);
+    if (actualCount <= 0) return this;
     return this.withWorkers({
       ...this.workers,
-      [resourceKey]: this.workers[resourceKey] - 1,
+      [resourceKey]: this.workers[resourceKey] - actualCount,
     });
   }
 
@@ -279,23 +289,104 @@ export class CivilizationState {
   getBuildingCost(
     buildingKey: string,
     buildingsAlreadyBuilt: number,
+    count: number = 1,
   ): BuildingCost[] {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return [];
     const costs = this.buildingCostOverrides[building.key] ?? building.costs;
-    return costs.map((cost) => ({
-      ...cost,
-      base: Math.ceil(cost.base * cost.factor ** buildingsAlreadyBuilt),
-    }));
+    return costs.map((cost) => {
+      let total: number;
+      if (cost.factor === 1) {
+        // Linear case: each building costs exactly cost.base
+        total = Math.ceil(cost.base) * count;
+      } else {
+        // Geometric series: sum_{i=0}^{count-1} ceil(base * factor^(built+i))
+        // For large counts the precise per-item ceil barely matters vs the formula
+        // so we use the closed-form geometric sum for speed, then round up.
+        const firstTerm = cost.base * cost.factor ** buildingsAlreadyBuilt;
+        // sum = firstTerm * (factor^count - 1) / (factor - 1)
+        const geometricSum =
+          (firstTerm * (cost.factor ** count - 1)) / (cost.factor - 1);
+        total = Math.ceil(geometricSum);
+      }
+      return { ...cost, base: total };
+    });
   }
 
   formatBuildingCost(
     buildingKey: string,
     buildingsAlreadyBuilt: number,
+    count: number = 1,
   ): string {
-    return this.getBuildingCost(buildingKey, buildingsAlreadyBuilt)
+    return this.getBuildingCost(buildingKey, buildingsAlreadyBuilt, count)
       .map(({ resource, base }) => `${base} ${resource}`)
       .join(" + ");
+  }
+
+  getMaxAffordableBuildings(buildingKey: string): number {
+    const building = buildingDefinitions.find(({ key }) => key === buildingKey);
+    if (!building) return 0;
+
+    let capacityLimit = this.getBuildingMax(building.key);
+    const currentCount = this.buildingCount(building.key);
+    let maxPossible =
+      capacityLimit > 0 ? Math.max(0, capacityLimit - currentCount) : Infinity;
+
+    if (buildingKey === "people") {
+      maxPossible = Math.min(
+        maxPossible,
+        Math.max(0, this.maximumPopulation - this.population),
+      );
+    }
+
+    const costs = this.buildingCostOverrides[building.key] ?? building.costs;
+
+    // O(1) check: can we afford exactly n more buildings from currentCount onward?
+    // Uses geometric series formula for the cumulative cost of n buildings.
+    const canAffordCount = (n: number): boolean => {
+      for (const cost of costs) {
+        let totalCost: number;
+        if (cost.factor === 1) {
+          totalCost = Math.ceil(cost.base) * n;
+        } else {
+          const firstTerm = cost.base * cost.factor ** currentCount;
+          totalCost = Math.ceil(
+            (firstTerm * (cost.factor ** n - 1)) / (cost.factor - 1),
+          );
+        }
+        if (this.resources[cost.resource] < totalCost) return false;
+      }
+      return true;
+    };
+
+    // Upper bound: capacity-limited. Costs are exponential so realistically
+    // nobody can afford millions; cap the search space.
+    const upperBound = Math.min(
+      maxPossible === Infinity ? 1_000_000 : maxPossible,
+      1_000_000,
+    );
+
+    if (!canAffordCount(1)) return 0;
+
+    // Doubling probe to find a tight upper bound (O(log N) calls, each O(1))
+    let probe = 1;
+    while (probe < upperBound && canAffordCount(probe * 2)) {
+      probe *= 2;
+    }
+    if (probe >= upperBound && canAffordCount(upperBound)) return upperBound;
+
+    // Binary search in [probe, probe*2] for the exact max
+    let lo = probe;
+    let hi = Math.min(probe * 2, upperBound);
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2);
+      if (canAffordCount(mid)) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return lo;
   }
 
   upgradeBuildingLimit(
@@ -349,41 +440,59 @@ export class CivilizationState {
     return false;
   }
 
-  hasResourcesForBuilding(buildingKey: string): boolean {
-    const count = this.buildingCount(buildingKey);
-    return this.getBuildingCost(buildingKey, count).every(
+  hasResourcesForBuilding(buildingKey: string, count: number = 1): boolean {
+    const currentCount = this.buildingCount(buildingKey);
+    return this.getBuildingCost(buildingKey, currentCount, count).every(
       ({ resource, base }) => this.resources[resource] >= base,
     );
   }
 
   getBuildFailureReason(
     buildingKey: string,
+    count: number = 1,
   ): "locked" | "capacity" | "resources" | null {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building || !building.available) return "locked";
-    if (this.isBuildingAtCapacity(building.key)) return "capacity";
-    if (!this.hasResourcesForBuilding(building.key)) return "resources";
+
+    const currentCount = this.buildingCount(building.key);
+    if (currentCount + count > this.getBuildingMax(building.key))
+      return "capacity";
+    if (
+      buildingKey === "people" &&
+      this.population + count > this.maximumPopulation
+    )
+      return "capacity";
+
+    if (!this.hasResourcesForBuilding(building.key, count)) return "resources";
+
     return null;
   }
 
-  build(buildingKey: string): CivilizationState {
-    if (!this.canBuild(buildingKey)) return this;
+  build(buildingKey: string, count: number = 1): CivilizationState {
+    if (count <= 0) return this;
+    if (!this.canBuild(buildingKey, count)) return this;
     const builtCount = this.buildingCount(buildingKey);
-    const cost = this.getBuildingCost(buildingKey, builtCount);
+    const cost = this.getBuildingCost(buildingKey, builtCount, count);
 
     const resources = { ...this.resources };
     for (const { resource, base } of cost) resources[resource] -= base;
-    resources.population += buildingKey === "people" ? 1 : 0;
-    if (buildingKey === "house") resources.peopleCapacity += 10;
-    if (buildingKey === "town-hall") resources.houseCapacity += 10;
-    return this.withState(resources, this.buildingCostOverrides, [
-      ...this.builtBuildings,
-      buildingKey,
-    ]);
+
+    resources.population += buildingKey === "people" ? count : 0;
+    if (buildingKey === "house") resources.peopleCapacity += 10 * count;
+    if (buildingKey === "town-hall") resources.houseCapacity += 10 * count;
+
+    const newBuildings = [...this.builtBuildings];
+    for (let i = 0; i < count; i++) {
+      newBuildings.push(buildingKey);
+    }
+
+    return this.withState(resources, this.buildingCostOverrides, newBuildings);
   }
 
-  canBuild(buildingKey: string): boolean {
-    return this.getBuildFailureReason(buildingKey) === null;
+  canBuild(buildingKey: string, count: number = 1): boolean {
+    if (this.isBuildingAtCapacity(buildingKey)) return false;
+    if (!this.hasResourcesForBuilding(buildingKey, count)) return false;
+    return true;
   }
 
   private buildingCount(buildingKey: string): number {

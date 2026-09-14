@@ -132,8 +132,23 @@ const buildings: BuildingPresentation[] = buildingDefinitions.map(
 const formatResourceAmount = (amount: number): string =>
   Math.floor(amount).toLocaleString();
 
+type Multiplier =
+  | 1
+  | 10
+  | 100
+  | 1000
+  | 10000
+  | 100000
+  | 1000000
+  | 10000000
+  | 100000000
+  | 1000000000
+  | "Max";
+
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("Production");
+  const [multiplier, setMultiplier] = useState<Multiplier>(1);
+  const [showLargeDropdown, setShowLargeDropdown] = useState(false);
   const [notice, setNotice] = useState<ReactNode>(
     "The first settlers have found fertile ground.",
   );
@@ -171,14 +186,15 @@ function App() {
     resourceKey: ProductionResourceKey,
     change: number,
   ) => {
+    const amount = multiplier === "Max" ? Infinity : multiplier;
     if (change > 0 && availableWorkers <= 0) {
       setNotice("No unassigned population is available for this task yet.");
       return;
     }
     setGameState((current) =>
       change > 0
-        ? current.assignWorker(resourceKey)
-        : current.unassignWorker(resourceKey),
+        ? current.assignWorker(resourceKey, amount)
+        : current.unassignWorker(resourceKey, amount),
     );
   };
 
@@ -187,49 +203,60 @@ function App() {
       setNotice(`${building.name} will unlock as your civilization advances.`);
       return;
     }
-    const failureReason = gameState.getBuildFailureReason(building.key);
-    if (failureReason === "capacity") {
-      if (building.key === "people") {
-        setNotice(
-          "Citizen capacity reached. Build more houses to increase capacity.",
-        );
-      } else if (building.key === "house") {
-        setNotice(
-          "House capacity reached. Build more Town Halls to increase capacity.",
-        );
-      } else {
+
+    const maxAffordable = gameState.getMaxAffordableBuildings(building.key);
+    let targetCount = multiplier === "Max" ? maxAffordable : multiplier;
+
+    if (maxAffordable === 0) {
+      const failureReason = gameState.getBuildFailureReason(building.key, 1);
+      if (failureReason === "capacity") {
+        if (building.key === "people") {
+          setNotice(
+            "Citizen capacity reached. Build more houses to increase capacity.",
+          );
+        } else if (building.key === "house") {
+          setNotice(
+            "House capacity reached. Build more Town Halls to increase capacity.",
+          );
+        } else {
+          setNotice(
+            <span>
+              {building.name} capacity reached.{" "}
+              <button
+                type="button"
+                className="notice-link"
+                onClick={() => setActiveTab("Upgrades")}
+              >
+                Go to Upgrades tab &rarr;
+              </button>
+            </span>,
+          );
+        }
+      } else if (failureReason === "resources") {
         setNotice(
           <span>
-            {building.name} capacity reached.{" "}
+            You need more resources to build {building.name}.{" "}
             <button
               type="button"
               className="notice-link"
-              onClick={() => setActiveTab("Upgrades")}
+              onClick={() => setActiveTab("Production")}
             >
-              Go to Upgrades tab &rarr;
+              Go to Production tab &rarr;
             </button>
           </span>,
         );
       }
       return;
     }
-    if (failureReason === "resources") {
-      setNotice(
-        <span>
-          You need more resources to build {building.name}.{" "}
-          <button
-            type="button"
-            className="notice-link"
-            onClick={() => setActiveTab("Production")}
-          >
-            Go to Production tab &rarr;
-          </button>
-        </span>,
-      );
-      return;
+
+    if (multiplier !== "Max" && targetCount > maxAffordable) {
+      targetCount = maxAffordable;
     }
-    setGameState((current) => current.build(building.key));
-    setNotice(`${building.name} founded. Your settlement grows stronger.`);
+
+    setGameState((current) => current.build(building.key, targetCount));
+    setNotice(
+      `${targetCount} ${building.name} founded. Your settlement grows stronger.`,
+    );
   };
 
   const openGamepediaAt = (id: string) => {
@@ -483,7 +510,16 @@ function App() {
                     </span>
                   </span>
                   <em>
-                    {gameState.formatBuildingCost(building.key, buildingCount)}
+                    {gameState.formatBuildingCost(
+                      building.key,
+                      buildingCount,
+                      multiplier === "Max"
+                        ? Math.max(
+                            1,
+                            gameState.getMaxAffordableBuildings(building.key),
+                          )
+                        : multiplier,
+                    )}
                   </em>
                 </span>
               </button>
@@ -492,18 +528,82 @@ function App() {
         </div>
       </aside>
 
-      <button
-        className="gamepedia-fab"
-        onClick={() => {
-          setGamepediaFocusId(null);
-          setGamepediaOpen(true);
-        }}
-        aria-label="Open gamepedia"
-        title="Gamepedia"
+      <div
+        className="fab-container"
+        onMouseLeave={() => setShowLargeDropdown(false)}
       >
-        <BookOpen size={20} strokeWidth={1.9} />
-        <span>Pedia</span>
-      </button>
+        <div className="multiplier-buttons">
+          {showLargeDropdown && (
+            <div className="large-dropdown">
+              {[
+                100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
+                1000000000,
+              ].map((v) => (
+                <button
+                  key={v}
+                  className={`multiplier-button ${multiplier === v ? "active" : ""}`}
+                  onClick={() => {
+                    setMultiplier(v as Multiplier);
+                    setShowLargeDropdown(false);
+                  }}
+                >
+                  {v.toLocaleString()}
+                </button>
+              ))}
+            </div>
+          )}
+          {([1, 10] as const).map((v) => (
+            <button
+              key={v}
+              className={`multiplier-button ${multiplier === v ? "active" : ""}`}
+              onClick={() => {
+                setMultiplier(v);
+                setShowLargeDropdown(false);
+              }}
+            >
+              {v}
+            </button>
+          ))}
+          <button
+            className={`multiplier-button ${
+              typeof multiplier === "number" && multiplier >= 100
+                ? "active"
+                : ""
+            }`}
+            onMouseDown={() => setShowLargeDropdown(true)}
+            onClick={() => {
+              if (!(typeof multiplier === "number" && multiplier >= 100)) {
+                setMultiplier(100);
+              }
+            }}
+          >
+            {typeof multiplier === "number" && multiplier >= 100
+              ? multiplier.toLocaleString()
+              : "100"}
+          </button>
+          <button
+            className={`multiplier-button ${multiplier === "Max" ? "active" : ""}`}
+            onClick={() => {
+              setMultiplier("Max");
+              setShowLargeDropdown(false);
+            }}
+          >
+            Max
+          </button>
+        </div>
+        <button
+          className="gamepedia-fab"
+          onClick={() => {
+            setGamepediaFocusId(null);
+            setGamepediaOpen(true);
+          }}
+          aria-label="Open gamepedia"
+          title="Gamepedia"
+        >
+          <BookOpen size={20} strokeWidth={1.9} />
+          <span>Pedia</span>
+        </button>
+      </div>
 
       {gamepediaOpen && (
         <GamepediaModal
