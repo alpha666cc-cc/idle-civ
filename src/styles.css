@@ -59,7 +59,6 @@ button:focus-visible {
   background: var(--accent);
   border-radius: 50%;
 }
-.brand-kicker,
 .eyebrow,
 .nav-caption {
   margin: 0;
@@ -71,7 +70,7 @@ button:focus-visible {
   text-transform: uppercase;
 }
 .brand-lockup h1 {
-  margin: 4px 0 0;
+  margin: 0;
   color: #f3f2e8;
   font:
     600 17px/1 "Playfair Display",
@@ -159,13 +158,6 @@ button:focus-visible {
 }
 .tab-button.active svg {
   color: var(--accent);
-}
-.active-dot {
-  width: 5px;
-  height: 5px;
-  margin-left: auto;
-  background: var(--accent);
-  border-radius: 50%;
 }
 .resource-panel {
   margin-top: 27px;
@@ -331,8 +323,7 @@ button:focus-visible {
   color: #56635a;
   text-transform: none;
 }
-.pulse,
-.status-live {
+.pulse {
   width: 6px;
   height: 6px;
   background: #91b64b;
@@ -374,44 +365,11 @@ button:focus-visible {
   color: #414b43;
   font-weight: 500;
 }
-.topbar-status {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: #727d74;
-  font:
-    10px "DM Mono",
-    monospace;
-}
-.divider {
-  width: 1px;
-  height: 13px;
-  background: #bdc4b9;
-}
 .world-content {
   padding: 40px 35px 35px;
 }
-.welcome-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 25px;
-}
-.welcome-row h2 {
-  max-width: 500px;
-  margin: 11px 0 8px;
-  color: #29332e;
-  font:
-    600 clamp(27px, 3vw, 42px)/1.08 "Playfair Display",
-    serif;
-  letter-spacing: -0.02em;
-}
-.intro {
-  margin: 0;
-  color: #718078;
-  font-size: 13px;
-}
 .production-workbench {
-  margin-top: 27px;
+  margin-top: 0;
   padding: 17px;
   background: rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(67, 86, 68, 0.12);
@@ -421,7 +379,7 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin: 27px 0;
+  margin: 0 0 27px;
   padding: 18px;
   background: rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(67, 86, 68, 0.12);
@@ -647,173 +605,12 @@ button:focus-visible {
     500 12px "DM Mono",
     monospace;
 }
-.season-badge {
-  align-self: flex-start;
-  min-width: 94px;
-  padding: 12px 14px;
-  border-left: 2px solid #9dbd50;
-  background: rgba(255, 255, 255, 0.27);
-}
-.season-badge span,
-.season-badge small {
-  display: block;
-  color: #78847b;
-  font:
-    9px "DM Mono",
-    monospace;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-}
-.season-badge strong {
-  display: block;
-  margin: 5px 0;
-  color: #344139;
-  font:
-    500 20px "DM Mono",
-    monospace;
-}
-.season-badge small {
-  text-transform: none;
-  letter-spacing: 0;
-}
-.map-stage {
-  position: relative;
-  height: 340px;
-  margin-top: 37px;
-  overflow: hidden;
-  background: linear-gradient(165deg, #a9be9b 0%, #d0d2a1 45%, #bac8a7 100%);
-  box-shadow: inset 0 0 0 1px rgba(49, 70, 50, 0.12);
-}
-.map-stage::before,
-.map-stage::after {
-  position: absolute;
-  content: "";
-  width: 140%;
-  height: 55%;
-  border-radius: 50%;
-  transform: rotate(-12deg);
-}
-.map-stage::before {
-  top: 62%;
-  left: -17%;
-  background: rgba(77, 123, 101, 0.18);
-}
-.map-stage::after {
-  top: 73%;
-  left: 35%;
-  background: rgba(243, 218, 145, 0.34);
-}
-.sun-disc {
-  position: absolute;
-  top: 34px;
-  right: 17%;
-  width: 72px;
-  height: 72px;
-  background: #ead69a;
-  border-radius: 50%;
-  opacity: 0.85;
-}
-.mountain {
-  position: absolute;
-  bottom: 104px;
-  width: 0;
-  height: 0;
-  border-right: 170px solid transparent;
-  border-bottom: 205px solid #849c82;
-  border-left: 170px solid transparent;
-  opacity: 0.75;
-}
-.mountain-back {
-  left: 7%;
-  border-bottom-color: #94aa8e;
-}
-.mountain-front {
-  left: 36%;
-  border-bottom-width: 165px;
-  border-right-width: 210px;
-  border-left-width: 210px;
-  border-bottom-color: #78927b;
-  opacity: 0.72;
-}
-.river {
-  position: absolute;
-  z-index: 2;
-  left: 48%;
-  bottom: -78px;
-  width: 52px;
-  height: 390px;
-  background: rgba(111, 163, 159, 0.66);
-  transform: rotate(22deg);
-  border-radius: 45%;
-  box-shadow: 15px 0 0 rgba(149, 194, 177, 0.2);
-}
-.settlement-label {
-  position: absolute;
-  z-index: 4;
-  left: 38%;
-  top: 54%;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 7px 10px;
-  background: rgba(35, 53, 42, 0.82);
-  color: #eff0d9;
-}
-.settlement-label span:last-child {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.settlement-label strong {
-  font:
-    600 12px "Playfair Display",
-    serif;
-}
-.settlement-label small {
-  color: #b5c0a7;
-  font:
-    9px "DM Mono",
-    monospace;
-}
-.map-pin {
-  width: 8px;
-  height: 8px;
-  background: var(--accent);
-  border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(169, 199, 74, 0.18);
-}
-.map-legend {
-  position: absolute;
-  z-index: 5;
-  right: 14px;
-  bottom: 13px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 9px;
-  color: #4d6353;
-  background: rgba(228, 231, 198, 0.65);
-  font:
-    9px "DM Mono",
-    monospace;
-}
-.legend-line {
-  width: 15px;
-  height: 2px;
-  background: #708e76;
-}
-.legend-dot {
-  width: 5px;
-  height: 5px;
-  margin-left: 5px;
-  background: #c4ae62;
-  border-radius: 50%;
-}
 .notice-bar {
   display: flex;
   align-items: center;
   gap: 9px;
   min-height: 51px;
+  margin-top: 27px;
   padding: 0 14px;
   color: #637268;
   background: #d4d9cc;
@@ -821,23 +618,44 @@ button:focus-visible {
 }
 .notice-bar svg {
   color: #849f4c;
+  flex: 0 0 auto;
 }
-.notice-bar button {
-  display: flex;
+.notice-bar > span {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.notice-link {
+  display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
-  padding: 5px 0;
-  border: 0;
-  color: #596a5c;
-  background: none;
+  padding: 2px 7px;
+  border: 1px solid rgba(89, 106, 92, 0.35);
+  border-radius: 3px;
+  color: #2e4434;
+  background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
-  font:
-    10px "DM Mono",
-    monospace;
+  font: inherit;
+  font-size: 10px;
+  font-family: "DM Mono", monospace;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
-.notice-bar button:hover {
-  color: #293c2e;
+.notice-link:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: #596a5c;
+  color: #1a2c20;
+}
+.tab-placeholder-copy {
+  margin: 12px 0 4px;
+  color: #6a796e;
+  font-size: 12px;
+  line-height: 1.5;
 }
 .buildings-panel {
   padding: 38px 22px 24px;
@@ -849,9 +667,10 @@ button:focus-visible {
   display: flex;
   align-items: end;
   justify-content: space-between;
+  margin-bottom: 17px;
 }
 .buildings-header h2 {
-  margin: 6px 0 0;
+  margin: 0;
   font:
     600 29px "Playfair Display",
     serif;
@@ -864,25 +683,18 @@ button:focus-visible {
     10px "DM Mono",
     monospace;
 }
-.panel-description {
-  max-width: 240px;
-  margin: 9px 0 25px;
-  color: #879088;
-  font-size: 11px;
-  line-height: 1.55;
-}
 .building-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 .building-card {
   position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 9px;
-  min-height: 91px;
-  padding: 11px 8px;
+  min-height: 0;
+  padding: 7px 8px;
   border: 1px solid #d9ddd3;
   color: #2c3830;
   background: #f8f8f2;
@@ -899,22 +711,45 @@ button:focus-visible {
   background: #fbfbf5;
   transform: translateY(-2px);
 }
-.building-card.built {
-  border-color: #c4d291;
-  background: #f3f5e8;
-}
 .building-card.locked {
   cursor: default;
   opacity: 0.55;
 }
 .building-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
   width: 30px;
   height: 30px;
   border-radius: 4px;
 }
+.building-icon.teal {
+  color: #4f837d;
+  background: #d2e3e0;
+}
+.building-icon.green {
+  color: #617b3c;
+  background: #d1dfb7;
+}
+.building-icon.gold {
+  color: #9a7134;
+  background: #e7d8af;
+}
+.building-icon.slate {
+  color: #5c706e;
+  background: #d0dcda;
+}
+.building-icon.amber {
+  color: #9e682c;
+  background: #ecd1a5;
+}
 .building-icon.red {
   color: #d28a68;
   background: #f1dfd2;
+}
+.building-icon.violet {
+  color: #7d6fa8;
+  background: #e2ddf0;
 }
 .building-icon.orange {
   color: #c98546;
@@ -937,21 +772,37 @@ button:focus-visible {
   flex: 1;
   flex-direction: column;
   min-width: 0;
-  gap: 4px;
+  gap: 2px;
 }
-.building-info strong {
-  overflow: hidden;
+.building-title-row {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: 6px;
+}
+.building-title-row strong {
+  flex: 0 0 auto;
   color: #354239;
   font-size: 11px;
   font-weight: 700;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.building-info small {
-  min-height: 23px;
+.building-title-row small {
+  flex: 1;
+  overflow: hidden;
   color: #8a938a;
   font-size: 9px;
   line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.building-count-inline {
+  flex: 0 0 auto;
+  color: #68756c;
+  font:
+    9px "DM Mono",
+    monospace;
+  white-space: nowrap;
 }
 .building-info em {
   color: #879b49;
@@ -959,39 +810,6 @@ button:focus-visible {
     9px "DM Mono",
     monospace;
   font-style: normal;
-}
-.built .building-info em {
-  color: #76904a;
-}
-.built-check {
-  position: absolute;
-  top: 6px;
-  right: 7px;
-  color: #83a040;
-  font-size: 12px;
-}
-.build-tip {
-  display: flex;
-  gap: 8px;
-  margin-top: 17px;
-  padding: 12px;
-  color: #879088;
-  background: #e4e7de;
-  font-size: 9px;
-  line-height: 1.45;
-}
-.tip-mark {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  color: #65755f;
-  border: 1px solid #9aaa8e;
-  border-radius: 50%;
-  font:
-    10px Georgia,
-    serif;
 }
 .gamepedia-fab {
   position: fixed;
@@ -1374,14 +1192,11 @@ button:focus-visible {
     padding: 27px 22px;
   }
   .building-grid {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: 1fr;
   }
   .building-card {
-    min-height: 110px;
-    flex-direction: column;
-  }
-  .panel-description {
-    margin-bottom: 16px;
+    min-height: 0;
+    flex-direction: row;
   }
 }
 @media (max-width: 640px) {
@@ -1417,34 +1232,17 @@ button:focus-visible {
     height: 57px;
     padding: 0 18px;
   }
-  .topbar-status {
-    display: none;
-  }
   .world-content {
     padding: 27px 18px 22px;
-  }
-  .welcome-row h2 {
-    font-size: 29px;
-  }
-  .season-badge {
-    min-width: 78px;
-    padding: 9px;
-  }
-  .map-stage {
-    height: 260px;
-    margin-top: 25px;
-  }
-  .settlement-label {
-    left: 25%;
   }
   .buildings-panel {
     padding: 24px 16px 20px;
   }
   .building-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
   .building-card {
-    min-height: 91px;
+    min-height: 0;
     flex-direction: row;
   }
 }

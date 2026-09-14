@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowUpRight,
   BookOpen,
@@ -115,7 +115,7 @@ const buildingPresentation: Record<string, { icon: LucideIcon; tone: string }> =
     "town-hall": { icon: Castle, tone: "violet" },
     smithy: { icon: Hammer, tone: "orange" },
     barracks: { icon: Shield, tone: "blue" },
-    academy: { icon: BookOpen, tone: "pink" },
+    university: { icon: BookOpen, tone: "pink" },
     monument: { icon: Landmark, tone: "locked" },
   };
 
@@ -134,7 +134,7 @@ const formatResourceAmount = (amount: number): string =>
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("Production");
-  const [notice, setNotice] = useState(
+  const [notice, setNotice] = useState<ReactNode>(
     "The first settlers have found fertile ground.",
   );
   const [gameState, setGameState] = useState(() => new CivilizationState());
@@ -187,8 +187,45 @@ function App() {
       setNotice(`${building.name} will unlock as your civilization advances.`);
       return;
     }
-    if (!gameState.canBuild(building.key)) {
-      setNotice(`You need more resources to build ${building.name}.`);
+    const failureReason = gameState.getBuildFailureReason(building.key);
+    if (failureReason === "capacity") {
+      if (building.key === "people") {
+        setNotice(
+          "Citizen capacity reached. Build more houses to increase capacity.",
+        );
+      } else if (building.key === "house") {
+        setNotice(
+          "House capacity reached. Build more Town Halls to increase capacity.",
+        );
+      } else {
+        setNotice(
+          <span>
+            {building.name} capacity reached.{" "}
+            <button
+              type="button"
+              className="notice-link"
+              onClick={() => setActiveTab("Upgrades")}
+            >
+              Go to Upgrades tab &rarr;
+            </button>
+          </span>,
+        );
+      }
+      return;
+    }
+    if (failureReason === "resources") {
+      setNotice(
+        <span>
+          You need more resources to build {building.name}.{" "}
+          <button
+            type="button"
+            className="notice-link"
+            onClick={() => setActiveTab("Production")}
+          >
+            Go to Production tab &rarr;
+          </button>
+        </span>,
+      );
       return;
     }
     setGameState((current) => current.build(building.key));
@@ -208,8 +245,7 @@ function App() {
             <Landmark size={20} strokeWidth={1.8} />
           </div>
           <div>
-            <p className="brand-kicker">Ages of</p>
-            <h1>Hearth &amp; Horizon</h1>
+            <h1>Idle-civilization</h1>
           </div>
         </div>
 
@@ -235,7 +271,6 @@ function App() {
             >
               <Icon size={17} strokeWidth={1.8} />
               <span>{label}</span>
-              {label === "Production" && <span className="active-dot" />}
             </button>
           ))}
         </nav>
@@ -286,41 +321,17 @@ function App() {
             <b>/</b>
             <strong>{activeTab.toUpperCase()}</strong>
           </div>
-          <div className="topbar-status">
-            <span className="status-live" /> Simulation running{" "}
-            <span className="divider" /> <span>Turn 0048</span>
-          </div>
         </header>
 
         <div className="world-content">
-          <div className="welcome-row">
-            <div>
-              <p className="eyebrow">The valley of first light</p>
-              <h2>
-                {activeTab === "Production"
-                  ? "Shape a civilization from the soil."
-                  : activeTab}
-              </h2>
-              <p className="intro">
-                A small settlement, a wide horizon, and every decision still
-                ahead.
-              </p>
-            </div>
-            <div className="season-badge">
-              <span>Spring</span>
-              <strong>12°C</strong>
-              <small>Clear skies</small>
-            </div>
-          </div>
-
           {activeTab === "Dev Tools" && (
             <section className="dev-tools-panel" aria-label="Developer tools">
               <div>
                 <p className="eyebrow">Simulation controls</p>
                 <h3>Auto clicker</h3>
                 <p className="dev-tools-copy">
-                  Generate clicks per second for every gatherable
-                  resource (population is excluded).
+                  Generate clicks per second for every gatherable resource
+                  (population is excluded).
                 </p>
               </div>
               <label className="dev-tools-control">
@@ -344,7 +355,9 @@ function App() {
                 <input
                   type="checkbox"
                   checked={autoBuyBuildings}
-                  onChange={(event) => setAutoBuyBuildings(event.target.checked)}
+                  onChange={(event) =>
+                    setAutoBuyBuildings(event.target.checked)
+                  }
                   aria-label="Auto buy affordable buildings"
                 />
               </label>
@@ -362,116 +375,99 @@ function App() {
             </section>
           )}
 
-          <section className="production-workbench" aria-label="Production">
-            <div className="workbench-heading">
-              <div>
-                <p className="eyebrow">Available actions</p>
-                <h3>Produce resources</h3>
-              </div>
-              <span>
-                <Users size={14} /> {availableWorkers} workers available
-              </span>
-            </div>
-            <div className="gather-grid">
-              {resources.map(({ key, label, icon: Icon, tone }) => (
-                <div className="gather-card" key={key}>
-                  <button
-                    className={`gather-button ${tone}`}
-                    onClick={() => gatherResource(key)}
-                  >
-                    <span className="gather-card-icon">
-                      <Icon size={18} strokeWidth={1.8} />
-                    </span>
-                    <span>
-                      <strong>{label}</strong>
-                      <small>
-                        {formatResourceAmount(resourceAmounts[key])} stored
-                      </small>
-                    </span>
-                    <span className="gather-action">+1</span>
-                  </button>
-                  <div
-                    className="worker-controls"
-                    aria-label={`${label} workers`}
-                  >
-                    <button
-                      onClick={() => changeWorkers(key, -1)}
-                      disabled={workers[key] === 0}
-                      aria-label={`Remove ${label} worker`}
-                    >
-                      −
-                    </button>
-                    <span>{workers[key]}</span>
-                    <button
-                      onClick={() => changeWorkers(key, 1)}
-                      disabled={availableWorkers === 0}
-                      aria-label={`Assign ${label} worker`}
-                    >
-                      +
-                    </button>
-                  </div>
+          {activeTab === "Production" && (
+            <section className="production-workbench" aria-label="Production">
+              <div className="workbench-heading">
+                <div>
+                  <p className="eyebrow">Available actions</p>
+                  <h3>Produce resources</h3>
                 </div>
-              ))}
-            </div>
-          </section>
+                <span>
+                  <Users size={14} /> {availableWorkers} workers available
+                </span>
+              </div>
+              <div className="gather-grid">
+                {resources.map(({ key, label, icon: Icon, tone }) => (
+                  <div className="gather-card" key={key}>
+                    <button
+                      className={`gather-button ${tone}`}
+                      onClick={() => gatherResource(key)}
+                    >
+                      <span className="gather-card-icon">
+                        <Icon size={18} strokeWidth={1.8} />
+                      </span>
+                      <span>
+                        <strong>{label}</strong>
+                        <small>
+                          {formatResourceAmount(resourceAmounts[key])} stored
+                        </small>
+                      </span>
+                      <span className="gather-action">+1</span>
+                    </button>
+                    <div
+                      className="worker-controls"
+                      aria-label={`${label} workers`}
+                    >
+                      <button
+                        onClick={() => changeWorkers(key, -1)}
+                        disabled={workers[key] === 0}
+                        aria-label={`Remove ${label} worker`}
+                      >
+                        −
+                      </button>
+                      <span>{workers[key]}</span>
+                      <button
+                        onClick={() => changeWorkers(key, 1)}
+                        disabled={availableWorkers === 0}
+                        aria-label={`Assign ${label} worker`}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
-          <div className="map-stage">
-            <div className="sun-disc" />
-            <div className="mountain mountain-back" />
-            <div className="mountain mountain-front" />
-            <div className="river" />
-            <div className="settlement-label">
-              <span className="map-pin" />
-              <span>
-                <strong>Riverbend</strong>
-                <small>Your first settlement</small>
-              </span>
-            </div>
-            <div className="map-legend">
-              <span className="legend-line" /> Territory{" "}
-              <span className="legend-dot" /> Fertile ground
-            </div>
-          </div>
+          {activeTab === "Upgrades" && (
+            <section className="production-workbench" aria-label="Upgrades">
+              <div className="workbench-heading">
+                <div>
+                  <p className="eyebrow">Civilization advancement</p>
+                  <h3>Upgrades</h3>
+                </div>
+              </div>
+              <p className="tab-placeholder-copy">
+                Building upgrades and capacity expansions will unlock as your
+                settlement advances.
+              </p>
+            </section>
+          )}
 
           <div className="notice-bar">
             <Sparkles size={16} />
             <span>{notice}</span>
-            <button
-              onClick={() =>
-                setNotice(
-                  "Your people look to you for the next great decision.",
-                )
-              }
-            >
-              View journal <ArrowUpRight size={14} />
-            </button>
           </div>
         </div>
       </section>
 
       <aside className="buildings-panel">
         <div className="buildings-header">
-          <div>
-            <p className="eyebrow">Settlement</p>
-            <h2>Build</h2>
-          </div>
+          <h2>Build</h2>
           <span className="building-count">
             {gameState.builtBuildings.length} built
           </span>
         </div>
-        <p className="panel-description">
-          Lay the foundations of your growing civilization.
-        </p>
         <div className="building-grid">
           {buildings.map((building) => {
             const Icon = building.icon;
-            const isBuilt = gameState.builtBuildings.includes(building.key);
             const buildingCount = gameState.builtBuildings.filter(
               (builtKey) => builtKey === building.key,
             ).length;
             return (
               <button
-                className={`building-card ${isBuilt ? "built" : ""} ${!building.available ? "locked" : ""}`}
+                className={`building-card ${!building.available ? "locked" : ""}`}
                 key={building.name}
                 onClick={() => buyBuilding(building)}
               >
@@ -479,23 +475,20 @@ function App() {
                   <Icon size={19} strokeWidth={1.7} />
                 </span>
                 <span className="building-info">
-                  <strong>{building.name}</strong>
-                  <small>
-                    {building.description} · {buildingCount}/
-                    {gameState.getBuildingMax(building.key)}
-                  </small>
+                  <span className="building-title-row">
+                    <strong>{building.name}</strong>
+                    <small>{building.description}</small>
+                    <span className="building-count-inline">
+                      {buildingCount}/{gameState.getBuildingMax(building.key)}
+                    </span>
+                  </span>
                   <em>
                     {gameState.formatBuildingCost(building.key, buildingCount)}
                   </em>
                 </span>
-                {isBuilt && <span className="built-check">✓</span>}
               </button>
             );
           })}
-        </div>
-        <div className="build-tip">
-          <span className="tip-mark">i</span>
-          <span>Buildings produce resources automatically over time.</span>
         </div>
       </aside>
 

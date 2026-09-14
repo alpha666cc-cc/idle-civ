@@ -1,4 +1,4 @@
-# Idle Civ
+# Idle-civilization
 
 Civilization-themed idle game built with React, TypeScript, and Vite.
 

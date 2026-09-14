@@ -129,25 +129,48 @@ export class CivilizationState {
     });
   }
 
-  /** Assign up to `count` idle workers to food first, then split the rest across the other production resources. */
+  /**
+   * Assign up to `count` idle workers.
+   * Food workers are maintained at roughly 10 times each other resource,
+   * starting with food, while equalizing the other resources among themselves.
+   */
   autoAssignWorkers(count = 10): CivilizationState {
     const others = (
       Object.keys(this.workers) as ProductionResourceKey[]
     ).filter((key) => key !== "food");
-    let workers = this.workers;
+    let workers = { ...this.workers };
     let available = this.availableWorkers;
     let remaining = count;
+
     while (available > 0 && remaining > 0) {
-      workers = { ...workers, food: workers.food + 1 };
-      available -= 1;
-      remaining -= 1;
-      for (const key of others) {
-        if (available <= 0 || remaining <= 0) break;
-        workers = { ...workers, [key]: workers[key] + 1 };
+      if (others.length === 0) {
+        workers.food += 1;
         available -= 1;
         remaining -= 1;
+        continue;
       }
+
+      // Find the other resource with the minimum workers to keep others equalized
+      let targetOther = others[0];
+      let minOtherCount = workers[targetOther];
+      for (const key of others) {
+        if (workers[key] < minOtherCount) {
+          minOtherCount = workers[key];
+          targetOther = key;
+        }
+      }
+
+      // Start with food (first 10), then ensure food is roughly 10x the next tier of other resources
+      if (workers.food < 10 * (minOtherCount + 1)) {
+        workers.food += 1;
+      } else {
+        workers[targetOther] += 1;
+      }
+
+      available -= 1;
+      remaining -= 1;
     }
+
     return this.availableWorkers === available
       ? this
       : this.withWorkers(workers);
@@ -155,13 +178,10 @@ export class CivilizationState {
 
   /** Buy every building that is currently affordable and under its cap, one pass in definition order. */
   autoBuyBuildings(): CivilizationState {
-    return buildingDefinitions.reduce<CivilizationState>(
-      (state, building) => {
-        const next = state.build(building.key);
-        return next === state ? state : next;
-      },
-      this,
-    );
+    return buildingDefinitions.reduce<CivilizationState>((state, building) => {
+      const next = state.build(building.key);
+      return next === state ? state : next;
+    }, this);
   }
 
   tick(): CivilizationState {
@@ -315,16 +335,41 @@ export class CivilizationState {
     });
   }
 
-  build(buildingKey: string): CivilizationState {
+  getBuildingCount(buildingKey: string): number {
+    return this.buildingCount(buildingKey);
+  }
+
+  isBuildingAtCapacity(buildingKey: string): boolean {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
-    if (!building || !building.available) return this;
-    const builtCount = this.buildingCount(building.key);
-    if (builtCount >= this.getBuildingMax(building.key)) return this;
+    if (!building) return false;
+    const count = this.buildingCount(building.key);
+    if (count >= this.getBuildingMax(building.key)) return true;
     if (buildingKey === "people" && this.population >= this.maximumPopulation)
-      return this;
-    const cost = this.getBuildingCost(building.key, builtCount);
-    if (cost.some(({ resource, base }) => this.resources[resource] < base))
-      return this;
+      return true;
+    return false;
+  }
+
+  hasResourcesForBuilding(buildingKey: string): boolean {
+    const count = this.buildingCount(buildingKey);
+    return this.getBuildingCost(buildingKey, count).every(
+      ({ resource, base }) => this.resources[resource] >= base,
+    );
+  }
+
+  getBuildFailureReason(
+    buildingKey: string,
+  ): "locked" | "capacity" | "resources" | null {
+    const building = buildingDefinitions.find(({ key }) => key === buildingKey);
+    if (!building || !building.available) return "locked";
+    if (this.isBuildingAtCapacity(building.key)) return "capacity";
+    if (!this.hasResourcesForBuilding(building.key)) return "resources";
+    return null;
+  }
+
+  build(buildingKey: string): CivilizationState {
+    if (!this.canBuild(buildingKey)) return this;
+    const builtCount = this.buildingCount(buildingKey);
+    const cost = this.getBuildingCost(buildingKey, builtCount);
 
     const resources = { ...this.resources };
     for (const { resource, base } of cost) resources[resource] -= base;
@@ -338,15 +383,7 @@ export class CivilizationState {
   }
 
   canBuild(buildingKey: string): boolean {
-    const building = buildingDefinitions.find(({ key }) => key === buildingKey);
-    if (!building || !building.available) return false;
-    const count = this.buildingCount(building.key);
-    if (count >= this.getBuildingMax(building.key)) return false;
-    if (buildingKey === "people" && this.population >= this.maximumPopulation)
-      return false;
-    return this.getBuildingCost(building.key, count).every(
-      ({ resource, base }) => this.resources[resource] >= base,
-    );
+    return this.getBuildFailureReason(buildingKey) === null;
   }
 
   private buildingCount(buildingKey: string): number {

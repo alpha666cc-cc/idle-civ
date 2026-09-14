@@ -9,7 +9,7 @@ export type BuildingKey =
   | "town-hall"
   | "smithy"
   | "barracks"
-  | "academy"
+  | "university"
   | "monument";
 
 import type { ResourceKey } from "./resources";
@@ -72,8 +72,8 @@ export class BuildingDefinition extends GameObject {
 export const buildingDefinitions: BuildingDefinition[] = [
   new BuildingDefinition(
     "people",
-    "People",
-    "+1 population, -1 food / sec",
+    "Citizen",
+    "add population",
     [{ resource: "food", base: 10, factor: 1.2 }],
     true,
     10,
@@ -82,7 +82,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
   new BuildingDefinition(
     "house",
     "House",
-    "+10 max population",
+    "Increase citizen capacity",
     [{ resource: "wood", base: 10, factor: 1.3 }],
     true,
     10,
@@ -91,7 +91,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
   new BuildingDefinition(
     "farm",
     "Farm",
-    "+10% food gain",
+    "help gather food",
     [
       { resource: "food", base: 10, factor: 1.25 },
       { resource: "wood", base: 10, factor: 1.25 },
@@ -103,7 +103,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
   new BuildingDefinition(
     "lumber-yard",
     "Lumber Yard",
-    "+10% wood gain",
+    "help gather wood",
     [
       { resource: "wood", base: 10, factor: 1.25 },
       { resource: "stone", base: 5, factor: 1.25 },
@@ -115,7 +115,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
   new BuildingDefinition(
     "quarry",
     "Quarry",
-    "+10% stone gain",
+    "help mine stone",
     [{ resource: "stone", base: 20, factor: 1.3 }],
     true,
     10,
@@ -124,7 +124,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
   new BuildingDefinition(
     "gold-mine",
     "Gold Mine",
-    "+10% gold gain",
+    "help gold miner",
     [
       { resource: "wood", base: 100, factor: 1.25 },
       { resource: "stone", base: 50, factor: 1.3 },
@@ -146,7 +146,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
   new BuildingDefinition(
     "town-hall",
     "Town Hall",
-    "+10 max Houses",
+    "Increase house capacity",
     [
       { resource: "wood", base: 1000, factor: 1.25 },
       { resource: "stone", base: 500, factor: 1.25 },
@@ -178,9 +178,9 @@ export const buildingDefinitions: BuildingDefinition[] = [
     true,
   ),
   new BuildingDefinition(
-    "academy",
-    "Academy",
-    "+3 science / min",
+    "university",
+    "University",
+    "generate science",
     [
       { resource: "wood", base: 520, factor: 1.24 },
       { resource: "stone", base: 300, factor: 1.18 },
