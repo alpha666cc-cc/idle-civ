@@ -8,6 +8,8 @@
  *   "compact"     – 1.23C       (none, A, B, … Z, AA, … ZZ, AAA, …)
  */
 
+import { ExpNumber } from "./expNumber";
+
 export type NumberFormat =
   | "scientific"
   | "engineering"
@@ -80,36 +82,65 @@ function scaled(fraction: number): string {
   return fraction.toFixed(2);
 }
 
-export function formatNumber(value: number, format: NumberFormat): string {
-  if (!Number.isFinite(value)) return String(value);
-  const floored = Math.floor(value);
-  if (floored === 0) return "0";
+/**
+ * Formats a base-10 exponent. Safe integers print in full ("e1139400000");
+ * beyond safe-integer range the exponent itself is shown in scientific
+ * notation so no magnitude is lost to JS's exponential number string form.
+ */
+function formatExponent(exponent: number): string {
+  if (Number.isSafeInteger(exponent)) return String(exponent);
+  if (exponent < 1) return String(exponent);
+  const exp = Math.floor(Math.log10(exponent));
+  return `${scaled(exponent / 10 ** exp)}e${exp}`;
+}
 
-  const abs = Math.abs(floored);
+/**
+ * Formats an ExpNumber or a plain number. When the value fits in a double
+ * the output matches the historical number-only behavior; beyond that range
+ * the exponent is read straight off the ExpNumber representation, so values
+ * like 10 * 1.3^1e10 (≈ 1.38e1139400000) still display correctly.
+ */
+export function formatNumber(
+  value: ExpNumber | number,
+  format: NumberFormat,
+): string {
+  const expValue = value instanceof ExpNumber ? value : ExpNumber.fromNumber(value);
+  if (!expValue.isFinite) return expValue.toString();
+  if (expValue.isZero) return "0";
+
+  const negative = expValue.sign < 0;
+  const abs = expValue.abs();
+  const exponent = abs.exponent;
+  // Matches the historical floor-to-zero rule: |value| < 1 displays as "0".
+  if (exponent < 0) return "0";
+  const mantissa = abs.mantissa;
+  const withSign = (text: string): string => (negative ? `-${text}` : text);
 
   switch (format) {
     case "scientific": {
-      const exp = Math.floor(Math.log10(abs));
-      return `${scaled(floored / 10 ** exp)}e${exp}`;
+      return withSign(`${scaled(mantissa)}e${formatExponent(exponent)}`);
     }
 
     case "engineering": {
-      // Exponent is always a multiple of 3 (mantissa in [1, 1000)).
-      const exp = 3 * Math.floor(Math.log10(abs) / 3);
-      return `${scaled(floored / 10 ** exp)}e${exp}`;
+      const tier = Math.floor(exponent / 3);
+      const exp = tier * 3;
+      const display = mantissa * 10 ** (exponent - exp);
+      return withSign(`${scaled(display)}e${formatExponent(exp)}`);
     }
 
     case "named": {
-      const tier = Math.floor(Math.log10(abs) / 3);
-      if (tier <= 0) return String(floored);
+      const tier = Math.floor(exponent / 3);
+      if (tier <= 0) return withSign(String(Math.floor(abs.toNumber())));
       const suffix = NAMED_SUFFIXES[tier] ?? columnLetters(tier);
-      return `${scaled(floored / 10 ** (tier * 3))}${suffix}`;
+      const display = mantissa * 10 ** (exponent - tier * 3);
+      return withSign(`${scaled(display)}${suffix}`);
     }
 
     case "compact": {
-      const tier = Math.floor(Math.log10(abs) / 3);
-      if (tier <= 0) return String(floored);
-      return `${scaled(floored / 10 ** (tier * 3))}${compactSuffix(tier)}`;
+      const tier = Math.floor(exponent / 3);
+      if (tier <= 0) return withSign(String(Math.floor(abs.toNumber())));
+      const display = mantissa * 10 ** (exponent - tier * 3);
+      return withSign(`${scaled(display)}${compactSuffix(tier)}`);
     }
   }
 }

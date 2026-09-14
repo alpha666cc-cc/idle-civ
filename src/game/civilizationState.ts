@@ -13,6 +13,7 @@ import {
   type ResourceKey,
   type WorkerAssignments,
 } from "./resources";
+import { ExpNumber } from "./expNumber";
 import { WorkerProduction } from "./workerProduction";
 import {
   buildingDefinitions,
@@ -24,6 +25,12 @@ type BuildingCostOverrides = Partial<Record<BuildingKey, BuildingCost[]>>;
 
 const capacityKey = (buildingKey: BuildingKey): CapacityResourceKey =>
   `${buildingKey}Capacity` as CapacityResourceKey;
+
+/** Applies a tick rate to a resource amount, clamped so it never goes negative. */
+const applyRate = (amount: ExpNumber, rate: ExpNumber): ExpNumber => {
+  const next = amount.add(rate);
+  return next.sign < 0 ? ExpNumber.ZERO : next;
+};
 
 export class CivilizationState {
   readonly resources: ResourceAmounts;
@@ -50,29 +57,31 @@ export class CivilizationState {
 
     const houses = this.buildingCount("house");
     const townHalls = this.buildingCount("town-hall");
-    this.resources.peopleCapacity = Math.max(
-      this.resources.peopleCapacity,
-      houses * 10,
+    const peopleFloor = ExpNumber.fromNumber(houses * 10);
+    this.resources.peopleCapacity = this.resources.peopleCapacity.gte(
+      peopleFloor,
+    )
+      ? this.resources.peopleCapacity
+      : peopleFloor;
+    const houseFloor = ExpNumber.fromNumber(10 + townHalls * 10);
+    this.resources.houseCapacity = this.resources.houseCapacity.gte(houseFloor)
+      ? this.resources.houseCapacity
+      : houseFloor;
+    this.resources.population = ExpNumber.fromNumber(
+      builtBuildings.filter((key) => key === "people").length,
     );
-    this.resources.houseCapacity = Math.max(
-      this.resources.houseCapacity,
-      10 + townHalls * 10,
-    );
-    this.resources.population = builtBuildings.filter(
-      (key) => key === "people",
-    ).length;
   }
 
   get population(): number {
-    return this.resources.population;
+    return this.resources.population.toNumber();
   }
 
   get maximumPopulation(): number {
-    return this.resources.peopleCapacity;
+    return this.resources.peopleCapacity.toNumber();
   }
 
   get housingCapacity(): number {
-    return this.resources.peopleCapacity;
+    return this.resources.peopleCapacity.toNumber();
   }
 
   get assignedWorkers(): number {
@@ -107,7 +116,7 @@ export class CivilizationState {
     const amount = this.computeClickGain(resourceKey);
     return this.withResources({
       ...this.resources,
-      [resourceKey]: this.resources[resourceKey] + amount,
+      [resourceKey]: this.resources[resourceKey].add(amount),
     });
   }
 
@@ -197,9 +206,9 @@ export class CivilizationState {
   tick(): CivilizationState {
     const resources = { ...this.resources };
     for (const definition of resourceDefinitions) {
-      resources[definition.key] = Math.max(
-        0,
-        resources[definition.key] + this.computeResourceRate(definition.key),
+      resources[definition.key] = applyRate(
+        resources[definition.key],
+        this.computeResourceRate(definition.key),
       );
     }
     return this.withResources(resources);
@@ -222,13 +231,17 @@ export class CivilizationState {
       if (building.effects.resourceMultiplier?.resource === resourceKey) {
         buildingFactors.multiplicative.push([
           building.key,
-          building.effects.resourceMultiplier.factor ** count,
+          ExpNumber.fromNumber(building.effects.resourceMultiplier.factor).pow(
+            count,
+          ),
         ]);
       }
       if (building.effects.resourceDrain?.resource === resourceKey) {
         buildingFactors.drain.push([
           building.key,
-          building.effects.resourceDrain.amount * count,
+          ExpNumber.fromNumber(building.effects.resourceDrain.amount).mul(
+            ExpNumber.fromNumber(count),
+          ),
         ]);
       }
     }
@@ -236,7 +249,7 @@ export class CivilizationState {
     return {
       additional: [
         [workerProduction, workerProduction.workerProduction],
-        ...(workerProduction.autoClickProduction > 0
+        ...(workerProduction.autoClickProduction.gt(ExpNumber.ZERO)
           ? [
               [
                 "dev auto clicker",
@@ -255,17 +268,22 @@ export class CivilizationState {
     };
   }
 
-  computeResourceRate(resourceKey: ResourceKey): number {
+  computeResourceRate(resourceKey: ResourceKey): ExpNumber {
     return computeResourceRate(this.getFactors(resourceKey));
   }
 
-  computeClickGain(resourceKey: ResourceKey): number {
+  computeClickGain(resourceKey: ResourceKey): ExpNumber {
     const factors = this.getFactors(resourceKey);
     const definition = resourceDefinitions.find(
       ({ key }) => key === resourceKey,
     );
     return computeResourceRate({
-      additional: [["manual click", definition?.productionPerWorker ?? 1]],
+      additional: [
+        [
+          "manual click",
+          ExpNumber.fromNumber(definition?.productionPerWorker ?? 1),
+        ],
+      ],
       multiplicative: factors.multiplicative,
       drain: [],
     });
@@ -283,7 +301,7 @@ export class CivilizationState {
   getBuildingMax(buildingKey: string): number {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return 0;
-    return this.resources[capacityKey(building.key)];
+    return this.resources[capacityKey(building.key)].toNumber();
   }
 
   getBuildingCost(
@@ -295,19 +313,25 @@ export class CivilizationState {
     if (!building) return [];
     const costs = this.buildingCostOverrides[building.key] ?? building.costs;
     return costs.map((cost) => {
-      let total: number;
+      let total: ExpNumber;
       if (cost.factor === 1) {
         // Linear case: each building costs exactly cost.base
-        total = Math.ceil(cost.base) * count;
+        total = ExpNumber.from(cost.base)
+          .ceil()
+          .mul(ExpNumber.fromNumber(count));
       } else {
         // Geometric series: sum_{i=0}^{count-1} ceil(base * factor^(built+i))
         // For large counts the precise per-item ceil barely matters vs the formula
         // so we use the closed-form geometric sum for speed, then round up.
-        const firstTerm = cost.base * cost.factor ** buildingsAlreadyBuilt;
+        const factor = ExpNumber.fromNumber(cost.factor);
+        const firstTerm = ExpNumber.from(cost.base).mul(
+          factor.pow(buildingsAlreadyBuilt),
+        );
         // sum = firstTerm * (factor^count - 1) / (factor - 1)
-        const geometricSum =
-          (firstTerm * (cost.factor ** count - 1)) / (cost.factor - 1);
-        total = Math.ceil(geometricSum);
+        const geometricSum = firstTerm
+          .mul(factor.pow(count).sub(ExpNumber.ONE))
+          .div(ExpNumber.fromNumber(cost.factor - 1));
+        total = geometricSum.ceil();
       }
       return { ...cost, base: total };
     });
@@ -317,7 +341,7 @@ export class CivilizationState {
     buildingKey: string,
     buildingsAlreadyBuilt: number,
     count: number = 1,
-    format: (amount: number) => string = String,
+    format: (amount: ExpNumber) => string = String,
   ): string {
     return this.getBuildingCost(buildingKey, buildingsAlreadyBuilt, count)
       .map(({ resource, base }) => `${format(base)} ${resource}`)
@@ -328,7 +352,7 @@ export class CivilizationState {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return 0;
 
-    let capacityLimit = this.getBuildingMax(building.key);
+    const capacityLimit = this.getBuildingMax(building.key);
     const currentCount = this.buildingCount(building.key);
     let maxPossible =
       capacityLimit > 0 ? Math.max(0, capacityLimit - currentCount) : Infinity;
@@ -340,25 +364,12 @@ export class CivilizationState {
       );
     }
 
-    const costs = this.buildingCostOverrides[building.key] ?? building.costs;
-
     // O(1) check: can we afford exactly n more buildings from currentCount onward?
     // Uses geometric series formula for the cumulative cost of n buildings.
-    const canAffordCount = (n: number): boolean => {
-      for (const cost of costs) {
-        let totalCost: number;
-        if (cost.factor === 1) {
-          totalCost = Math.ceil(cost.base) * n;
-        } else {
-          const firstTerm = cost.base * cost.factor ** currentCount;
-          totalCost = Math.ceil(
-            (firstTerm * (cost.factor ** n - 1)) / (cost.factor - 1),
-          );
-        }
-        if (this.resources[cost.resource] < totalCost) return false;
-      }
-      return true;
-    };
+    const canAffordCount = (n: number): boolean =>
+      this.getBuildingCost(building.key, currentCount, n).every(
+        ({ resource, base }) => this.resources[resource].gte(base),
+      );
 
     // Upper bound: capacity-limited. Costs are exponential so realistically
     // nobody can afford millions; cap the search space.
@@ -396,8 +407,9 @@ export class CivilizationState {
   ): CivilizationState {
     const resources = {
       ...this.resources,
-      [capacityKey(buildingKey)]:
+      [capacityKey(buildingKey)]: ExpNumber.fromNumber(
         this.getBuildingMax(buildingKey) + additionalSlots,
+      ),
     };
     return this.withState(resources, this.buildingCostOverrides);
   }
@@ -444,7 +456,7 @@ export class CivilizationState {
   hasResourcesForBuilding(buildingKey: string, count: number = 1): boolean {
     const currentCount = this.buildingCount(buildingKey);
     return this.getBuildingCost(buildingKey, currentCount, count).every(
-      ({ resource, base }) => this.resources[resource] >= base,
+      ({ resource, base }) => this.resources[resource].gte(base),
     );
   }
 
@@ -476,11 +488,25 @@ export class CivilizationState {
     const cost = this.getBuildingCost(buildingKey, builtCount, count);
 
     const resources = { ...this.resources };
-    for (const { resource, base } of cost) resources[resource] -= base;
+    for (const { resource, base } of cost) {
+      resources[resource] = resources[resource].sub(base);
+    }
 
-    resources.population += buildingKey === "people" ? count : 0;
-    if (buildingKey === "house") resources.peopleCapacity += 10 * count;
-    if (buildingKey === "town-hall") resources.houseCapacity += 10 * count;
+    if (buildingKey === "people") {
+      resources.population = resources.population.add(
+        ExpNumber.fromNumber(count),
+      );
+    }
+    if (buildingKey === "house") {
+      resources.peopleCapacity = resources.peopleCapacity.add(
+        ExpNumber.fromNumber(10 * count),
+      );
+    }
+    if (buildingKey === "town-hall") {
+      resources.houseCapacity = resources.houseCapacity.add(
+        ExpNumber.fromNumber(10 * count),
+      );
+    }
 
     const newBuildings = [...this.builtBuildings];
     for (let i = 0; i < count; i++) {

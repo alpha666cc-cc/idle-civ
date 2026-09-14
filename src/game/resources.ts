@@ -1,3 +1,4 @@
+import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 
 export type ProductionResourceKey = "food" | "wood" | "stone" | "gold";
@@ -61,13 +62,13 @@ export const capacityDefinitions: ResourceDefinition[] = [
   new ResourceDefinition("monumentCapacity", "Monument Capacity"),
 ];
 
-export type ResourceAmounts = Record<ResourceKey, number>;
+export type ResourceAmounts = Record<ResourceKey, ExpNumber>;
 export type WorkerAssignments = Record<ProductionResourceKey, number>;
 
 export type ResourceFactorSource = ResourceDefinition | string;
 export type ResourceFactor = readonly [
   source: ResourceFactorSource,
-  value: number,
+  value: ExpNumber,
 ];
 
 export type ResourceFactors = {
@@ -79,24 +80,24 @@ export type ResourceFactors = {
 export type ResourceFactorMap = Record<ResourceKey, ResourceFactors>;
 
 export const emptyResourceAmounts = (): ResourceAmounts => ({
-  food: 0,
-  wood: 0,
-  stone: 0,
-  gold: 0,
-  population: 0,
-  science: 0,
-  peopleCapacity: 0,
-  houseCapacity: 10,
-  farmCapacity: 10,
-  "lumber-yardCapacity": 10,
-  quarryCapacity: 10,
-  "gold-mineCapacity": 10,
-  marketCapacity: 10,
-  "town-hallCapacity": 10,
-  smithyCapacity: 10,
-  barracksCapacity: 10,
-  academyCapacity: 10,
-  monumentCapacity: 10,
+  food: ExpNumber.ZERO,
+  wood: ExpNumber.ZERO,
+  stone: ExpNumber.ZERO,
+  gold: ExpNumber.ZERO,
+  population: ExpNumber.ZERO,
+  science: ExpNumber.ZERO,
+  peopleCapacity: ExpNumber.ZERO,
+  houseCapacity: ExpNumber.fromNumber(10),
+  farmCapacity: ExpNumber.fromNumber(10),
+  "lumber-yardCapacity": ExpNumber.fromNumber(10),
+  quarryCapacity: ExpNumber.fromNumber(10),
+  "gold-mineCapacity": ExpNumber.fromNumber(10),
+  marketCapacity: ExpNumber.fromNumber(10),
+  "town-hallCapacity": ExpNumber.fromNumber(10),
+  smithyCapacity: ExpNumber.fromNumber(10),
+  barracksCapacity: ExpNumber.fromNumber(10),
+  academyCapacity: ExpNumber.fromNumber(10),
+  monumentCapacity: ExpNumber.fromNumber(10),
 });
 
 export const emptyWorkerAssignments = (): WorkerAssignments => ({
@@ -131,16 +132,19 @@ export const computeResourceRate = ({
   additional,
   multiplicative,
   drain,
-}: ResourceFactors): number => {
+}: ResourceFactors): ExpNumber => {
   const additionalTotal = additional.reduce(
-    (total, [, value]) => total + value,
-    0,
+    (total, [, value]) => total.add(value),
+    ExpNumber.ZERO,
   );
   const multiplier = multiplicative.reduce(
-    (total, [, value]) => total * value,
-    1,
+    (total, [, value]) => total.mul(value),
+    ExpNumber.ONE,
   );
-  const drainTotal = drain.reduce((total, [, value]) => total + value, 0);
+  const drainTotal = drain.reduce(
+    (total, [, value]) => total.add(value),
+    ExpNumber.ZERO,
+  );
 
-  return additionalTotal * multiplier - drainTotal;
+  return additionalTotal.mul(multiplier).sub(drainTotal);
 };

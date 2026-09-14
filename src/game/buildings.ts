@@ -14,10 +14,11 @@ export type BuildingKey =
 
 import type { ResourceKey } from "./resources";
 import { GameObject } from "./gameObject";
+import { ExpNumber } from "./expNumber";
 
 export type BuildingCost = {
   resource: ResourceKey;
-  base: number;
+  base: ExpNumber;
   factor: number;
 };
 
@@ -58,13 +59,15 @@ export class BuildingDefinition extends GameObject {
   costAt(buildingsAlreadyBuilt: number): BuildingCost[] {
     return this.costs.map((cost) => ({
       ...cost,
-      base: Math.ceil(cost.base * cost.factor ** buildingsAlreadyBuilt),
+      base: ExpNumber.from(cost.base)
+        .mul(ExpNumber.fromNumber(cost.factor).pow(buildingsAlreadyBuilt))
+        .ceil(),
     }));
   }
 
   formatCost(buildingsAlreadyBuilt: number): string {
     return this.costAt(buildingsAlreadyBuilt)
-      .map(({ resource, base }) => `${base} ${resource}`)
+      .map(({ resource, base }) => `${base.toString()} ${resource}`)
       .join(" + ");
   }
 }
@@ -74,7 +77,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "people",
     "Citizen",
     "add population",
-    [{ resource: "food", base: 10, factor: 1.2 }],
+    [{ resource: "food", base: ExpNumber.fromNumber(10), factor: 1.2 }],
     true,
     10,
     { resourceDrain: { resource: "food", amount: 1 } },
@@ -83,7 +86,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "house",
     "House",
     "Increase citizen capacity",
-    [{ resource: "wood", base: 10, factor: 1.3 }],
+    [{ resource: "wood", base: ExpNumber.fromNumber(10), factor: 1.3 }],
     true,
     10,
     { capacityProvided: { building: "people", perBuilding: 10 } },
@@ -93,8 +96,8 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "Farm",
     "help gather food",
     [
-      { resource: "food", base: 10, factor: 1.25 },
-      { resource: "wood", base: 10, factor: 1.25 },
+      { resource: "food", base: ExpNumber.fromNumber(10), factor: 1.25 },
+      { resource: "wood", base: ExpNumber.fromNumber(10), factor: 1.25 },
     ],
     true,
     10,
@@ -105,8 +108,8 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "Lumber Yard",
     "help gather wood",
     [
-      { resource: "wood", base: 10, factor: 1.25 },
-      { resource: "stone", base: 5, factor: 1.25 },
+      { resource: "wood", base: ExpNumber.fromNumber(10), factor: 1.25 },
+      { resource: "stone", base: ExpNumber.fromNumber(5), factor: 1.25 },
     ],
     true,
     10,
@@ -116,7 +119,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "quarry",
     "Quarry",
     "help mine stone",
-    [{ resource: "stone", base: 20, factor: 1.3 }],
+    [{ resource: "stone", base: ExpNumber.fromNumber(20), factor: 1.3 }],
     true,
     10,
     { resourceMultiplier: { resource: "stone", factor: 1.1 } },
@@ -126,8 +129,8 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "Gold Mine",
     "help gold miner",
     [
-      { resource: "wood", base: 100, factor: 1.25 },
-      { resource: "stone", base: 50, factor: 1.3 },
+      { resource: "wood", base: ExpNumber.fromNumber(100), factor: 1.25 },
+      { resource: "stone", base: ExpNumber.fromNumber(50), factor: 1.3 },
     ],
     true,
     10,
@@ -138,8 +141,8 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "Market",
     "Trade resources",
     [
-      { resource: "wood", base: 300, factor: 1.2 },
-      { resource: "stone", base: 120, factor: 1.15 },
+      { resource: "wood", base: ExpNumber.fromNumber(300), factor: 1.2 },
+      { resource: "stone", base: ExpNumber.fromNumber(120), factor: 1.15 },
     ],
     true,
   ),
@@ -148,9 +151,9 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "Town Hall",
     "Increase house capacity",
     [
-      { resource: "wood", base: 1000, factor: 1.25 },
-      { resource: "stone", base: 500, factor: 1.25 },
-      { resource: "gold", base: 500, factor: 1.25 },
+      { resource: "wood", base: ExpNumber.fromNumber(1000), factor: 1.25 },
+      { resource: "stone", base: ExpNumber.fromNumber(500), factor: 1.25 },
+      { resource: "gold", base: ExpNumber.fromNumber(500), factor: 1.25 },
     ],
     true,
     10,
@@ -161,8 +164,8 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "Smithy",
     "Unlocks equipment",
     [
-      { resource: "wood", base: 360, factor: 1.2 },
-      { resource: "stone", base: 180, factor: 1.15 },
+      { resource: "wood", base: ExpNumber.fromNumber(360), factor: 1.2 },
+      { resource: "stone", base: ExpNumber.fromNumber(180), factor: 1.15 },
     ],
     true,
   ),
@@ -171,9 +174,9 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "Barracks",
     "Train units",
     [
-      { resource: "wood", base: 420, factor: 1.22 },
-      { resource: "stone", base: 260, factor: 1.18 },
-      { resource: "food", base: 100, factor: 1.1 },
+      { resource: "wood", base: ExpNumber.fromNumber(420), factor: 1.22 },
+      { resource: "stone", base: ExpNumber.fromNumber(260), factor: 1.18 },
+      { resource: "food", base: ExpNumber.fromNumber(100), factor: 1.1 },
     ],
     true,
   ),
@@ -182,9 +185,9 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "University",
     "generate science",
     [
-      { resource: "wood", base: 520, factor: 1.24 },
-      { resource: "stone", base: 300, factor: 1.18 },
-      { resource: "gold", base: 180, factor: 1.16 },
+      { resource: "wood", base: ExpNumber.fromNumber(520), factor: 1.24 },
+      { resource: "stone", base: ExpNumber.fromNumber(300), factor: 1.18 },
+      { resource: "gold", base: ExpNumber.fromNumber(180), factor: 1.16 },
     ],
     true,
   ),
@@ -193,8 +196,8 @@ export const buildingDefinitions: BuildingDefinition[] = [
     "Monument",
     "Coming soon",
     [
-      { resource: "stone", base: 900, factor: 1.3 },
-      { resource: "gold", base: 400, factor: 1.2 },
+      { resource: "stone", base: ExpNumber.fromNumber(900), factor: 1.3 },
+      { resource: "gold", base: ExpNumber.fromNumber(400), factor: 1.2 },
     ],
     false,
   ),

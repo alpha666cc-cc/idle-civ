@@ -22,6 +22,7 @@ import type { LucideIcon } from "lucide-react";
 import GamepediaModal from "./components/GamepediaModal";
 import { buildingDefinitions } from "./game/buildings";
 import { CivilizationState } from "./game/civilizationState";
+import { ExpNumber } from "./game/expNumber";
 import { formatNumber, type NumberFormat } from "./game/numberFormat";
 import {
   resourceDefinitions,
@@ -183,7 +184,7 @@ function App() {
   const [autoBuyBuildings, setAutoBuyBuildings] = useState(false);
   const [autoAssignWorkers, setAutoAssignWorkers] = useState(false);
 
-  const fmt = (n: number) => formatNumber(n, numberFormat);
+  const fmt = (n: ExpNumber | number) => formatNumber(n, numberFormat);
 
   const {
     resources: resourceAmounts,

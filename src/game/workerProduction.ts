@@ -1,4 +1,5 @@
 import { ResourceDefinition, type ProductionResourceKey } from "./resources";
+import { ExpNumber } from "./expNumber";
 
 export class WorkerProduction extends ResourceDefinition {
   readonly workers: number;
@@ -41,15 +42,17 @@ export class WorkerProduction extends ResourceDefinition {
     );
   }
 
-  get workerProduction(): number {
-    return this.workers * this.productionPerWorker;
+  get workerProduction(): ExpNumber {
+    return ExpNumber.fromNumber(this.workers * this.productionPerWorker);
   }
 
-  get autoClickProduction(): number {
-    return this.autoClicksPerSecond * this.productionPerClick;
+  get autoClickProduction(): ExpNumber {
+    return ExpNumber.fromNumber(
+      this.autoClicksPerSecond * this.productionPerClick,
+    );
   }
 
-  get totalProduction(): number {
-    return this.workerProduction + this.autoClickProduction;
+  get totalProduction(): ExpNumber {
+    return this.workerProduction.add(this.autoClickProduction);
   }
 }
