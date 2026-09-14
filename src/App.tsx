@@ -107,7 +107,6 @@ const summaryResources: SummaryResource[] = [
 const numberFormatStorageKey = "idle-civ:number-format";
 
 const numberFormatOptions: { value: NumberFormat; label: string }[] = [
-  { value: "default", label: "Default" },
   { value: "scientific", label: "Scientific" },
   { value: "engineering", label: "Engineering" },
   { value: "named", label: "Named" },
@@ -123,9 +122,9 @@ const loadNumberFormat = (): NumberFormat => {
       }
     }
   } catch {
-    // localStorage unavailable – fall back to the default format.
+    // localStorage unavailable – fall back to the named format.
   }
-  return "default";
+  return "named";
 };
 
 const buildingPresentation: Record<string, { icon: LucideIcon; tone: string }> =
@@ -171,6 +170,7 @@ type Multiplier =
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("Production");
   const [multiplier, setMultiplier] = useState<Multiplier>(1);
+  const [largeMultiplier, setLargeMultiplier] = useState<number>(100);
   const [showLargeDropdown, setShowLargeDropdown] = useState(false);
   const [numberFormat, setNumberFormat] =
     useState<NumberFormat>(loadNumberFormat);
@@ -605,25 +605,6 @@ function App() {
         onMouseLeave={() => setShowLargeDropdown(false)}
       >
         <div className="multiplier-buttons">
-          {showLargeDropdown && (
-            <div className="large-dropdown">
-              {[
-                100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
-                1000000000,
-              ].map((v) => (
-                <button
-                  key={v}
-                  className={`multiplier-button ${multiplier === v ? "active" : ""}`}
-                  onClick={() => {
-                    setMultiplier(v as Multiplier);
-                    setShowLargeDropdown(false);
-                  }}
-                >
-                  {fmt(v)}
-                </button>
-              ))}
-            </div>
-          )}
           {([1, 10] as const).map((v) => (
             <button
               key={v}
@@ -636,23 +617,41 @@ function App() {
               {v}
             </button>
           ))}
-          <button
-            className={`multiplier-button ${
-              typeof multiplier === "number" && multiplier >= 100
-                ? "active"
-                : ""
-            }`}
-            onMouseDown={() => setShowLargeDropdown(true)}
-            onClick={() => {
-              if (!(typeof multiplier === "number" && multiplier >= 100)) {
-                setMultiplier(100);
-              }
-            }}
-          >
-            {typeof multiplier === "number" && multiplier >= 100
-              ? fmt(multiplier)
-              : "100"}
-          </button>
+          <div className="multiplier-dropdown-anchor">
+            <button
+              className={`multiplier-button ${
+                typeof multiplier === "number" && multiplier >= 100
+                  ? "active"
+                  : ""
+              }`}
+              onMouseDown={() => setShowLargeDropdown(true)}
+              onClick={() => {
+                setMultiplier(largeMultiplier as Multiplier);
+              }}
+            >
+              {fmt(largeMultiplier)}
+            </button>
+            {showLargeDropdown && (
+              <div className="large-dropdown">
+                {[
+                  100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
+                  1000000000,
+                ].map((v) => (
+                  <button
+                    key={v}
+                    className={`multiplier-button ${multiplier === v ? "active" : ""}`}
+                    onClick={() => {
+                      setLargeMultiplier(v);
+                      setMultiplier(v as Multiplier);
+                      setShowLargeDropdown(false);
+                    }}
+                  >
+                    {fmt(v)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             className={`multiplier-button ${multiplier === "Max" ? "active" : ""}`}
             onClick={() => {

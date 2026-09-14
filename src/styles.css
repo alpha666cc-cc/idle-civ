@@ -899,6 +899,9 @@ button:focus-visible {
   color: #ebefda;
   background: #36433a;
 }
+.multiplier-dropdown-anchor {
+  position: relative;
+}
 .large-dropdown {
   position: absolute;
   bottom: calc(100% + 6px);

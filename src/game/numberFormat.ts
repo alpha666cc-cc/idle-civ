@@ -2,7 +2,6 @@
  * Number formatting utilities for idle-civ.
  *
  * Supported formats:
- *   "default"     – 1,234,567   (browser toLocaleString)
  *   "scientific"  – 1.23e9      (mantissa 1–10, any exponent)
  *   "engineering" – 12.35e9     (mantissa 1–1000, exponent a multiple of 3)
  *   "named"       – 1.23B       (K, M, B, T, Qa, Qi, Sx, Sp, Oc, No, …)
@@ -10,7 +9,6 @@
  */
 
 export type NumberFormat =
-  | "default"
   | "scientific"
   | "engineering"
   | "named"
@@ -90,9 +88,6 @@ export function formatNumber(value: number, format: NumberFormat): string {
   const abs = Math.abs(floored);
 
   switch (format) {
-    case "default":
-      return floored.toLocaleString();
-
     case "scientific": {
       const exp = Math.floor(Math.log10(abs));
       return `${scaled(floored / 10 ** exp)}e${exp}`;
