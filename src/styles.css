@@ -422,6 +422,52 @@ button:focus-visible {
   accent-color: #4f713c;
   cursor: pointer;
 }
+.settings-panel {
+  padding: 22px 24px;
+  border: 1px solid rgba(67, 86, 68, 0.12);
+  border-radius: 6px;
+  background: #e8e9df;
+}
+.settings-panel .dev-tools-copy {
+  margin: 6px 0 4px;
+}
+.format-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 8px;
+}
+.format-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 10px 11px;
+  border: 1px solid #d5dbd0;
+  color: #2c3830;
+  background: #f2f3ea;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.16s,
+    background 0.16s;
+}
+.format-option:hover {
+  border-color: #b6c08e;
+}
+.format-option.active {
+  border-color: #8ea94e;
+  background: #e5efd8;
+}
+.format-option strong {
+  font-size: 12px;
+  font-weight: 700;
+}
+.format-option small {
+  color: #78847b;
+  font:
+    10px "DM Mono",
+    monospace;
+}
 .workbench-heading {
   display: flex;
   align-items: center;

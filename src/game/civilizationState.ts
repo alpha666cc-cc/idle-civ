@@ -317,9 +317,10 @@ export class CivilizationState {
     buildingKey: string,
     buildingsAlreadyBuilt: number,
     count: number = 1,
+    format: (amount: number) => string = String,
   ): string {
     return this.getBuildingCost(buildingKey, buildingsAlreadyBuilt, count)
-      .map(({ resource, base }) => `${base} ${resource}`)
+      .map(({ resource, base }) => `${format(base)} ${resource}`)
       .join(" + ");
   }
 

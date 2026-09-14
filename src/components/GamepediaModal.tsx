@@ -29,11 +29,13 @@ import {
   type ResourceFactor,
   type ResourceKey,
 } from "../game/resources";
+import { formatNumber, type NumberFormat } from "../game/numberFormat";
 
 type GamepediaModalProps = {
   gameState: CivilizationState;
   onClose: () => void;
   focusId?: string | null;
+  numberFormat: NumberFormat;
 };
 
 type CategoryTab = {
@@ -77,9 +79,6 @@ const capacityLabel = (buildingKey: string): string => {
   return entry ? displayName(entry.object) : `${buildingKey} capacity`;
 };
 
-const formatAmount = (amount: number): string =>
-  Math.floor(amount).toLocaleString();
-
 const formatFactorValue = (
   tab: FactorTab,
   value: number,
@@ -118,7 +117,10 @@ export default function GamepediaModal({
   gameState,
   onClose,
   focusId,
+  numberFormat,
 }: GamepediaModalProps) {
+  const formatAmount = (amount: number): string =>
+    formatNumber(Math.floor(amount), numberFormat);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] =
     useState<GamepediaCategory>("resource");
@@ -257,7 +259,7 @@ export default function GamepediaModal({
               <div className="gamepedia-effect-copy">
                 {renderReference(effects.resourceDrain.resource)}
                 <span className="gamepedia-effect-meta">
-                  {effects.resourceDrain.amount}/sec per building
+                  {formatAmount(effects.resourceDrain.amount)}/sec per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
@@ -270,12 +272,12 @@ export default function GamepediaModal({
               <div className="gamepedia-effect-copy">
                 {renderReference(effects.capacityProvided.building)}
                 <span className="gamepedia-effect-meta">
-                  +{effects.capacityProvided.perBuilding}{" "}
+                  +{formatAmount(effects.capacityProvided.perBuilding)}{" "}
                   {capacityLabel(effects.capacityProvided.building)} per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
-                +{effects.capacityProvided.perBuilding * count} now
+                +{formatAmount(effects.capacityProvided.perBuilding * count)} now
               </strong>
             </div>
           ) : null}

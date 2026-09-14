@@ -22,6 +22,7 @@ import type { LucideIcon } from "lucide-react";
 import GamepediaModal from "./components/GamepediaModal";
 import { buildingDefinitions } from "./game/buildings";
 import { CivilizationState } from "./game/civilizationState";
+import { formatNumber, type NumberFormat } from "./game/numberFormat";
 import {
   resourceDefinitions,
   type ProductionResourceKey,
@@ -103,6 +104,30 @@ const summaryResources: SummaryResource[] = [
   { key: "science", label: "Science", icon: Sparkles, tone: "violet" },
 ];
 
+const numberFormatStorageKey = "idle-civ:number-format";
+
+const numberFormatOptions: { value: NumberFormat; label: string }[] = [
+  { value: "default", label: "Default" },
+  { value: "scientific", label: "Scientific" },
+  { value: "engineering", label: "Engineering" },
+  { value: "named", label: "Named" },
+  { value: "compact", label: "Compact" },
+];
+
+const loadNumberFormat = (): NumberFormat => {
+  try {
+    const stored = window.localStorage.getItem(numberFormatStorageKey);
+    if (stored) {
+      for (const option of numberFormatOptions) {
+        if (option.value === stored) return option.value;
+      }
+    }
+  } catch {
+    // localStorage unavailable – fall back to the default format.
+  }
+  return "default";
+};
+
 const buildingPresentation: Record<string, { icon: LucideIcon; tone: string }> =
   {
     people: { icon: Users, tone: "teal" },
@@ -129,8 +154,6 @@ const buildings: BuildingPresentation[] = buildingDefinitions.map(
   }),
 );
 
-const formatResourceAmount = (amount: number): string =>
-  Math.floor(amount).toLocaleString();
 
 type Multiplier =
   | 1
@@ -149,6 +172,8 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>("Production");
   const [multiplier, setMultiplier] = useState<Multiplier>(1);
   const [showLargeDropdown, setShowLargeDropdown] = useState(false);
+  const [numberFormat, setNumberFormat] =
+    useState<NumberFormat>(loadNumberFormat);
   const [notice, setNotice] = useState<ReactNode>(
     "The first settlers have found fertile ground.",
   );
@@ -157,6 +182,8 @@ function App() {
   const [gamepediaFocusId, setGamepediaFocusId] = useState<string | null>(null);
   const [autoBuyBuildings, setAutoBuyBuildings] = useState(false);
   const [autoAssignWorkers, setAutoAssignWorkers] = useState(false);
+
+  const fmt = (n: number) => formatNumber(n, numberFormat);
 
   const {
     resources: resourceAmounts,
@@ -177,6 +204,14 @@ function App() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [autoBuyBuildings, autoAssignWorkers]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(numberFormatStorageKey, numberFormat);
+    } catch {
+      // localStorage unavailable – setting simply won't persist.
+    }
+  }, [numberFormat]);
 
   const gatherResource = (resourceKey: ProductionResourceKey) => {
     setGameState((current) => current.gather(resourceKey));
@@ -325,7 +360,7 @@ function App() {
                   <strong>
                     {key === "population"
                       ? `${availableWorkers}/${population}`
-                      : formatResourceAmount(resourceAmounts[key])}
+                      : fmt(resourceAmounts[key])}
                   </strong>
                   {key === "population" && (
                     <small>capacity {maximumPopulation}</small>
@@ -426,7 +461,7 @@ function App() {
                       <span>
                         <strong>{label}</strong>
                         <small>
-                          {formatResourceAmount(resourceAmounts[key])} stored
+                          {fmt(resourceAmounts[key])} stored
                         </small>
                       </span>
                       <span className="gather-action">+1</span>
@@ -469,6 +504,42 @@ function App() {
                 Building upgrades and capacity expansions will unlock as your
                 settlement advances.
               </p>
+            </section>
+          )}
+
+          {activeTab === "Settings" && (
+            <section className="settings-panel" aria-label="Settings">
+              <div className="workbench-heading">
+                <div>
+                  <p className="eyebrow">Preferences</p>
+                  <h3>Number format</h3>
+                </div>
+              </div>
+              <p className="dev-tools-copy">
+                Choose how large numbers are displayed throughout the game.
+                The preview below shows how each option formats{" "}
+                {fmt(12_345_678_900)}.
+              </p>
+              <div
+                className="format-picker"
+                role="group"
+                aria-label="Number format"
+              >
+                {numberFormatOptions.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`format-option ${
+                      numberFormat === value ? "active" : ""
+                    }`}
+                    onClick={() => setNumberFormat(value)}
+                    aria-pressed={numberFormat === value}
+                  >
+                    <strong>{label}</strong>
+                    <small>{formatNumber(12_345_678_900, value)}</small>
+                  </button>
+                ))}
+              </div>
             </section>
           )}
 
@@ -519,6 +590,7 @@ function App() {
                             gameState.getMaxAffordableBuildings(building.key),
                           )
                         : multiplier,
+                      fmt,
                     )}
                   </em>
                 </span>
@@ -547,7 +619,7 @@ function App() {
                     setShowLargeDropdown(false);
                   }}
                 >
-                  {v.toLocaleString()}
+                  {fmt(v)}
                 </button>
               ))}
             </div>
@@ -578,7 +650,7 @@ function App() {
             }}
           >
             {typeof multiplier === "number" && multiplier >= 100
-              ? multiplier.toLocaleString()
+              ? fmt(multiplier)
               : "100"}
           </button>
           <button
@@ -608,6 +680,7 @@ function App() {
       {gamepediaOpen && (
         <GamepediaModal
           gameState={gameState}
+          numberFormat={numberFormat}
           focusId={gamepediaFocusId}
           onClose={() => {
             setGamepediaOpen(false);
