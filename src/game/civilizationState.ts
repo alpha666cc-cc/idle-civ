@@ -129,6 +129,41 @@ export class CivilizationState {
     });
   }
 
+  /** Assign up to `count` idle workers to food first, then split the rest across the other production resources. */
+  autoAssignWorkers(count = 10): CivilizationState {
+    const others = (
+      Object.keys(this.workers) as ProductionResourceKey[]
+    ).filter((key) => key !== "food");
+    let workers = this.workers;
+    let available = this.availableWorkers;
+    let remaining = count;
+    while (available > 0 && remaining > 0) {
+      workers = { ...workers, food: workers.food + 1 };
+      available -= 1;
+      remaining -= 1;
+      for (const key of others) {
+        if (available <= 0 || remaining <= 0) break;
+        workers = { ...workers, [key]: workers[key] + 1 };
+        available -= 1;
+        remaining -= 1;
+      }
+    }
+    return this.availableWorkers === available
+      ? this
+      : this.withWorkers(workers);
+  }
+
+  /** Buy every building that is currently affordable and under its cap, one pass in definition order. */
+  autoBuyBuildings(): CivilizationState {
+    return buildingDefinitions.reduce<CivilizationState>(
+      (state, building) => {
+        const next = state.build(building.key);
+        return next === state ? state : next;
+      },
+      this,
+    );
+  }
+
   tick(): CivilizationState {
     const resources = { ...this.resources };
     for (const definition of resourceDefinitions) {

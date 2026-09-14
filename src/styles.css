@@ -448,7 +448,7 @@ button:focus-visible {
     monospace;
   white-space: nowrap;
 }
-.dev-tools-control input {
+.dev-tools-control input[type="number"] {
   width: 82px;
   padding: 8px;
   border: 1px solid #c4d0bd;
@@ -457,6 +457,12 @@ button:focus-visible {
   font:
     12px "DM Mono",
     monospace;
+}
+.dev-tools-control input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f713c;
+  cursor: pointer;
 }
 .workbench-heading {
   display: flex;

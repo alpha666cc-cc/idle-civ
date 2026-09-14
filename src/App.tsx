@@ -140,6 +140,8 @@ function App() {
   const [gameState, setGameState] = useState(() => new CivilizationState());
   const [gamepediaOpen, setGamepediaOpen] = useState(false);
   const [gamepediaFocusId, setGamepediaFocusId] = useState<string | null>(null);
+  const [autoBuyBuildings, setAutoBuyBuildings] = useState(false);
+  const [autoAssignWorkers, setAutoAssignWorkers] = useState(false);
 
   const {
     resources: resourceAmounts,
@@ -151,10 +153,15 @@ function App() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setGameState((current) => current.tick());
+      setGameState((current) => {
+        let next = current.tick();
+        if (autoBuyBuildings) next = next.autoBuyBuildings();
+        if (autoAssignWorkers) next = next.autoAssignWorkers();
+        return next;
+      });
     }, 1000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [autoBuyBuildings, autoAssignWorkers]);
 
   const gatherResource = (resourceKey: ProductionResourceKey) => {
     setGameState((current) => current.gather(resourceKey));
@@ -330,6 +337,26 @@ function App() {
                       ),
                     )
                   }
+                />
+              </label>
+              <label className="dev-tools-control">
+                <span>Auto buy buildings</span>
+                <input
+                  type="checkbox"
+                  checked={autoBuyBuildings}
+                  onChange={(event) => setAutoBuyBuildings(event.target.checked)}
+                  aria-label="Auto buy affordable buildings"
+                />
+              </label>
+              <label className="dev-tools-control">
+                <span>Auto assign workers</span>
+                <input
+                  type="checkbox"
+                  checked={autoAssignWorkers}
+                  onChange={(event) =>
+                    setAutoAssignWorkers(event.target.checked)
+                  }
+                  aria-label="Auto assign up to 10 idle workers per tick"
                 />
               </label>
             </section>
