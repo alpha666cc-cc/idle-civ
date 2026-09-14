@@ -87,11 +87,7 @@ const formatFactorValue = (
 ): string => {
   const text = formatNumber(value, format);
   const positive = typeof value === "number" ? value > 0 : value.sign > 0;
-  return tab === "multiplicative"
-    ? `×${text}`
-    : positive
-      ? `+${text}`
-      : text;
+  return tab === "multiplicative" ? `×${text}` : positive ? `+${text}` : text;
 };
 
 const factorSourceLabel = (source: ResourceFactor[0]): string =>
@@ -153,7 +149,8 @@ export default function GamepediaModal({
 
   const renderReference = (id: string, label?: string) => {
     const entry = gamepedia.get(id);
-    if (!entry) return <span className="gamepedia-plain-ref">{label ?? id}</span>;
+    if (!entry)
+      return <span className="gamepedia-plain-ref">{label ?? id}</span>;
     return (
       <button
         type="button"
@@ -253,12 +250,13 @@ export default function GamepediaModal({
               <div className="gamepedia-effect-copy">
                 {renderReference(effects.resourceMultiplier.resource)}
                 <span className="gamepedia-effect-meta">
-                  ×{effects.resourceMultiplier.factor} gain per building
+                  ×{formatAmount(effects.resourceMultiplier.factor)} gain per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
-                ×{formatNumber(
-                  ExpNumber.fromNumber(effects.resourceMultiplier.factor)
+                ×
+                {formatNumber(
+                  effects.resourceMultiplier.factor
                     .pow(count)
                     .floor(),
                   numberFormat,
@@ -277,10 +275,11 @@ export default function GamepediaModal({
               </div>
               <strong className="gamepedia-effect-total">
                 {formatAmount(
-                  ExpNumber.fromNumber(effects.resourceDrain.amount).mul(
+                  effects.resourceDrain.amount.mul(
                     ExpNumber.fromNumber(count),
                   ),
-                )}/sec now
+                )}
+                /sec now
               </strong>
             </div>
           ) : null}
@@ -290,15 +289,17 @@ export default function GamepediaModal({
                 {renderReference(effects.capacityProvided.building)}
                 <span className="gamepedia-effect-meta">
                   +{formatAmount(effects.capacityProvided.perBuilding)}{" "}
-                  {capacityLabel(effects.capacityProvided.building)} per building
+                  {capacityLabel(effects.capacityProvided.building)} per
+                  building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
-                +{formatAmount(
-                  ExpNumber.fromNumber(effects.capacityProvided.perBuilding).mul(
-                    ExpNumber.fromNumber(count),
-                  ),
-                )} now
+                +
+                {formatAmount(
+                  effects.capacityProvided.perBuilding
+                  .mul(ExpNumber.fromNumber(count)),
+                )}{" "}
+                now
               </strong>
             </div>
           ) : null}
@@ -314,7 +315,7 @@ export default function GamepediaModal({
               </span>
             </div>
             <strong className="gamepedia-effect-total">
-              {count} / {gameState.getBuildingMax(building.key)}
+              {count} / {formatAmount(gameState.getBuildingMax(building.key))}
             </strong>
           </div>
         </div>
@@ -323,7 +324,7 @@ export default function GamepediaModal({
       </div>
     );
   };
-const renderResourceDetail = (entry: GamepediaEntry) => {
+  const renderResourceDetail = (entry: GamepediaEntry) => {
     const key = entry.object.id as ResourceKey;
     const resources = gameState.resources as Record<string, ExpNumber>;
     const rate = gameState.computeResourceRate(key);
@@ -344,7 +345,9 @@ const renderResourceDetail = (entry: GamepediaEntry) => {
     return (
       <div className="gamepedia-detail">
         {renderDetailHeader(entry)}
-        <p className="gamepedia-detail-description">{entry.object.description}</p>
+        <p className="gamepedia-detail-description">
+          {entry.object.description}
+        </p>
 
         {isPopulation ? (
           <>
@@ -359,7 +362,7 @@ const renderResourceDetail = (entry: GamepediaEntry) => {
               </div>
               <div className="gamepedia-stat">
                 <span>Worker capacity</span>
-                <strong>{gameState.maximumPopulation}</strong>
+                <strong>{formatAmount(gameState.maximumPopulation)}</strong>
               </div>
             </div>
           </>
@@ -383,7 +386,7 @@ const renderResourceDetail = (entry: GamepediaEntry) => {
               {hasWorkers && workerProduction !== undefined && (
                 <div className="gamepedia-stat">
                   <span>Workers</span>
-                  <strong>{workerProduction.workers}</strong>
+                  <strong>{workerProduction.workers.toString()}</strong>
                 </div>
               )}
               {workerProduction !== undefined && (
@@ -404,7 +407,13 @@ const renderResourceDetail = (entry: GamepediaEntry) => {
               )}
               <div className="gamepedia-stat">
                 <span>Multipliers</span>
-                <strong>{formatFactorValue("multiplicative", multiplierProduct, numberFormat)}</strong>
+                <strong>
+                  {formatFactorValue(
+                    "multiplicative",
+                    multiplierProduct,
+                    numberFormat,
+                  )}
+                </strong>
               </div>
             </div>
 
@@ -434,7 +443,9 @@ const renderResourceDetail = (entry: GamepediaEntry) => {
                             <button
                               type="button"
                               className="factor-link"
-                              onClick={() => openEntry(entryForSource.object.id)}
+                              onClick={() =>
+                                openEntry(entryForSource.object.id)
+                              }
                               title={`Open ${displayName(entryForSource.object)}`}
                             >
                               {factorSourceLabel(source)}
@@ -444,7 +455,9 @@ const renderResourceDetail = (entry: GamepediaEntry) => {
                               {factorSourceLabel(source)}
                             </span>
                           )}
-                          <strong>{formatFactorValue(tab, value, numberFormat)}</strong>
+                          <strong>
+                            {formatFactorValue(tab, value, numberFormat)}
+                          </strong>
                         </div>
                       );
                     })}
@@ -459,7 +472,7 @@ const renderResourceDetail = (entry: GamepediaEntry) => {
       </div>
     );
   };
-const renderGenericDetail = (entry: GamepediaEntry) => (
+  const renderGenericDetail = (entry: GamepediaEntry) => (
     <div className="gamepedia-detail">
       {renderDetailHeader(entry)}
       <p className="gamepedia-detail-description">{entry.object.description}</p>
@@ -472,7 +485,9 @@ const renderGenericDetail = (entry: GamepediaEntry) => (
     return (
       <div className="gamepedia-detail">
         {renderDetailHeader(entry)}
-        <p className="gamepedia-detail-description">{entry.object.description}</p>
+        <p className="gamepedia-detail-description">
+          {entry.object.description}
+        </p>
         <div className="gamepedia-stats">
           <div className="gamepedia-stat">
             <span>Current</span>
@@ -586,3 +601,5 @@ const renderGenericDetail = (entry: GamepediaEntry) => (
     </div>
   );
 }
+
+

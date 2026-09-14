@@ -72,27 +72,27 @@ export class CivilizationState {
     );
   }
 
-  get population(): number {
-    return this.resources.population.toNumber();
+  get population(): ExpNumber {
+    return this.resources.population;
   }
 
-  get maximumPopulation(): number {
-    return this.resources.peopleCapacity.toNumber();
+  get maximumPopulation(): ExpNumber {
+    return this.resources.peopleCapacity;
   }
 
-  get housingCapacity(): number {
-    return this.resources.peopleCapacity.toNumber();
+  get housingCapacity(): ExpNumber {
+    return this.resources.peopleCapacity;
   }
 
   get assignedWorkers(): number {
     return Object.values(this.workers).reduce(
-      (total, count) => total + count,
+      (total, count) => total + count.toNumber(),
       0,
     );
   }
 
   get availableWorkers(): number {
-    return this.population - this.assignedWorkers;
+    return this.population.toNumber() - this.assignedWorkers;
   }
 
   getWorkerProduction(resourceKey: ProductionResourceKey): WorkerProduction {
@@ -130,7 +130,7 @@ export class CivilizationState {
     if (actualCount <= 0) return this;
     return this.withWorkers({
       ...this.workers,
-      [resourceKey]: this.workers[resourceKey] + actualCount,
+      [resourceKey]: this.workers[resourceKey].add(ExpNumber.fromNumber(actualCount)),
     });
   }
 
@@ -138,13 +138,13 @@ export class CivilizationState {
     resourceKey: ProductionResourceKey,
     count: number = 1,
   ): CivilizationState {
-    if (!(resourceKey in this.workers) || this.workers[resourceKey] <= 0)
+    if (!(resourceKey in this.workers) || this.workers[resourceKey].lte(ExpNumber.ZERO))
       return this;
-    const actualCount = Math.min(count, this.workers[resourceKey]);
+    const actualCount = Math.min(count, this.workers[resourceKey].toNumber());
     if (actualCount <= 0) return this;
     return this.withWorkers({
       ...this.workers,
-      [resourceKey]: this.workers[resourceKey] - actualCount,
+      [resourceKey]: this.workers[resourceKey].sub(ExpNumber.fromNumber(actualCount)),
     });
   }
 
@@ -163,7 +163,7 @@ export class CivilizationState {
 
     while (available > 0 && remaining > 0) {
       if (others.length === 0) {
-        workers.food += 1;
+        workers.food = workers.food.add(ExpNumber.ONE);
         available -= 1;
         remaining -= 1;
         continue;
@@ -171,19 +171,19 @@ export class CivilizationState {
 
       // Find the other resource with the minimum workers to keep others equalized
       let targetOther = others[0];
-      let minOtherCount = workers[targetOther];
+      let minOtherCount = workers[targetOther].toNumber();
       for (const key of others) {
-        if (workers[key] < minOtherCount) {
-          minOtherCount = workers[key];
+        if (workers[key].toNumber() < minOtherCount) {
+          minOtherCount = workers[key].toNumber();
           targetOther = key;
         }
       }
 
       // Start with food (first 10), then ensure food is roughly 10x the next tier of other resources
-      if (workers.food < 10 * (minOtherCount + 1)) {
-        workers.food += 1;
+      if (workers.food.toNumber() < 10 * (minOtherCount + 1)) {
+        workers.food = workers.food.add(ExpNumber.ONE);
       } else {
-        workers[targetOther] += 1;
+        workers[targetOther] = workers[targetOther].add(ExpNumber.ONE);
       }
 
       available -= 1;
@@ -231,15 +231,15 @@ export class CivilizationState {
       if (building.effects.resourceMultiplier?.resource === resourceKey) {
         buildingFactors.multiplicative.push([
           building.key,
-          ExpNumber.fromNumber(building.effects.resourceMultiplier.factor).pow(
-            count,
+          building.effects.resourceMultiplier.factor.pow(
+            ExpNumber.fromNumber(count),
           ),
         ]);
       }
       if (building.effects.resourceDrain?.resource === resourceKey) {
         buildingFactors.drain.push([
           building.key,
-          ExpNumber.fromNumber(building.effects.resourceDrain.amount).mul(
+          building.effects.resourceDrain.amount.mul(
             ExpNumber.fromNumber(count),
           ),
         ]);
@@ -298,10 +298,10 @@ export class CivilizationState {
     );
   }
 
-  getBuildingMax(buildingKey: string): number {
+  getBuildingMax(buildingKey: string): ExpNumber {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
-    if (!building) return 0;
-    return this.resources[capacityKey(building.key)].toNumber();
+    if (!building) return ExpNumber.ZERO;
+    return this.resources[capacityKey(building.key)];
   }
 
   getBuildingCost(
@@ -352,7 +352,7 @@ export class CivilizationState {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return 0;
 
-    const capacityLimit = this.getBuildingMax(building.key);
+    const capacityLimit = this.getBuildingMax(building.key).toNumber();
     const currentCount = this.buildingCount(building.key);
     let maxPossible =
       capacityLimit > 0 ? Math.max(0, capacityLimit - currentCount) : Infinity;
@@ -360,7 +360,10 @@ export class CivilizationState {
     if (buildingKey === "people") {
       maxPossible = Math.min(
         maxPossible,
-        Math.max(0, this.maximumPopulation - this.population),
+        Math.max(
+          0,
+          this.maximumPopulation.toNumber() - this.population.toNumber(),
+        ),
       );
     }
 
@@ -407,8 +410,8 @@ export class CivilizationState {
   ): CivilizationState {
     const resources = {
       ...this.resources,
-      [capacityKey(buildingKey)]: ExpNumber.fromNumber(
-        this.getBuildingMax(buildingKey) + additionalSlots,
+      [capacityKey(buildingKey)]: this.getBuildingMax(buildingKey).add(
+        ExpNumber.fromNumber(additionalSlots),
       ),
     };
     return this.withState(resources, this.buildingCostOverrides);
@@ -447,8 +450,8 @@ export class CivilizationState {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return false;
     const count = this.buildingCount(building.key);
-    if (count >= this.getBuildingMax(building.key)) return true;
-    if (buildingKey === "people" && this.population >= this.maximumPopulation)
+    if (count >= this.getBuildingMax(building.key).toNumber()) return true;
+    if (buildingKey === "people" && this.population.gte(this.maximumPopulation))
       return true;
     return false;
   }
@@ -468,11 +471,11 @@ export class CivilizationState {
     if (!building || !building.available) return "locked";
 
     const currentCount = this.buildingCount(building.key);
-    if (currentCount + count > this.getBuildingMax(building.key))
+    if (currentCount + count > this.getBuildingMax(building.key).toNumber())
       return "capacity";
     if (
       buildingKey === "people" &&
-      this.population + count > this.maximumPopulation
+      this.population.toNumber() + count > this.maximumPopulation.toNumber()
     )
       return "capacity";
 

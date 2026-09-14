@@ -2,14 +2,14 @@ import { ResourceDefinition, type ProductionResourceKey } from "./resources";
 import { ExpNumber } from "./expNumber";
 
 export class WorkerProduction extends ResourceDefinition {
-  readonly workers: number;
+  readonly workers: ExpNumber;
   readonly autoClicksPerSecond: number;
   readonly productionPerClick: number;
 
   constructor(
     key: ProductionResourceKey,
     label: string,
-    workers = 0,
+    workers = ExpNumber.ZERO,
     productionPerWorker = 1,
     autoClicksPerSecond = 0,
     productionPerClick = 1,
@@ -24,7 +24,7 @@ export class WorkerProduction extends ResourceDefinition {
     return new WorkerProduction(
       this.key as ProductionResourceKey,
       this.label,
-      this.workers + 1,
+      this.workers.add(ExpNumber.ONE),
       this.productionPerWorker,
       this.autoClicksPerSecond,
       this.productionPerClick,
@@ -35,7 +35,7 @@ export class WorkerProduction extends ResourceDefinition {
     return new WorkerProduction(
       this.key as ProductionResourceKey,
       this.label,
-      Math.max(0, this.workers - 1),
+      ExpNumber.max(ExpNumber.ZERO, this.workers.sub(ExpNumber.ONE)),
       this.productionPerWorker,
       this.autoClicksPerSecond,
       this.productionPerClick,
@@ -43,7 +43,7 @@ export class WorkerProduction extends ResourceDefinition {
   }
 
   get workerProduction(): ExpNumber {
-    return ExpNumber.fromNumber(this.workers * this.productionPerWorker);
+    return this.workers.mul(ExpNumber.fromNumber(this.productionPerWorker));
   }
 
   get autoClickProduction(): ExpNumber {

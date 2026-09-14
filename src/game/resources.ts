@@ -13,7 +13,7 @@ export type CapacityResourceKey =
   | "town-hallCapacity"
   | "smithyCapacity"
   | "barracksCapacity"
-  | "academyCapacity"
+  | "universityCapacity"
   | "monumentCapacity";
 export type ResourceKey =
   | ProductionResourceKey
@@ -58,12 +58,12 @@ export const capacityDefinitions: ResourceDefinition[] = [
   new ResourceDefinition("town-hallCapacity", "Town Hall Capacity"),
   new ResourceDefinition("smithyCapacity", "Smithy Capacity"),
   new ResourceDefinition("barracksCapacity", "Barracks Capacity"),
-  new ResourceDefinition("academyCapacity", "Academy Capacity"),
+  new ResourceDefinition("universityCapacity", "University Capacity"),
   new ResourceDefinition("monumentCapacity", "Monument Capacity"),
 ];
 
 export type ResourceAmounts = Record<ResourceKey, ExpNumber>;
-export type WorkerAssignments = Record<ProductionResourceKey, number>;
+export type WorkerAssignments = Record<ProductionResourceKey, ExpNumber>;
 
 export type ResourceFactorSource = ResourceDefinition | string;
 export type ResourceFactor = readonly [
@@ -96,15 +96,15 @@ export const emptyResourceAmounts = (): ResourceAmounts => ({
   "town-hallCapacity": ExpNumber.fromNumber(10),
   smithyCapacity: ExpNumber.fromNumber(10),
   barracksCapacity: ExpNumber.fromNumber(10),
-  academyCapacity: ExpNumber.fromNumber(10),
+  universityCapacity: ExpNumber.fromNumber(10),
   monumentCapacity: ExpNumber.fromNumber(10),
 });
 
 export const emptyWorkerAssignments = (): WorkerAssignments => ({
-  food: 0,
-  wood: 0,
-  stone: 0,
-  gold: 0,
+  food: ExpNumber.ZERO,
+  wood: ExpNumber.ZERO,
+  stone: ExpNumber.ZERO,
+  gold: ExpNumber.ZERO,
 });
 
 export const emptyResourceFactors = (): ResourceFactorMap => ({
@@ -124,7 +124,7 @@ export const emptyResourceFactors = (): ResourceFactorMap => ({
   "town-hallCapacity": { additional: [], multiplicative: [], drain: [] },
   smithyCapacity: { additional: [], multiplicative: [], drain: [] },
   barracksCapacity: { additional: [], multiplicative: [], drain: [] },
-  academyCapacity: { additional: [], multiplicative: [], drain: [] },
+  universityCapacity: { additional: [], multiplicative: [], drain: [] },
   monumentCapacity: { additional: [], multiplicative: [], drain: [] },
 });
 

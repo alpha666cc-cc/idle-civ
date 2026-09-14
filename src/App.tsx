@@ -154,7 +154,6 @@ const buildings: BuildingPresentation[] = buildingDefinitions.map(
   }),
 );
 
-
 type Multiplier =
   | 1
   | 10
@@ -360,11 +359,11 @@ function App() {
                   <span>{label}</span>
                   <strong>
                     {key === "population"
-                      ? `${availableWorkers}/${population}`
+                      ? `${availableWorkers}/${fmt(population)}`
                       : fmt(resourceAmounts[key])}
                   </strong>
                   {key === "population" && (
-                    <small>capacity {maximumPopulation}</small>
+                    <small>capacity {fmt(maximumPopulation)}</small>
                   )}
                 </div>
               </button>
@@ -446,7 +445,7 @@ function App() {
                   <h3>Produce resources</h3>
                 </div>
                 <span>
-                  <Users size={14} /> {availableWorkers} workers available
+                  <Users size={14} /> {fmt(availableWorkers)} workers available
                 </span>
               </div>
               <div className="gather-grid">
@@ -461,9 +460,7 @@ function App() {
                       </span>
                       <span>
                         <strong>{label}</strong>
-                        <small>
-                          {fmt(resourceAmounts[key])} stored
-                        </small>
+                        <small>{fmt(resourceAmounts[key])} stored</small>
                       </span>
                       <span className="gather-action">+1</span>
                     </button>
@@ -473,12 +470,12 @@ function App() {
                     >
                       <button
                         onClick={() => changeWorkers(key, -1)}
-                        disabled={workers[key] === 0}
+                        disabled={workers[key] === ExpNumber.ZERO}
                         aria-label={`Remove ${label} worker`}
                       >
                         −
                       </button>
-                      <span>{workers[key]}</span>
+                      <span>{fmt(workers[key])}</span>
                       <button
                         onClick={() => changeWorkers(key, 1)}
                         disabled={availableWorkers === 0}
@@ -517,8 +514,8 @@ function App() {
                 </div>
               </div>
               <p className="dev-tools-copy">
-                Choose how large numbers are displayed throughout the game.
-                The preview below shows how each option formats{" "}
+                Choose how large numbers are displayed throughout the game. The
+                preview below shows how each option formats{" "}
                 {fmt(12_345_678_900)}.
               </p>
               <div
@@ -578,7 +575,8 @@ function App() {
                     <strong>{building.name}</strong>
                     <small>{building.description}</small>
                     <span className="building-count-inline">
-                      {buildingCount}/{gameState.getBuildingMax(building.key)}
+                      {buildingCount}/
+                      {fmt(gameState.getBuildingMax(building.key))}
                     </span>
                   </span>
                   <em>

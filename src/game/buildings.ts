@@ -23,9 +23,9 @@ export type BuildingCost = {
 };
 
 export type BuildingEffects = {
-  capacityProvided?: { building: BuildingKey; perBuilding: number };
-  resourceMultiplier?: { resource: ResourceKey; factor: number };
-  resourceDrain?: { resource: ResourceKey; amount: number };
+  capacityProvided?: { building: BuildingKey; perBuilding: ExpNumber };
+  resourceMultiplier?: { resource: ResourceKey; factor: ExpNumber };
+  resourceDrain?: { resource: ResourceKey; amount: ExpNumber };
 };
 
 export class BuildingDefinition extends GameObject {
@@ -80,7 +80,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     [{ resource: "food", base: ExpNumber.fromNumber(10), factor: 1.2 }],
     true,
     10,
-    { resourceDrain: { resource: "food", amount: 1 } },
+    { resourceDrain: { resource: "food", amount: ExpNumber.fromNumber(1) } },
   ),
   new BuildingDefinition(
     "house",
@@ -89,7 +89,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     [{ resource: "wood", base: ExpNumber.fromNumber(10), factor: 1.3 }],
     true,
     10,
-    { capacityProvided: { building: "people", perBuilding: 10 } },
+    { capacityProvided: { building: "people", perBuilding: ExpNumber.fromNumber(10) } },
   ),
   new BuildingDefinition(
     "farm",
@@ -101,7 +101,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     ],
     true,
     10,
-    { resourceMultiplier: { resource: "food", factor: 1.1 } },
+    { resourceMultiplier: { resource: "food", factor: ExpNumber.fromNumber(1.1) } },
   ),
   new BuildingDefinition(
     "lumber-yard",
@@ -113,7 +113,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     ],
     true,
     10,
-    { resourceMultiplier: { resource: "wood", factor: 1.1 } },
+    { resourceMultiplier: { resource: "wood", factor: ExpNumber.fromNumber(1.1) } },
   ),
   new BuildingDefinition(
     "quarry",
@@ -122,7 +122,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     [{ resource: "stone", base: ExpNumber.fromNumber(20), factor: 1.3 }],
     true,
     10,
-    { resourceMultiplier: { resource: "stone", factor: 1.1 } },
+    { resourceMultiplier: { resource: "stone", factor: ExpNumber.fromNumber(1.1) } },
   ),
   new BuildingDefinition(
     "gold-mine",
@@ -134,7 +134,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     ],
     true,
     10,
-    { resourceMultiplier: { resource: "gold", factor: 1.1 } },
+    { resourceMultiplier: { resource: "gold", factor: ExpNumber.fromNumber(1.1) } },
   ),
   new BuildingDefinition(
     "market",
@@ -157,7 +157,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     ],
     true,
     10,
-    { capacityProvided: { building: "house", perBuilding: 10 } },
+    { capacityProvided: { building: "house", perBuilding: ExpNumber.fromNumber(10) } },
   ),
   new BuildingDefinition(
     "smithy",
