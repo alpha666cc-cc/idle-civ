@@ -92,7 +92,7 @@ export class CivilizationState {
   }
 
   get availableWorkers(): number {
-    return this.population.toNumber() - this.assignedWorkers;
+    return Math.floor(this.population.toNumber()) - this.assignedWorkers;
   }
 
   getWorkerProduction(resourceKey: ProductionResourceKey): WorkerProduction {
@@ -130,7 +130,9 @@ export class CivilizationState {
     if (actualCount <= 0) return this;
     return this.withWorkers({
       ...this.workers,
-      [resourceKey]: this.workers[resourceKey].add(ExpNumber.fromNumber(actualCount)),
+      [resourceKey]: this.workers[resourceKey].add(
+        ExpNumber.fromNumber(actualCount),
+      ),
     });
   }
 
@@ -138,13 +140,18 @@ export class CivilizationState {
     resourceKey: ProductionResourceKey,
     count: number = 1,
   ): CivilizationState {
-    if (!(resourceKey in this.workers) || this.workers[resourceKey].lte(ExpNumber.ZERO))
+    if (
+      !(resourceKey in this.workers) ||
+      this.workers[resourceKey].lte(ExpNumber.ZERO)
+    )
       return this;
     const actualCount = Math.min(count, this.workers[resourceKey].toNumber());
     if (actualCount <= 0) return this;
     return this.withWorkers({
       ...this.workers,
-      [resourceKey]: this.workers[resourceKey].sub(ExpNumber.fromNumber(actualCount)),
+      [resourceKey]: this.workers[resourceKey].sub(
+        ExpNumber.fromNumber(actualCount),
+      ),
     });
   }
 
