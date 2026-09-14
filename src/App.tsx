@@ -19,7 +19,7 @@ import {
   Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import Details, { type DetailsResource } from "./components/Details";
+import GamepediaModal from "./components/GamepediaModal";
 import { buildingDefinitions } from "./game/buildings";
 import { CivilizationState } from "./game/civilizationState";
 import {
@@ -138,9 +138,8 @@ function App() {
     "The first settlers have found fertile ground.",
   );
   const [gameState, setGameState] = useState(() => new CivilizationState());
-  const [selectedResource, setSelectedResource] = useState<ResourceKey | null>(
-    null,
-  );
+  const [gamepediaOpen, setGamepediaOpen] = useState(false);
+  const [gamepediaFocusId, setGamepediaFocusId] = useState<string | null>(null);
 
   const {
     resources: resourceAmounts,
@@ -189,19 +188,10 @@ function App() {
     setNotice(`${building.name} founded. Your settlement grows stronger.`);
   };
 
-  const openResourceDetails = (resourceKey: ResourceKey) => {
-    setSelectedResource(resourceKey);
+  const openGamepediaAt = (id: string) => {
+    setGamepediaFocusId(id);
+    setGamepediaOpen(true);
   };
-
-  const selectedResourceDefinition =
-    resources.find(({ key }) => key === selectedResource) ??
-    summaryResources.find(({ key }) => key === selectedResource);
-  const selectedFactors = selectedResource
-    ? gameState.getFactors(selectedResource)
-    : null;
-  const selectedRate = selectedResource
-    ? gameState.computeResourceRate(selectedResource)
-    : 0;
 
   return (
     <main className="app-shell">
@@ -255,10 +245,8 @@ function App() {
               <button
                 className="resource-row summary-resource-button"
                 key={key}
-                onClick={() => {
-                  openResourceDetails(key);
-                }}
-                title={`Open ${label} details`}
+                onClick={() => openGamepediaAt(key)}
+                title={`Open ${label} in gamepedia`}
               >
                 <div className={`resource-icon ${tone}`}>
                   <Icon size={16} strokeWidth={1.8} />
@@ -324,8 +312,8 @@ function App() {
                 <p className="eyebrow">Simulation controls</p>
                 <h3>Auto clicker</h3>
                 <p className="dev-tools-copy">
-                  Generate clicks per second for every WorkerProduction
-                  resource.
+                  Generate clicks per second for every gatherable
+                  resource (population is excluded).
                 </p>
               </div>
               <label className="dev-tools-control">
@@ -399,17 +387,6 @@ function App() {
               ))}
             </div>
           </section>
-
-          {selectedResource &&
-            selectedFactors &&
-            selectedResourceDefinition && (
-              <Details
-                resource={selectedResourceDefinition as DetailsResource}
-                factors={selectedFactors}
-                rate={selectedRate}
-                onClose={() => setSelectedResource(null)}
-              />
-            )}
 
           <div className="map-stage">
             <div className="sun-disc" />
@@ -494,6 +471,30 @@ function App() {
           <span>Buildings produce resources automatically over time.</span>
         </div>
       </aside>
+
+      <button
+        className="gamepedia-fab"
+        onClick={() => {
+          setGamepediaFocusId(null);
+          setGamepediaOpen(true);
+        }}
+        aria-label="Open gamepedia"
+        title="Gamepedia"
+      >
+        <BookOpen size={20} strokeWidth={1.9} />
+        <span>Pedia</span>
+      </button>
+
+      {gamepediaOpen && (
+        <GamepediaModal
+          gameState={gameState}
+          focusId={gamepediaFocusId}
+          onClose={() => {
+            setGamepediaOpen(false);
+            setGamepediaFocusId(null);
+          }}
+        />
+      )}
     </main>
   );
 }

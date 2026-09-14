@@ -95,7 +95,9 @@ export class CivilizationState {
       definition?.label ?? resourceKey,
       this.workers[resourceKey],
       definition?.productionPerWorker ?? 1,
-      this.autoClicksPerSecond,
+      resourceKey === ("population" as ProductionResourceKey)
+        ? 0
+        : this.autoClicksPerSecond,
       1,
     );
   }

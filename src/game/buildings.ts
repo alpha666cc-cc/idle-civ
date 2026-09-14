@@ -22,7 +22,7 @@ export type BuildingCost = {
 };
 
 export type BuildingEffects = {
-  housingProvided?: number;
+  capacityProvided?: { building: BuildingKey; perBuilding: number };
   resourceMultiplier?: { resource: ResourceKey; factor: number };
   resourceDrain?: { resource: ResourceKey; amount: number };
 };
@@ -86,7 +86,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     [{ resource: "wood", base: 10, factor: 1.3 }],
     true,
     10,
-    { housingProvided: 10 },
+    { capacityProvided: { building: "people", perBuilding: 10 } },
   ),
   new BuildingDefinition(
     "farm",
@@ -154,6 +154,7 @@ export const buildingDefinitions: BuildingDefinition[] = [
     ],
     true,
     10,
+    { capacityProvided: { building: "house", perBuilding: 10 } },
   ),
   new BuildingDefinition(
     "smithy",

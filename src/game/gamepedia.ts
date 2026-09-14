@@ -64,11 +64,25 @@ export class Gamepedia {
 
   search(query: string): GamepediaEntry[] {
     const normalizedQuery = query.trim().toLowerCase();
-    return this.visible().filter(({ object }) =>
-      `${object.id} ${object.description}`
+    return this.visible().filter(({ object }) => {
+      const { id, description } = object;
+      const { name, label } = object as { name?: string; label?: string };
+      return `${id} ${name ?? ""} ${label ?? ""} ${description}`
         .toLowerCase()
-        .includes(normalizedQuery),
-    );
+        .includes(normalizedQuery);
+    });
+  }
+
+  /** Makes relatedIds bidirectional so relatedTo() resolves from either side. */
+  buildRelations(): void {
+    for (const entry of this.entries.values()) {
+      for (const relatedId of entry.relatedIds) {
+        const related = this.entries.get(relatedId);
+        if (related && !related.relatedIds.includes(entry.object.id)) {
+          related.relatedIds.push(entry.object.id);
+        }
+      }
+    }
   }
 
   /** Raw registry access, including undiscovered entries; used for internal engine lookups. */
@@ -112,6 +126,9 @@ for (const building of buildingDefinitions) {
     ...(building.effects.resourceDrain
       ? [building.effects.resourceDrain.resource]
       : []),
+    ...(building.effects.capacityProvided
+      ? [building.effects.capacityProvided.building]
+      : []),
   ];
 
   building.seen = building.available;
@@ -121,6 +138,8 @@ for (const building of buildingDefinitions) {
     relatedIds: [...new Set(relatedIds)],
   });
 }
+
+gamepedia.buildRelations();
 
 export const buildingsForResource = (
   resourceId: string,
