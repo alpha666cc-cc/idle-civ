@@ -257,6 +257,48 @@ type EncounterDefinition = {
 
 The game-length simulation should resolve encounters as they unlock so pacing estimates include combat.
 
+## Gameplay pacing reference — a 7-day first loop (for balancing, not a target)
+
+The length of the first loop is an *emergent property*, not a design parameter. This
+matrix is a **playstyle reference for the Balance agent**, not a plan and not a target.
+It assumes an **active-time-dominant** player who spends only a few minutes per session
+and otherwise lets the game sit (the 12-hour offline cap from the Milestone 3
+`E_off` mechanic is why the idle split works like this).
+
+| Age | Population window | Active play per age | Idle/real-wait per age | Night pauses | Cumulative real-world |
+| --- | --- | --- | --- | --- | --- |
+| 1 · Ancient | 1 → 1,000 | 30 min | 15 min | — | 45 min |
+| 2 · Iron | 1,000 → 10,000 | 20 min | 1 h 10 min | — | ~2.25 h |
+| 3 · Classical | 10,000 → 1,000,000 | 30 min | 3 h 30 min | +1 night (12 h cap) | ~16 h (end of Day 1) |
+| 4 · Middle Ages | 1,000,000 → 10,000,000 | 40 min | 11 h 20 min | +1 night | ~40 h (Day 2 → 3) |
+| 5 · Renaissance | 10,000,000 → 100,000,000 | 50 min | 23 h 10 min | +1 night | ~64 h (Day 3 → 4) |
+| 6 · Industrial | 100,000,000 → 1,000,000,000 | 60 min | 35 h 00 min | +2 nights (24 h) | ~124 h (Day 5 → 6) |
+| 7 · Modern/Space | 1,000,000,000 → 10,000,000,000 | 70 min | 42 h 50 min (cap of 12 h/day baked into the idle column) | +3 nights | ends ~Day 7 |
+
+Reading the matrix:
+
+- Active time per age grows by **10 minutes after Age 3**, holding total real-world time
+  near 7 days. This is the one tuning dial for play pace; everything else follows.
+- The idle columns assume the Milestone 3 **offline efficiency `E_off` (25–50%)** and the
+  **12-hour offline cap** — change `E_off` and the idle column collapses or stretches, and
+  the total loop length changes accordingly. So `E_off` is the *second* pacing dial.
+- The population windows here are the **age boundaries from the roadmap's 7-age model**, not
+  the per-battle `popMin`/`popMax` windows from `temp/campaign_v2.json` (those are a separate
+  pacing layer for battle entrance, handled by Milestone 8 and the pacing simulation).
+- Wolves (the `first-battle` encounter) indirectly affect this only by being a potential
+  session-loss event; the model above doesn't yet credit that. If wolves block ~1 night of
+  progress, add roughly one pause somewhere in Ages 2–4.
+
+Notes for the Balance agent:
+
+- This is a *scenario*, not the plan. The priority is that the loop feels right for a
+  first-time player, with the 10-billion goal as the first-loop end — not that it fit on
+  seven calendar days.
+- Active time per age and `E_off` are the two cross-cutting pacing dials. Pacing tests
+  (Milestone 10) should verify that the walker reaches 10 billion in a plausible session
+  budget without requiring the player to babysit the game through middle ages.
+
+
 Define minimum damage, armor interaction, attack cooldown, range rules, and target selection. Add deterministic tests for melee, ranged, armor, and defeated units before adding animations.
 
 ## Milestone 9: Research tree
