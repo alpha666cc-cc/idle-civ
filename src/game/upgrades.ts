@@ -15,9 +15,11 @@ import {
 import type { ResourceKey } from "./resources";
 
 /** Unlock conditions for upgrades (AGENTS.md §13.4). Sources own their id lists. */
-export type UpgradeUnlock =
-  | { source: "building-capacity"; building: BuildingKey; ratio: number }
-  | { source: "building-count"; building: BuildingKey; threshold: number };
+export type UpgradeUnlock = {
+  source: "building-count";
+  building: BuildingKey;
+  threshold: number;
+};
 
 /** A one-shot purchase that permanently applies its bonuses (limit of one). */
 export class UpgradeDefinition extends GameObject {
@@ -73,9 +75,9 @@ const enhancerTargets: EnhancerTarget[] = [
   },
 ];
 
-/** Building counts at which each enhancer tier unlocks (98% of the previous ×10 step). */
+/** Building counts at which each enhancer tier unlocks. */
 const ENHANCER_TIERS = [
-  10, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000,
+  9, 98, 980, 9_800, 98_000, 980_000, 9_800_000, 98_000_000,
 ];
 const ROMAN_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
@@ -92,7 +94,7 @@ const METALWORK_GATE_TIER = 3; // thresholds from 1000 on also cost metalwork
 const METALWORK_PLACEHOLDER_COST = ExpNumber.fromNumber(1000);
 
 const estimateWorkers = (resource: ResourceKey): number =>
-  resource === "food" ? 90 : 9;
+  resource === "food" ? 15 : 2;
 
 const enhancerCosts = (
   building: BuildingDefinition,
@@ -138,33 +140,23 @@ const enhancerBonuses = (
   return bonuses;
 };
 
-const enhancerDescription = (
-  label: string,
-  resource: ResourceKey,
-  tierIndex: number,
-): string => {
-  const threshold = ENHANCER_TIERS[tierIndex];
-  const costEffect =
-    threshold >= 1_000 && threshold < 1_000_000
-      ? `, ${label} cost −50%`
-      : threshold >= 1_000_000
-        ? `, ${label} growth factor −0.01`
-        : "";
-  return `${label}: capacity ×10 and ${resource} production ×2${costEffect}.`;
+const enhancerDescription = (label: string, resource: ResourceKey): string => {
+  return `increase ${label} capacity and ${resource} production`;
 };
 
-const enhancerUpgrades = enhancerTargets.flatMap(({ building, resource, label }) =>
-  ENHANCER_TIERS.map((threshold, tierIndex) => {
-    const roman = ROMAN_NUMERALS[tierIndex];
-    return new UpgradeDefinition(
-      `${building.key}-enhancer-${threshold}`,
-      `Enhanced ${label} ${roman}`,
-      enhancerDescription(label, resource, tierIndex),
-      enhancerCosts(building, tierIndex),
-      enhancerBonuses(building, resource, tierIndex),
-      { source: "building-capacity", building: building.key, ratio: 0.98 },
-    );
-  }),
+const enhancerUpgrades = enhancerTargets.flatMap(
+  ({ building, resource, label }) =>
+    ENHANCER_TIERS.map((threshold, tierIndex) => {
+      const roman = ROMAN_NUMERALS[tierIndex];
+      return new UpgradeDefinition(
+        `${building.key}-enhancer-${threshold}`,
+        `Enhanced ${label} ${roman}`,
+        enhancerDescription(label, resource),
+        enhancerCosts(building, tierIndex),
+        enhancerBonuses(building, resource, tierIndex),
+        { source: "building-count", building: building.key, threshold },
+      );
+    }),
 );
 
 export const upgradeDefinitions: UpgradeDefinition[] = [...enhancerUpgrades];

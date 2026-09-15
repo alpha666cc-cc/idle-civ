@@ -225,22 +225,10 @@ export class CivilizationState {
   isUpgradeUnlocked(upgradeId: string): boolean {
     const upgrade = upgradeDefinitions.find(({ key }) => key === upgradeId);
     if (!upgrade) return false;
-    switch (upgrade.unlock.source) {
-      case "building-capacity": {
-        const building = upgrade.unlock.building;
-        return (
-          this.buildingCount(building) >=
-          upgrade.unlock.ratio * this.getBuildingMax(building).toNumber()
-        );
-      }
-      case "building-count":
-        return (
-          this.buildingCount(upgrade.unlock.building) >=
-          upgrade.unlock.threshold
-        );
-      default:
-        return false;
-    }
+    return (
+      upgrade.unlock.source === "building-count" &&
+      this.buildingCount(upgrade.unlock.building) >= upgrade.unlock.threshold
+    );
   }
 
   isUpgradeBought(upgradeId: string): boolean {
@@ -252,8 +240,8 @@ export class CivilizationState {
   }
 
   hasResourcesForUpgrade(upgradeId: string): boolean {
-    return this.getUpgradeCost(upgradeId).every(
-      ({ resource, base }) => this.resources[resource].gte(base),
+    return this.getUpgradeCost(upgradeId).every(({ resource, base }) =>
+      this.resources[resource].gte(base),
     );
   }
 
@@ -346,7 +334,10 @@ export class CivilizationState {
       drain: [],
     };
     for (const [upgradeId, bonus] of this.boughtUpgradeBonuses()) {
-      if (bonus.type === "resourceMultiplier" && bonus.destination === resourceKey) {
+      if (
+        bonus.type === "resourceMultiplier" &&
+        bonus.destination === resourceKey
+      ) {
         upgradeFactors.multiplicative.push([upgradeId, bonus.value]);
       }
     }
@@ -373,7 +364,11 @@ export class CivilizationState {
         ...buildingFactors.multiplicative,
         ...upgradeFactors.multiplicative,
       ],
-      drain: [...factors.drain, ...buildingFactors.drain, ...upgradeFactors.drain],
+      drain: [
+        ...factors.drain,
+        ...buildingFactors.drain,
+        ...upgradeFactors.drain,
+      ],
     };
   }
 
@@ -415,7 +410,10 @@ export class CivilizationState {
     // multiplier (§13.7 decision 3 — capacity keeps its own representation).
     let max = this.resources[capacity];
     for (const [, bonus] of this.boughtUpgradeBonuses()) {
-      if (bonus.type === "resourceMultiplier" && bonus.destination === capacity) {
+      if (
+        bonus.type === "resourceMultiplier" &&
+        bonus.destination === capacity
+      ) {
         max = max.mul(bonus.value);
       }
     }
@@ -480,12 +478,11 @@ export class CivilizationState {
         // flat reduction for every unclamped unit. For large counts the precise
         // per-item ceil barely matters vs the formula, so we round up at the end.
         const seriesFirst = firstGross.mul(unitFactor.pow(clamped));
-        const grossSum =
-          unitFactor.gt(ExpNumber.ONE)
-            ? seriesFirst
-                .mul(unitFactor.pow(remaining).sub(ExpNumber.ONE))
-                .div(unitFactor.sub(ExpNumber.ONE))
-            : seriesFirst.mul(ExpNumber.fromNumber(remaining));
+        const grossSum = unitFactor.gt(ExpNumber.ONE)
+          ? seriesFirst
+              .mul(unitFactor.pow(remaining).sub(ExpNumber.ONE))
+              .div(unitFactor.sub(ExpNumber.ONE))
+          : seriesFirst.mul(ExpNumber.fromNumber(remaining));
         total = ExpNumber.max(
           ExpNumber.ZERO,
           grossSum.sub(reductions.flat.mul(ExpNumber.fromNumber(remaining))),
@@ -710,9 +707,7 @@ export class CivilizationState {
     return this.boughtUpgrades.flatMap((upgradeId) =>
       (
         upgradeDefinitions.find(({ key }) => key === upgradeId)?.bonuses ?? []
-      ).map(
-        (bonus) => [upgradeId, bonus] as [upgradeId: string, bonus: Bonus],
-      ),
+      ).map((bonus) => [upgradeId, bonus] as [upgradeId: string, bonus: Bonus]),
     );
   }
 

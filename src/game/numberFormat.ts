@@ -10,11 +10,7 @@
 
 import { ExpNumber } from "./expNumber";
 
-export type NumberFormat =
-  | "scientific"
-  | "engineering"
-  | "named"
-  | "compact";
+export type NumberFormat = "scientific" | "engineering" | "named" | "compact";
 
 const NAMED_SUFFIXES = [
   "",
@@ -79,7 +75,12 @@ export function compactSuffix(tier: number): string {
 }
 
 function scaled(fraction: number): string {
-  return fraction.toFixed(2);
+  const rounded = Number(fraction.toFixed(2));
+  const nearestInt = Math.round(rounded);
+  if (Math.abs(rounded - nearestInt) < 1e-9) {
+    return String(nearestInt);
+  }
+  return rounded.toString();
 }
 
 /**
@@ -104,17 +105,20 @@ export function formatNumber(
   value: ExpNumber | number,
   format: NumberFormat,
 ): string {
-  const expValue = value instanceof ExpNumber ? value : ExpNumber.fromNumber(value);
+  const expValue =
+    value instanceof ExpNumber ? value : ExpNumber.fromNumber(value);
   if (!expValue.isFinite) return expValue.toString();
   if (expValue.isZero) return "0";
 
   const negative = expValue.sign < 0;
   const abs = expValue.abs();
   const exponent = abs.exponent;
-  // Matches the historical floor-to-zero rule: |value| < 1 displays as "0".
-  if (exponent < 0) return "0";
   const mantissa = abs.mantissa;
   const withSign = (text: string): string => (negative ? `-${text}` : text);
+
+  if (exponent < 0 || exponent === 0) {
+    return withSign(scaled(abs.toNumber()));
+  }
 
   switch (format) {
     case "scientific": {
@@ -130,17 +134,18 @@ export function formatNumber(
 
     case "named": {
       const tier = Math.floor(exponent / 3);
-      if (tier <= 0) return withSign(String(Math.floor(abs.toNumber())));
+      if (tier <= 0) return withSign(scaled(abs.toNumber()));
       const suffix = NAMED_SUFFIXES[tier] ?? columnLetters(tier);
       const display = mantissa * 10 ** (exponent - tier * 3);
-      return withSign(`${scaled(display)}${suffix}`);
+      return withSign(`${scaled(Number(display.toFixed(2)))}${suffix}`);
     }
 
     case "compact": {
       const tier = Math.floor(exponent / 3);
-      if (tier <= 0) return withSign(String(Math.floor(abs.toNumber())));
+      if (tier <= 0) return withSign(scaled(abs.toNumber()));
+      const suffix = compactSuffix(tier);
       const display = mantissa * 10 ** (exponent - tier * 3);
-      return withSign(`${scaled(display)}${compactSuffix(tier)}`);
+      return withSign(`${scaled(Number(display.toFixed(2)))}${suffix}`);
     }
   }
 }

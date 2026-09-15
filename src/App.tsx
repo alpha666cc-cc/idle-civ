@@ -188,6 +188,11 @@ function App() {
   const [autoAssignWorkers, setAutoAssignWorkers] = useState(false);
 
   const fmt = (n: ExpNumber | number) => formatNumber(n, numberFormat);
+  const fmtSummary = (n: ExpNumber | number): string => {
+    const value = n instanceof ExpNumber ? n : ExpNumber.fromNumber(n);
+    if (!Number.isFinite(value.toNumber())) return fmt(value);
+    return String(Math.round(value.toNumber()));
+  };
 
   const {
     resources: resourceAmounts,
@@ -314,7 +319,8 @@ function App() {
 
   const visibleTabs = tabs.filter(({ label }) => {
     if (label === "Army") return gameState.isBuildingAvailable("barracks");
-    if (label === "Research") return gameState.isBuildingAvailable("university");
+    if (label === "Research")
+      return gameState.isBuildingAvailable("university");
     return true;
   });
 
@@ -343,12 +349,13 @@ function App() {
       const target = building ? building.name : String(bonus.destination);
       if (bonus.type === "costReductionPercent") {
         const percent =
-          Math.round(bonus.value.mul(ExpNumber.fromNumber(100)).toNumber() * 10) /
-          10;
+          Math.round(
+            bonus.value.mul(ExpNumber.fromNumber(100)).toNumber() * 10,
+          ) / 10;
         return `${target} cost −${percent}%`;
       }
       if (bonus.type === "costReductionFactor") {
-        return `${target} growth factor −${bonus.value.toString()}`;
+        return `${target} growth factor −${fmt(bonus.value)}`;
       }
       if (bonus.type === "costReductionFlat") {
         return `${target} cost −${fmt(bonus.value)}`;
@@ -443,11 +450,11 @@ function App() {
                   <span>{label}</span>
                   <strong>
                     {key === "population"
-                      ? `${availableWorkers}/${fmt(population)}`
-                      : fmt(resourceAmounts[key])}
+                      ? `${fmtSummary(availableWorkers)}/${fmtSummary(population)}`
+                      : fmtSummary(resourceAmounts[key])}
                   </strong>
                   {key === "population" && (
-                    <small>capacity {fmt(maximumPopulation)}</small>
+                    <small>capacity {fmtSummary(maximumPopulation)}</small>
                   )}
                 </div>
               </button>

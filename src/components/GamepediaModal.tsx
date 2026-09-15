@@ -122,10 +122,7 @@ export default function GamepediaModal({
   numberFormat,
 }: GamepediaModalProps) {
   const formatAmount = (amount: ExpNumber | number): string =>
-    formatNumber(
-      amount instanceof ExpNumber ? amount.floor() : Math.floor(amount),
-      numberFormat,
-    );
+    formatNumber(amount, numberFormat);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] =
     useState<GamepediaCategory>("resource");
@@ -251,15 +248,18 @@ export default function GamepediaModal({
               <div className="gamepedia-effect-copy">
                 {renderReference(effects.resourceMultiplier.resource)}
                 <span className="gamepedia-effect-meta">
-                  ×{formatAmount(effects.resourceMultiplier.factor)} gain per building
+                  ×
+                  {formatNumber(
+                    effects.resourceMultiplier.factor,
+                    numberFormat,
+                  )}{" "}
+                  gain per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
                 ×
                 {formatNumber(
-                  effects.resourceMultiplier.factor
-                    .pow(count)
-                    .floor(),
+                  effects.resourceMultiplier.factor.pow(count),
                   numberFormat,
                 )}{" "}
                 now
@@ -276,9 +276,7 @@ export default function GamepediaModal({
               </div>
               <strong className="gamepedia-effect-total">
                 {formatAmount(
-                  effects.resourceDrain.amount.mul(
-                    ExpNumber.fromNumber(count),
-                  ),
+                  effects.resourceDrain.amount.mul(ExpNumber.fromNumber(count)),
                 )}
                 /sec now
               </strong>
@@ -297,8 +295,9 @@ export default function GamepediaModal({
               <strong className="gamepedia-effect-total">
                 +
                 {formatAmount(
-                  effects.capacityProvided.perBuilding
-                  .mul(ExpNumber.fromNumber(count)),
+                  effects.capacityProvided.perBuilding.mul(
+                    ExpNumber.fromNumber(count),
+                  ),
                 )}{" "}
                 now
               </strong>
@@ -387,7 +386,9 @@ export default function GamepediaModal({
               {hasWorkers && workerProduction !== undefined && (
                 <div className="gamepedia-stat">
                   <span>Workers</span>
-                  <strong>{workerProduction.workers.toString()}</strong>
+                  <strong>
+                    {formatNumber(workerProduction.workers, numberFormat)}
+                  </strong>
                 </div>
               )}
               {workerProduction !== undefined && (
@@ -502,12 +503,57 @@ export default function GamepediaModal({
 
   const renderUpgradeDetail = (entry: GamepediaEntry) => {
     const upgrade = entry.object as UpgradeDefinition;
+    const bonusLabel = (bonus: UpgradeDefinition["bonuses"][number]) => {
+      const destinationId = String(bonus.destination);
+      const destinationEntry = gamepedia.get(destinationId);
+      const destinationName = destinationEntry
+        ? displayName(destinationEntry.object)
+        : destinationId;
+
+      switch (bonus.type) {
+        case "resourceMultiplier":
+          return `${destinationName} production`;
+        case "costReductionPercent":
+          return `${destinationName} cost`;
+        case "costReductionFactor":
+          return `${destinationName} growth factor`;
+        case "costReductionFlat":
+          return `${destinationName} cost`;
+        case "costReductionBase":
+          return `${destinationName} base cost`;
+        default:
+          return destinationName;
+      }
+    };
+
+    const bonusValue = (bonus: UpgradeDefinition["bonuses"][number]) => {
+      switch (bonus.type) {
+        case "resourceMultiplier":
+          return `×${formatNumber(bonus.value, numberFormat)}`;
+        case "costReductionPercent":
+          return `−${formatNumber(
+            bonus.value.mul(ExpNumber.fromNumber(100)),
+            numberFormat,
+          )}%`;
+        case "costReductionFactor":
+          return `−${formatNumber(bonus.value, numberFormat)}`;
+        case "costReductionFlat":
+          return `−${formatNumber(bonus.value, numberFormat)}`;
+        case "costReductionBase":
+          return `−${formatNumber(bonus.value, numberFormat)}`;
+        default:
+          return formatNumber(bonus.value, numberFormat);
+      }
+    };
+
     return (
       <div className="gamepedia-detail">
         {renderDetailHeader(entry)}
         <p className="gamepedia-detail-description">
           {entry.object.description}
         </p>
+
+        <p className="gamepedia-category">Cost</p>
         <div className="gamepedia-stats">
           {upgrade.costs.map(({ resource, base }) => (
             <div className="gamepedia-stat" key={resource}>
@@ -516,6 +562,26 @@ export default function GamepediaModal({
             </div>
           ))}
         </div>
+
+        <p className="gamepedia-category">Effects</p>
+        <div className="gamepedia-effect-list">
+          {upgrade.bonuses.map((bonus, index) => (
+            <div
+              className="gamepedia-effect-row"
+              key={`${bonus.type}-${bonus.destination}-${index}`}
+            >
+              <div className="gamepedia-effect-copy">
+                <span className="gamepedia-effect-meta">
+                  {bonusLabel(bonus)}
+                </span>
+              </div>
+              <strong className="gamepedia-effect-total">
+                {bonusValue(bonus)}
+              </strong>
+            </div>
+          ))}
+        </div>
+
         {renderRelated(entry)}
       </div>
     );
@@ -624,5 +690,3 @@ export default function GamepediaModal({
     </div>
   );
 }
-
-

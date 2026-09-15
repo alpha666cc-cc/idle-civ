@@ -15,6 +15,7 @@ export type BuildingKey =
 import type { ResourceKey } from "./resources";
 import { GameObject } from "./gameObject";
 import { ExpNumber } from "./expNumber";
+import { formatNumber } from "./numberFormat";
 
 export type BuildingCost = {
   resource: ResourceKey;
@@ -80,7 +81,7 @@ export class BuildingDefinition extends GameObject {
 
   formatCost(buildingsAlreadyBuilt: number): string {
     return this.costAt(buildingsAlreadyBuilt)
-      .map(({ resource, base }) => `${base.toString()} ${resource}`)
+      .map(({ resource, base }) => `${formatNumber(base, "named")} ${resource}`)
       .join(" + ");
   }
 }
@@ -102,7 +103,12 @@ export const buildingDefinitions: BuildingDefinition[] = [
     [{ resource: "wood", base: ExpNumber.fromNumber(10), factor: 1.3 }],
     true,
     10,
-    { capacityProvided: { building: "people", perBuilding: ExpNumber.fromNumber(10) } },
+    {
+      capacityProvided: {
+        building: "people",
+        perBuilding: ExpNumber.fromNumber(10),
+      },
+    },
   ),
   new BuildingDefinition(
     "farm",
@@ -114,7 +120,12 @@ export const buildingDefinitions: BuildingDefinition[] = [
     ],
     true,
     10,
-    { resourceMultiplier: { resource: "food", factor: ExpNumber.fromNumber(1.1) } },
+    {
+      resourceMultiplier: {
+        resource: "food",
+        factor: ExpNumber.fromNumber(1.1),
+      },
+    },
   ),
   new BuildingDefinition(
     "lumber-yard",
@@ -126,7 +137,12 @@ export const buildingDefinitions: BuildingDefinition[] = [
     ],
     true,
     10,
-    { resourceMultiplier: { resource: "wood", factor: ExpNumber.fromNumber(1.1) } },
+    {
+      resourceMultiplier: {
+        resource: "wood",
+        factor: ExpNumber.fromNumber(1.1),
+      },
+    },
   ),
   new BuildingDefinition(
     "quarry",
@@ -135,7 +151,12 @@ export const buildingDefinitions: BuildingDefinition[] = [
     [{ resource: "stone", base: ExpNumber.fromNumber(20), factor: 1.3 }],
     true,
     10,
-    { resourceMultiplier: { resource: "stone", factor: ExpNumber.fromNumber(1.1) } },
+    {
+      resourceMultiplier: {
+        resource: "stone",
+        factor: ExpNumber.fromNumber(1.1),
+      },
+    },
   ),
   new BuildingDefinition(
     "gold-mine",
@@ -147,7 +168,12 @@ export const buildingDefinitions: BuildingDefinition[] = [
     ],
     true,
     10,
-    { resourceMultiplier: { resource: "gold", factor: ExpNumber.fromNumber(1.1) } },
+    {
+      resourceMultiplier: {
+        resource: "gold",
+        factor: ExpNumber.fromNumber(1.1),
+      },
+    },
   ),
   new BuildingDefinition(
     "market",
@@ -170,7 +196,12 @@ export const buildingDefinitions: BuildingDefinition[] = [
     ],
     true,
     10,
-    { capacityProvided: { building: "house", perBuilding: ExpNumber.fromNumber(10) } },
+    {
+      capacityProvided: {
+        building: "house",
+        perBuilding: ExpNumber.fromNumber(10),
+      },
+    },
   ),
   new BuildingDefinition(
     "smithy",
