@@ -21,10 +21,14 @@ import {
 import type { LucideIcon } from "lucide-react";
 import GamepediaModal from "./components/GamepediaModal";
 import { buildingDefinitions } from "./game/buildings";
+import type { Bonus } from "./game/bonus";
 import { CivilizationState } from "./game/civilizationState";
 import { ExpNumber } from "./game/expNumber";
+import { gamepedia } from "./game/gamepedia";
+import { upgradeDefinitions, type UpgradeDefinition } from "./game/upgrades";
 import { formatNumber, type NumberFormat } from "./game/numberFormat";
 import {
+  capacityDefinitions,
   resourceDefinitions,
   type ProductionResourceKey,
   type ResourceKey,
@@ -57,7 +61,6 @@ type BuildingPresentation = {
   description: string;
   icon: LucideIcon;
   tone: string;
-  available: boolean;
 };
 
 const tabs: { label: Tab; icon: LucideIcon }[] = [
@@ -103,6 +106,8 @@ const summaryResources: SummaryResource[] = [
   { key: "stone", label: "Stone", icon: Pickaxe, tone: "slate" },
   { key: "gold", label: "Gold", icon: Coins, tone: "amber" },
   { key: "science", label: "Science", icon: Sparkles, tone: "violet" },
+  { key: "military", label: "Military", icon: Swords, tone: "blue" },
+  { key: "metalwork", label: "Metalwork", icon: Hammer, tone: "orange" },
 ];
 
 const numberFormatStorageKey = "idle-civ:number-format";
@@ -149,7 +154,6 @@ const buildings: BuildingPresentation[] = buildingDefinitions.map(
     key: building.key,
     name: building.name,
     description: building.description,
-    available: building.available,
     ...buildingPresentation[building.key],
   }),
 );
@@ -205,6 +209,15 @@ function App() {
     return () => window.clearInterval(timer);
   }, [autoBuyBuildings, autoAssignWorkers]);
 
+  // Reveal upgrades in the Gamepedia the moment their unlock condition fires.
+  useEffect(() => {
+    for (const upgrade of upgradeDefinitions) {
+      if (gameState.isUpgradeUnlocked(upgrade.key)) {
+        gamepedia.reveal(upgrade.key);
+      }
+    }
+  }, [gameState]);
+
   useEffect(() => {
     try {
       window.localStorage.setItem(numberFormatStorageKey, numberFormat);
@@ -234,7 +247,7 @@ function App() {
   };
 
   const buyBuilding = (building: BuildingPresentation) => {
-    if (!building.available) {
+    if (!gameState.isBuildingAvailable(building.key)) {
       setNotice(`${building.name} will unlock as your civilization advances.`);
       return;
     }
@@ -299,6 +312,77 @@ function App() {
     setGamepediaOpen(true);
   };
 
+  const visibleTabs = tabs.filter(({ label }) => {
+    if (label === "Army") return gameState.isBuildingAvailable("barracks");
+    if (label === "Research") return gameState.isBuildingAvailable("university");
+    return true;
+  });
+
+  const unlockedUpgrades = upgradeDefinitions.filter(
+    (upgrade) =>
+      gameState.isUpgradeUnlocked(upgrade.key) &&
+      !gameState.isUpgradeBought(upgrade.key),
+  );
+
+  const describeUpgradeBonus = (bonus: Bonus): string => {
+    if (bonus.type === "resourceMultiplier") {
+      const capacity = capacityDefinitions.find(
+        ({ key }) => key === bonus.destination,
+      );
+      if (capacity) return `${capacity.label} ×${fmt(bonus.value)}`;
+      const resource = resourceDefinitions.find(
+        ({ key }) => key === bonus.destination,
+      );
+      if (resource) return `${resource.label} production ×${fmt(bonus.value)}`;
+      return `${bonus.destination} ×${fmt(bonus.value)}`;
+    }
+    if (bonus.type.startsWith("costReduction")) {
+      const building = buildingDefinitions.find(
+        ({ key }) => key === bonus.destination,
+      );
+      const target = building ? building.name : String(bonus.destination);
+      if (bonus.type === "costReductionPercent") {
+        const percent =
+          Math.round(bonus.value.mul(ExpNumber.fromNumber(100)).toNumber() * 10) /
+          10;
+        return `${target} cost −${percent}%`;
+      }
+      if (bonus.type === "costReductionFactor") {
+        return `${target} growth factor −${bonus.value.toString()}`;
+      }
+      if (bonus.type === "costReductionFlat") {
+        return `${target} cost −${fmt(bonus.value)}`;
+      }
+      return `${target} base cost −${fmt(bonus.value)}`;
+    }
+    return bonus.type;
+  };
+
+  const buyUpgrade = (upgrade: UpgradeDefinition) => {
+    const failureReason = gameState.getUpgradeFailureReason(upgrade.key);
+    if (failureReason === "locked") {
+      setNotice(`${upgrade.name} is not unlocked yet.`);
+      return;
+    }
+    if (failureReason === "resources") {
+      setNotice(
+        <span>
+          You need more resources for {upgrade.name}.{" "}
+          <button
+            type="button"
+            className="notice-link"
+            onClick={() => setActiveTab("Production")}
+          >
+            Go to Production tab &rarr;
+          </button>
+        </span>,
+      );
+      return;
+    }
+    setGameState((current) => current.buyUpgrade(upgrade.key));
+    setNotice(`${upgrade.name} adopted. Your civilization advances.`);
+  };
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -325,7 +409,7 @@ function App() {
 
         <nav className="tab-list" aria-label="Main game sections">
           <span className="nav-caption">Civilization</span>
-          {tabs.map(({ label, icon: Icon }) => (
+          {visibleTabs.map(({ label, icon: Icon }) => (
             <button
               className={`tab-button ${activeTab === label ? "active" : ""}`}
               key={label}
@@ -498,10 +582,42 @@ function App() {
                   <h3>Upgrades</h3>
                 </div>
               </div>
-              <p className="tab-placeholder-copy">
-                Building upgrades and capacity expansions will unlock as your
-                settlement advances.
-              </p>
+              {unlockedUpgrades.length === 0 ? (
+                <p className="tab-placeholder-copy">
+                  Building upgrades and capacity expansions will unlock as your
+                  settlement advances.
+                </p>
+              ) : (
+                <div className="upgrade-grid">
+                  {unlockedUpgrades.map((upgrade) => (
+                    <div className="upgrade-card" key={upgrade.key}>
+                      <div className="upgrade-heading">
+                        <strong>{upgrade.name}</strong>
+                        <small>{upgrade.description}</small>
+                      </div>
+                      <ul className="upgrade-effects">
+                        {upgrade.bonuses.map((bonus, index) => (
+                          <li key={index}>{describeUpgradeBonus(bonus)}</li>
+                        ))}
+                      </ul>
+                      <div className="upgrade-cost">
+                        {upgrade.costs.map(({ resource, base }) => (
+                          <span key={resource}>
+                            {fmt(base)} {resource}
+                          </span>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        className="upgrade-buy"
+                        onClick={() => buyUpgrade(upgrade)}
+                      >
+                        Adopt upgrade
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 
@@ -563,7 +679,9 @@ function App() {
             ).length;
             return (
               <button
-                className={`building-card ${!building.available ? "locked" : ""}`}
+                className={`building-card ${
+                  !gameState.isBuildingAvailable(building.key) ? "locked" : ""
+                }`}
                 key={building.name}
                 onClick={() => buyBuilding(building)}
               >

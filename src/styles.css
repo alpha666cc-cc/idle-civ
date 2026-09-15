@@ -703,6 +703,59 @@ button:focus-visible {
   font-size: 12px;
   line-height: 1.5;
 }
+.upgrade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.upgrade-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #d9ddd3;
+  background: #f8f8f2;
+}
+.upgrade-heading strong {
+  font-size: 14px;
+}
+.upgrade-heading small {
+  display: block;
+  margin-top: 2px;
+  color: #6a796e;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.upgrade-effects {
+  margin: 0;
+  padding-left: 16px;
+  color: #2c3830;
+  font-size: 12px;
+}
+.upgrade-cost {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #59606a;
+  font: 11px "DM Mono", monospace;
+}
+.upgrade-buy {
+  align-self: flex-start;
+  padding: 6px 10px;
+  border: 1px solid #aabe69;
+  color: #38481f;
+  background: #eef3dd;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.upgrade-buy:hover {
+  background: #e3ecd2;
+  border-color: #8fa653;
+}
 .buildings-panel {
   padding: 38px 22px 24px;
   background: #f0f0e8;

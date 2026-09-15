@@ -19,6 +19,8 @@ export type ResourceKey =
   | ProductionResourceKey
   | "population"
   | "science"
+  | "military"
+  | "metalwork"
   | CapacityResourceKey;
 
 export class ResourceDefinition extends GameObject {
@@ -46,6 +48,11 @@ export const populationDefinition = new ResourceDefinition(
   "Population",
 );
 export const scienceDefinition = new ResourceDefinition("science", "Science");
+export const militaryDefinition = new ResourceDefinition("military", "Military");
+export const metalworkDefinition = new ResourceDefinition(
+  "metalwork",
+  "Metalwork",
+);
 
 export const capacityDefinitions: ResourceDefinition[] = [
   new ResourceDefinition("peopleCapacity", "People Capacity"),
@@ -61,6 +68,17 @@ export const capacityDefinitions: ResourceDefinition[] = [
   new ResourceDefinition("universityCapacity", "University Capacity"),
   new ResourceDefinition("monumentCapacity", "Monument Capacity"),
 ];
+
+/** Resources whose amount accrues per tick: worker production + building output. */
+export const producerResourceKeys: ResourceKey[] = [
+  ...resourceDefinitions.map(({ key }) => key),
+  scienceDefinition.key,
+  militaryDefinition.key,
+  metalworkDefinition.key,
+];
+
+export const isCapacityResourceKey = (key: string): key is CapacityResourceKey =>
+  capacityDefinitions.some(({ key: capacityKey }) => capacityKey === key);
 
 export type ResourceAmounts = Record<ResourceKey, ExpNumber>;
 export type WorkerAssignments = Record<ProductionResourceKey, ExpNumber>;
@@ -86,6 +104,8 @@ export const emptyResourceAmounts = (): ResourceAmounts => ({
   gold: ExpNumber.ZERO,
   population: ExpNumber.ZERO,
   science: ExpNumber.ZERO,
+  military: ExpNumber.ZERO,
+  metalwork: ExpNumber.ZERO,
   peopleCapacity: ExpNumber.ZERO,
   houseCapacity: ExpNumber.fromNumber(10),
   farmCapacity: ExpNumber.fromNumber(10),
@@ -114,6 +134,8 @@ export const emptyResourceFactors = (): ResourceFactorMap => ({
   gold: { additional: [], multiplicative: [], drain: [] },
   population: { additional: [], multiplicative: [], drain: [] },
   science: { additional: [], multiplicative: [], drain: [] },
+  military: { additional: [], multiplicative: [], drain: [] },
+  metalwork: { additional: [], multiplicative: [], drain: [] },
   peopleCapacity: { additional: [], multiplicative: [], drain: [] },
   houseCapacity: { additional: [], multiplicative: [], drain: [] },
   farmCapacity: { additional: [], multiplicative: [], drain: [] },

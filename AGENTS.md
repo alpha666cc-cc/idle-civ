@@ -28,10 +28,17 @@ toward a 10-billion population and an interstellar colony ship
 - **Branch:** `main`. 50 tracked files. Current HEAD is a battle prototype commit.
 - **Current state:** one screen; economy (resources, workers, buildings, capacities,
   Gamepedia modal, number-format preference, dev tools auto-clicker/auto-buy/auto-assign).
-  **Not yet implemented:** saves, ages, research, upgrades, the bonus system, achievements,
-  combat, statistics, offline progress. `temp/` holds exploratory combat prototypes that
-  are not compiled and not wired into the app. Planned design for bonuses, buyables and
-  upgrades: **§13**.
+  **Implemented (bonus/upgrade slice):** the `Bonus` type (`src/game/bonus.ts`),
+  resource-targeted bonuses (`resourceMultiplier` on production resources and
+  capacities), the cost-reduction path in `getBuildingCost()` (enhancer tiers 3–8 use
+  `costReductionPercent`/`costReductionFactor` on their building), the
+  `UpgradeDefinition` registry with the 32 production-enhancer tiers
+  (`src/game/upgrades.ts`), the Upgrades tab, unlock-gated buildings (barracks at 5
+  town halls; smithy battle-gated; university at 20) and the `military`/`metalwork`
+  resources. **Not yet implemented:** saves, ages, research, achievements, combat,
+  statistics, offline progress, `costReductionBase`/`costReductionFlat` data. `temp/`
+  holds exploratory combat prototypes that are not compiled and not wired into the app.
+  Full bonus/buyable/upgrade design: **§13**.
 - **Current implementation target: the first loop** — one playthrough from Ancient through
   the 10-billion population goal and the colony-ship launch. Prestige is deliberately
   **deferred**; only its design constraints are honoured now (§13.7).
@@ -197,7 +204,10 @@ drains 1 food/sec each), `house`, `farm`, `lumber-yard`, `quarry`, `gold-mine`,
 
 Current data conventions: production buildings give `resourceMultiplier` `×1.1` each;
 `house` gives `+10 peopleCapacity`; `town-hall` gives `+10 houseCapacity`;
-`barracks`/`university`/`market`/`smithy`/`monument` have no effects yet.
+`smithy`/`barracks`/`university` each produce 1/sec of `metalwork`/`military`/`science`
+(`resourceProduction`) and carry unlock gates — smithy on the `first-battle` encounter
+(placeholder, no battles yet), barracks at 5 town halls, university at 20.
+`market`/`monument` have no effects; monument stays `available: false`.
 
 `effects` is a **per-building stopgap**. The target model is a shared
 `bonuses: Bonus[]` list whose destinations are resources *or* buyables (buildings and
@@ -505,19 +515,25 @@ with a roadmap entry already assigned.
   only persisted value is the number format. Any real persistence must be versioned and
   validated (roadmap Milestone 3: JSON primary, XML/Base64 interchanges, migrations,
   offline progress).
-- **`Army` and `Research` tabs render nothing**, `Upgrades` is placeholder copy, and the
-  Gamepedia `upgrade` / `research` / `combat` categories have no data.
+- **`Army` and `Research` tabs stay hidden until their gates fire** (barracks unlocks at
+  5 town halls; university at 20 — currently unreachable since town-hall capacity is 10)
+  **and render no content**. The Upgrades tab lists unlocked enhancer tiers; the
+  Gamepedia `research` / `combat` categories still have no data.
 - **The era card is hardcoded** ("Neolithic Dawn", "Year 12", "68% to Bronze Age"). It
   does not match the seven-age model in the roadmap (Ancient → Modern/Space keyed on
   powers of ten). Treat it as a mock-up: do not build logic on those strings.
-- **Existing but unused:** `public/icons.svg`, the `Barracks`/`Smithy`/`Market`/
-  `University` building effects, `science` production (no building produces it yet).
-- **The bonus/upgrade system does not exist.** `BuildingEffects` is a per-building
-  stopgap for what is planned as a shared `bonus` model (§13); `military` and `metalwork`
-  resources, unit definitions, upgrade definitions and the `seen`/`unlocked`/`bought`
-  lifecycle are all unbuilt. The `Upgrades` tab is placeholder copy and the relevant
-  Gamepedia categories are empty. Do not half-build it: the design is recorded in §13, and
-  its decisions and deferred items are in §13.7.
+- **Existing but unused:** `public/icons.svg`, the `Market`/`Monument` building effects
+  (both still have no effects).
+- **The bonus/upgrade system is only partially built** (§13). Implemented: the `Bonus`
+  type, `resourceMultiplier` application (production resources via `getFactors()`,
+  capacities via `getBuildingMax()`), `UpgradeDefinition` + the 32 enhancer tiers, the
+  `seen` → Gamepedia reveal, the Upgrades tab, building unlock gates and
+  `military`/`metalwork`, and the cost-reduction pipeline in `getBuildingCost()`
+  (`costReductionPercent`/`costReductionFactor` are used by enhancer tiers 3–8).
+  **Still unbuilt:** `resourceFlat`/`resourceDrain` bonus data,
+  `costReductionBase`/`costReductionFlat` data (the engine path exists), unit
+  definitions, research/achievement/battle unlock sources (the smithy battle gate
+  cannot fire yet).
 - **`temp/battle.ts`, `temp/campaign.json`, `temp/units100.json`** are exploration
   artifacts for the future combat system. They are not compiled, not linted, not
   imported, and not consistent with the roadmap's `UnitDefinition` shape. Do not import
@@ -581,7 +597,7 @@ Full detail in `docs/roadmap.md`; this is orientation only.
 | 4 — Action multiplier (1 / 10 / MAX) | **Partly done** — the UI has 1, 10, powers of ten and Max; the engine has `getMaxAffordableBuildings()` and clamped worker commands, but no shared `getActionQuantity()` |
 | 5 — Statistics | **Not started** |
 | 6 — Achievements | **Not started** |
-| 7 — Upgrades | **Seams ready** (`addFactor`, `upgradeBuildingLimit`, `upgradeBuildingCosts`, `buildingCostOverrides`); no data or UI. Target model — including the shared bonus system that upgrades will apply — is specified in **§13** |
+| 7 — Upgrades | **First slice done** — bonus type, 32 enhancer upgrades (capacity/production, plus cost reductions on tiers 3–8), Upgrades tab, unlock-gated buildings, cost-reduction engine path. Flat/drain/base bonus data and research/achievement/battle sources still pending; full model in **§13** |
 | 8 — Battle system | **Prototype only** (`temp/`) |
 | 9 — Research tree | **Not started** |
 | 10 — Game-length simulation | **Not started** |
@@ -633,13 +649,18 @@ A change is done when:
 
 ---
 
-## 13. Planned design: bonuses, buyables and upgrades (NOT IMPLEMENTED)
+## 13. Bonuses, buyables and upgrades
 
-> **Status: design intent only.** None of this is in the code yet. It is recorded here
-> because it defines the target shape of `effects`, the Upgrades tab, unit costs and the
-> resource taxonomy. Do not describe it as current behaviour, do not assume a symbol
-> exists because it is named here, and check §13.7 for what is decided versus what is
-> deferred before building on it.
+> **Status: partially implemented.** In the code: the `Bonus` union and factories
+> (`src/game/bonus.ts`), `resourceMultiplier` application (production resources in
+> `getFactors()`, capacities in `getBuildingMax()`), the cost-reduction pipeline in
+> `getBuildingCost()` (`costReductionPercent`/`costReductionFactor` are used by the
+> enhancer tiers), the `UpgradeDefinition` registry with the 32 production-enhancer
+> tiers (`src/game/upgrades.ts`), the Upgrades tab, and the building unlock gates.
+> Still design-only: `resourceFlat`/`resourceDrain` and `costReductionBase`/`Flat`
+> data, research/units/encounters, achievements and all prestige semantics. Check the
+> engine before assuming a symbol exists, and §13.7 for what is decided versus
+> deferred.
 
 > **Scope: the first loop comes first.** The immediate target is one playthrough — Ancient
 > through the 10-billion population goal and the colony-ship launch. **Prestige is deferred
@@ -698,6 +719,16 @@ type are all treated equally. Type order is **fixed** (`flat → mult → drain`
 declaration order. If growth ever runs away, an optional `group` field is the escape
 hatch — do not add it pre-emptively.
 
+**Cost-reduction stacking (decided, §13.6).** Per buyable, the four types are collected
+from all bought sources and applied per unit in the fixed order
+`base → factor → percent → flat`: `base` reductions **sum** (floor 0), `factor`
+reductions **sum** (floor 1 — below 1, later buildings would cost less than earlier
+ones), `percent` reductions **compound** as `Π(1 − N)` with each source clamped at a
+0 floor, and `flat` reductions **sum** and absorb each unit's cost after the percent
+step, clamped at 0 per unit. The enhancer upgrades use this: tiers 3–5 each add
+`costReductionPercent` 0.5 (compounding to ÷8) and tiers 6–8 each add
+`costReductionFactor` 0.01 on their building.
+
 Because a bonus names its destination, and building/unit ids are Gamepedia ids, a bonus
 list is also a **relation graph**: it feeds `GamepediaEntry.relatedIds` the same way
 building costs and effects do today (§4.6/§4.7). Design them so the Gamepedia can render
@@ -734,10 +765,10 @@ Per-unit was chosen over applying reductions to the bulk total because:
 
 Reconciliation with the code as it stands:
 
-- Only `wood`, `food`, `gold`, `stone` exist as production resources, and only `science`
-  exists out of the building resources — **`military` and `metalwork` are new**. Adding a
-  production-style resource is recipe §8.2; `science` currently has no producer at all
-  (`university` has no effects yet), which is a known gap.
+- Production resources are `wood`, `food`, `gold`, `stone`; the building resources
+  `science`/`military`/`metalwork` all exist now (university/barracks/smithy each
+  produce 1/sec via `resourceProduction`). Adding a production-style resource is recipe
+  §8.2.
 - Capacities are already modelled as resources (`CapacityResourceKey`), and they **keep
   their own effect/bonus representation** rather than being collapsed into a generic
   `resourceFlat`: capacity is a flat grant today but is expected to gain a **multiplier**
@@ -885,8 +916,8 @@ the others.
 
 ### 13.6 How this should land in today's code
 
-Nothing here is implemented. When it is, these are the existing seams to reuse instead of
-adding parallel machinery:
+Part of this is implemented now (bonus type, resource multipliers, enhancer upgrades,
+unlock gates). The remaining seams to reuse instead of adding parallel machinery:
 
 - `BuildingEffects` (`capacityProvided` / `resourceMultiplier` / `resourceDrain`) is the
   direct precursor of a `bonuses: Bonus[]` list. `resourceMultiplier` and `resourceDrain`
@@ -896,10 +927,13 @@ adding parallel machinery:
 - Resource bonuses land in the existing path: `resourceFactors` + `addFactor()` +
   `getFactors()` + `computeResourceRate()`. No new formula is needed for `resourceFlat` /
   `resourceMultiplier` / `resourceDrain`.
-- Cost bonuses land in `getBuildingCost()` — the **single** place all cost maths already
-  funnels through, including the closed-form geometric bulk sum. Apply cost reductions
-  there so `getMaxAffordableBuildings()`'s O(1)-per-check probe stays valid, and so the
-  card preview (`formatBuildingCost`) and the actual purchase can never disagree.
+- Cost bonuses land in `getBuildingCost()` — **implemented**: reductions are collected
+  per buyable from the bought upgrades (`collectCostReductions` in `bonus.ts`), `base`/
+  `factor` rewrite the series inputs, `percent` scales every unit, and `flat` absorbs
+  whole units via a short clamped-prefix loop (bounded by `count`; the closed form
+  covers the remainder). The Gamepedia price panel and the purchase path both read
+  `getBuildingCost()`, so they can never disagree; the definition-level
+  `costAt()`/`formatCost()` remain stateless raw previews with no callers.
 - **Keeping buy-N and buy-MAX O(1)** under the decided per-unit order (§13.1): the `base`
   and `factor` reductions rewrite the series inputs, so `first × (factor^count − 1) /
   (factor − 1)` keeps its shape; the percent reduction scales `first` uniformly; and the
@@ -908,14 +942,16 @@ adding parallel machinery:
   `log_factor(base′ / N) + 1` of them, so a handful, findable with a log (validate the
   off-by-one numerically) or a short bounded loop — then apply the closed form to the
   remaining `count − k` units. Because every unit cost is ≥ 0 the total stays monotonic in
-  `count`, so the doubling probe and binary search stay valid, and the single-unit preview
-  (`costAt()`) must run the exact same pipeline.
+  `count`, so the doubling probe and binary search stay valid. Implemented choice: the
+  clamp prefix uses a short bounded loop (either approach was allowed), and stateless
+  `costAt()`/`formatCost()` stay raw definition previews — every player-facing price
+  (building cards, Gamepedia, purchase) reads the state-aware `getBuildingCost()`.
 - `buildingCostOverrides` + `upgradeBuildingCosts()` are the crude precursor for
   `costReductionBase` / `costReductionFactor`; expect them to be absorbed into, or
   replaced by, the bonus path.
-- The Upgrades tab is placeholder copy and the Gamepedia `upgrade` / `research` /
-  `combat` categories are empty, so the `seen` → Gamepedia wiring and the Unlocked list
-  are the first visible deliverables.
+- The Upgrades tab lists unlocked unbought upgrades and the Gamepedia `upgrade`
+  category fills as unlocks fire (App reveals on every state change). `research` /
+  `combat` categories are still empty.
 - Sequencing: the roadmap's recommended order puts saves and statistics *before*
   upgrades. Do not start without agreeing the target milestone, because
   `seen`/`unlocked`/`bought` are meaningless until a save exists.

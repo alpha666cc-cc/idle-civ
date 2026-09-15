@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { BuildingDefinition } from "../game/buildings";
+import type { UpgradeDefinition } from "../game/upgrades";
 import type { CivilizationState } from "../game/civilizationState";
 import {
   gamepedia,
@@ -499,10 +500,32 @@ export default function GamepediaModal({
     );
   };
 
+  const renderUpgradeDetail = (entry: GamepediaEntry) => {
+    const upgrade = entry.object as UpgradeDefinition;
+    return (
+      <div className="gamepedia-detail">
+        {renderDetailHeader(entry)}
+        <p className="gamepedia-detail-description">
+          {entry.object.description}
+        </p>
+        <div className="gamepedia-stats">
+          {upgrade.costs.map(({ resource, base }) => (
+            <div className="gamepedia-stat" key={resource}>
+              <span>{renderReference(resource)}</span>
+              <strong>{formatAmount(base)}</strong>
+            </div>
+          ))}
+        </div>
+        {renderRelated(entry)}
+      </div>
+    );
+  };
+
   const renderDetail = (entry: GamepediaEntry) => {
     if (entry.category === "building") return renderBuildingDetail(entry);
     if (entry.category === "resource") return renderResourceDetail(entry);
     if (entry.category === "capacity") return renderCapacityDetail(entry);
+    if (entry.category === "upgrade") return renderUpgradeDetail(entry);
     return renderGenericDetail(entry);
   };
 

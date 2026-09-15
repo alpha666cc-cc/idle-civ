@@ -1,5 +1,6 @@
 import { buildingDefinitions, type BuildingDefinition } from "./buildings";
 import { GameObject } from "./gameObject";
+import { upgradeDefinitions } from "./upgrades";
 import {
   capacityDefinitions,
   populationDefinition,
@@ -126,6 +127,9 @@ for (const building of buildingDefinitions) {
     ...(building.effects.resourceDrain
       ? [building.effects.resourceDrain.resource]
       : []),
+    ...(building.effects.resourceProduction
+      ? [building.effects.resourceProduction.resource]
+      : []),
     ...(building.effects.capacityProvided
       ? [building.effects.capacityProvided.building]
       : []),
@@ -135,6 +139,20 @@ for (const building of buildingDefinitions) {
   gamepedia.register({
     object: building,
     category: "building",
+    relatedIds: [...new Set(relatedIds)],
+  });
+}
+
+for (const upgrade of upgradeDefinitions) {
+  const relatedIds = [
+    ...upgrade.costs.map(({ resource }) => resource),
+    ...upgrade.bonuses.map(({ destination }) => destination),
+  ];
+  // seen stays false at registration: upgrades are revealed when their
+  // unlock condition fires (App reveals on every state change).
+  gamepedia.register({
+    object: upgrade,
+    category: "upgrade",
     relatedIds: [...new Set(relatedIds)],
   });
 }

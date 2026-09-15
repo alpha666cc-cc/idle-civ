@@ -26,7 +26,17 @@ export type BuildingEffects = {
   capacityProvided?: { building: BuildingKey; perBuilding: ExpNumber };
   resourceMultiplier?: { resource: ResourceKey; factor: ExpNumber };
   resourceDrain?: { resource: ResourceKey; amount: ExpNumber };
+  resourceProduction?: { resource: ResourceKey; amount: ExpNumber };
 };
+
+/**
+ * Data-driven building unlock gate (AGENTS.md §13.4). A building with an unlock stays
+ * locked until the engine reports the condition satisfied; `available: false`
+ * (monument) remains permanently locked.
+ */
+export type BuildingUnlock =
+  | { source: "building-count"; building: BuildingKey; threshold: number }
+  | { source: "battle"; encounterId: string };
 
 export class BuildingDefinition extends GameObject {
   readonly key: BuildingKey;
@@ -36,6 +46,7 @@ export class BuildingDefinition extends GameObject {
   readonly available: boolean;
   readonly maxCount: number;
   readonly effects: BuildingEffects;
+  readonly unlock?: BuildingUnlock;
 
   constructor(
     key: BuildingKey,
@@ -45,6 +56,7 @@ export class BuildingDefinition extends GameObject {
     available: boolean,
     maxCount = 10,
     effects: BuildingEffects = {},
+    unlock?: BuildingUnlock,
   ) {
     super(key, description);
     this.key = key;
@@ -54,6 +66,7 @@ export class BuildingDefinition extends GameObject {
     this.available = available;
     this.maxCount = maxCount;
     this.effects = effects;
+    this.unlock = unlock;
   }
 
   costAt(buildingsAlreadyBuilt: number): BuildingCost[] {
@@ -162,12 +175,15 @@ export const buildingDefinitions: BuildingDefinition[] = [
   new BuildingDefinition(
     "smithy",
     "Smithy",
-    "Unlocks equipment",
+    "Produce metalwork",
     [
       { resource: "wood", base: ExpNumber.fromNumber(360), factor: 1.2 },
       { resource: "stone", base: ExpNumber.fromNumber(180), factor: 1.15 },
     ],
     true,
+    10,
+    { resourceProduction: { resource: "metalwork", amount: ExpNumber.ONE } },
+    { source: "battle", encounterId: "first-battle" },
   ),
   new BuildingDefinition(
     "barracks",
@@ -179,6 +195,9 @@ export const buildingDefinitions: BuildingDefinition[] = [
       { resource: "food", base: ExpNumber.fromNumber(100), factor: 1.1 },
     ],
     true,
+    10,
+    { resourceProduction: { resource: "military", amount: ExpNumber.ONE } },
+    { source: "building-count", building: "town-hall", threshold: 5 },
   ),
   new BuildingDefinition(
     "university",
@@ -190,6 +209,9 @@ export const buildingDefinitions: BuildingDefinition[] = [
       { resource: "gold", base: ExpNumber.fromNumber(180), factor: 1.16 },
     ],
     true,
+    10,
+    { resourceProduction: { resource: "science", amount: ExpNumber.ONE } },
+    { source: "building-count", building: "town-hall", threshold: 20 },
   ),
   new BuildingDefinition(
     "monument",

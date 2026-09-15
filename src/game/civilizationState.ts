@@ -3,6 +3,7 @@ import {
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
+  producerResourceKeys,
   resourceDefinitions,
   type CapacityResourceKey,
   type ProductionResourceKey,
@@ -20,6 +21,8 @@ import {
   type BuildingCost,
   type BuildingKey,
 } from "./buildings";
+import { upgradeDefinitions } from "./upgrades";
+import { collectCostReductions, type Bonus } from "./bonus";
 
 type BuildingCostOverrides = Partial<Record<BuildingKey, BuildingCost[]>>;
 
@@ -39,6 +42,8 @@ export class CivilizationState {
   readonly resourceFactors: ResourceFactorMap;
   readonly buildingCostOverrides: BuildingCostOverrides;
   readonly autoClicksPerSecond: number;
+  readonly boughtUpgrades: readonly string[];
+  readonly defeatedEncounters: readonly string[];
 
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
@@ -47,6 +52,8 @@ export class CivilizationState {
     resourceFactors: ResourceFactorMap = emptyResourceFactors(),
     buildingCostOverrides: BuildingCostOverrides = {},
     autoClicksPerSecond = 0,
+    boughtUpgrades: readonly string[] = [],
+    defeatedEncounters: readonly string[] = [],
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -54,6 +61,8 @@ export class CivilizationState {
     this.resourceFactors = resourceFactors;
     this.buildingCostOverrides = buildingCostOverrides;
     this.autoClicksPerSecond = autoClicksPerSecond;
+    this.boughtUpgrades = boughtUpgrades;
+    this.defeatedEncounters = defeatedEncounters;
 
     const houses = this.buildingCount("house");
     const townHalls = this.buildingCount("town-hall");
@@ -213,12 +222,80 @@ export class CivilizationState {
     }, this);
   }
 
+  isUpgradeUnlocked(upgradeId: string): boolean {
+    const upgrade = upgradeDefinitions.find(({ key }) => key === upgradeId);
+    if (!upgrade) return false;
+    switch (upgrade.unlock.source) {
+      case "building-capacity": {
+        const building = upgrade.unlock.building;
+        return (
+          this.buildingCount(building) >=
+          upgrade.unlock.ratio * this.getBuildingMax(building).toNumber()
+        );
+      }
+      case "building-count":
+        return (
+          this.buildingCount(upgrade.unlock.building) >=
+          upgrade.unlock.threshold
+        );
+      default:
+        return false;
+    }
+  }
+
+  isUpgradeBought(upgradeId: string): boolean {
+    return this.boughtUpgrades.includes(upgradeId);
+  }
+
+  getUpgradeCost(upgradeId: string): BuildingCost[] {
+    return upgradeDefinitions.find(({ key }) => key === upgradeId)?.costs ?? [];
+  }
+
+  hasResourcesForUpgrade(upgradeId: string): boolean {
+    return this.getUpgradeCost(upgradeId).every(
+      ({ resource, base }) => this.resources[resource].gte(base),
+    );
+  }
+
+  getUpgradeFailureReason(upgradeId: string): "locked" | "resources" | null {
+    const upgrade = upgradeDefinitions.find(({ key }) => key === upgradeId);
+    if (
+      !upgrade ||
+      this.isUpgradeBought(upgradeId) ||
+      !this.isUpgradeUnlocked(upgradeId)
+    )
+      return "locked";
+    if (!this.hasResourcesForUpgrade(upgradeId)) return "resources";
+    return null;
+  }
+
+  /**
+   * Buys a one-shot upgrade: pays its costs and records its id. Bonuses are never
+   * accumulated into state — factors and capacities derive them from this list.
+   */
+  buyUpgrade(upgradeId: string): CivilizationState {
+    if (this.getUpgradeFailureReason(upgradeId) !== null) return this;
+    const upgrade = upgradeDefinitions.find(({ key }) => key === upgradeId);
+    if (!upgrade) return this;
+    const resources = { ...this.resources };
+    for (const { resource, base } of upgrade.costs) {
+      resources[resource] = resources[resource].sub(base);
+    }
+    return this.withState(
+      resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      [...this.boughtUpgrades, upgradeId],
+    );
+  }
+
   tick(): CivilizationState {
     const resources = { ...this.resources };
-    for (const definition of resourceDefinitions) {
-      resources[definition.key] = applyRate(
-        resources[definition.key],
-        this.computeResourceRate(definition.key),
+    for (const resourceKey of producerResourceKeys) {
+      resources[resourceKey] = applyRate(
+        resources[resourceKey],
+        this.computeResourceRate(resourceKey),
       );
     }
     return this.withResources(resources);
@@ -226,6 +303,9 @@ export class CivilizationState {
 
   getFactors(resourceKey: ResourceKey): ResourceFactors {
     const factors = this.resourceFactors[resourceKey];
+    // `workers` only ever holds the four production keys, so membership is the
+    // honest "is this a production resource?" test (AGENTS.md §9 guard).
+    const isProductionKey = resourceKey in this.workers;
     const workerProduction = this.getWorkerProduction(
       resourceKey as ProductionResourceKey,
     );
@@ -238,43 +318,62 @@ export class CivilizationState {
     for (const building of buildingDefinitions) {
       const count = this.buildingCount(building.key);
       if (count === 0) continue;
-      if (building.effects.resourceMultiplier?.resource === resourceKey) {
+      const { resourceMultiplier, resourceDrain, resourceProduction } =
+        building.effects;
+      if (resourceMultiplier?.resource === resourceKey) {
         buildingFactors.multiplicative.push([
           building.key,
-          building.effects.resourceMultiplier.factor.pow(
-            ExpNumber.fromNumber(count),
-          ),
+          resourceMultiplier.factor.pow(ExpNumber.fromNumber(count)),
         ]);
       }
-      if (building.effects.resourceDrain?.resource === resourceKey) {
+      if (resourceDrain?.resource === resourceKey) {
         buildingFactors.drain.push([
           building.key,
-          building.effects.resourceDrain.amount.mul(
-            ExpNumber.fromNumber(count),
-          ),
+          resourceDrain.amount.mul(ExpNumber.fromNumber(count)),
+        ]);
+      }
+      if (resourceProduction?.resource === resourceKey) {
+        buildingFactors.additional.push([
+          building.key,
+          resourceProduction.amount.mul(ExpNumber.fromNumber(count)),
         ]);
       }
     }
 
+    const upgradeFactors: ResourceFactors = {
+      additional: [],
+      multiplicative: [],
+      drain: [],
+    };
+    for (const [upgradeId, bonus] of this.boughtUpgradeBonuses()) {
+      if (bonus.type === "resourceMultiplier" && bonus.destination === resourceKey) {
+        upgradeFactors.multiplicative.push([upgradeId, bonus.value]);
+      }
+    }
+
+    const workerAdditional: ResourceFactor[] = [
+      [workerProduction, workerProduction.workerProduction],
+    ];
+    if (workerProduction.autoClickProduction.gt(ExpNumber.ZERO)) {
+      workerAdditional.push([
+        "dev auto clicker",
+        workerProduction.autoClickProduction,
+      ] as ResourceFactor);
+    }
+
     return {
       additional: [
-        [workerProduction, workerProduction.workerProduction],
-        ...(workerProduction.autoClickProduction.gt(ExpNumber.ZERO)
-          ? [
-              [
-                "dev auto clicker",
-                workerProduction.autoClickProduction,
-              ] as ResourceFactor,
-            ]
-          : []),
+        ...(isProductionKey ? workerAdditional : []),
         ...factors.additional,
         ...buildingFactors.additional,
+        ...upgradeFactors.additional,
       ],
       multiplicative: [
         ...factors.multiplicative,
         ...buildingFactors.multiplicative,
+        ...upgradeFactors.multiplicative,
       ],
-      drain: [...factors.drain, ...buildingFactors.drain],
+      drain: [...factors.drain, ...buildingFactors.drain, ...upgradeFactors.drain],
     };
   }
 
@@ -311,7 +410,16 @@ export class CivilizationState {
   getBuildingMax(buildingKey: string): ExpNumber {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return ExpNumber.ZERO;
-    return this.resources[capacityKey(building.key)];
+    const capacity = capacityKey(building.key);
+    // Effective capacity: the stored base amount times every bought capacity
+    // multiplier (§13.7 decision 3 — capacity keeps its own representation).
+    let max = this.resources[capacity];
+    for (const [, bonus] of this.boughtUpgradeBonuses()) {
+      if (bonus.type === "resourceMultiplier" && bonus.destination === capacity) {
+        max = max.mul(bonus.value);
+      }
+    }
+    return max;
   }
 
   getBuildingCost(
@@ -322,28 +430,68 @@ export class CivilizationState {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return [];
     const costs = this.buildingCostOverrides[building.key] ?? building.costs;
+    const reductions = collectCostReductions(
+      this.boughtUpgradeBonuses()
+        .filter(([, bonus]) => bonus.destination === building.key)
+        .map(([, bonus]) => bonus),
+    );
     return costs.map((cost) => {
-      let total: ExpNumber;
-      if (cost.factor === 1) {
-        // Linear case: each building costs exactly cost.base
-        total = ExpNumber.from(cost.base)
-          .ceil()
-          .mul(ExpNumber.fromNumber(count));
-      } else {
-        // Geometric series: sum_{i=0}^{count-1} ceil(base * factor^(built+i))
-        // For large counts the precise per-item ceil barely matters vs the formula
-        // so we use the closed-form geometric sum for speed, then round up.
-        const factor = ExpNumber.fromNumber(cost.factor);
-        const firstTerm = ExpNumber.from(cost.base).mul(
-          factor.pow(buildingsAlreadyBuilt),
-        );
-        // sum = firstTerm * (factor^count - 1) / (factor - 1)
-        const geometricSum = firstTerm
-          .mul(factor.pow(count).sub(ExpNumber.ONE))
-          .div(ExpNumber.fromNumber(cost.factor - 1));
-        total = geometricSum.ceil();
+      // Per-unit cost-reduction pipeline (§13.1): base → factor → percent → flat.
+      // Costs clamp at 0; the growth factor clamps at 1 (below 1, later buildings
+      // would cost less than earlier ones).
+      const unitBase = ExpNumber.max(
+        ExpNumber.ZERO,
+        ExpNumber.from(cost.base).sub(reductions.base),
+      );
+      const unitFactor = ExpNumber.max(
+        ExpNumber.ONE,
+        ExpNumber.fromNumber(cost.factor).sub(reductions.factor),
+      );
+      const firstGross = unitBase
+        .mul(unitFactor.pow(buildingsAlreadyBuilt))
+        .mul(reductions.percent);
+
+      // Leading units whose gross cost the flat reduction absorbs entirely. The
+      // gross grows by unitFactor per unit, so the prefix is short for any sane
+      // data; a zero first gross clamps everything.
+      let clamped = 0;
+      if (reductions.flat.gt(ExpNumber.ZERO)) {
+        if (firstGross.lte(ExpNumber.ZERO)) {
+          clamped = count;
+        } else if (firstGross.lte(reductions.flat)) {
+          if (unitFactor.gt(ExpNumber.ONE)) {
+            let gross = firstGross;
+            while (clamped < count && gross.lte(reductions.flat)) {
+              clamped += 1;
+              gross = gross.mul(unitFactor);
+            }
+          } else {
+            clamped = count;
+          }
+        }
       }
-      return { ...cost, base: total };
+
+      const remaining = count - clamped;
+      let total: ExpNumber;
+      if (remaining <= 0) {
+        total = ExpNumber.ZERO;
+      } else {
+        // Geometric series: sum_{i=0}^{remaining-1} gross_(clamped+i), minus the
+        // flat reduction for every unclamped unit. For large counts the precise
+        // per-item ceil barely matters vs the formula, so we round up at the end.
+        const seriesFirst = firstGross.mul(unitFactor.pow(clamped));
+        const grossSum =
+          unitFactor.gt(ExpNumber.ONE)
+            ? seriesFirst
+                .mul(unitFactor.pow(remaining).sub(ExpNumber.ONE))
+                .div(unitFactor.sub(ExpNumber.ONE))
+            : seriesFirst.mul(ExpNumber.fromNumber(remaining));
+        total = ExpNumber.max(
+          ExpNumber.ZERO,
+          grossSum.sub(reductions.flat.mul(ExpNumber.fromNumber(remaining))),
+        );
+      }
+      return { ...cost, base: total.ceil() };
     });
   }
 
@@ -384,11 +532,11 @@ export class CivilizationState {
         ({ resource, base }) => this.resources[resource].gte(base),
       );
 
-    // Upper bound: capacity-limited. Costs are exponential so realistically
-    // nobody can afford millions; cap the search space.
+    // Upper bound: capacity-limited. Enhancer tiers push capacity to 1e9 by the
+    // endgame, so allow the full range; the doubling probe stays O(log N).
     const upperBound = Math.min(
-      maxPossible === Infinity ? 1_000_000 : maxPossible,
-      1_000_000,
+      maxPossible === Infinity ? 1_000_000_000 : maxPossible,
+      1_000_000_000,
     );
 
     if (!canAffordCount(1)) return 0;
@@ -418,9 +566,12 @@ export class CivilizationState {
     buildingKey: BuildingKey,
     additionalSlots: number,
   ): CivilizationState {
+    const capacity = capacityKey(buildingKey);
     const resources = {
       ...this.resources,
-      [capacityKey(buildingKey)]: this.getBuildingMax(buildingKey).add(
+      // Raises the stored base, never the multiplied effective capacity —
+      // otherwise bought capacity multipliers would compound twice.
+      [capacity]: this.resources[capacity].add(
         ExpNumber.fromNumber(additionalSlots),
       ),
     };
@@ -473,12 +624,27 @@ export class CivilizationState {
     );
   }
 
+  isBuildingAvailable(buildingKey: string): boolean {
+    const building = buildingDefinitions.find(({ key }) => key === buildingKey);
+    if (!building || !building.available) return false;
+    const { unlock } = building;
+    if (!unlock) return true;
+    switch (unlock.source) {
+      case "building-count":
+        return this.buildingCount(unlock.building) >= unlock.threshold;
+      case "battle":
+        return this.defeatedEncounters.includes(unlock.encounterId);
+      default:
+        return false;
+    }
+  }
+
   getBuildFailureReason(
     buildingKey: string,
     count: number = 1,
   ): "locked" | "capacity" | "resources" | null {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
-    if (!building || !building.available) return "locked";
+    if (!building || !this.isBuildingAvailable(building.key)) return "locked";
 
     const currentCount = this.buildingCount(building.key);
     if (currentCount + count > this.getBuildingMax(building.key).toNumber())
@@ -539,6 +705,17 @@ export class CivilizationState {
     return this.builtBuildings.filter((key) => key === buildingKey).length;
   }
 
+  /** Bonuses from bought upgrades, paired with the upgrade id as the factor source. */
+  private boughtUpgradeBonuses(): [upgradeId: string, bonus: Bonus][] {
+    return this.boughtUpgrades.flatMap((upgradeId) =>
+      (
+        upgradeDefinitions.find(({ key }) => key === upgradeId)?.bonuses ?? []
+      ).map(
+        (bonus) => [upgradeId, bonus] as [upgradeId: string, bonus: Bonus],
+      ),
+    );
+  }
+
   private withResources(resources: ResourceAmounts): CivilizationState {
     return this.withState(resources, this.buildingCostOverrides);
   }
@@ -551,6 +728,8 @@ export class CivilizationState {
       this.resourceFactors,
       this.buildingCostOverrides,
       this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
     );
   }
 
@@ -564,6 +743,8 @@ export class CivilizationState {
       resourceFactors,
       this.buildingCostOverrides,
       this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
     );
   }
 
@@ -572,6 +753,8 @@ export class CivilizationState {
     costOverrides: BuildingCostOverrides,
     builtBuildings = this.builtBuildings,
     autoClicksPerSecond = this.autoClicksPerSecond,
+    boughtUpgrades = this.boughtUpgrades,
+    defeatedEncounters = this.defeatedEncounters,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -580,6 +763,8 @@ export class CivilizationState {
       this.resourceFactors,
       costOverrides,
       autoClicksPerSecond,
+      boughtUpgrades,
+      defeatedEncounters,
     );
   }
 }
