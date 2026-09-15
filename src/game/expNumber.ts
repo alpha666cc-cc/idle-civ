@@ -41,9 +41,28 @@ export class ExpNumber {
   );
   static readonly NAN = new ExpNumber(Number.NaN, Number.NaN, Number.NaN);
 
-  /** Accepts a plain number or an already-normalized ExpNumber. */
-  static from(value: number | ExpNumber): ExpNumber {
-    return value instanceof ExpNumber ? value : ExpNumber.fromNumber(value);
+  /** Accepts a number, scientific-notation string, or normalized ExpNumber. */
+  static from(value: number | string | ExpNumber): ExpNumber {
+    return value instanceof ExpNumber
+      ? value
+      : typeof value === "string"
+        ? ExpNumber.fromScientific(value)
+        : ExpNumber.fromNumber(value);
+  }
+
+  static fromScientific(value: string): ExpNumber {
+    const match = value
+      .trim()
+      .match(/^([+-]?(?:\d+(?:\.\d*)?|\.\d+))(?:e([+-]?\d+))?$/i);
+    if (!match) throw new Error(`Invalid scientific number: ${value}`);
+    const coefficient = Number(match[1]);
+    const exponent = Number(match[2] ?? 0);
+    if (!Number.isFinite(coefficient) || !Number.isSafeInteger(exponent)) {
+      throw new Error(`Invalid scientific number: ${value}`);
+    }
+    return ExpNumber.fromNumber(coefficient).mul(
+      ExpNumber.fromNumber(10).pow(exponent),
+    );
   }
 
   static fromNumber(value: number): ExpNumber {

@@ -64,16 +64,7 @@
     "maxCount": 10,
     "effects": { "resourceMultiplier": { "resource": "gold", "factor": 1.1 } }
   },
-  {
-    "key": "market",
-    "name": "Market",
-    "description": "Trade resources",
-    "costs": [
-      { "resource": "wood", "base": 300, "factor": 1.2 },
-      { "resource": "stone", "base": 120, "factor": 1.15 }
-    ],
-    "available": true
-  },
+
   {
     "key": "town-hall",
     "name": "Town Hall",
@@ -88,6 +79,16 @@
     "effects": {
       "capacityProvided": { "building": "house", "perBuilding": 10 }
     }
+  },
+  {
+    "key": "market",
+    "name": "Market",
+    "description": "Trade resources",
+    "costs": [
+      { "resource": "wood", "base": 300, "factor": 1.2 },
+      { "resource": "stone", "base": 120, "factor": 1.15 }
+    ],
+    "available": true
   },
   {
     "key": "smithy",

@@ -7,14 +7,29 @@
     "resource": "food",
     "threshold": 9,
     "tier": 0,
-    "costs": ["food", "wood"],
+    "costs": [
+      {
+        "resource": "food",
+        "base": "4.173000000000000e3",
+        "factor": 1
+      },
+      {
+        "resource": "wood",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "food", "value": 2 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "food",
+        "value": 2
+      }
     ]
   },
   {
@@ -25,14 +40,29 @@
     "resource": "food",
     "threshold": 98,
     "tier": 1,
-    "costs": ["food", "wood"],
+    "costs": [
+      {
+        "resource": "food",
+        "base": "3.401386500000000e7",
+        "factor": 1
+      },
+      {
+        "resource": "wood",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "food", "value": 2 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "food",
+        "value": 2
+      }
     ]
   },
   {
@@ -43,15 +73,39 @@
     "resource": "food",
     "threshold": 980,
     "tier": 2,
-    "costs": ["food", "wood"],
+    "costs": [
+      {
+        "resource": "food",
+        "base": "4.081946632061209e43",
+        "factor": 1
+      },
+      {
+        "resource": "wood",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
-      { "type": "costReductionPercent", "destination": "farm", "value": 0.5 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "food",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "farm",
+        "value": 0.5
+      }
     ]
   },
   {
@@ -62,15 +116,39 @@
     "resource": "food",
     "threshold": 9800,
     "tier": 3,
-    "costs": ["food", "wood"],
+    "costs": [
+      {
+        "resource": "food",
+        "base": "4.93981576360875e401",
+        "factor": 1
+      },
+      {
+        "resource": "wood",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
-      { "type": "costReductionPercent", "destination": "farm", "value": 0.5 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "food",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "farm",
+        "value": 0.5
+      }
     ]
   },
   {
@@ -81,15 +159,39 @@
     "resource": "food",
     "threshold": 98000,
     "tier": 4,
-    "costs": ["food", "wood"],
+    "costs": [
+      {
+        "resource": "food",
+        "base": "6.49942720156444e3979",
+        "factor": 1
+      },
+      {
+        "resource": "wood",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
-      { "type": "costReductionPercent", "destination": "farm", "value": 0.5 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "food",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "farm",
+        "value": 0.5
+      }
     ]
   },
   {
@@ -100,15 +202,39 @@
     "resource": "food",
     "threshold": 980000,
     "tier": 5,
-    "costs": ["food", "wood"],
+    "costs": [
+      {
+        "resource": "food",
+        "base": "1.97355140436919e39758",
+        "factor": 1
+      },
+      {
+        "resource": "wood",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
-      { "type": "costReductionFactor", "destination": "farm", "value": 0.01 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "food",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "farm",
+        "value": 0.01
+      }
     ]
   },
   {
@@ -119,15 +245,39 @@
     "resource": "food",
     "threshold": 9800000,
     "tier": 6,
-    "costs": ["food", "wood"],
+    "costs": [
+      {
+        "resource": "food",
+        "base": "2.56869223394204e397540",
+        "factor": 1
+      },
+      {
+        "resource": "wood",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
-      { "type": "costReductionFactor", "destination": "farm", "value": 0.01 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "food",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "farm",
+        "value": 0.01
+      }
     ]
   },
   {
@@ -138,15 +288,39 @@
     "resource": "food",
     "threshold": 98000000,
     "tier": 7,
-    "costs": ["food", "wood"],
+    "costs": [
+      {
+        "resource": "food",
+        "base": "6.99968361806327e3975358",
+        "factor": 1
+      },
+      {
+        "resource": "wood",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
-      { "type": "costReductionFactor", "destination": "farm", "value": 0.01 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "food",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "farm",
+        "value": 0.01
+      }
     ]
   },
   {
@@ -157,14 +331,29 @@
     "resource": "wood",
     "threshold": 9,
     "tier": 0,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "wood", "value": 2 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "wood",
+        "value": 2
+      }
     ]
   },
   {
@@ -175,14 +364,29 @@
     "resource": "wood",
     "threshold": 98,
     "tier": 1,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "wood", "value": 2 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "wood",
+        "value": 2
+      }
     ]
   },
   {
@@ -193,14 +397,34 @@
     "resource": "wood",
     "threshold": 980,
     "tier": 2,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "wood",
+        "value": 2
+      },
       {
         "type": "costReductionPercent",
         "destination": "lumber-yard",
@@ -216,14 +440,34 @@
     "resource": "wood",
     "threshold": 9800,
     "tier": 3,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "wood",
+        "value": 2
+      },
       {
         "type": "costReductionPercent",
         "destination": "lumber-yard",
@@ -239,14 +483,34 @@
     "resource": "wood",
     "threshold": 98000,
     "tier": 4,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "wood",
+        "value": 2
+      },
       {
         "type": "costReductionPercent",
         "destination": "lumber-yard",
@@ -262,14 +526,34 @@
     "resource": "wood",
     "threshold": 980000,
     "tier": 5,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "wood",
+        "value": 2
+      },
       {
         "type": "costReductionFactor",
         "destination": "lumber-yard",
@@ -285,14 +569,34 @@
     "resource": "wood",
     "threshold": 9800000,
     "tier": 6,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "wood",
+        "value": 2
+      },
       {
         "type": "costReductionFactor",
         "destination": "lumber-yard",
@@ -308,14 +612,34 @@
     "resource": "wood",
     "threshold": 98000000,
     "tier": 7,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "wood",
+        "value": 2
+      },
       {
         "type": "costReductionFactor",
         "destination": "lumber-yard",
@@ -331,14 +655,24 @@
     "resource": "stone",
     "threshold": 9,
     "tier": 0,
-    "costs": ["stone"],
+    "costs": [
+      {
+        "resource": "stone",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "stone", "value": 2 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "stone",
+        "value": 2
+      }
     ]
   },
   {
@@ -349,14 +683,24 @@
     "resource": "stone",
     "threshold": 98,
     "tier": 1,
-    "costs": ["stone"],
+    "costs": [
+      {
+        "resource": "stone",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "stone", "value": 2 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "stone",
+        "value": 2
+      }
     ]
   },
   {
@@ -367,15 +711,34 @@
     "resource": "stone",
     "threshold": 980,
     "tier": 2,
-    "costs": ["stone"],
+    "costs": [
+      {
+        "resource": "stone",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
-      { "type": "costReductionPercent", "destination": "quarry", "value": 0.5 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "stone",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "quarry",
+        "value": 0.5
+      }
     ]
   },
   {
@@ -386,15 +749,34 @@
     "resource": "stone",
     "threshold": 9800,
     "tier": 3,
-    "costs": ["stone"],
+    "costs": [
+      {
+        "resource": "stone",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
-      { "type": "costReductionPercent", "destination": "quarry", "value": 0.5 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "stone",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "quarry",
+        "value": 0.5
+      }
     ]
   },
   {
@@ -405,15 +787,34 @@
     "resource": "stone",
     "threshold": 98000,
     "tier": 4,
-    "costs": ["stone"],
+    "costs": [
+      {
+        "resource": "stone",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
-      { "type": "costReductionPercent", "destination": "quarry", "value": 0.5 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "stone",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "quarry",
+        "value": 0.5
+      }
     ]
   },
   {
@@ -424,15 +825,34 @@
     "resource": "stone",
     "threshold": 980000,
     "tier": 5,
-    "costs": ["stone"],
+    "costs": [
+      {
+        "resource": "stone",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
-      { "type": "costReductionFactor", "destination": "quarry", "value": 0.01 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "stone",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "quarry",
+        "value": 0.01
+      }
     ]
   },
   {
@@ -443,15 +863,34 @@
     "resource": "stone",
     "threshold": 9800000,
     "tier": 6,
-    "costs": ["stone"],
+    "costs": [
+      {
+        "resource": "stone",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
-      { "type": "costReductionFactor", "destination": "quarry", "value": 0.01 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "stone",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "quarry",
+        "value": 0.01
+      }
     ]
   },
   {
@@ -462,15 +901,34 @@
     "resource": "stone",
     "threshold": 98000000,
     "tier": 7,
-    "costs": ["stone"],
+    "costs": [
+      {
+        "resource": "stone",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
-      { "type": "costReductionFactor", "destination": "quarry", "value": 0.01 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "stone",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "quarry",
+        "value": 0.01
+      }
     ]
   },
   {
@@ -481,14 +939,29 @@
     "resource": "gold",
     "threshold": 9,
     "tier": 0,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "gold", "value": 2 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold",
+        "value": 2
+      }
     ]
   },
   {
@@ -499,14 +972,29 @@
     "resource": "gold",
     "threshold": 98,
     "tier": 1,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "gold", "value": 2 }
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold",
+        "value": 2
+      }
     ]
   },
   {
@@ -517,14 +1005,34 @@
     "resource": "gold",
     "threshold": 980,
     "tier": 2,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold",
+        "value": 2
+      },
       {
         "type": "costReductionPercent",
         "destination": "gold-mine",
@@ -540,14 +1048,34 @@
     "resource": "gold",
     "threshold": 9800,
     "tier": 3,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold",
+        "value": 2
+      },
       {
         "type": "costReductionPercent",
         "destination": "gold-mine",
@@ -563,14 +1091,34 @@
     "resource": "gold",
     "threshold": 98000,
     "tier": 4,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold",
+        "value": 2
+      },
       {
         "type": "costReductionPercent",
         "destination": "gold-mine",
@@ -586,14 +1134,34 @@
     "resource": "gold",
     "threshold": 980000,
     "tier": 5,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold",
+        "value": 2
+      },
       {
         "type": "costReductionFactor",
         "destination": "gold-mine",
@@ -609,14 +1177,34 @@
     "resource": "gold",
     "threshold": 9800000,
     "tier": 6,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold",
+        "value": 2
+      },
       {
         "type": "costReductionFactor",
         "destination": "gold-mine",
@@ -632,14 +1220,34 @@
     "resource": "gold",
     "threshold": 98000000,
     "tier": 7,
-    "costs": ["wood", "stone"],
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
     "bonuses": [
       {
         "type": "resourceMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
-      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold",
+        "value": 2
+      },
       {
         "type": "costReductionFactor",
         "destination": "gold-mine",
