@@ -16,6 +16,7 @@ import type { ResourceKey } from "./resources";
 import { GameObject } from "./gameObject";
 import { ExpNumber } from "./expNumber";
 import { formatNumber } from "./numberFormat";
+import buildingData from "./data/buildings.json";
 
 export type BuildingCost = {
   resource: ResourceKey;
@@ -86,172 +87,69 @@ export class BuildingDefinition extends GameObject {
   }
 }
 
-export const buildingDefinitions: BuildingDefinition[] = [
-  new BuildingDefinition(
-    "people",
-    "Citizen",
-    "add population",
-    [{ resource: "food", base: ExpNumber.fromNumber(10), factor: 1.2 }],
-    true,
-    10,
-    { resourceDrain: { resource: "food", amount: ExpNumber.fromNumber(1) } },
-  ),
-  new BuildingDefinition(
-    "house",
-    "House",
-    "Increase citizen capacity",
-    [{ resource: "wood", base: ExpNumber.fromNumber(10), factor: 1.3 }],
-    true,
-    10,
-    {
-      capacityProvided: {
-        building: "people",
-        perBuilding: ExpNumber.fromNumber(10),
-      },
-    },
-  ),
-  new BuildingDefinition(
-    "farm",
-    "Farm",
-    "help gather food",
-    [
-      { resource: "food", base: ExpNumber.fromNumber(10), factor: 1.25 },
-      { resource: "wood", base: ExpNumber.fromNumber(10), factor: 1.25 },
-    ],
-    true,
-    10,
-    {
-      resourceMultiplier: {
-        resource: "food",
-        factor: ExpNumber.fromNumber(1.1),
-      },
-    },
-  ),
-  new BuildingDefinition(
-    "lumber-yard",
-    "Lumber Yard",
-    "help gather wood",
-    [
-      { resource: "wood", base: ExpNumber.fromNumber(10), factor: 1.25 },
-      { resource: "stone", base: ExpNumber.fromNumber(5), factor: 1.25 },
-    ],
-    true,
-    10,
-    {
-      resourceMultiplier: {
-        resource: "wood",
-        factor: ExpNumber.fromNumber(1.1),
-      },
-    },
-  ),
-  new BuildingDefinition(
-    "quarry",
-    "Quarry",
-    "help mine stone",
-    [{ resource: "stone", base: ExpNumber.fromNumber(20), factor: 1.3 }],
-    true,
-    10,
-    {
-      resourceMultiplier: {
-        resource: "stone",
-        factor: ExpNumber.fromNumber(1.1),
-      },
-    },
-  ),
-  new BuildingDefinition(
-    "gold-mine",
-    "Gold Mine",
-    "help gold miner",
-    [
-      { resource: "wood", base: ExpNumber.fromNumber(100), factor: 1.25 },
-      { resource: "stone", base: ExpNumber.fromNumber(50), factor: 1.3 },
-    ],
-    true,
-    10,
-    {
-      resourceMultiplier: {
-        resource: "gold",
-        factor: ExpNumber.fromNumber(1.1),
-      },
-    },
-  ),
-  new BuildingDefinition(
-    "market",
-    "Market",
-    "Trade resources",
-    [
-      { resource: "wood", base: ExpNumber.fromNumber(300), factor: 1.2 },
-      { resource: "stone", base: ExpNumber.fromNumber(120), factor: 1.15 },
-    ],
-    true,
-  ),
-  new BuildingDefinition(
-    "town-hall",
-    "Town Hall",
-    "Increase house capacity",
-    [
-      { resource: "wood", base: ExpNumber.fromNumber(1000), factor: 1.25 },
-      { resource: "stone", base: ExpNumber.fromNumber(500), factor: 1.25 },
-      { resource: "gold", base: ExpNumber.fromNumber(500), factor: 1.25 },
-    ],
-    true,
-    10,
-    {
-      capacityProvided: {
-        building: "house",
-        perBuilding: ExpNumber.fromNumber(10),
-      },
-    },
-  ),
-  new BuildingDefinition(
-    "smithy",
-    "Smithy",
-    "Produce metalwork",
-    [
-      { resource: "wood", base: ExpNumber.fromNumber(360), factor: 1.2 },
-      { resource: "stone", base: ExpNumber.fromNumber(180), factor: 1.15 },
-    ],
-    true,
-    10,
-    { resourceProduction: { resource: "metalwork", amount: ExpNumber.ONE } },
-    { source: "battle", encounterId: "first-battle" },
-  ),
-  new BuildingDefinition(
-    "barracks",
-    "Barracks",
-    "Train units",
-    [
-      { resource: "wood", base: ExpNumber.fromNumber(420), factor: 1.22 },
-      { resource: "stone", base: ExpNumber.fromNumber(260), factor: 1.18 },
-      { resource: "food", base: ExpNumber.fromNumber(100), factor: 1.1 },
-    ],
-    true,
-    10,
-    { resourceProduction: { resource: "military", amount: ExpNumber.ONE } },
-    { source: "building-count", building: "town-hall", threshold: 5 },
-  ),
-  new BuildingDefinition(
-    "university",
-    "University",
-    "generate science",
-    [
-      { resource: "wood", base: ExpNumber.fromNumber(520), factor: 1.24 },
-      { resource: "stone", base: ExpNumber.fromNumber(300), factor: 1.18 },
-      { resource: "gold", base: ExpNumber.fromNumber(180), factor: 1.16 },
-    ],
-    true,
-    10,
-    { resourceProduction: { resource: "science", amount: ExpNumber.ONE } },
-    { source: "building-count", building: "town-hall", threshold: 20 },
-  ),
-  new BuildingDefinition(
-    "monument",
-    "Monument",
-    "Coming soon",
-    [
-      { resource: "stone", base: ExpNumber.fromNumber(900), factor: 1.3 },
-      { resource: "gold", base: ExpNumber.fromNumber(400), factor: 1.2 },
-    ],
-    false,
-  ),
-];
+type BuildingData = {
+  key: BuildingKey;
+  name: string;
+  description: string;
+  costs: { resource: ResourceKey; base: number; factor: number }[];
+  available: boolean;
+  maxCount?: number;
+  effects?: {
+    capacityProvided?: { building: BuildingKey; perBuilding: number };
+    resourceMultiplier?: { resource: ResourceKey; factor: number };
+    resourceDrain?: { resource: ResourceKey; amount: number };
+    resourceProduction?: { resource: ResourceKey; amount: number };
+  };
+  unlock?: BuildingUnlock;
+};
+
+const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
+  const effects = data.effects;
+  return new BuildingDefinition(
+    data.key,
+    data.name,
+    data.description,
+    data.costs.map(({ resource, base, factor }) => ({
+      resource,
+      base: ExpNumber.fromNumber(base),
+      factor,
+    })),
+    data.available,
+    data.maxCount,
+    effects
+      ? {
+          capacityProvided: effects.capacityProvided
+            ? {
+                building: effects.capacityProvided.building,
+                perBuilding: ExpNumber.fromNumber(
+                  effects.capacityProvided.perBuilding,
+                ),
+              }
+            : undefined,
+          resourceMultiplier: effects.resourceMultiplier
+            ? {
+                resource: effects.resourceMultiplier.resource,
+                factor: ExpNumber.fromNumber(effects.resourceMultiplier.factor),
+              }
+            : undefined,
+          resourceDrain: effects.resourceDrain
+            ? {
+                resource: effects.resourceDrain.resource,
+                amount: ExpNumber.fromNumber(effects.resourceDrain.amount),
+              }
+            : undefined,
+          resourceProduction: effects.resourceProduction
+            ? {
+                resource: effects.resourceProduction.resource,
+                amount: ExpNumber.fromNumber(effects.resourceProduction.amount),
+              }
+            : undefined,
+        }
+      : undefined,
+    data.unlock,
+  );
+};
+
+export const buildingDefinitions: BuildingDefinition[] = (
+  buildingData as BuildingData[]
+).map(toBuildingDefinition);

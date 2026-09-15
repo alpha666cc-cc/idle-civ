@@ -1,0 +1,650 @@
+[
+  {
+    "key": "farm-enhancer-9",
+    "name": "Enhanced Farm I",
+    "description": "increase Farm capacity and food production",
+    "building": "farm",
+    "resource": "food",
+    "threshold": 9,
+    "tier": 0,
+    "costs": ["food", "wood"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "farmCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "food", "value": 2 }
+    ]
+  },
+  {
+    "key": "farm-enhancer-98",
+    "name": "Enhanced Farm II",
+    "description": "increase Farm capacity and food production",
+    "building": "farm",
+    "resource": "food",
+    "threshold": 98,
+    "tier": 1,
+    "costs": ["food", "wood"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "farmCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "food", "value": 2 }
+    ]
+  },
+  {
+    "key": "farm-enhancer-980",
+    "name": "Enhanced Farm III",
+    "description": "increase Farm capacity and food production",
+    "building": "farm",
+    "resource": "food",
+    "threshold": 980,
+    "tier": 2,
+    "costs": ["food", "wood"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "farmCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
+      { "type": "costReductionPercent", "destination": "farm", "value": 0.5 }
+    ]
+  },
+  {
+    "key": "farm-enhancer-9800",
+    "name": "Enhanced Farm IV",
+    "description": "increase Farm capacity and food production",
+    "building": "farm",
+    "resource": "food",
+    "threshold": 9800,
+    "tier": 3,
+    "costs": ["food", "wood"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "farmCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
+      { "type": "costReductionPercent", "destination": "farm", "value": 0.5 }
+    ]
+  },
+  {
+    "key": "farm-enhancer-98000",
+    "name": "Enhanced Farm V",
+    "description": "increase Farm capacity and food production",
+    "building": "farm",
+    "resource": "food",
+    "threshold": 98000,
+    "tier": 4,
+    "costs": ["food", "wood"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "farmCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
+      { "type": "costReductionPercent", "destination": "farm", "value": 0.5 }
+    ]
+  },
+  {
+    "key": "farm-enhancer-980000",
+    "name": "Enhanced Farm VI",
+    "description": "increase Farm capacity and food production",
+    "building": "farm",
+    "resource": "food",
+    "threshold": 980000,
+    "tier": 5,
+    "costs": ["food", "wood"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "farmCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
+      { "type": "costReductionFactor", "destination": "farm", "value": 0.01 }
+    ]
+  },
+  {
+    "key": "farm-enhancer-9800000",
+    "name": "Enhanced Farm VII",
+    "description": "increase Farm capacity and food production",
+    "building": "farm",
+    "resource": "food",
+    "threshold": 9800000,
+    "tier": 6,
+    "costs": ["food", "wood"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "farmCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
+      { "type": "costReductionFactor", "destination": "farm", "value": 0.01 }
+    ]
+  },
+  {
+    "key": "farm-enhancer-98000000",
+    "name": "Enhanced Farm VIII",
+    "description": "increase Farm capacity and food production",
+    "building": "farm",
+    "resource": "food",
+    "threshold": 98000000,
+    "tier": 7,
+    "costs": ["food", "wood"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "farmCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "food", "value": 2 },
+      { "type": "costReductionFactor", "destination": "farm", "value": 0.01 }
+    ]
+  },
+  {
+    "key": "lumber-yard-enhancer-9",
+    "name": "Enhanced Lumber Yard I",
+    "description": "increase Lumber Yard capacity and wood production",
+    "building": "lumber-yard",
+    "resource": "wood",
+    "threshold": 9,
+    "tier": 0,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "lumber-yardCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "wood", "value": 2 }
+    ]
+  },
+  {
+    "key": "lumber-yard-enhancer-98",
+    "name": "Enhanced Lumber Yard II",
+    "description": "increase Lumber Yard capacity and wood production",
+    "building": "lumber-yard",
+    "resource": "wood",
+    "threshold": 98,
+    "tier": 1,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "lumber-yardCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "wood", "value": 2 }
+    ]
+  },
+  {
+    "key": "lumber-yard-enhancer-980",
+    "name": "Enhanced Lumber Yard III",
+    "description": "increase Lumber Yard capacity and wood production",
+    "building": "lumber-yard",
+    "resource": "wood",
+    "threshold": 980,
+    "tier": 2,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "lumber-yardCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "costReductionPercent",
+        "destination": "lumber-yard",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "key": "lumber-yard-enhancer-9800",
+    "name": "Enhanced Lumber Yard IV",
+    "description": "increase Lumber Yard capacity and wood production",
+    "building": "lumber-yard",
+    "resource": "wood",
+    "threshold": 9800,
+    "tier": 3,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "lumber-yardCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "costReductionPercent",
+        "destination": "lumber-yard",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "key": "lumber-yard-enhancer-98000",
+    "name": "Enhanced Lumber Yard V",
+    "description": "increase Lumber Yard capacity and wood production",
+    "building": "lumber-yard",
+    "resource": "wood",
+    "threshold": 98000,
+    "tier": 4,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "lumber-yardCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "costReductionPercent",
+        "destination": "lumber-yard",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "key": "lumber-yard-enhancer-980000",
+    "name": "Enhanced Lumber Yard VI",
+    "description": "increase Lumber Yard capacity and wood production",
+    "building": "lumber-yard",
+    "resource": "wood",
+    "threshold": 980000,
+    "tier": 5,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "lumber-yardCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "costReductionFactor",
+        "destination": "lumber-yard",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "key": "lumber-yard-enhancer-9800000",
+    "name": "Enhanced Lumber Yard VII",
+    "description": "increase Lumber Yard capacity and wood production",
+    "building": "lumber-yard",
+    "resource": "wood",
+    "threshold": 9800000,
+    "tier": 6,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "lumber-yardCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "costReductionFactor",
+        "destination": "lumber-yard",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "key": "lumber-yard-enhancer-98000000",
+    "name": "Enhanced Lumber Yard VIII",
+    "description": "increase Lumber Yard capacity and wood production",
+    "building": "lumber-yard",
+    "resource": "wood",
+    "threshold": 98000000,
+    "tier": 7,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "lumber-yardCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "wood", "value": 2 },
+      {
+        "type": "costReductionFactor",
+        "destination": "lumber-yard",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "key": "quarry-enhancer-9",
+    "name": "Enhanced Quarry I",
+    "description": "increase Quarry capacity and stone production",
+    "building": "quarry",
+    "resource": "stone",
+    "threshold": 9,
+    "tier": 0,
+    "costs": ["stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "quarryCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "stone", "value": 2 }
+    ]
+  },
+  {
+    "key": "quarry-enhancer-98",
+    "name": "Enhanced Quarry II",
+    "description": "increase Quarry capacity and stone production",
+    "building": "quarry",
+    "resource": "stone",
+    "threshold": 98,
+    "tier": 1,
+    "costs": ["stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "quarryCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "stone", "value": 2 }
+    ]
+  },
+  {
+    "key": "quarry-enhancer-980",
+    "name": "Enhanced Quarry III",
+    "description": "increase Quarry capacity and stone production",
+    "building": "quarry",
+    "resource": "stone",
+    "threshold": 980,
+    "tier": 2,
+    "costs": ["stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "quarryCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
+      { "type": "costReductionPercent", "destination": "quarry", "value": 0.5 }
+    ]
+  },
+  {
+    "key": "quarry-enhancer-9800",
+    "name": "Enhanced Quarry IV",
+    "description": "increase Quarry capacity and stone production",
+    "building": "quarry",
+    "resource": "stone",
+    "threshold": 9800,
+    "tier": 3,
+    "costs": ["stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "quarryCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
+      { "type": "costReductionPercent", "destination": "quarry", "value": 0.5 }
+    ]
+  },
+  {
+    "key": "quarry-enhancer-98000",
+    "name": "Enhanced Quarry V",
+    "description": "increase Quarry capacity and stone production",
+    "building": "quarry",
+    "resource": "stone",
+    "threshold": 98000,
+    "tier": 4,
+    "costs": ["stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "quarryCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
+      { "type": "costReductionPercent", "destination": "quarry", "value": 0.5 }
+    ]
+  },
+  {
+    "key": "quarry-enhancer-980000",
+    "name": "Enhanced Quarry VI",
+    "description": "increase Quarry capacity and stone production",
+    "building": "quarry",
+    "resource": "stone",
+    "threshold": 980000,
+    "tier": 5,
+    "costs": ["stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "quarryCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
+      { "type": "costReductionFactor", "destination": "quarry", "value": 0.01 }
+    ]
+  },
+  {
+    "key": "quarry-enhancer-9800000",
+    "name": "Enhanced Quarry VII",
+    "description": "increase Quarry capacity and stone production",
+    "building": "quarry",
+    "resource": "stone",
+    "threshold": 9800000,
+    "tier": 6,
+    "costs": ["stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "quarryCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
+      { "type": "costReductionFactor", "destination": "quarry", "value": 0.01 }
+    ]
+  },
+  {
+    "key": "quarry-enhancer-98000000",
+    "name": "Enhanced Quarry VIII",
+    "description": "increase Quarry capacity and stone production",
+    "building": "quarry",
+    "resource": "stone",
+    "threshold": 98000000,
+    "tier": 7,
+    "costs": ["stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "quarryCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "stone", "value": 2 },
+      { "type": "costReductionFactor", "destination": "quarry", "value": 0.01 }
+    ]
+  },
+  {
+    "key": "gold-mine-enhancer-9",
+    "name": "Enhanced Gold Mine I",
+    "description": "increase Gold Mine capacity and gold production",
+    "building": "gold-mine",
+    "resource": "gold",
+    "threshold": 9,
+    "tier": 0,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold-mineCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "gold", "value": 2 }
+    ]
+  },
+  {
+    "key": "gold-mine-enhancer-98",
+    "name": "Enhanced Gold Mine II",
+    "description": "increase Gold Mine capacity and gold production",
+    "building": "gold-mine",
+    "resource": "gold",
+    "threshold": 98,
+    "tier": 1,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold-mineCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "gold", "value": 2 }
+    ]
+  },
+  {
+    "key": "gold-mine-enhancer-980",
+    "name": "Enhanced Gold Mine III",
+    "description": "increase Gold Mine capacity and gold production",
+    "building": "gold-mine",
+    "resource": "gold",
+    "threshold": 980,
+    "tier": 2,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold-mineCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "costReductionPercent",
+        "destination": "gold-mine",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "key": "gold-mine-enhancer-9800",
+    "name": "Enhanced Gold Mine IV",
+    "description": "increase Gold Mine capacity and gold production",
+    "building": "gold-mine",
+    "resource": "gold",
+    "threshold": 9800,
+    "tier": 3,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold-mineCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "costReductionPercent",
+        "destination": "gold-mine",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "key": "gold-mine-enhancer-98000",
+    "name": "Enhanced Gold Mine V",
+    "description": "increase Gold Mine capacity and gold production",
+    "building": "gold-mine",
+    "resource": "gold",
+    "threshold": 98000,
+    "tier": 4,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold-mineCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "costReductionPercent",
+        "destination": "gold-mine",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "key": "gold-mine-enhancer-980000",
+    "name": "Enhanced Gold Mine VI",
+    "description": "increase Gold Mine capacity and gold production",
+    "building": "gold-mine",
+    "resource": "gold",
+    "threshold": 980000,
+    "tier": 5,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold-mineCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "costReductionFactor",
+        "destination": "gold-mine",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "key": "gold-mine-enhancer-9800000",
+    "name": "Enhanced Gold Mine VII",
+    "description": "increase Gold Mine capacity and gold production",
+    "building": "gold-mine",
+    "resource": "gold",
+    "threshold": 9800000,
+    "tier": 6,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold-mineCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "costReductionFactor",
+        "destination": "gold-mine",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "key": "gold-mine-enhancer-98000000",
+    "name": "Enhanced Gold Mine VIII",
+    "description": "increase Gold Mine capacity and gold production",
+    "building": "gold-mine",
+    "resource": "gold",
+    "threshold": 98000000,
+    "tier": 7,
+    "costs": ["wood", "stone"],
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "gold-mineCapacity",
+        "value": 10
+      },
+      { "type": "resourceMultiplier", "destination": "gold", "value": 2 },
+      {
+        "type": "costReductionFactor",
+        "destination": "gold-mine",
+        "value": 0.01
+      }
+    ]
+  }
+]

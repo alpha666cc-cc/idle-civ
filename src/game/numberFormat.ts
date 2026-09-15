@@ -77,7 +77,7 @@ export function compactSuffix(tier: number): string {
 function scaled(fraction: number): string {
   const rounded = Number(fraction.toFixed(2));
   const nearestInt = Math.round(rounded);
-  if (Math.abs(rounded - nearestInt) < 1e-9) {
+  if (Math.abs(rounded - nearestInt) <= 1e-6) {
     return String(nearestInt);
   }
   return rounded.toString();
@@ -116,7 +116,7 @@ export function formatNumber(
   const mantissa = abs.mantissa;
   const withSign = (text: string): string => (negative ? `-${text}` : text);
 
-  if (exponent < 0 || exponent === 0) {
+  if (exponent <= 0) {
     return withSign(scaled(abs.toNumber()));
   }
 
