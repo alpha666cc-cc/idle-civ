@@ -496,29 +496,29 @@ button:focus-visible {
 }
 .gather-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 9px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 .gather-card {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
-  min-width: 0;
-  padding: 9px;
+  padding: 12px;
   background: #e7eadf;
   border: 1px solid rgba(93, 111, 90, 0.14);
 }
 .gather-button {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  flex: 1;
-  gap: 8px;
-  min-width: 0;
+  gap: 6px;
+  width: 100%;
   padding: 0;
   border: 0;
   color: #344239;
   background: transparent;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 .gather-button:hover .gather-card-icon {
@@ -527,10 +527,9 @@ button:focus-visible {
 .gather-card-icon {
   display: grid;
   place-items: center;
-  flex: 0 0 auto;
-  width: 31px;
-  height: 31px;
-  border-radius: 5px;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
   transition: transform 0.15s;
 }
 .gather-button.green .gather-card-icon {
@@ -551,36 +550,42 @@ button:focus-visible {
 }
 .gather-button > span:nth-child(2) {
   display: flex;
-  flex: 1;
   flex-direction: column;
-  min-width: 0;
-  gap: 3px;
+  align-items: center;
+  gap: 2px;
 }
 .gather-button strong {
   overflow: hidden;
-  font-size: 11px;
+  font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .gather-button small {
   color: #849084;
   font:
-    9px "DM Mono",
+    10px "DM Mono",
     monospace;
 }
 .gather-action {
   color: #77934a;
   font:
-    500 11px "DM Mono",
+    600 12px "DM Mono",
     monospace;
 }
 .production-workbench .worker-controls {
   flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 28px;
   border-color: rgba(83, 105, 80, 0.18);
 }
 .production-workbench .worker-controls button {
   color: #607b49;
   background: #d6dfca;
+  width: 24px;
 }
 .production-workbench .worker-controls button:hover:not(:disabled) {
   color: #33462e;
@@ -593,6 +598,8 @@ button:focus-visible {
 .production-workbench .worker-controls span {
   color: #4d5e4e;
   background: #edf0e7;
+  width: 28px;
+  font-size: 11px;
 }
 .modal-backdrop {
   position: fixed;
