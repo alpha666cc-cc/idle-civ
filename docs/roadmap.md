@@ -92,14 +92,14 @@ type AgeDefinition = {
   populationThreshold: number;
   unlocks?: string[]; // buildings or combat units unlocked by this age
   upgrades?: string[]; // upgrades or research made available
-  encounters?: string[]; // one or two battles expected this age (see Milestone 8)
+  encounters?: string[]; // two regular battles + an age-end boss (see Milestone 8)
 };
 ```
 
 - Compute the current age as the highest threshold reached; do not persist an age counter in the save. Keep ages data-driven so the engine has no era-specific conditionals.
 - Make building availability age-driven data instead of the current hard-coded `available` boolean; `canBuild` then reflects the current age.
 - Emit age-transition events so statistics and achievements can record them and the game-length simulation (see Milestone 10) can report time-to-age.
-- Expect one or two battles per age (see Milestone 8 for encounter pacing). The first is a wolf in the opening Ancient age whose defeat expands the town-hall count beyond its default cap of 10.
+- Expect **23 battles across the campaign** — two regular fights plus an age-end boss per age (five battles in Modern/Space); see Milestone 8 and the campaign prototype. The first is a wolf in the opening Ancient age whose defeat expands the town-hall count beyond its default cap of 10; each age-end boss unlocks the next age.
 - Format large populations readably (1.2M, 3.4B) as values pass a million; 10 billion stays well inside `Number.MAX_SAFE_INTEGER`.
 
 ## Milestone 3: Save system
@@ -130,6 +130,30 @@ interface SaveCodec {
 ```
 
 The save system should include migrations by version, validation, corruption handling, and offline-progress timestamps. Do not trust imported saves without validation.
+
+### Offline generation rate (E_off) — crucial idle mechanic
+
+Offline progress must not let players skip whole ages by leaving the game overnight. All
+offline gains use an **Offline Production Efficiency Factor** (`E_off`), a fraction of the
+active production speed:
+
+- **Base offline efficiency:** `E_off = 25%–50%` of the active production rate. The
+  opening value — and any later progression within that band (upgrades, prestige bonuses)
+  — is a Balance-agent decision.
+- **Offline max cap:** credit offline progress for at most **12 hours** of elapsed time,
+  matching the expected overnight pause and preventing multi-day bank-and-skip strategies.
+
+Mechanics when a save is loaded:
+
+1. Compute `elapsed = now − savedAt` (the save model already carries `savedAt`) and clamp
+   it to the 12-hour cap.
+2. Credit each resource with `elapsed × computeResourceRate(resource) × E_off`, using the
+   same rate formula as the live tick, so citizens keep draining food while the player is
+   away. An open Balance question: whether drains should apply at full strength offline or
+   be scaled by `E_off` alongside production.
+3. Age transitions triggered by offline population growth must emit the same events live
+   transitions do, so statistics and time-to-age reporting stay honest (see Milestones 2,
+   5, and 10).
 
 ## Milestone 4: Action multiplier
 
@@ -216,12 +240,16 @@ type UnitDefinition = {
 };
 ```
 
-Encounter pacing: expect one or two battles per age — seven to fourteen encounters across the whole campaign — aligned with the age definitions (see Milestone 2). The first encounter is a wolf in the opening Ancient age; defeating it expands the town-hall count beyond the default cap of 10. Each later battle follows the same pattern: a victory applies a data-driven reward such as a raised building cap, an upgrade, or a research unlock, so combat acts as a pacing gate alongside the age population thresholds. Encounters should be data-driven with stable IDs, an age reference, enemy unit snapshots, and deterministic rewards applied to the save:
+Encounter pacing is settled by the campaign prototype (`temp/campaign_v2.json`): **23 encounters — two regular battles plus one age-end boss for each of the six earlier ages, and five battles (4 + final boss) in Modern/Space**. The first encounter is a wolf in the opening Ancient age; defeating it expands the town-hall count beyond the default cap of 10. Each victory applies a data-driven reward such as a raised building cap, an upgrade, or a research unlock, so combat acts as a pacing gate alongside the age population thresholds; each boss ends its age (`unlocksNextAge`). Unit availability inside an age is deliberately **not** an encounter concern: new units arrive through the research tree (Milestone 9) and as battle rewards, via the standard explicit unlock id lists. The curated unit roster behind these battles lives in `temp/unit-v2-currated.json` (79 units across the seven ages). Encounters should be data-driven with stable IDs, an age reference, an age-relative population window, a historical year, enemy unit snapshots, and deterministic rewards applied to the save:
 
 ```ts
 type EncounterDefinition = {
   id: string;
   age: string; // age definition ID (see Milestone 2)
+  popMin: number; // age-relative unlock window (e.g. 1200–3000 in Iron Age)
+  popMax: number;
+  year: number; // historical year, for flavour and encounter windows
+  isBoss: boolean; // age-end bosses unlock the next age
   enemies: UnitDefinition[];
   rewards: EffectDefinition[]; // e.g. raise the town-hall maxCount cap
 };

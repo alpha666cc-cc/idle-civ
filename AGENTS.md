@@ -83,6 +83,7 @@ idle-civ/
   AGENTS.md                 <- you are here
   README.md                 getting started / Vite template notes
   docs/roadmap.md           the design + milestone source of truth (long, read it)
+  docs/game-scope.md        AI-readable content & scope manifest (snapshot; refresh after big content changes)
   index.html                Vite entry, mounts <div id="root">, favicon.svg
   package.json              scripts: dev / build / lint / preview  (no test script)
   vite.config.ts            @vitejs/plugin-react only, no aliases, no path mapping
@@ -534,10 +535,12 @@ with a roadmap entry already assigned.
   `costReductionBase`/`costReductionFlat` data (the engine path exists), unit
   definitions, research/achievement/battle unlock sources (the smithy battle gate
   cannot fire yet).
-- **`temp/battle.ts`, `temp/campaign.json`, `temp/units100.json`** are exploration
-  artifacts for the future combat system. They are not compiled, not linted, not
-  imported, and not consistent with the roadmap's `UnitDefinition` shape. Do not import
-  them from `src/`; ask before treating them as a design decision.
+- **`temp/battle.ts`, `temp/campaign.json`, `temp/units100.json`** (and the newer
+  `campaign_v2.json`, `unit-v2-currated.json`, `unit100-v2.json`) are exploration
+  artifacts for the combat system — still not compiled, not linted, not imported from
+  `src/`. The v2 files are the **content reference for battle scope** by owner decision:
+  23 encounters (2 regular + 1 age-end boss per age, 5 in Modern/Space) and a 79-unit
+  roster; the roadmap's Milestone 8 reflects that scope.
 
 **Engine debt and gotchas**
 
@@ -575,7 +578,9 @@ with a roadmap entry already assigned.
   Adding an entry whose id already exists (for example reusing a resource id for a
   building) throws at import time and blanks the app.
 - **The tick is a 1-second `setInterval` in React**, not a fixed-step loop with delta
-  time. Background tabs throttle it, so elapsed/offline progress is *not* modelled yet.
+  time. Background tabs throttle it, so elapsed/offline progress is *not* modelled yet;
+  the roadmap's Milestone 3 now specifies the planned mechanic (an Offline Production
+  Efficiency Factor `E_off` of 25–50% of active production, capped at 12 hours).
 - **`styles.css` is one 1356-line global file** with no scoping — reuse class names
   carefully and remove dead rules when superseding them.
 - **Dev Tools are player-visible** in the shipped UI (auto-clicker, auto-buy,
@@ -598,7 +603,7 @@ Full detail in `docs/roadmap.md`; this is orientation only.
 | 5 — Statistics | **Not started** |
 | 6 — Achievements | **Not started** |
 | 7 — Upgrades | **First slice done** — bonus type, 32 enhancer upgrades (capacity/production, plus cost reductions on tiers 3–8), Upgrades tab, unlock-gated buildings, cost-reduction engine path. Flat/drain/base bonus data and research/achievement/battle sources still pending; full model in **§13** |
-| 8 — Battle system | **Prototype only** (`temp/`) |
+| 8 — Battle system | **Prototype only** (`temp/`; campaign v2 fixes the content scope: 23 encounters, 7 age bosses, 79 units) |
 | 9 — Research tree | **Not started** |
 | 10 — Game-length simulation | **Not started** |
 
