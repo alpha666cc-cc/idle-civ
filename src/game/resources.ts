@@ -13,8 +13,7 @@ export type CapacityResourceKey =
   | "town-hallCapacity"
   | "smithyCapacity"
   | "barracksCapacity"
-  | "universityCapacity"
-  | "monumentCapacity";
+  | "universityCapacity";
 export type ResourceKey =
   | ProductionResourceKey
   | "population"
@@ -66,7 +65,6 @@ export const capacityDefinitions: ResourceDefinition[] = [
   new ResourceDefinition("smithyCapacity", "Smithy Capacity"),
   new ResourceDefinition("barracksCapacity", "Barracks Capacity"),
   new ResourceDefinition("universityCapacity", "University Capacity"),
-  new ResourceDefinition("monumentCapacity", "Monument Capacity"),
 ];
 
 /** Resources whose amount accrues per tick: worker production + building output. */
@@ -107,17 +105,16 @@ export const emptyResourceAmounts = (): ResourceAmounts => ({
   military: ExpNumber.ZERO,
   metalwork: ExpNumber.ZERO,
   peopleCapacity: ExpNumber.ZERO,
-  houseCapacity: ExpNumber.fromNumber(10),
+  houseCapacity: ExpNumber.ZERO,
   farmCapacity: ExpNumber.fromNumber(10),
   "lumber-yardCapacity": ExpNumber.fromNumber(10),
   quarryCapacity: ExpNumber.fromNumber(10),
   "gold-mineCapacity": ExpNumber.fromNumber(10),
   marketCapacity: ExpNumber.fromNumber(10),
-  "town-hallCapacity": ExpNumber.fromNumber(10),
+  "town-hallCapacity": ExpNumber.fromNumber(1),
   smithyCapacity: ExpNumber.fromNumber(10),
   barracksCapacity: ExpNumber.fromNumber(10),
   universityCapacity: ExpNumber.fromNumber(10),
-  monumentCapacity: ExpNumber.fromNumber(10),
 });
 
 export const emptyWorkerAssignments = (): WorkerAssignments => ({
@@ -147,7 +144,6 @@ export const emptyResourceFactors = (): ResourceFactorMap => ({
   smithyCapacity: { additional: [], multiplicative: [], drain: [] },
   barracksCapacity: { additional: [], multiplicative: [], drain: [] },
   universityCapacity: { additional: [], multiplicative: [], drain: [] },
-  monumentCapacity: { additional: [], multiplicative: [], drain: [] },
 });
 
 export const computeResourceRate = ({

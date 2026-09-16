@@ -4,6 +4,7 @@ import {
   BookOpen,
   Building2,
   Castle,
+  ChartColumn,
   Coins,
   Hammer,
   Landmark,
@@ -13,6 +14,7 @@ import {
   Shield,
   Settings,
   Sparkles,
+  Store,
   Swords,
   Users,
   Wheat,
@@ -39,7 +41,9 @@ type Tab =
   | "Upgrades"
   | "Army"
   | "Research"
+  | "Trade"
   | "Settings"
+  | "Stats"
   | "Dev Tools";
 type ResourcePresentation = {
   key: ProductionResourceKey;
@@ -68,7 +72,9 @@ const tabs: { label: Tab; icon: LucideIcon }[] = [
   { label: "Upgrades", icon: ArrowUpRight },
   { label: "Army", icon: Swords },
   { label: "Research", icon: BookOpen },
+  { label: "Trade", icon: Store },
   { label: "Settings", icon: Settings },
+  { label: "Stats", icon: ChartColumn },
   { label: "Dev Tools", icon: Wrench },
 ];
 
@@ -146,7 +152,6 @@ const buildingPresentation: Record<string, { icon: LucideIcon; tone: string }> =
     smithy: { icon: Hammer, tone: "orange" },
     barracks: { icon: Shield, tone: "blue" },
     university: { icon: BookOpen, tone: "pink" },
-    monument: { icon: Landmark, tone: "locked" },
   };
 
 const buildings: BuildingPresentation[] = buildingDefinitions.map(
@@ -220,6 +225,9 @@ function App() {
       if (gameState.isUpgradeUnlocked(upgrade.key)) {
         gamepedia.reveal(upgrade.key);
       }
+    }
+    for (const encounterId of gameState.defeatedEncounters) {
+      gamepedia.reveal(encounterId);
     }
   }, [gameState]);
 
@@ -321,6 +329,8 @@ function App() {
     if (label === "Army") return gameState.isBuildingAvailable("barracks");
     if (label === "Research")
       return gameState.isBuildingAvailable("university");
+    if (label === "Trade")
+      return gameState.isBuildingAvailable("market");
     return true;
   });
 
@@ -625,6 +635,36 @@ function App() {
                   ))}
                 </div>
               )}
+            </section>
+          )}
+
+          {activeTab === "Trade" && (
+            <section className="production-workbench" aria-label="Trade">
+              <div className="workbench-heading">
+                <div>
+                  <p className="eyebrow">Commerce</p>
+                  <h3>Trade</h3>
+                </div>
+              </div>
+              <p className="tab-placeholder-copy">
+                Trade caravans and market stalls will open here once your
+                merchants have a market to work from.
+              </p>
+            </section>
+          )}
+
+          {activeTab === "Stats" && (
+            <section className="production-workbench" aria-label="Stats">
+              <div className="workbench-heading">
+                <div>
+                  <p className="eyebrow">Records</p>
+                  <h3>Stats</h3>
+                </div>
+              </div>
+              <p className="tab-placeholder-copy">
+                Lifetime tallies for clicks, buildings, and resources will
+                live here.
+              </p>
             </section>
           )}
 

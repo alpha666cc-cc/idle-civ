@@ -9,8 +9,7 @@ export type BuildingKey =
   | "town-hall"
   | "smithy"
   | "barracks"
-  | "university"
-  | "monument";
+  | "university";
 
 import type { ResourceKey } from "./resources";
 import { GameObject } from "./gameObject";
@@ -34,11 +33,12 @@ export type BuildingEffects = {
 /**
  * Data-driven building unlock gate (AGENTS.md §13.4). A building with an unlock stays
  * locked until the engine reports the condition satisfied; `available: false`
- * (monument) remains permanently locked.
+ * remains permanently locked.
  */
 export type BuildingUnlock =
   | { source: "building-count"; building: BuildingKey; threshold: number }
-  | { source: "battle"; encounterId: string };
+  | { source: "battle"; encounterId: string }
+  | { source: "age"; ageId: string };
 
 export class BuildingDefinition extends GameObject {
   readonly key: BuildingKey;

@@ -21,6 +21,7 @@ import {
   type BuildingCost,
   type BuildingKey,
 } from "./buildings";
+import { encounterDefinitions } from "./encounters";
 import { upgradeDefinitions } from "./upgrades";
 import { collectCostReductions, type Bonus } from "./bonus";
 
@@ -44,16 +45,18 @@ export class CivilizationState {
   readonly autoClicksPerSecond: number;
   readonly boughtUpgrades: readonly string[];
   readonly defeatedEncounters: readonly string[];
+  readonly enteredAges: readonly string[];
 
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
     workers: WorkerAssignments = emptyWorkerAssignments(),
-    builtBuildings: string[] = [],
+    builtBuildings: string[] = ["town-hall"],
     resourceFactors: ResourceFactorMap = emptyResourceFactors(),
     buildingCostOverrides: BuildingCostOverrides = {},
     autoClicksPerSecond = 0,
     boughtUpgrades: readonly string[] = [],
     defeatedEncounters: readonly string[] = [],
+    enteredAges: readonly string[] = [],
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -63,6 +66,7 @@ export class CivilizationState {
     this.autoClicksPerSecond = autoClicksPerSecond;
     this.boughtUpgrades = boughtUpgrades;
     this.defeatedEncounters = defeatedEncounters;
+    this.enteredAges = enteredAges;
 
     const houses = this.buildingCount("house");
     const townHalls = this.buildingCount("town-hall");
@@ -72,12 +76,12 @@ export class CivilizationState {
     )
       ? this.resources.peopleCapacity
       : peopleFloor;
-    const houseFloor = ExpNumber.fromNumber(10 + townHalls * 10);
+    const houseFloor = ExpNumber.fromNumber(townHalls * 10);
     this.resources.houseCapacity = this.resources.houseCapacity.gte(houseFloor)
       ? this.resources.houseCapacity
       : houseFloor;
     this.resources.population = ExpNumber.fromNumber(
-      builtBuildings.filter((key) => key === "people").length,
+      this.buildingCount("people"),
     );
   }
 
@@ -417,6 +421,14 @@ export class CivilizationState {
         max = max.mul(bonus.value);
       }
     }
+    for (const [, bonus] of this.defeatedEncounterBonuses()) {
+      if (
+        bonus.type === "resourceMultiplier" &&
+        bonus.destination === capacity
+      ) {
+        max = max.mul(bonus.value);
+      }
+    }
     return max;
   }
 
@@ -631,6 +643,8 @@ export class CivilizationState {
         return this.buildingCount(unlock.building) >= unlock.threshold;
       case "battle":
         return this.defeatedEncounters.includes(unlock.encounterId);
+      case "age":
+        return this.enteredAges.includes(unlock.ageId);
       default:
         return false;
     }
@@ -711,6 +725,30 @@ export class CivilizationState {
     );
   }
 
+  /** Bonuses from defeated encounters, paired with the encounter id as the source. */
+  private defeatedEncounterBonuses(): [encounterId: string, bonus: Bonus][] {
+    return this.defeatedEncounters.flatMap((encounterId) =>
+      (
+        encounterDefinitions.find(({ key }) => key === encounterId)?.bonuses ??
+        []
+      ).map(
+        (bonus) => [encounterId, bonus] as [encounterId: string, bonus: Bonus],
+      ),
+    );
+  }
+
+  defeatEncounter(encounterId: string): CivilizationState {
+    if (this.defeatedEncounters.includes(encounterId)) return this;
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      [...this.defeatedEncounters, encounterId],
+    );
+  }
+
   private withResources(resources: ResourceAmounts): CivilizationState {
     return this.withState(resources, this.buildingCostOverrides);
   }
@@ -725,6 +763,7 @@ export class CivilizationState {
       this.autoClicksPerSecond,
       this.boughtUpgrades,
       this.defeatedEncounters,
+      this.enteredAges,
     );
   }
 
@@ -740,6 +779,7 @@ export class CivilizationState {
       this.autoClicksPerSecond,
       this.boughtUpgrades,
       this.defeatedEncounters,
+      this.enteredAges,
     );
   }
 
@@ -750,6 +790,7 @@ export class CivilizationState {
     autoClicksPerSecond = this.autoClicksPerSecond,
     boughtUpgrades = this.boughtUpgrades,
     defeatedEncounters = this.defeatedEncounters,
+    enteredAges = this.enteredAges,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -760,6 +801,20 @@ export class CivilizationState {
       autoClicksPerSecond,
       boughtUpgrades,
       defeatedEncounters,
+      enteredAges,
+    );
+  }
+
+  enterAge(ageId: string): CivilizationState {
+    if (this.enteredAges.includes(ageId)) return this;
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      [...this.enteredAges, ageId],
     );
   }
 }
