@@ -19,7 +19,7 @@ src/game/
   gameObject.ts
   gamepedia.ts
   data/
-    resources.ts
+    attributes.ts
     production.ts
     buildings.ts
     upgrades.ts
@@ -36,7 +36,7 @@ Move balance and content definitions into `src/game/data/`, with one module per 
 
 ```text
 src/game/data/
-  resources.ts
+  attributes.ts
   production.ts
   buildings.ts
   upgrades.ts

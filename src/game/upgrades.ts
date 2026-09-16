@@ -6,8 +6,8 @@ import {
   type BuildingCost,
   type BuildingKey,
 } from "./buildings";
-import type { Bonus } from "./bonus";
-import type { ResourceKey } from "./resources";
+import { parseBonusType, type Bonus } from "./bonus";
+import type { ResourceKey } from "./attributes";
 
 /** Unlock conditions for upgrades (AGENTS.md §13.4). Sources own their id lists. */
 export type UpgradeUnlock = {
@@ -51,7 +51,7 @@ type UpgradeData = {
   tier: number;
   costs: { resource: ResourceKey; base: number | string; factor: number }[];
   bonuses: {
-    type: Bonus["type"];
+    type: string;
     destination: string;
     value: number;
   }[];
@@ -68,7 +68,7 @@ const toUpgradeDefinition = (data: UpgradeData): UpgradeDefinition =>
       factor,
     })),
     data.bonuses.map(({ type, destination, value }) => ({
-      type,
+      type: parseBonusType(type),
       destination,
       value: ExpNumber.fromNumber(value),
     })),

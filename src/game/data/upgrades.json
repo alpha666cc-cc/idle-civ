@@ -21,12 +21,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "food",
         "value": 2
       }
@@ -54,12 +54,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "food",
         "value": 2
       }
@@ -92,12 +92,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "food",
         "value": 2
       },
@@ -135,12 +135,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "food",
         "value": 2
       },
@@ -178,12 +178,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "food",
         "value": 2
       },
@@ -221,12 +221,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "food",
         "value": 2
       },
@@ -264,12 +264,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "food",
         "value": 2
       },
@@ -307,12 +307,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "food",
         "value": 2
       },
@@ -345,12 +345,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "wood",
         "value": 2
       }
@@ -378,12 +378,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "wood",
         "value": 2
       }
@@ -416,12 +416,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "wood",
         "value": 2
       },
@@ -459,12 +459,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "wood",
         "value": 2
       },
@@ -502,12 +502,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "wood",
         "value": 2
       },
@@ -545,12 +545,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "wood",
         "value": 2
       },
@@ -588,12 +588,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "wood",
         "value": 2
       },
@@ -631,12 +631,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "wood",
         "value": 2
       },
@@ -664,12 +664,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "stone",
         "value": 2
       }
@@ -692,12 +692,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "stone",
         "value": 2
       }
@@ -725,12 +725,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "stone",
         "value": 2
       },
@@ -763,12 +763,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "stone",
         "value": 2
       },
@@ -801,12 +801,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "stone",
         "value": 2
       },
@@ -839,12 +839,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "stone",
         "value": 2
       },
@@ -877,12 +877,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "stone",
         "value": 2
       },
@@ -915,12 +915,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "stone",
         "value": 2
       },
@@ -953,12 +953,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold",
         "value": 2
       }
@@ -986,12 +986,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold",
         "value": 2
       }
@@ -1024,12 +1024,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold",
         "value": 2
       },
@@ -1067,12 +1067,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold",
         "value": 2
       },
@@ -1110,12 +1110,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold",
         "value": 2
       },
@@ -1153,12 +1153,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold",
         "value": 2
       },
@@ -1196,12 +1196,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold",
         "value": 2
       },
@@ -1239,12 +1239,12 @@
     ],
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
       },
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "gold",
         "value": 2
       },

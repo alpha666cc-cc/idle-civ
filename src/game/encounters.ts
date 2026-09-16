@@ -1,5 +1,5 @@
 import encounterData from "./data/encounters.json";
-import type { Bonus } from "./bonus";
+import { parseBonusType, type Bonus } from "./bonus";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 
@@ -22,7 +22,7 @@ type EncounterData = {
   name: string;
   description: string;
   bonuses: {
-    type: Bonus["type"];
+    type: string;
     destination: string;
     value: number;
   }[];
@@ -34,7 +34,7 @@ const toEncounterDefinition = (data: EncounterData): EncounterDefinition =>
     data.name,
     data.description,
     data.bonuses.map(({ type, destination, value }) => ({
-      type,
+      type: parseBonusType(type),
       destination,
       value: ExpNumber.fromNumber(value),
     })),

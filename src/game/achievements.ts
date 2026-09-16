@@ -1,10 +1,10 @@
 import achievementData from "./data/achievements.json";
-import type { Bonus } from "./bonus";
+import { parseBonusType, type Bonus } from "./bonus";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 import { buildingDefinitions, type BuildingKey } from "./buildings";
 import { encounterDefinitions } from "./encounters";
-import type { ResourceKey } from "./resources";
+import type { ResourceKey } from "./attributes";
 
 /**
  * Achievement requirements are data-driven and evaluated by the engine
@@ -59,7 +59,7 @@ type AchievementData = {
   name: string;
   description: string;
   requirement: AchievementRequirementData;
-  bonuses?: { type: Bonus["type"]; destination: string; value: number }[];
+  bonuses?: { type: string; destination: string; value: number }[];
 };
 
 const toRequirement = (
@@ -115,7 +115,7 @@ export const achievementDefinitions: AchievementDefinition[] = (
       data.description,
       toRequirement(data.requirement),
       (data.bonuses ?? []).map(({ type, destination, value }) => ({
-        type,
+        type: parseBonusType(type),
         destination,
         value: ExpNumber.fromNumber(value),
       })),

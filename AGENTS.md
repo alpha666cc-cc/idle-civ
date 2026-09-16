@@ -29,7 +29,7 @@ toward a 10-billion population and an interstellar colony ship
 - **Current state:** one screen; economy (resources, workers, buildings, capacities,
   Gamepedia modal, number-format preference, dev tools auto-clicker/auto-buy/auto-assign).
   **Implemented (bonus/upgrade slice):** the `Bonus` type (`src/game/bonus.ts`),
-  resource-targeted bonuses (`resourceMultiplier` on production resources and
+  attribute-targeted bonuses (`attributeMultiplier` on production resources and
   capacities), the cost-reduction path in `getBuildingCost()` (enhancer tiers 3–8 use
   `costReductionPercent`/`costReductionFactor` on their building), the
   `UpgradeDefinition` registry with the 32 production-enhancer tiers
@@ -110,13 +110,12 @@ idle-civ/
       GamepediaModal.tsx    codex modal: list, search, per-category detail views (605 lines)
     game/                   pure domain layer, zero React imports
       gameObject.ts         abstract GameObject base (id, description, seen)
-      resources.ts          resource/capacity keys, definitions, factor model, rates
+      attributes.ts         attribute (resource/capacity/stat) keys, definitions, factor model, rates
       buildings.ts          BuildingDefinition + the 12 building definitions
       bonus.ts              Bonus union + factories + cost-reduction folding (§13.1)
       upgrades.ts           UpgradeDefinition registry (JSON-backed) + unlock gates
       encounters.ts         EncounterDefinition registry (JSON-backed), victory bonuses
       achievements.ts       AchievementDefinition registry (JSON-backed) + requirements + rewards
-      stats.ts              StatDefinition registry (JSON-backed): clickPower, autoClickRate
       statistics.ts         Statistics type: clicks, buildings built, play time, best times
       data/                 JSON definition payloads (buildings, upgrades, encounters, achievements, stats)
       workerProduction.ts   WorkerProduction: per-resource worker + auto-click maths
@@ -139,7 +138,7 @@ React components (App.tsx, GamepediaModal.tsx)
 Engine (civilizationState.ts)  ── mutates nothing, returns new state
         │  reads definitions + factor model
         ▼
-Definitions (resources.ts, buildings.ts) + registries (gamepedia.ts) + numeric core (expNumber.ts)
+Definitions (attributes.ts, buildings.ts) + registries (gamepedia.ts) + numeric core (expNumber.ts)
 ```
 
 Rules of thumb:
@@ -161,23 +160,26 @@ export abstract class GameObject {
 }
 ```
 
-Every definition type extends it. `id` is the stable key; for `ResourceDefinition` the
+Every definition type extends it. `id` is the stable key; for `AttributeDefinition` the
 id equals its `key`. `seen` starts `false` and is flipped by registration/reveal so
 undiscovered content stays hidden from the player.
 
-### 4.3 Resources and capacities (`src/game/resources.ts`)
+### 4.3 Attributes — resources, capacities and stats (`src/game/attributes.ts`)
 
-Three key families:
+Every value a bonus destination can name is an **attribute** (§13.2), registered in one
+`attributeDefinitions` list with an `AttributeFamily`:
 
-- `ProductionResourceKey` = `"food" | "wood" | "stone" | "gold"` — worker-assignable,
-  `WorkerAssignments` is a `Record` of exactly these four.
-- `"population" | "science"` — tracked resources without worker assignment.
-- `CapacityResourceKey` = `` `${buildingKey}Capacity` `` — **capacity is stored as a
-  resource**. Twelve exist today, one per building, each defaulting to 10 in
-  `emptyResourceAmounts()`.
+- `"amount"` — the four `ProductionResourceKey`s (`"food" | "wood" | "stone" | "gold"` —
+  worker-assignable; `WorkerAssignments` is a `Record` of exactly these four) plus the
+  tracked `population`/`science`/`military`/`metalwork` resources.
+- `"capacity"` — `CapacityResourceKey` = `` `${buildingKey}Capacity` `` — **capacity is
+  stored as a resource**. Eleven exist today, one per buildable building (monument has
+  none), defaulting to 10 in `emptyResourceAmounts()` (town-hall to 1).
+- `"derived"` — `DerivedAttributeKey` (`clickPower`, `autoClickRate`): computed stats,
+  never stored (§13.2 decision 2).
 
 Supporting shapes: `ResourceAmounts` (`Record<ResourceKey, ExpNumber>`),
-`ResourceFactor = readonly [ResourceDefinition | string, ExpNumber]`,
+`ResourceFactor = readonly [AttributeDefinition | string, ExpNumber]`,
 `ResourceFactors = { additional, multiplicative, drain }`, and `ResourceFactorMap`.
 
 The single rate formula lives here:
@@ -187,7 +189,7 @@ computeResourceRate({ additional, multiplicative, drain })
   = (Σ additional) × (Π multiplicative) − (Σ drain)
 ```
 
-A factor's source is either a `ResourceDefinition` (rendered with its label) or a
+A factor's source is either an `AttributeDefinition` (rendered with its label) or a
 free-form `string` (a building key, `"manual click"`, `"dev auto clicker"`). Because
 building keys are Gamepedia ids, the Gamepedia modal turns factor sources into links.
 
@@ -256,8 +258,9 @@ Getters: `population` (= `resources.population`), `maximumPopulation` /
 | `addFactor(key, type, factor)` | Appends a factor (for future upgrades/research) |
 | `setAutoClicksPerSecond(n)` | Dev-tools auto clicker (also the current `autoClickRate` stat value) |
 | `recordUiClick()` | Counts one click anywhere in the UI shell (production clicks are counted by `gather()`) |
-| `computeClickPower()` | The global click power stat: base 1, `resourceFlat` bonuses sum, `resourceMultiplier` bonuses compound |
-| `getStatValue(statId)` | Current value of any computed stat from `statDefinitions` |
+| `computeClickPower()` | The global click power stat: base 1, `attributeFlat` bonuses sum, `attributeMultiplier` bonuses compound |
+| `getAttributeValue(key)` | Current value of any attribute: computed for derived stats, stored amount/capacity base otherwise |
+| `getDerivedAttributeFactors(key)` | Base term + every active flat/multiplier bonus targeting a derived attribute, paired with source ids (feeds the Gamepedia stat page) |
 | `buyUpgrade(id)` | No-op unless unlocked and affordable; pays the cost and appends the id |
 | `defeatEncounter(id)` | Idempotent; appends the encounter id and records the fastest victory time |
 | `enterAge(id)` | Idempotent; appends the age id and records the fastest entry time |
@@ -300,8 +303,8 @@ use this for anything player-facing), `search` (over id/name/label/description o
 visible entries), `buildRelations()` (makes `relatedIds` bidirectional), `all()`
 (everything, including undiscovered — engine-internal lookups only).
 
-**Registration happens as a module side effect at import time:** resources, population
-and science (all `seen = true`), capacities (`seen = true`), then buildings
+**Registration happens as a module side effect at import time:** every attribute
+definition — amounts, capacities and derived stats (all `seen = true`), then buildings
 (`seen = building.available`), then upgrades, encounters and achievements (`seen` stays
 `false` — the App reveals them when their unlock fires / the encounter is won / the
 achievement is earned), then `buildRelations()`. Consequences:
@@ -354,7 +357,7 @@ Durations (play time, fastest-run records) go through `formatDuration(ms)`
 
 ### 4.8 `WorkerProduction` (`src/game/workerProduction.ts`)
 
-Extends `ResourceDefinition` and adds `workers`, `autoClicksPerSecond`,
+Extends `AttributeDefinition` and adds `workers`, `autoClicksPerSecond`,
 `productionPerClick`. Derived: `workerProduction` (= `workers × productionPerWorker`),
 `autoClickProduction` (= `autoClicksPerSecond × productionPerClick`), `totalProduction`
 (= their sum). `assignWorker()` / `unassignWorker()` return new instances. Its
@@ -379,8 +382,8 @@ when a non-production key is used) silently yields `ExpNumber.ZERO` rather than 
   every achievement from `achievementDefinitions` with an earned/locked state read from
   `gameState.isAchievementEarned()`, and clicking a card opens its Gamepedia page;
   `Stats` renders the tracked `gameState.statistics` (clicks, play time, buildings built,
-  fastest age/battle records) plus one clickable card per `statDefinitions` entry that
-  opens that stat's Gamepedia page. The
+  fastest age/battle records) plus one clickable card per `derivedAttributeDefinitions`
+  entry that opens that stat's Gamepedia page. The
   era card is hardcoded ("Neolithic Dawn", "Year 12", "68% to Bronze Age") — see §9.
 - UI clicks are counted once per click by an `onClickCapture` handler on `<main>` that
   calls `gameState.recordUiClick()`, skipping anything inside a `[data-production-click]`
@@ -573,10 +576,11 @@ introduce a test framework, and do not install any dependency without explaining
 1. `src/game/buildings.ts` — add the key to the `BuildingKey` union **and** a
    `new BuildingDefinition(...)` entry to `buildingDefinitions`. Keep the array roughly
    in progression order, since it drives `autoBuyBuildings()` and the grid order.
-2. `src/game/resources.ts` — four edits for the matching capacity resource:
+2. `src/game/attributes.ts` — four edits for the matching capacity resource:
    `${key}Capacity` in the `CapacityResourceKey` union, an entry in
-   `capacityDefinitions`, a default in `emptyResourceAmounts()` (10 to match the
-   existing convention) and a bucket in `emptyResourceFactors()`.
+   `capacityDefinitions` (which feeds `attributeDefinitions`), a default in
+   `emptyResourceAmounts()` (10 to match the existing convention) and a bucket in
+   `emptyResourceFactors()`.
 3. `src/App.tsx` — add `{ icon, tone }` to `buildingPresentation`, using a
    `lucide-react` icon and an existing tone.
 4. `src/styles.css` — only if you introduced a new tone (add it for both
@@ -588,12 +592,12 @@ introduce a test framework, and do not install any dependency without explaining
 
 ### 8.2 Adding a production resource
 
-`resources.ts`: extend `ProductionResourceKey`, `resourceDefinitions`,
+`attributes.ts`: extend `ProductionResourceKey`, `productionDefinitions`,
 `emptyResourceAmounts()`, `emptyWorkerAssignments()` and `emptyResourceFactors()`.
 `App.tsx`: add to `resourcePresentation`, `productionOrder`, and `summaryResources` if it
 belongs in the sidebar. `GamepediaModal.tsx`: update `factorSourceIcon()` if the new
 resource appears as a factor source. `tick()` needs no change — it iterates
-`resourceDefinitions`. Keep the "is it a production key?" assumption honest: capacity and
+`producerResourceKeys`. Keep the "is it a production key?" assumption honest: capacity and
 non-worker resources (like `science`) must never appear in `WorkerAssignments`.
 
 ---
@@ -626,12 +630,12 @@ with a roadmap entry already assigned.
 - **Existing but unused:** `public/icons.svg`, the `Market`/`Monument` building effects
   (both still have no effects).
 - **The bonus/upgrade system is only partially built** (§13). Implemented: the `Bonus`
-  type, `resourceMultiplier` application (production resources via `getFactors()`,
+  type, `attributeMultiplier` application (production resources via `getFactors()`,
   capacities via `getBuildingMax()`), `UpgradeDefinition` + the 32 enhancer tiers, the
   `seen` → Gamepedia reveal, the Upgrades tab, building unlock gates and
   `military`/`metalwork`, and the cost-reduction pipeline in `getBuildingCost()`
   (`costReductionPercent`/`costReductionFactor` are used by enhancer tiers 3–8).
-  **Still unbuilt:** `resourceFlat`/`resourceDrain` bonus data,
+  **Still unbuilt:** `attributeFlat`/`attributeDrain` bonus data,
   `costReductionBase`/`costReductionFlat` data (the engine path exists), unit
   definitions, research/achievement/battle unlock sources (the smithy battle gate
   cannot fire yet).
@@ -665,8 +669,8 @@ with a roadmap entry already assigned.
   They coerce the key to `ProductionResourceKey` and read `workers[key]`; a non-production
   key only survives because `WorkerProduction`'s constructor defaults `undefined` to
   `ExpNumber.ZERO`. Do not rely on that in new code — guard the key.
-- **`resourceDefinitions` ⇄ `workers` ⇄ capacity keys must stay in sync** across
-  `resources.ts`. The types enforce this only partially (`ResourceKey` is a union, but
+- **`productionDefinitions` ⇄ `workers` ⇄ capacity keys must stay in sync** across
+  `attributes.ts`. The types enforce this only partially (`ResourceKey` is a union, but
   several `Record`s are built by hand).
 - **`expNumber` edge cases:** `floor`/`ceil` no-op above 1e308; `div` by zero gives
   ±`INFINITY`; `0/0` gives `NAN`; `NaN` comparisons are unordered. Overflow is a real
@@ -757,12 +761,12 @@ A change is done when:
 ## 13. Bonuses, buyables and upgrades
 
 > **Status: partially implemented.** In the code: the `Bonus` union and factories
-> (`src/game/bonus.ts`), `resourceMultiplier` application (production resources in
+> (`src/game/bonus.ts`), `attributeMultiplier` application (production resources in
 > `getFactors()`, capacities in `getBuildingMax()`), the cost-reduction pipeline in
 > `getBuildingCost()` (`costReductionPercent`/`costReductionFactor` are used by the
 > enhancer tiers), the `UpgradeDefinition` registry with the 32 production-enhancer
 > tiers (`src/game/upgrades.ts`), the Upgrades tab, and the building unlock gates.
-> Still design-only: `resourceFlat`/`resourceDrain` and `costReductionBase`/`Flat`
+> Still design-only: `attributeFlat`/`attributeDrain` and `costReductionBase`/`Flat`
 > data, research/units, and all prestige semantics. Check the
 > engine before assuming a symbol exists, and §13.7 for what is decided versus
 > deferred. Achievements now have their own slice (§10, milestone 6) and are permanent
@@ -783,17 +787,17 @@ bonus type (or a new destination), so the engine keeps a single application path
 
 ```ts
 type BonusType =
-  // resource-targeted: the destination is a resource
-  | "resourceFlat"          // +N to the destination resource
-  | "resourceMultiplier"    // ×N on the destination resource
-  | "resourceDrain"         // −N per second of the destination resource
+  // attribute-targeted: the destination is a resource, capacity or stat
+  | "attributeFlat"         // +N to the destination attribute
+  | "attributeMultiplier"   // ×N on the destination attribute
+  | "attributeDrain"        // −N per second of the destination attribute
   // buyable-targeted: the destination is a buyable (building or unit)
   | "costReductionFlat"     // destination cost −N (absolute)
   | "costReductionPercent"  // destination cost × (1 − N)
   | "costReductionBase"     // destination cost's base term reduced
   | "costReductionFactor";  // destination cost's growth factor reduced
 
-type BonusDestination = ResourceKey | BuyableId;
+type BonusDestination = AttributeKey | BuyableId;
 
 type Bonus = {
   type: BonusType;
@@ -804,9 +808,9 @@ type Bonus = {
 
 | Bonus type | Destination | Meaning | Nearest existing equivalent |
 | --- | --- | --- | --- |
-| `resourceFlat` | resource | adds a flat amount to the resource's accrual | `ResourceFactors.additional` |
-| `resourceMultiplier` | resource | multiplies the resource's gain | `ResourceFactors.multiplicative` |
-| `resourceDrain` | resource | subtracts a flat per-second amount (consumption) | `ResourceFactors.drain` |
+| `attributeFlat` | attribute (resource, capacity or stat) | adds a flat amount to the attribute's accrual | `ResourceFactors.additional` |
+| `attributeMultiplier` | attribute (resource, capacity or stat) | multiplies the attribute's gain | `ResourceFactors.multiplicative` |
+| `attributeDrain` | attribute (resource, capacity or stat) | subtracts a flat per-second amount (consumption) | `ResourceFactors.drain` |
 | `costReductionFlat` | buyable | lowers every cost entry of the buyable by an absolute amount | **none** (new) |
 | `costReductionPercent` | buyable | lowers every cost entry by a percentage | **none** (new) |
 | `costReductionBase` | buyable | reduces the base term *before* geometric growth | crude precursor: `buildingCostOverrides` |
@@ -817,9 +821,9 @@ The first three map exactly onto today's factor model, so they can reuse
 existing `addFactor()` seam. The four cost types are new: their decided order of
 application and clamping are in §13.1, and the decision list is in §13.7.
 
-**Stacking (decided).** Resource bonuses stack exactly as `computeResourceRate()` already
-does — **option A** (§13.7): every `resourceMultiplier` source multiplies with the others,
-while every `resourceFlat` and every `resourceDrain` source **sums with equal weight**.
+**Stacking (decided).** Attribute bonuses stack exactly as `computeResourceRate()` already
+does — **option A** (§13.7): every `attributeMultiplier` source multiplies with the others,
+while every `attributeFlat` and every `attributeDrain` source **sums with equal weight**.
 There is **no `group`/`tier` concept** and no per-source precedence: sources of an additive
 type are all treated equally. Type order is **fixed** (`flat → mult → drain`), not
 declaration order. If growth ever runs away, an optional `group` field is the escape
@@ -867,7 +871,7 @@ Per-unit was chosen over applying reductions to the bulk total because:
 | production | `wood`, `food`, `gold`, `stone` | sidebar summary |
 | building | `science` (university), `military` (barracks), `metalwork` (smithy) | sidebar summary |
 | capacities | population max (`peopleCapacity`) and per-building max (`` `${buildingKey}Capacity` ``) | **buildings UI**, not the summary |
-| others | click power, automated click power | **stats UI** (to be built) **and the Gamepedia** |
+| derived | click power (`clickPower`), automated click power (`autoClickRate`) | **stats tab** and the Gamepedia |
 
 Reconciliation with the code as it stands:
 
@@ -877,7 +881,7 @@ Reconciliation with the code as it stands:
   §8.2.
 - Capacities are already modelled as resources (`CapacityResourceKey`), and they **keep
   their own effect/bonus representation** rather than being collapsed into a generic
-  `resourceFlat`: capacity is a flat grant today but is expected to gain a **multiplier**
+  `attributeFlat`: capacity is a flat grant today but is expected to gain a **multiplier**
   variant later in the game, so the capacity door must stay open. Keep
   `capacityProvided`-style capacity grants distinct for that reason.
 - "others" (click power, automated click power) get their **own Gamepedia category**
@@ -890,12 +894,14 @@ Reconciliation with the code as it stands:
      only `resource | capacity | building | upgrade | research | combat`, so `stat` plus
      `unit` / `battle` (and possibly a production-vs-building resource split) are
      reconciliation work for when those definitions land.
-- Implementation shape (decided, the suggestion was accepted): a small **stat definition**
-  type (`clickPower`, `autoClickRate`, …) registered in the Gamepedia, with the destination
-  union extended to three families — `ResourceKey | BuyableId | StatId`. Then the classic
-  click upgrades are ordinary bonuses: `+1 per click` = `resourceFlat` on `clickPower`,
-  `×2 click power` = `resourceMultiplier` on `clickPower`, `+0.5 auto-clicks/sec` =
-  `resourceFlat` on `autoClickRate`. Stat values stay **derived**, never stored.
+- Implementation shape (implemented): the **attribute registry** in
+  `src/game/attributes.ts` — `AttributeDefinition` with
+  `family: "amount" | "capacity" | "derived"` — registered in the Gamepedia, with the
+  destination covering `AttributeKey` (stored `ResourceKey`s plus derived stats) beside
+  buyable ids. Then the classic click upgrades are ordinary bonuses: `+1 per click` =
+  `attributeFlat` on `clickPower`, `×2 click power` = `attributeMultiplier` on
+  `clickPower`, `+0.5 auto-clicks/sec` = `attributeFlat` on `autoClickRate`. Stat values
+  stay **derived**, never stored.
   Caveat settled by the same decision: `clickPower` is **one global stat** scaling every
   manual click (today's per-resource `productionPerWorker` stays as resource data), and the
   auto-clicker becomes the `autoClickRate` stat rather than a bare state field.
@@ -1000,7 +1006,8 @@ Expected shape once the `src/game/data/` split from roadmap Milestone 1 lands:
 
 ```text
 src/game/data/
-  resources.ts      resource + capacity definitions, grouped by resource family (§13.2)
+  attributes.ts     attribute definitions grouped by family:
+                    resources, capacities, stats (§13.2)
   bonuses.ts        the Bonus union + factories/validators for the 7 bonus types
   buildings.ts      the buyable building definitions
   units.ts          the buyable unit definitions
@@ -1026,13 +1033,14 @@ Part of this is implemented now (bonus type, resource multipliers, enhancer upgr
 unlock gates). The remaining seams to reuse instead of adding parallel machinery:
 
 - `BuildingEffects` (`capacityProvided` / `resourceMultiplier` / `resourceDrain`) is the
-  direct precursor of a `bonuses: Bonus[]` list. `resourceMultiplier` and `resourceDrain`
-  map onto same-named bonus types; `capacityProvided` **survives as its own capacity
-  representation** rather than becoming a `resourceFlat`, because capacity may need a
-  multiplier later (§13.2, §13.7 decision 3).
-- Resource bonuses land in the existing path: `resourceFactors` + `addFactor()` +
-  `getFactors()` + `computeResourceRate()`. No new formula is needed for `resourceFlat` /
-  `resourceMultiplier` / `resourceDrain`.
+  direct precursor of a `bonuses: Bonus[]` list. The bonus types are now named
+  `attributeMultiplier` / `attributeDrain` / `attributeFlat` (the destination may be any
+  attribute); `capacityProvided` **survives as its own capacity representation** rather
+  than becoming an `attributeFlat`, because capacity may need a multiplier later
+  (§13.2, §13.7 decision 3).
+- Attribute bonuses land in the existing path: `resourceFactors` + `addFactor()` +
+  `getFactors()` + `computeResourceRate()`. No new formula is needed for `attributeFlat` /
+  `attributeMultiplier` / `attributeDrain`.
 - Cost bonuses land in `getBuildingCost()` — **implemented**: reductions are collected
   per buyable from the bought upgrades (`collectCostReductions` in `bonus.ts`), `base`/
   `factor` rewrite the series inputs, `percent` scales every unit, and `flat` absorbs
@@ -1072,8 +1080,8 @@ unlock gates). The remaining seams to reuse instead of adding parallel machinery
 | 1 | Clamp floor for costs | **0** — a cost may become free |
 | 5 | Clamp floor for drains | **0** — a drain may never go negative |
 | 2 | Per-unit vs bulk-total cost reductions | **Per unit**, keeping buy-N and buy-MAX on one O(1) evaluator (§13.1, §13.6) |
-| 3 | Is `capacityProvided` replaced by `resourceFlat`? | **No — capacity keeps its own representation.** Flat today, but may gain a **multiplier** later, so the capacity door stays open |
-| 6 | Where are click power / automated click power shown? | **Stats screen** (to be built) **and** somewhere in the Gamepedia |
+| 3 | Is `capacityProvided` replaced by `attributeFlat`? | **No — capacity keeps its own representation.** Flat today, but may gain a **multiplier** later, so the capacity door stays open |
+| 6 | Where are click power / automated click power shown? | **Stats screen** (live) **and** somewhere in the Gamepedia |
 | 7 | Do units use the buyable cost model? | **Yes** — they receive cost-reduction bonuses |
 | 7 | What caps units? | **Nothing.** Affordability is the only limit; no capacity, population or slot cap |
 | 8 | Can a buyable's bonus unlock an upgrade? | **No.** There is no `grantUpgrade` type; bonuses only modify resources/capacities or reduce buyable costs. Unlocks come only from unlock sources |
@@ -1081,7 +1089,7 @@ unlock gates). The remaining seams to reuse instead of adding parallel machinery
 | 8 | Why not let achievements carry the unlocks? | Because prestige returns to the early ages, so unlocks must **relock and re-unlock each loop**; a permanent record cannot express that. The first arrival at an age still fires an achievement, but only as a permanent historical record |
 | 9 | Is `seen` ever reset? | **Never** — not on prestige, not on a new colony loop. Relocking affects `unlocked` only, so a relocked upgrade stays in the Gamepedia |
 | 1 | How resource bonuses stack | **Option A** (rationale below): multipliers multiply, flats and drains **sum equally**, fixed type order, **no tiers/groups** |
-| 2 | Where click power / automated click power live | **Own `stat` definition type**, own `stat` category, plus an in-game **stats tab** whose values open the Gamepedia page via `focusId` (§13.2) |
+| 2 | Where click power / automated click power live | **Derived attributes** in the attribute registry, own `stat` Gamepedia category, plus an in-game **stats tab** whose values open the Gamepedia page via `focusId` (§13.2) |
 | 3 | Who owns building-count unlocks | **The building definition**, with an explicit `unlocks` list + count threshold. All unlocks are **explicit id lists**, never a generic condition/rule engine |
 | 4 | Prestige: what resets | **`bought` resets every loop.** Permanent: **achievements**, **prestige bonuses** (to be defined) and `seen` |
 | 5 | Implementation priority | **The first loop first** — prestige design is deferred (see below) |
@@ -1089,11 +1097,11 @@ unlock gates). The remaining seams to reuse instead of adding parallel machinery
 **Decided, with the rationale kept** (so it does not get silently re-litigated):
 
 **Decision 1 — bonus stacking: option A approved.** Worked example: food has **3 farms**,
-each contributing `resourceMultiplier` ×1.1 to food, plus an upgrade "Irrigation"
-contributing `resourceMultiplier` ×1.25 to food.
+each contributing `attributeMultiplier` ×1.1 to food, plus an upgrade "Irrigation"
+contributing `attributeMultiplier` ×1.25 to food.
 
 - **A — chosen:** multiply the multipliers: `1.1 × 1.1 × 1.1 × 1.25 = 1.66375`, while every
-  `resourceFlat` and every `resourceDrain` source **sums with equal weight**. The three
+  `attributeFlat` and every `attributeDrain` source **sums with equal weight**. The three
   types combine in the fixed order of `computeResourceRate()`:
   `(Σ flat) × (Π mult) − (Σ drain)`.
 - **B — rejected:** sum within a type: `1 + (0.10 + 0.10 + 0.10 + 0.25) = 1.55`.
@@ -1104,10 +1112,11 @@ contributing `resourceMultiplier` ×1.25 to food.
 So: no tiers, no per-source precedence, no declaration-order dependence.
 
 **Decision 2 — click power / automated click power: the `stat` proposal was accepted.**
-They get a `stat` definition type, their own `stat` Gamepedia category, and an in-game
-**stats tab** whose computed values open the Gamepedia on the matching page through the
-existing `focusId` prop. `clickPower` is **one global stat** scaling every manual click;
-the auto-clicker becomes the `autoClickRate` stat. Full detail in §13.2.
+They are **derived attributes** (`family: "derived"`) in the attribute registry with
+their own `stat` Gamepedia category, and an in-game **stats tab** whose computed values
+open the Gamepedia on the matching page through the existing `focusId` prop.
+`clickPower` is **one global stat** scaling every manual click; the auto-clicker becomes
+the `autoClickRate` stat. Full detail in §13.2.
 
 **Decision 3 — building-count unlocks: the building owns an explicit list.** Every unlock
 source declares a specific list of ids; there is no generic condition/rule engine, because

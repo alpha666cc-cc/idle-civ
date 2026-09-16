@@ -1,7 +1,7 @@
-import { ResourceDefinition, type ProductionResourceKey } from "./resources";
+import { AttributeDefinition, type ProductionResourceKey } from "./attributes";
 import { ExpNumber } from "./expNumber";
 
-export class WorkerProduction extends ResourceDefinition {
+export class WorkerProduction extends AttributeDefinition {
   readonly workers: ExpNumber;
   readonly autoClicksPerSecond: number;
   readonly productionPerClick: number;
@@ -14,7 +14,7 @@ export class WorkerProduction extends ResourceDefinition {
     autoClicksPerSecond = 0,
     productionPerClick = 1,
   ) {
-    super(key, label, productionPerWorker);
+    super(key, label, "amount", undefined, productionPerWorker);
     this.workers = workers;
     this.autoClicksPerSecond = autoClicksPerSecond;
     this.productionPerClick = productionPerClick;

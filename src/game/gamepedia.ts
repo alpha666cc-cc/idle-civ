@@ -2,14 +2,12 @@ import { buildingDefinitions, type BuildingDefinition } from "./buildings";
 import { achievementDefinitions } from "./achievements";
 import { encounterDefinitions } from "./encounters";
 import { GameObject } from "./gameObject";
-import { statDefinitions } from "./stats";
 import { upgradeDefinitions } from "./upgrades";
 import {
-  capacityDefinitions,
+  attributeDefinitions,
   populationDefinition,
-  resourceDefinitions,
-  scienceDefinition,
-} from "./resources";
+  type AttributeDefinition,
+} from "./attributes";
 
 export type GamepediaCategory =
   | "resource"
@@ -97,28 +95,24 @@ export class Gamepedia {
   }
 }
 
-const resourceObjects = [
-  ...resourceDefinitions,
-  populationDefinition,
-  scienceDefinition,
-];
+/** The Gamepedia category an attribute family registers under. */
+const attributeCategory = (
+  family: AttributeDefinition["family"],
+): GamepediaCategory =>
+  family === "amount"
+    ? "resource"
+    : family === "capacity"
+      ? "capacity"
+      : "stat";
 
 export const gamepedia = new Gamepedia();
 
-for (const resource of resourceObjects) {
-  resource.seen = true;
+for (const attribute of attributeDefinitions) {
+  // Attributes are values the player always sees, not discoveries: seen = true.
+  attribute.seen = true;
   gamepedia.register({
-    object: resource,
-    category: "resource",
-    relatedIds: [],
-  });
-}
-
-for (const capacity of capacityDefinitions) {
-  capacity.seen = true;
-  gamepedia.register({
-    object: capacity,
-    category: "capacity",
+    object: attribute,
+    category: attributeCategory(attribute.family),
     relatedIds: [],
   });
 }
@@ -197,16 +191,6 @@ for (const achievement of achievementDefinitions) {
     object: achievement,
     category: "achievement",
     relatedIds: [...new Set(relatedIds)],
-  });
-}
-
-for (const stat of statDefinitions) {
-  // Stats are computed values, not discoveries: they are visible from the start.
-  stat.seen = true;
-  gamepedia.register({
-    object: stat,
-    category: "stat",
-    relatedIds: [],
   });
 }
 

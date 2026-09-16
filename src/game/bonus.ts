@@ -1,28 +1,28 @@
 import { ExpNumber } from "./expNumber";
 import type { BuildingKey } from "./buildings";
-import type { CapacityResourceKey, ResourceKey } from "./resources";
+import type { AttributeKey, CapacityResourceKey } from "./attributes";
 
 /**
- * The single unit of change (AGENTS.md §13.1). Resource-targeted bonuses reuse the
+ * The single unit of change (AGENTS.md §13.1). Attribute-targeted bonuses reuse the
  * existing factor model; cost reductions apply per buyable unit in the fixed order
- * `base → factor → percent → flat`, clamped at 0. The engine currently applies the
- * three resource types (via `getFactors()` and `getBuildingMax()`); the four cost
- * types are defined here as the contract and land in `getBuildingCost()` (§13.6)
- * when a definition first uses them.
+ * `base → factor → percent → flat`, clamped at 0. The engine applies the three
+ * attribute types (via `getFactors()`, `getBuildingMax()` and the computed-stat
+ * paths); the four cost types land in `getBuildingCost()` (§13.6) when a
+ * definition first uses them.
  */
 export type BonusType =
-  // resource-targeted: the destination is a resource
-  | "resourceFlat" // +N to the destination resource's accrual
-  | "resourceMultiplier" // ×N on the destination resource (or capacity) gain
-  | "resourceDrain" // −N per second of the destination resource, clamped at 0
+  // attribute-targeted: the destination is a resource, capacity or stat
+  | "attributeFlat" // +N to the destination attribute's accrual
+  | "attributeMultiplier" // ×N on the destination attribute (or capacity) gain
+  | "attributeDrain" // −N per second of the destination attribute, clamped at 0
   // buyable-targeted: the destination is a buyable (building or unit) id
   | "costReductionFlat" // destination cost −N (absolute, per unit)
   | "costReductionPercent" // destination cost × (1 − N) per unit
   | "costReductionBase" // destination cost's base term reduced
   | "costReductionFactor"; // destination cost's growth factor reduced
 
-/** A bonus targets a resource (including capacity resources) or a buyable id. */
-export type BonusDestination = ResourceKey | string;
+/** A bonus targets an attribute (resource, capacity or stat) or a buyable id. */
+export type BonusDestination = AttributeKey | string;
 
 export type Bonus = {
   readonly type: BonusType;
@@ -30,22 +30,22 @@ export type Bonus = {
   readonly value: ExpNumber;
 };
 
-export const resourceBonus = (
-  type: "resourceFlat" | "resourceMultiplier" | "resourceDrain",
-  destination: ResourceKey,
+export const attributeBonus = (
+  type: "attributeFlat" | "attributeMultiplier" | "attributeDrain",
+  destination: AttributeKey,
   value: number | ExpNumber,
 ): Bonus => ({ type, destination, value: ExpNumber.from(value) });
 
 /**
- * Capacity keeps its own representation (§13.7 decision 3): a capacity multiplier is a
- * `resourceMultiplier` whose destination is the capacity resource, so the capacity door
+ * Capacity keeps its own representation (§13.7 decision 3): a capacity multiplier is an
+ * `attributeMultiplier` whose destination is the capacity resource, so the capacity door
  * stays open for flat grants and future multiplier variants alike.
  */
 export const capacityMultiplierBonus = (
   building: BuildingKey,
   factor: number | ExpNumber,
 ): Bonus => ({
-  type: "resourceMultiplier",
+  type: "attributeMultiplier",
   destination: `${building}Capacity` as CapacityResourceKey,
   value: ExpNumber.from(factor),
 });
@@ -55,6 +55,26 @@ export const costReductionBonus = (
   buyableId: string,
   value: number | ExpNumber,
 ): Bonus => ({ type, destination: buyableId, value: ExpNumber.from(value) });
+
+const bonusTypes: readonly BonusType[] = [
+  "attributeFlat",
+  "attributeMultiplier",
+  "attributeDrain",
+  "costReductionFlat",
+  "costReductionPercent",
+  "costReductionBase",
+  "costReductionFactor",
+];
+
+/**
+ * Validates a bonus type arriving from JSON data. Definition payloads are
+ * `as`-cast, so a stale type string would otherwise match no engine branch and
+ * silently no-op; this fails loudly instead.
+ */
+export const parseBonusType = (type: string): BonusType => {
+  if (bonusTypes.includes(type as BonusType)) return type as BonusType;
+  throw new Error(`Unknown bonus type: ${type}`);
+};
 
 /** The four cost-reduction types folded into per-unit adjustments (§13.1). */
 export type CostReductions = {

@@ -1,11 +1,14 @@
 import {
   computeResourceRate,
+  derivedAttributeDefinitions,
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
+  findAttributeDefinition,
+  productionDefinitions,
   producerResourceKeys,
-  resourceDefinitions,
   type CapacityResourceKey,
+  type DerivedAttributeFactors,
   type ProductionResourceKey,
   type ResourceAmounts,
   type ResourceFactor,
@@ -13,7 +16,7 @@ import {
   type ResourceFactors,
   type ResourceKey,
   type WorkerAssignments,
-} from "./resources";
+} from "./attributes";
 import { ExpNumber } from "./expNumber";
 import { WorkerProduction } from "./workerProduction";
 import {
@@ -26,7 +29,6 @@ import {
   type AchievementRequirement,
 } from "./achievements";
 import { encounterDefinitions } from "./encounters";
-import { statDefinitions } from "./stats";
 import {
   emptyStatistics,
   tickMilliseconds,
@@ -45,7 +47,30 @@ const capacityKey = (buildingKey: BuildingKey): CapacityResourceKey =>
  * Gamepedia factor list links the row to the stat page (§13.2 decision 2).
  */
 const clickPowerStatSource =
-  statDefinitions.find(({ kind }) => kind === "clickPower")?.key ?? "manual click";
+  derivedAttributeDefinitions.find(({ key }) => key === "clickPower")?.key ??
+  "manual click";
+
+/**
+ * Per-derived-attribute computations (§13.2): stats are never stored, so each one
+ * states how its value and its bonus-free base are read. New computed attributes
+ * arrive by extending this record — no per-content branching elsewhere.
+ */
+const derivedAttributeComputations: Record<
+  string,
+  {
+    value: (state: CivilizationState) => ExpNumber;
+    base: (state: CivilizationState) => ExpNumber;
+  }
+> = {
+  clickPower: {
+    value: (state) => state.computeClickPower(),
+    base: () => ExpNumber.ONE,
+  },
+  autoClickRate: {
+    value: (state) => ExpNumber.fromNumber(state.autoClicksPerSecond),
+    base: (state) => ExpNumber.fromNumber(state.autoClicksPerSecond),
+  },
+};
 
 /** Applies a tick rate to a resource amount, clamped so it never goes negative. */
 const applyRate = (amount: ExpNumber, rate: ExpNumber): ExpNumber => {
@@ -132,7 +157,7 @@ export class CivilizationState {
   }
 
   getWorkerProduction(resourceKey: ProductionResourceKey): WorkerProduction {
-    const definition = resourceDefinitions.find(
+    const definition = productionDefinitions.find(
       ({ key }) => key === resourceKey,
     );
     return new WorkerProduction(
@@ -395,7 +420,7 @@ export class CivilizationState {
     };
     for (const [upgradeId, bonus] of this.boughtUpgradeBonuses()) {
       if (
-        bonus.type === "resourceMultiplier" &&
+        bonus.type === "attributeMultiplier" &&
         bonus.destination === resourceKey
       ) {
         upgradeFactors.multiplicative.push([upgradeId, bonus.value]);
@@ -438,7 +463,7 @@ export class CivilizationState {
 
   computeClickGain(resourceKey: ResourceKey): ExpNumber {
     const factors = this.getFactors(resourceKey);
-    const definition = resourceDefinitions.find(
+    const definition = productionDefinitions.find(
       ({ key }) => key === resourceKey,
     );
     // The global click power stat scales every manual click (§13.2 decision 2);
@@ -455,39 +480,61 @@ export class CivilizationState {
 
   /**
    * The global click power stat: base 1 plus every `clickPower` bonus in force.
-   * Flats sum, multipliers compound — the resource-bonus rule of §13.1, reused.
+   * Flats sum, multipliers compound — the attribute-bonus rule of §13.1, reused.
    */
   computeClickPower(): ExpNumber {
     let flat = ExpNumber.ONE;
     let multiplier = ExpNumber.ONE;
     for (const [, bonus] of this.activeBonuses()) {
       if (!this.isClickPowerDestination(String(bonus.destination))) continue;
-      if (bonus.type === "resourceFlat") flat = flat.add(bonus.value);
-      else if (bonus.type === "resourceMultiplier")
+      if (bonus.type === "attributeFlat") flat = flat.add(bonus.value);
+      else if (bonus.type === "attributeMultiplier")
         multiplier = multiplier.mul(bonus.value);
     }
     return flat.mul(multiplier);
   }
 
-  /** The current value of a computed stat (`clickPower`, `autoClickRate`, …). */
-  getStatValue(statId: string): ExpNumber {
-    const stat = statDefinitions.find(({ key }) => key === statId);
-    if (!stat) return ExpNumber.ZERO;
-    switch (stat.kind) {
-      case "clickPower":
-        return this.computeClickPower();
-      case "autoClickRate":
-        return ExpNumber.fromNumber(this.autoClicksPerSecond);
-      default:
-        return ExpNumber.ZERO;
+  /**
+   * The current value of an attribute: computed for derived stats, stored amount or
+   * capacity base otherwise (§13.2).
+   */
+  getAttributeValue(key: string): ExpNumber {
+    const attribute = findAttributeDefinition(key);
+    if (!attribute) return ExpNumber.ZERO;
+    if (attribute.family !== "derived") {
+      return this.resources[key as ResourceKey] ?? ExpNumber.ZERO;
     }
+    return derivedAttributeComputations[key]?.value(this) ?? ExpNumber.ZERO;
   }
 
-  /** True when `destination` names a stat whose kind is the global click power. */
+  /**
+   * The composition of a derived attribute (stat): its bonus-free base plus every
+   * active flat/multiplier bonus targeting it, paired with their source ids so the
+   * Gamepedia stat page can render linked factor rows (§13.2).
+   */
+  getDerivedAttributeFactors(key: string): DerivedAttributeFactors | undefined {
+    const attribute = findAttributeDefinition(key);
+    const computation = derivedAttributeComputations[key];
+    if (attribute?.family !== "derived" || !computation) return undefined;
+    const factors: DerivedAttributeFactors = {
+      base: computation.base(this),
+      additional: [],
+      multiplicative: [],
+    };
+    for (const [sourceId, bonus] of this.activeBonuses()) {
+      if (String(bonus.destination) !== key) continue;
+      if (bonus.type === "attributeFlat") {
+        factors.additional.push([sourceId, bonus.value]);
+      } else if (bonus.type === "attributeMultiplier") {
+        factors.multiplicative.push([sourceId, bonus.value]);
+      }
+    }
+    return factors;
+  }
+
+  /** True when `destination` names the global click power attribute. */
   private isClickPowerDestination(destination: string): boolean {
-    return statDefinitions.some(
-      ({ key, kind }) => kind === "clickPower" && key === destination,
-    );
+    return destination === clickPowerStatSource;
   }
 
   setAutoClicksPerSecond(autoClicksPerSecond: number): CivilizationState {
@@ -509,7 +556,7 @@ export class CivilizationState {
     let max = this.resources[capacity];
     for (const [, bonus] of this.activeBonuses()) {
       if (
-        bonus.type === "resourceMultiplier" &&
+        bonus.type === "attributeMultiplier" &&
         bonus.destination === capacity
       ) {
         max = max.mul(bonus.value);

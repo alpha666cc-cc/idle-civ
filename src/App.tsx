@@ -31,7 +31,6 @@ import { ExpNumber } from "./game/expNumber";
 import { gamepedia } from "./game/gamepedia";
 import { upgradeDefinitions, type UpgradeDefinition } from "./game/upgrades";
 import { encounterDefinitions } from "./game/encounters";
-import { statDefinitions } from "./game/stats";
 import {
   formatDuration,
   formatNumber,
@@ -39,10 +38,11 @@ import {
 } from "./game/numberFormat";
 import {
   capacityDefinitions,
-  resourceDefinitions,
+  derivedAttributeDefinitions,
+  productionDefinitions,
   type ProductionResourceKey,
   type ResourceKey,
-} from "./game/resources";
+} from "./game/attributes";
 
 type Tab =
   | "Production"
@@ -105,7 +105,7 @@ const productionOrder: ProductionResourceKey[] = [
   "gold",
 ];
 const resources: ResourcePresentation[] = productionOrder.map((key) => {
-  const resource = resourceDefinitions.find(
+  const resource = productionDefinitions.find(
     (definition) => definition.key === key,
   )!;
   return {
@@ -373,12 +373,12 @@ function App() {
   });
 
   const describeUpgradeBonus = (bonus: Bonus): string => {
-    if (bonus.type === "resourceMultiplier") {
+    if (bonus.type === "attributeMultiplier") {
       const capacity = capacityDefinitions.find(
         ({ key }) => key === bonus.destination,
       );
       if (capacity) return `${capacity.label} ×${fmt(bonus.value)}`;
-      const resource = resourceDefinitions.find(
+      const resource = productionDefinitions.find(
         ({ key }) => key === bonus.destination,
       );
       if (resource) return `${resource.label} production ×${fmt(bonus.value)}`;
@@ -770,16 +770,18 @@ function App() {
 
               <p className="gamepedia-category">Actions</p>
               <div className="stat-grid">
-                {statDefinitions.map((stat) => (
+                {derivedAttributeDefinitions.map((attribute) => (
                   <button
                     type="button"
-                    key={stat.key}
+                    key={attribute.key}
                     className="stat-card clickable"
-                    onClick={() => openGamepediaAt(stat.key)}
-                    title={`Open ${stat.name} in gamepedia`}
+                    onClick={() => openGamepediaAt(attribute.key)}
+                    title={`Open ${attribute.label} in gamepedia`}
                   >
-                    <span>{stat.name}</span>
-                    <strong>{fmt(gameState.getStatValue(stat.key))}</strong>
+                    <span>{attribute.label}</span>
+                    <strong>
+                      {fmt(gameState.getAttributeValue(attribute.key))}
+                    </strong>
                   </button>
                 ))}
                 <div className="stat-card">

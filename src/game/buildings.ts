@@ -11,7 +11,7 @@ export type BuildingKey =
   | "barracks"
   | "university";
 
-import type { ResourceKey } from "./resources";
+import type { ResourceKey } from "./attributes";
 import { GameObject } from "./gameObject";
 import { ExpNumber } from "./expNumber";
 import { formatNumber } from "./numberFormat";

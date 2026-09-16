@@ -28,12 +28,12 @@ import {
   type GamepediaEntry,
 } from "../game/gamepedia";
 import {
-  resourceDefinitions,
-  ResourceDefinition,
+  productionDefinitions,
+  AttributeDefinition,
   type ProductionResourceKey,
   type ResourceFactor,
   type ResourceKey,
-} from "../game/resources";
+} from "../game/attributes";
 import { ExpNumber } from "../game/expNumber";
 import { formatNumber, type NumberFormat } from "../game/numberFormat";
 
@@ -100,7 +100,7 @@ const formatFactorValue = (
 };
 
 const factorSourceLabel = (source: ResourceFactor[0]): string =>
-  source instanceof ResourceDefinition ? source.label : source;
+  source instanceof AttributeDefinition ? source.label : source;
 
 const factorSourceId = (source: ResourceFactor[0]): string | undefined =>
   typeof source === "string" ? source : undefined;
@@ -118,11 +118,11 @@ const bonusEffectLabel = (bonus: Bonus): string => {
   // A stat is a value in its own right, so its name alone reads best.
   if (gamepedia.get(destinationId)?.category === "stat") return target;
   switch (bonus.type) {
-    case "resourceMultiplier":
+    case "attributeMultiplier":
       return `${target} production`;
-    case "resourceFlat":
+    case "attributeFlat":
       return `${target} gain`;
-    case "resourceDrain":
+    case "attributeDrain":
       return `${target} drain`;
     case "costReductionPercent":
       return `${target} cost`;
@@ -140,7 +140,7 @@ const bonusEffectLabel = (bonus: Bonus): string => {
 /** The signed size of a bonus, e.g. "×1.25", "−50%" or "+2". */
 const bonusValueText = (bonus: Bonus, format: NumberFormat): string => {
   switch (bonus.type) {
-    case "resourceMultiplier":
+    case "attributeMultiplier":
       return `×${formatNumber(bonus.value, format)}`;
     case "costReductionPercent":
       return `−${formatNumber(
@@ -151,9 +151,9 @@ const bonusValueText = (bonus: Bonus, format: NumberFormat): string => {
     case "costReductionFlat":
     case "costReductionBase":
       return `−${formatNumber(bonus.value, format)}`;
-    case "resourceFlat":
+    case "attributeFlat":
       return `+${formatNumber(bonus.value, format)}`;
-    case "resourceDrain":
+    case "attributeDrain":
       return `−${formatNumber(bonus.value, format)}`;
     default:
       return formatNumber(bonus.value, format);
@@ -161,7 +161,7 @@ const bonusValueText = (bonus: Bonus, format: NumberFormat): string => {
 };
 
 const factorSourceIcon = (source: ResourceFactor[0]): LucideIcon => {
-  if (source instanceof ResourceDefinition) return Users;
+  if (source instanceof AttributeDefinition) return Users;
   const normalizedSource = source.toLowerCase();
   if (normalizedSource.includes("lumber") || normalizedSource.includes("wood"))
     return Leaf;
@@ -403,7 +403,7 @@ export default function GamepediaModal({
     );
     const hasWorkers =
       workerProduction !== undefined &&
-      resourceDefinitions.some(({ key: resourceKey }) => resourceKey === key);
+      productionDefinitions.some(({ key: resourceKey }) => resourceKey === key);
 
     return (
       <div className="gamepedia-detail">
@@ -654,24 +654,84 @@ export default function GamepediaModal({
     );
   };
 
-  const renderStatDetail = (entry: GamepediaEntry) => (
-    <div className="gamepedia-detail">
-      {renderDetailHeader(entry)}
-      <p className="gamepedia-detail-description">{entry.object.description}</p>
+  const renderStatDetail = (entry: GamepediaEntry) => {
+    const statKey = entry.object.id;
+    const factors = gameState.getDerivedAttributeFactors(statKey);
+    return (
+      <div className="gamepedia-detail">
+        {renderDetailHeader(entry)}
+        <p className="gamepedia-detail-description">
+          {entry.object.description}
+        </p>
 
-      <p className="gamepedia-category">Current value</p>
-      <div className="gamepedia-stats">
-        <div className="gamepedia-stat">
-          <span>Value</span>
-          <strong>
-            {formatAmount(gameState.getStatValue(entry.object.id))}
-          </strong>
+        <p className="gamepedia-category">Current value</p>
+        <div className="gamepedia-stats">
+          <div className="gamepedia-stat">
+            <span>Value</span>
+            <strong>{formatAmount(gameState.getAttributeValue(statKey))}</strong>
+          </div>
         </div>
-      </div>
 
-      {renderRelated(entry)}
-    </div>
-  );
+        {factors && (
+          <>
+            <p className="gamepedia-category">Composition</p>
+            <div className="gamepedia-effect-list">
+              <div className="gamepedia-effect-row" key="base">
+                <div className="gamepedia-effect-copy">
+                  <span className="gamepedia-effect-meta">Base value</span>
+                </div>
+                <strong className="gamepedia-effect-total">
+                  {formatFactorValue("additional", factors.base, numberFormat)}
+                </strong>
+              </div>
+              {factors.additional.map(([source, value], index) => {
+                const sourceId = factorSourceId(source);
+                return (
+                  <div
+                    className="gamepedia-effect-row"
+                    key={`flat-${sourceId ?? index}`}
+                  >
+                    <div className="gamepedia-effect-copy">
+                      <span className="gamepedia-effect-meta">
+                        {sourceId !== undefined
+                          ? renderReference(sourceId)
+                          : factorSourceLabel(source)}
+                      </span>
+                    </div>
+                    <strong className="gamepedia-effect-total">
+                      {formatFactorValue("additional", value, numberFormat)}
+                    </strong>
+                  </div>
+                );
+              })}
+              {factors.multiplicative.map(([source, value], index) => {
+                const sourceId = factorSourceId(source);
+                return (
+                  <div
+                    className="gamepedia-effect-row"
+                    key={`mult-${sourceId ?? index}`}
+                  >
+                    <div className="gamepedia-effect-copy">
+                      <span className="gamepedia-effect-meta">
+                        {sourceId !== undefined
+                          ? renderReference(sourceId)
+                          : factorSourceLabel(source)}
+                      </span>
+                    </div>
+                    <strong className="gamepedia-effect-total">
+                      {formatFactorValue("multiplicative", value, numberFormat)}
+                    </strong>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {renderRelated(entry)}
+      </div>
+    );
+  };
 
   const renderDetail = (entry: GamepediaEntry) => {
     if (entry.category === "building") return renderBuildingDetail(entry);

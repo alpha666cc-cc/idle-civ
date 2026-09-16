@@ -1,14 +1,12 @@
 [
   {
     "key": "clickPower",
-    "name": "Click power",
-    "kind": "clickPower",
+    "label": "Click power",
     "description": "Resources gained by one production click, before resource multipliers. Click-power achievements raise it permanently, and it appears on every production-click factor list."
   },
   {
     "key": "autoClickRate",
-    "name": "Auto-click rate",
-    "kind": "autoClickRate",
+    "label": "Auto-click rate",
     "description": "Automated production clicks generated every second. Dev Tools set the current rate; bonuses are planned to feed it once upgrades target this stat."
   }
 ]

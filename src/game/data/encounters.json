@@ -5,7 +5,7 @@
     "description": "Repel the wolves. Victory expands town-hall capacity.",
     "bonuses": [
       {
-        "type": "resourceMultiplier",
+        "type": "attributeMultiplier",
         "destination": "town-hallCapacity",
         "value": 10
       }
