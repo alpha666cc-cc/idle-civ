@@ -535,6 +535,24 @@ function App() {
                   aria-label="Auto assign up to 10 idle workers per tick"
                 />
               </label>
+              <div className="dev-tools-control">
+                <span>Win first battle (dev)</span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setGameState((current) =>
+                      current.defeatEncounter("first-battle"),
+                    )
+                  }
+                  disabled={gameState.defeatedEncounters.includes(
+                    "first-battle",
+                  )}
+                >
+                  {gameState.defeatedEncounters.includes("first-battle")
+                    ? "First battle won"
+                    : "Defeat first battle"}
+                </button>
+              </div>
             </section>
           )}
 

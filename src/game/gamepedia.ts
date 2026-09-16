@@ -1,4 +1,5 @@
 import { buildingDefinitions, type BuildingDefinition } from "./buildings";
+import { encounterDefinitions } from "./encounters";
 import { GameObject } from "./gameObject";
 import { upgradeDefinitions } from "./upgrades";
 import {
@@ -153,6 +154,17 @@ for (const upgrade of upgradeDefinitions) {
   gamepedia.register({
     object: upgrade,
     category: "upgrade",
+    relatedIds: [...new Set(relatedIds)],
+  });
+}
+
+for (const encounter of encounterDefinitions) {
+  const relatedIds = encounter.bonuses.map(({ destination }) =>
+    String(destination),
+  );
+  gamepedia.register({
+    object: encounter,
+    category: "combat",
     relatedIds: [...new Set(relatedIds)],
   });
 }

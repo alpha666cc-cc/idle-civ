@@ -1,0 +1,14 @@
+[
+  {
+    "key": "first-battle",
+    "name": "First Battle",
+    "description": "Repel the wolves. Victory expands town-hall capacity.",
+    "bonuses": [
+      {
+        "type": "resourceMultiplier",
+        "destination": "town-hallCapacity",
+        "value": 10
+      }
+    ]
+  }
+]
