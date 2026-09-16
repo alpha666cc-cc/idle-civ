@@ -8,5 +8,10 @@
     "key": "autoClickRate",
     "label": "Auto-click rate",
     "description": "Automated production clicks generated every second. Dev Tools set the current rate; bonuses are planned to feed it once upgrades target this stat."
+  },
+  {
+    "key": "buildingPower",
+    "label": "Building power",
+    "description": "Global multiplier on every building's power. Endgame bonuses raise it for all buildings at once."
   }
 ]

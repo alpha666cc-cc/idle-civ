@@ -78,7 +78,10 @@ export const parseBonusType = (type: string): BonusType => {
 
 /** The four cost-reduction types folded into per-unit adjustments (§13.1). */
 export type CostReductions = {
-  /** Σ absolute reductions of the cost's base term. */
+  /**
+   * Π(1 − N) — base divisors compound (a value of 1/2 divides the base by 2);
+   * each source clamped at a 0 floor.
+   */
   base: ExpNumber;
   /** Σ reductions of the cost's growth factor (engine clamps the factor at 1). */
   factor: ExpNumber;
@@ -95,7 +98,7 @@ export type CostReductions = {
  */
 export const collectCostReductions = (bonuses: Bonus[]): CostReductions => {
   const reductions: CostReductions = {
-    base: ExpNumber.ZERO,
+    base: ExpNumber.ONE,
     factor: ExpNumber.ZERO,
     percent: ExpNumber.ONE,
     flat: ExpNumber.ZERO,
@@ -103,7 +106,9 @@ export const collectCostReductions = (bonuses: Bonus[]): CostReductions => {
   for (const bonus of bonuses) {
     switch (bonus.type) {
       case "costReductionBase":
-        reductions.base = reductions.base.add(bonus.value);
+        reductions.base = reductions.base.mul(
+          ExpNumber.max(ExpNumber.ZERO, ExpNumber.ONE.sub(bonus.value)),
+        );
         break;
       case "costReductionFactor":
         reductions.factor = reductions.factor.add(bonus.value);

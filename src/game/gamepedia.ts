@@ -1,5 +1,8 @@
 import { buildingDefinitions, type BuildingDefinition } from "./buildings";
-import { achievementDefinitions } from "./achievements";
+import {
+  achievementDefinitions,
+  type AchievementDefinition,
+} from "./achievements";
 import { encounterDefinitions } from "./encounters";
 import { GameObject } from "./gameObject";
 import { upgradeDefinitions } from "./upgrades";
@@ -23,6 +26,28 @@ export type GamepediaEntry = {
   object: GameObject;
   category: GamepediaCategory;
   relatedIds: string[];
+};
+
+/**
+ * Achievement relation derivation shared by the static registration loop and the
+ * lazy registration of materialized open-ended tiers: requirements name
+ * resources, buildings and encounters by id, and rewards name their destination
+ * the same way, so the graph links achievements both ways.
+ */
+const achievementRelatedIds = (achievement: AchievementDefinition): string[] => {
+  const { requirement } = achievement;
+  return [
+    ...(requirement.type === "resource"
+      ? [requirement.resource]
+      : requirement.type === "population"
+        ? [populationDefinition.id]
+        : requirement.type === "building-count"
+          ? [requirement.building]
+          : requirement.type === "encounter"
+            ? [requirement.encounterId]
+            : []),
+    ...achievement.bonuses.map(({ destination }) => String(destination)),
+  ];
 };
 
 export class Gamepedia {
@@ -59,6 +84,27 @@ export class Gamepedia {
   reveal(id: string): void {
     const entry = this.get(id);
     if (entry) entry.object.seen = true;
+  }
+
+  /**
+   * Registers a materialized open-ended achievement tier the first time it is
+   * earned (no-op when already present). `buildRelations()` has already run at
+   * import time, so the late entry patches its reverse links itself.
+   */
+  ensureAchievementEntry(definition: AchievementDefinition): void {
+    if (this.entries.has(definition.id)) return;
+    const relatedIds = [...new Set(achievementRelatedIds(definition))];
+    this.register({
+      object: definition,
+      category: "achievement",
+      relatedIds,
+    });
+    for (const relatedId of relatedIds) {
+      const related = this.entries.get(relatedId);
+      if (related && !related.relatedIds.includes(definition.id)) {
+        related.relatedIds.push(definition.id);
+      }
+    }
   }
 
   /** Entries the player has discovered; use this for anything shown to the player. */
@@ -168,29 +214,13 @@ for (const encounter of encounterDefinitions) {
 }
 
 for (const achievement of achievementDefinitions) {
-  const { requirement } = achievement;
-  // Requirements name resources, buildings and encounters by id, and rewards name
-  // their destination the same way, so the same derivation that feeds
-  // building/upgrade relations also links achievements.
-  const relatedIds = [
-    ...(requirement.type === "resource"
-      ? [requirement.resource]
-      : requirement.type === "population"
-        ? [populationDefinition.id]
-        : requirement.type === "building-count"
-          ? [requirement.building]
-          : requirement.type === "encounter"
-            ? [requirement.encounterId]
-            : []),
-    ...achievement.bonuses.map(({ destination }) => String(destination)),
-  ];
   // seen stays false at registration: an achievement is a permanent record that
   // appears in the Gamepedia the moment it is earned (App reveals on every
   // state change), per AGENTS.md §13.4.
   gamepedia.register({
     object: achievement,
     category: "achievement",
-    relatedIds: [...new Set(relatedIds)],
+    relatedIds: [...new Set(achievementRelatedIds(achievement))],
   });
 }
 

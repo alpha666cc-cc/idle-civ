@@ -1,4 +1,5 @@
 import statData from "./data/stats.json";
+import { buildingDefinitions, type BuildingKey } from "./buildings";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 
@@ -33,7 +34,11 @@ export type ResourceKey =
   | CapacityResourceKey;
 
 /** Derived attributes: computed from state on read, never stored (§13.2 decision 2). */
-export type DerivedAttributeKey = "clickPower" | "autoClickRate";
+export type DerivedAttributeKey =
+  | "clickPower"
+  | "autoClickRate"
+  | "buildingPower"
+  | `${BuildingKey}Power`;
 
 /** Every value-side key a bonus destination may name; buyable ids are separate. */
 export type AttributeKey = ResourceKey | DerivedAttributeKey;
@@ -146,7 +151,26 @@ export const derivedAttributeDefinitions: AttributeDefinition[] = (
     ),
 );
 
+/**
+ * Every building owns a derived power attribute (§13.2): base 1, raised by
+ * bonuses targeting `<buildingKey>Power`. Derived from the building registry so
+ * new buildings get their power automatically — the building list is the single
+ * source of truth.
+ */
+export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
+  buildingDefinitions.map(
+    ({ key, name }) =>
+      new AttributeDefinition(
+        `${key}Power`,
+        `${name} power`,
+        "derived",
+        `${name} power multiplies this building's effects. Milestones raise it.`,
+      ),
+  );
+
 /** Every attribute definition, in Gamepedia registration order. */
+derivedAttributeDefinitions.push(...buildingPowerAttributeDefinitions);
+
 export const attributeDefinitions: AttributeDefinition[] = [
   ...productionDefinitions,
   populationDefinition,

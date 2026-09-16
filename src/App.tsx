@@ -23,7 +23,11 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import GamepediaModal from "./components/GamepediaModal";
-import { achievementDefinitions } from "./game/achievements";
+import {
+  achievementDefinitions,
+  findAchievementDefinition,
+  type AchievementDefinition,
+} from "./game/achievements";
 import { buildingDefinitions } from "./game/buildings";
 import type { Bonus } from "./game/bonus";
 import { CivilizationState } from "./game/civilizationState";
@@ -173,6 +177,29 @@ const buildings: BuildingPresentation[] = buildingDefinitions.map(
   }),
 );
 
+/** Milestone chains group into one cumulative card; singletons render alone. */
+const achievementFamilies: {
+  family: string;
+  tiers: AchievementDefinition[];
+}[] = [];
+const singletonAchievements: AchievementDefinition[] = [];
+{
+  const byFamily = new Map<string, AchievementDefinition[]>();
+  for (const achievement of achievementDefinitions) {
+    if (achievement.family === undefined) {
+      singletonAchievements.push(achievement);
+      continue;
+    }
+    const tiers = byFamily.get(achievement.family) ?? [];
+    tiers.push(achievement);
+    byFamily.set(achievement.family, tiers);
+  }
+  for (const [family, tiers] of byFamily) {
+    tiers.sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0));
+    achievementFamilies.push({ family, tiers });
+  }
+}
+
 type Multiplier =
   | 1
   | 10
@@ -241,6 +268,8 @@ function App() {
       gamepedia.reveal(encounterId);
     }
     for (const achievementId of gameState.earnedAchievements) {
+      const definition = findAchievementDefinition(achievementId);
+      if (definition) gamepedia.ensureAchievementEntry(definition);
       gamepedia.reveal(achievementId);
     }
   }, [gameState]);
@@ -402,9 +431,53 @@ function App() {
       if (bonus.type === "costReductionFlat") {
         return `${target} cost −${fmt(bonus.value)}`;
       }
-      return `${target} base cost −${fmt(bonus.value)}`;
+      if (bonus.type === "costReductionBase") {
+        const percent = Math.round(bonus.value.mul(ExpNumber.fromNumber(100)).toNumber() * 10) / 10;
+        return `${target} base cost −${percent}%`;
+      }
     }
     return bonus.type;
+  };
+
+  /** Reward lines for the cumulative achievement cards (bonus → label). */
+  const describeAchievementBonus = (bonus: Bonus): string => {
+    const entry = gamepedia.get(String(bonus.destination));
+    const definition = entry?.object as
+      | { name?: string; label?: string; id: string }
+      | undefined;
+    const target = definition
+      ? (definition.name ?? definition.label ?? definition.id)
+      : String(bonus.destination);
+    if (bonus.type === "attributeMultiplier") {
+      return `${target} ×${fmt(bonus.value)}`;
+    }
+    if (bonus.type === "costReductionBase") {
+      return `${target} base cost −${Math.round(
+        bonus.value.mul(ExpNumber.fromNumber(100)).toNumber(),
+      )}%`;
+    }
+    if (bonus.type.startsWith("costReduction")) {
+      return `${target} −${fmt(bonus.value)}`;
+    }
+    return `${target} +${fmt(bonus.value)}`;
+  };
+
+  const describeRewardList = (bonuses: Bonus[]): string => {
+    const grouped = new Map<string, Bonus>();
+    for (const bonus of bonuses) {
+      const key = `${bonus.type}:${bonus.destination}`;
+      const previous = grouped.get(key);
+      const value = !previous ? bonus.value
+        : bonus.type === "attributeMultiplier"
+          ? previous.value.mul(bonus.value)
+          : bonus.type === "costReductionBase" || bonus.type === "costReductionPercent"
+            ? ExpNumber.ONE.sub(
+                ExpNumber.ONE.sub(previous.value).mul(ExpNumber.ONE.sub(bonus.value)),
+              )
+            : previous.value.add(bonus.value);
+      grouped.set(key, { ...bonus, value });
+    }
+    return [...grouped.values()].map(describeAchievementBonus).join(", ");
   };
 
   const buyUpgrade = (upgrade: UpgradeDefinition) => {
@@ -710,7 +783,63 @@ function App() {
                 entry.
               </p>
               <div className="achievement-grid">
-                {achievementDefinitions.map((achievement) => {
+                {achievementFamilies.map(({ family, tiers }) => {
+                  const earnedTiers = gameState.earnedAchievements
+                    .map(findAchievementDefinition)
+                    .filter((tier): tier is AchievementDefinition =>
+                      tier !== undefined && tier.family === family,
+                    )
+                    .sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0));
+                  const goal = gameState.getNextAchievementGoal(family);
+                  const complete = goal === undefined;
+                  const progress = gameState.getRequirementValue(tiers[0].requirement);
+                  const focus = earnedTiers[earnedTiers.length - 1] ?? tiers[0];
+                  const state = complete
+                    ? "earned"
+                    : earnedTiers.length > 0
+                      ? "partial"
+                      : "locked";
+                  return (
+                    <button
+                      type="button"
+                      key={family}
+                      className={`achievement-card chain ${state}`}
+                      onClick={() => openGamepediaAt(focus.key)}
+                      title={`Open ${focus.name} in gamepedia`}
+                      aria-pressed={complete}
+                    >
+                      <span className="achievement-icon">
+                        <Trophy size={18} strokeWidth={1.8} />
+                      </span>
+                      <span className="achievement-copy">
+                        <strong>{focus.name}</strong>
+                        <small>{focus.description}</small>
+                        {!complete && goal && progress && (
+                          <small className="achievement-goal">
+                            {fmt(progress)} / {fmt(goal.threshold)} — next:{" "}
+                            {describeRewardList(goal.bonuses)}
+                          </small>
+                        )}
+                        {earnedTiers.length > 0 && (
+                          <small className="achievement-earned-list">
+                            {earnedTiers.length} earned:{" "}
+                            {describeRewardList(
+                              earnedTiers.flatMap((tier) => tier.bonuses),
+                            )}
+                          </small>
+                        )}
+                      </span>
+                      <span className="achievement-status">
+                        {complete
+                          ? "Complete"
+                          : earnedTiers.length > 0
+                            ? "In progress"
+                            : "Locked"}
+                      </span>
+                    </button>
+                  );
+                })}
+                {singletonAchievements.map((achievement) => {
                   const earned = gameState.isAchievementEarned(achievement.key);
                   return (
                     <button

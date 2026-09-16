@@ -835,6 +835,22 @@ button:focus-visible {
   color: #38481f;
   background: #eef3dd;
 }
+.achievement-card.partial {
+  border-color: #d8c98a;
+  background: #f7f3e2;
+}
+.achievement-card.partial .achievement-icon {
+  color: #8a6d2f;
+  background: #ecdfb6;
+}
+.achievement-card.partial .achievement-status {
+  color: #6b5a24;
+  background: #f0e7c8;
+}
+.achievement-goal,
+.achievement-earned-list {
+  color: #55684f;
+}
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

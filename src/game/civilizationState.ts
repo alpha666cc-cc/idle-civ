@@ -26,6 +26,10 @@ import {
 } from "./buildings";
 import {
   achievementDefinitions,
+  findAchievementDefinition,
+  materializeOpenEndedTier,
+  nextHoarderExponent,
+  openEndedHoarderChains,
   type AchievementRequirement,
 } from "./achievements";
 import { encounterDefinitions } from "./encounters";
@@ -71,6 +75,39 @@ const derivedAttributeComputations: Record<
     base: (state) => ExpNumber.fromNumber(state.autoClicksPerSecond),
   },
 };
+
+/**
+ * Compound stats (base 1, flats sum, multipliers compound) — the same rule as
+ * `computeClickPower()`, applied to the global building power and to every
+ * building's own power attribute. Building powers also fold in the global
+ * layer through the synthetic row added by `getDerivedAttributeFactors()`.
+ */
+const compoundStatValue = (
+  state: CivilizationState,
+  key: string,
+): ExpNumber => {
+  const factors = state.getDerivedAttributeFactors(key);
+  if (!factors) return ExpNumber.ONE;
+  const flat = factors.additional.reduce(
+    (total, [, value]) => total.add(value),
+    factors.base,
+  );
+  const multiplier = factors.multiplicative.reduce(
+    (total, [, value]) => total.mul(value),
+    ExpNumber.ONE,
+  );
+  return flat.mul(multiplier);
+};
+
+for (const key of [
+  "buildingPower",
+  ...buildingDefinitions.map(({ key }) => `${key}Power`),
+]) {
+  derivedAttributeComputations[key] = {
+    value: (state) => compoundStatValue(state, key),
+    base: () => ExpNumber.ONE,
+  };
+}
 
 /** Applies a tick rate to a resource amount, clamped so it never goes negative. */
 const applyRate = (amount: ExpNumber, rate: ExpNumber): ExpNumber => {
@@ -391,12 +428,19 @@ export class CivilizationState {
     for (const building of buildingDefinitions) {
       const count = this.buildingCount(building.key);
       if (count === 0) continue;
+      const power = this.buildingPower(building.key);
       const { resourceMultiplier, resourceDrain, resourceProduction } =
         building.effects;
       if (resourceMultiplier?.resource === resourceKey) {
+        // Building power scales each effect's magnitude (§13.2): multiplier
+        // effects scale their excess over 1 (×1.1 at power 2 → ×1.2), flats
+        // scale in full. Drains and build-time capacity grants do not scale.
+        const effectiveFactor = ExpNumber.ONE.add(
+          resourceMultiplier.factor.sub(ExpNumber.ONE).mul(power),
+        );
         buildingFactors.multiplicative.push([
           building.key,
-          resourceMultiplier.factor.pow(ExpNumber.fromNumber(count)),
+          effectiveFactor.pow(ExpNumber.fromNumber(count)),
         ]);
       }
       if (resourceDrain?.resource === resourceKey) {
@@ -408,22 +452,27 @@ export class CivilizationState {
       if (resourceProduction?.resource === resourceKey) {
         buildingFactors.additional.push([
           building.key,
-          resourceProduction.amount.mul(ExpNumber.fromNumber(count)),
+          resourceProduction.amount
+            .mul(power)
+            .mul(ExpNumber.fromNumber(count)),
         ]);
       }
     }
 
-    const upgradeFactors: ResourceFactors = {
+    // Attribute bonuses from every source (upgrades, encounters, achievements)
+    // land in the existing factor path (§13.6); drains from bonuses stay
+    // unimplemented until data needs them.
+    const bonusFactors: ResourceFactors = {
       additional: [],
       multiplicative: [],
       drain: [],
     };
-    for (const [upgradeId, bonus] of this.boughtUpgradeBonuses()) {
-      if (
-        bonus.type === "attributeMultiplier" &&
-        bonus.destination === resourceKey
-      ) {
-        upgradeFactors.multiplicative.push([upgradeId, bonus.value]);
+    for (const [sourceId, bonus] of this.activeBonuses()) {
+      if (String(bonus.destination) !== resourceKey) continue;
+      if (bonus.type === "attributeMultiplier") {
+        bonusFactors.multiplicative.push([sourceId, bonus.value]);
+      } else if (bonus.type === "attributeFlat") {
+        bonusFactors.additional.push([sourceId, bonus.value]);
       }
     }
 
@@ -442,17 +491,17 @@ export class CivilizationState {
         ...(isProductionKey ? workerAdditional : []),
         ...factors.additional,
         ...buildingFactors.additional,
-        ...upgradeFactors.additional,
+        ...bonusFactors.additional,
       ],
       multiplicative: [
         ...factors.multiplicative,
         ...buildingFactors.multiplicative,
-        ...upgradeFactors.multiplicative,
+        ...bonusFactors.multiplicative,
       ],
       drain: [
         ...factors.drain,
         ...buildingFactors.drain,
-        ...upgradeFactors.drain,
+        ...bonusFactors.drain,
       ],
     };
   }
@@ -476,6 +525,16 @@ export class CivilizationState {
       multiplicative: factors.multiplicative,
       drain: [],
     });
+  }
+
+  /**
+   * The effective power of one building: its own power attribute — which
+   * already folds in the global building-power layer — defaulting to 1 for any
+   * key without a power attribute.
+   */
+  private buildingPower(buildingKey: BuildingKey): ExpNumber {
+    const value = this.getAttributeValue(`${buildingKey}Power`);
+    return value.gt(ExpNumber.ZERO) ? value : ExpNumber.ONE;
   }
 
   /**
@@ -528,6 +587,17 @@ export class CivilizationState {
       } else if (bonus.type === "attributeMultiplier") {
         factors.multiplicative.push([sourceId, bonus.value]);
       }
+    }
+    // Building powers fold in the global layer so the displayed value is the
+    // effective one; the row links the global stat's Gamepedia page (§13.2).
+    const isBuildingPower = buildingDefinitions.some(
+      ({ key: buildingKey }) => `${buildingKey}Power` === key,
+    );
+    if (isBuildingPower) {
+      factors.multiplicative.push([
+        "buildingPower",
+        this.getAttributeValue("buildingPower"),
+      ]);
     }
     return factors;
   }
@@ -584,7 +654,7 @@ export class CivilizationState {
       // would cost less than earlier ones).
       const unitBase = ExpNumber.max(
         ExpNumber.ZERO,
-        ExpNumber.from(cost.base).sub(reductions.base),
+        ExpNumber.from(cost.base).mul(reductions.base),
       );
       const unitFactor = ExpNumber.max(
         ExpNumber.ONE,
@@ -899,10 +969,7 @@ export class CivilizationState {
    */
   private earnedAchievementBonuses(): [achievementId: string, bonus: Bonus][] {
     return this.earnedAchievements.flatMap((achievementId) =>
-      (
-        achievementDefinitions.find(({ key }) => key === achievementId)
-          ?.bonuses ?? []
-      ).map(
+      (findAchievementDefinition(achievementId)?.bonuses ?? []).map(
         (bonus) =>
           [achievementId, bonus] as [achievementId: string, bonus: Bonus],
       ),
@@ -969,6 +1036,109 @@ export class CivilizationState {
     return this.statistics.fastestBattleMs[encounterId];
   }
 
+  /** The live value a requirement is measured against (feeds the achievements tab). */
+  getRequirementValue(requirement: AchievementRequirement): ExpNumber {
+    switch (requirement.type) {
+      case "resource":
+        return this.resources[requirement.resource];
+      case "population":
+        return this.resources.population;
+      case "clicks":
+        return this.statistics.productionClicks;
+      case "building-count":
+        return ExpNumber.fromNumber(this.buildingCount(requirement.building));
+      case "buildings-total":
+        return this.statistics.buildingsBuilt;
+      case "encounter":
+        return this.defeatedEncounters.includes(requirement.encounterId)
+          ? ExpNumber.ONE
+          : ExpNumber.ZERO;
+      case "upgrade-count":
+        return ExpNumber.fromNumber(this.boughtUpgrades.length);
+    }
+  }
+
+  private requirementThreshold(requirement: AchievementRequirement): ExpNumber {
+    switch (requirement.type) {
+      case "resource":
+      case "population":
+      case "clicks":
+        return requirement.amount;
+      case "building-count":
+      case "buildings-total":
+        return ExpNumber.fromNumber(requirement.count);
+      case "encounter":
+        return ExpNumber.ONE;
+      case "upgrade-count":
+        return ExpNumber.fromNumber(requirement.count);
+    }
+  }
+
+  /**
+   * The next milestone of an achievement family: its name, the threshold the
+   * family is measured against, and the reward it will grant. Concrete tiers
+   * come first; once they run out, an open-ended chain reports its next
+   * exponent. `undefined` when the family has no tiers left.
+   */
+  getNextAchievementGoal(
+    family: string,
+  ): { name: string; threshold: ExpNumber; bonuses: Bonus[] } | undefined {
+    const concrete = achievementDefinitions
+      .filter(({ family: achievementFamily }) => achievementFamily === family)
+      .sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0));
+    const nextTier = concrete.find(
+      ({ key }) => !this.earnedAchievements.includes(key),
+    );
+    if (nextTier) {
+      return {
+        name: nextTier.name,
+        threshold: this.requirementThreshold(nextTier.requirement),
+        bonuses: nextTier.bonuses,
+      };
+    }
+    const chain = openEndedHoarderChains.find(
+      ({ family: chainFamily }) => chainFamily === family,
+    );
+    if (!chain) return undefined;
+    const exponent = nextHoarderExponent(chain, this.earnedAchievements);
+    const tier = materializeOpenEndedTier(chain, exponent);
+    return {
+      name: tier.name,
+      threshold: ExpNumber.fromLog10(exponent),
+      bonuses: tier.bonuses,
+    };
+  }
+
+  /**
+   * Open-ended hoarder chains: every multiple of the step exponent at or below
+   * the held amount's magnitude is an earnable tier. Tiers are earned in order
+   * from the highest recorded milestone, so spending resources cannot roll the
+   * chain back; a jump spanning more than 1,000 tiers collapses into one range
+   * record (`…-through-e…`) whose reward sums every spanned tier.
+   */
+  private openEndedChainEarnings(): string[] {
+    const newlyEarned: string[] = [];
+    for (const chain of openEndedHoarderChains) {
+      const held = this.resources[chain.resource];
+      if (held.lte(ExpNumber.ZERO)) continue;
+      const heldExponent = Math.floor(held.log10());
+      let exponent = nextHoarderExponent(chain, this.earnedAchievements);
+      const endExponent = chain.startExponent + Math.floor(
+        (heldExponent - chain.startExponent) / chain.exponentStep,
+      ) * chain.exponentStep;
+      if (!Number.isSafeInteger(endExponent) || exponent > endExponent) continue;
+      const count = (endExponent - exponent) / chain.exponentStep + 1;
+      if (count > 1000) {
+        newlyEarned.push(`${chain.family}-e${exponent}-through-e${endExponent}`);
+        continue;
+      }
+      for (; exponent <= endExponent; exponent += chain.exponentStep) {
+        newlyEarned.push(`${chain.family}-e${exponent}`);
+      }
+    }
+    return newlyEarned;
+  }
+
   private meetsRequirement(requirement: AchievementRequirement): boolean {
     switch (requirement.type) {
       case "resource":
@@ -979,6 +1149,10 @@ export class CivilizationState {
         return this.statistics.productionClicks.gte(requirement.amount);
       case "building-count":
         return this.buildingCount(requirement.building) >= requirement.count;
+      case "buildings-total":
+        return this.statistics.buildingsBuilt.gte(
+          ExpNumber.fromNumber(requirement.count),
+        );
       case "encounter":
         return this.defeatedEncounters.includes(requirement.encounterId);
       case "upgrade-count":
@@ -994,13 +1168,16 @@ export class CivilizationState {
    * re-balancing stay safe (roadmap Milestone 6). Returns `this` when nothing is new.
    */
   checkAchievements(): CivilizationState {
-    const newlyEarned = achievementDefinitions
-      .filter(
-        ({ key, requirement }) =>
-          !this.earnedAchievements.includes(key) &&
-          this.meetsRequirement(requirement),
-      )
-      .map(({ key }) => key);
+    const newlyEarned = [
+      ...achievementDefinitions
+        .filter(
+          ({ key, requirement }) =>
+            !this.earnedAchievements.includes(key) &&
+            this.meetsRequirement(requirement),
+        )
+        .map(({ key }) => key),
+      ...this.openEndedChainEarnings(),
+    ];
     if (newlyEarned.length === 0) return this;
     return this.withState(
       this.resources,

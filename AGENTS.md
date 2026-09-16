@@ -378,9 +378,11 @@ when a non-production key is used) silently yields `ExpNumber.ZERO` rather than 
 - Tabs (`Tab` type + `tabs` array): `Production`, `Upgrades`, `Achievements`,
   `Army`, `Research`, `Trade`, `Settings`, `Stats`, `Dev Tools`, rendered inline via
   `{activeTab === "X" && (...)}`. **`Army` and `Research` render no section at all**
-  (blank content area) and `Trade` is placeholder copy; `Achievements` lists
-  every achievement from `achievementDefinitions` with an earned/locked state read from
-  `gameState.isAchievementEarned()`, and clicking a card opens its Gamepedia page;
+  (blank content area) and `Trade` is placeholder copy; `Achievements` renders one
+  cumulative card per milestone-chain `family` — earned tiers' rewards, live progress via
+  `getNextAchievementGoal()`/`getRequirementValue()`, `locked`/`partial`/`complete`
+  states — plus the singleton achievements with earned/locked states, and clicking a
+  card opens its Gamepedia page;
   `Stats` renders the tracked `gameState.statistics` (clicks, play time, buildings built,
   fastest age/battle records) plus one clickable card per `derivedAttributeDefinitions`
   entry that opens that stat's Gamepedia page. The
@@ -630,13 +632,15 @@ with a roadmap entry already assigned.
 - **Existing but unused:** `public/icons.svg`, the `Market`/`Monument` building effects
   (both still have no effects).
 - **The bonus/upgrade system is only partially built** (§13). Implemented: the `Bonus`
-  type, `attributeMultiplier` application (production resources via `getFactors()`,
-  capacities via `getBuildingMax()`), `UpgradeDefinition` + the 32 enhancer tiers, the
+  type, `attributeMultiplier`/`attributeFlat` application (production resources via
+  `getFactors()` from every bonus source, capacities via `getBuildingMax()`, stats via
+  the derived-attribute computations), `UpgradeDefinition` + the 32 enhancer tiers, the
   `seen` → Gamepedia reveal, the Upgrades tab, building unlock gates and
   `military`/`metalwork`, and the cost-reduction pipeline in `getBuildingCost()`
-  (`costReductionPercent`/`costReductionFactor` are used by enhancer tiers 3–8).
-  **Still unbuilt:** `attributeFlat`/`attributeDrain` bonus data,
-  `costReductionBase`/`costReductionFlat` data (the engine path exists), unit
+  (`costReductionPercent`/`costReductionBase`/`costReductionFactor` are used by the
+  enhancer and Master Builder tiers).
+  **Still unbuilt:** `attributeDrain` and `costReductionFlat` bonus data
+  (the engine path exists), unit
   definitions, research/achievement/battle unlock sources (the smithy battle gate
   cannot fire yet).
 - **`temp/battle.ts`, `temp/campaign.json`, `temp/units100.json`** (and the newer
@@ -766,8 +770,9 @@ A change is done when:
 > `getBuildingCost()` (`costReductionPercent`/`costReductionFactor` are used by the
 > enhancer tiers), the `UpgradeDefinition` registry with the 32 production-enhancer
 > tiers (`src/game/upgrades.ts`), the Upgrades tab, and the building unlock gates.
-> Still design-only: `attributeFlat`/`attributeDrain` and `costReductionBase`/`Flat`
-> data, research/units, and all prestige semantics. Check the
+> Still design-only: `attributeDrain` and `costReductionFlat` data, research/units, and
+> all prestige semantics (`attributeFlat` ships via the hoarder chains,
+> `costReductionBase` via the Master Builder chain). Check the
 > engine before assuming a symbol exists, and §13.7 for what is decided versus
 > deferred. Achievements now have their own slice (§10, milestone 6) and are permanent
 > records only — they never carry unlock lists.
@@ -794,7 +799,7 @@ type BonusType =
   // buyable-targeted: the destination is a buyable (building or unit)
   | "costReductionFlat"     // destination cost −N (absolute)
   | "costReductionPercent"  // destination cost × (1 − N)
-  | "costReductionBase"     // destination cost's base term reduced
+  | "costReductionBase"     // base term × Π(1 − N) — divides the base
   | "costReductionFactor";  // destination cost's growth factor reduced
 
 type BonusDestination = AttributeKey | BuyableId;
@@ -813,7 +818,7 @@ type Bonus = {
 | `attributeDrain` | attribute (resource, capacity or stat) | subtracts a flat per-second amount (consumption) | `ResourceFactors.drain` |
 | `costReductionFlat` | buyable | lowers every cost entry of the buyable by an absolute amount | **none** (new) |
 | `costReductionPercent` | buyable | lowers every cost entry by a percentage | **none** (new) |
-| `costReductionBase` | buyable | reduces the base term *before* geometric growth | crude precursor: `buildingCostOverrides` |
+| `costReductionBase` | buyable | divides the base term *before* geometric growth (Π(1 − N), compounding; e.g. Master Builder tiers) | `buildingCostOverrides` precursor |
 | `costReductionFactor` | buyable | reduces the growth factor (e.g. `1.25` → `1.20`) | crude precursor: `buildingCostOverrides` |
 
 The first three map exactly onto today's factor model, so they can reuse
@@ -905,6 +910,12 @@ Reconciliation with the code as it stands:
   Caveat settled by the same decision: `clickPower` is **one global stat** scaling every
   manual click (today's per-resource `productionPerWorker` stays as resource data), and the
   auto-clicker becomes the `autoClickRate` stat rather than a bare state field.
+- **Building power** (§13.2): the global `buildingPower` stat multiplies every
+  building's own `<buildingKey>Power` (base 1, one per building, derived from the
+  building registry). Power scales a building's multiplier effects by their excess
+  (`1 + (f−1)·P`) and its flat production in full — drains and build-time capacity
+  grants never scale. Chain milestones target the per-building powers; endgame
+  "all buildings" bonuses target the global.
 
 ### 13.3 Buyables
 
@@ -992,6 +1003,12 @@ Two pieces of state-management guidance:
 - Bonuses from bought upgrades should be **derived** from the set of bought ids when
   factors and costs are computed — do not accumulate applied values into saved state, or
   migrations and re-balancing become unsafe.
+- **Open-ended milestone chains are parametric** (§13.4): the hoarder chains run past
+  their authored data forever — tiers materialize on demand from the
+  `openEndedHoarderChains` specs with deterministic `<family>-e<exponent>` ids, earn in
+  `checkAchievements()`, resolve bonuses through `findAchievementDefinition()`, and
+  register in the Gamepedia lazily via `ensureAchievementEntry()`. Never author them as
+  finite JSON; never reset `seen` for them.
 
 > Resolved: **a buyable's bonus never unlocks an upgrade.** There is no `grantUpgrade`
 > bonus type — the list stays at the seven types in §13.1, which only *modify* resources /

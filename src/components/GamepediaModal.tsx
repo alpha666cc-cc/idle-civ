@@ -143,13 +143,13 @@ const bonusValueText = (bonus: Bonus, format: NumberFormat): string => {
     case "attributeMultiplier":
       return `×${formatNumber(bonus.value, format)}`;
     case "costReductionPercent":
+    case "costReductionBase":
       return `−${formatNumber(
         bonus.value.mul(ExpNumber.fromNumber(100)),
         format,
       )}%`;
     case "costReductionFactor":
     case "costReductionFlat":
-    case "costReductionBase":
       return `−${formatNumber(bonus.value, format)}`;
     case "attributeFlat":
       return `+${formatNumber(bonus.value, format)}`;
