@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import {
   ArrowUpRight,
   BookOpen,
@@ -16,19 +16,27 @@ import {
   Sparkles,
   Store,
   Swords,
+  Trophy,
   Users,
   Wheat,
   Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import GamepediaModal from "./components/GamepediaModal";
+import { achievementDefinitions } from "./game/achievements";
 import { buildingDefinitions } from "./game/buildings";
 import type { Bonus } from "./game/bonus";
 import { CivilizationState } from "./game/civilizationState";
 import { ExpNumber } from "./game/expNumber";
 import { gamepedia } from "./game/gamepedia";
 import { upgradeDefinitions, type UpgradeDefinition } from "./game/upgrades";
-import { formatNumber, type NumberFormat } from "./game/numberFormat";
+import { encounterDefinitions } from "./game/encounters";
+import { statDefinitions } from "./game/stats";
+import {
+  formatDuration,
+  formatNumber,
+  type NumberFormat,
+} from "./game/numberFormat";
 import {
   capacityDefinitions,
   resourceDefinitions,
@@ -39,6 +47,7 @@ import {
 type Tab =
   | "Production"
   | "Upgrades"
+  | "Achievements"
   | "Army"
   | "Research"
   | "Trade"
@@ -70,6 +79,7 @@ type BuildingPresentation = {
 const tabs: { label: Tab; icon: LucideIcon }[] = [
   { label: "Production", icon: Leaf },
   { label: "Upgrades", icon: ArrowUpRight },
+  { label: "Achievements", icon: Trophy },
   { label: "Army", icon: Swords },
   { label: "Research", icon: BookOpen },
   { label: "Trade", icon: Store },
@@ -205,6 +215,7 @@ function App() {
     maximumPopulation,
     workers,
     availableWorkers,
+    statistics,
   } = gameState;
 
   useEffect(() => {
@@ -229,6 +240,9 @@ function App() {
     for (const encounterId of gameState.defeatedEncounters) {
       gamepedia.reveal(encounterId);
     }
+    for (const achievementId of gameState.earnedAchievements) {
+      gamepedia.reveal(achievementId);
+    }
   }, [gameState]);
 
   useEffect(() => {
@@ -241,6 +255,17 @@ function App() {
 
   const gatherResource = (resourceKey: ProductionResourceKey) => {
     setGameState((current) => current.gather(resourceKey));
+  };
+
+  /**
+   * Counts one click anywhere in the shell toward the UI click statistic. Gather
+   * buttons carry `data-production-click`, because the engine counts those as
+   * production clicks instead of UI clicks.
+   */
+  const countUiClick = (event: MouseEvent<HTMLElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest?.("[data-production-click]")) return;
+    setGameState((current) => current.recordUiClick());
   };
 
   const changeWorkers = (
@@ -339,6 +364,13 @@ function App() {
       gameState.isUpgradeUnlocked(upgrade.key) &&
       !gameState.isUpgradeBought(upgrade.key),
   );
+  const earnedAchievementCount = gameState.earnedAchievements.length;
+  const builtByKeyRows = buildingDefinitions.flatMap((building) => {
+    const count = statistics.buildingsBuiltByKey[building.key];
+    return count === undefined || count.isZero
+      ? []
+      : [{ key: building.key, name: building.name, count }];
+  });
 
   const describeUpgradeBonus = (bonus: Bonus): string => {
     if (bonus.type === "resourceMultiplier") {
@@ -401,7 +433,7 @@ function App() {
   };
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" onClickCapture={countUiClick}>
       <aside className="sidebar">
         <div className="brand-lockup">
           <div className="brand-mark">
@@ -572,6 +604,7 @@ function App() {
                   <div className="gather-card" key={key}>
                     <button
                       className={`gather-button ${tone}`}
+                      data-production-click
                       onClick={() => gatherResource(key)}
                     >
                       <span className="gather-card-icon">
@@ -581,7 +614,9 @@ function App() {
                         <strong>{label}</strong>
                         <small>{fmt(resourceAmounts[key])} stored</small>
                       </span>
-                      <span className="gather-action">+1</span>
+                      <span className="gather-action">
+                        +{fmt(gameState.computeClickGain(key))}
+                      </span>
                     </button>
                     <div
                       className="worker-controls"
@@ -656,6 +691,55 @@ function App() {
             </section>
           )}
 
+          {activeTab === "Achievements" && (
+            <section className="production-workbench" aria-label="Achievements">
+              <div className="workbench-heading">
+                <div>
+                  <p className="eyebrow">Records of the settlement</p>
+                  <h3>Achievements</h3>
+                </div>
+                <span>
+                  <Trophy size={15} strokeWidth={1.8} />
+                  {earnedAchievementCount}/{achievementDefinitions.length}{" "}
+                  earned
+                </span>
+              </div>
+              <p className="dev-tools-copy">
+                Achievements are permanent records of this civilization. Once
+                earned they also appear in the Gamepedia; select one to read the
+                entry.
+              </p>
+              <div className="achievement-grid">
+                {achievementDefinitions.map((achievement) => {
+                  const earned = gameState.isAchievementEarned(achievement.key);
+                  return (
+                    <button
+                      type="button"
+                      key={achievement.key}
+                      className={`achievement-card ${
+                        earned ? "earned" : "locked"
+                      }`}
+                      onClick={() => openGamepediaAt(achievement.key)}
+                      title={`Open ${achievement.name} in gamepedia`}
+                      aria-pressed={earned}
+                    >
+                      <span className="achievement-icon">
+                        <Trophy size={18} strokeWidth={1.8} />
+                      </span>
+                      <span className="achievement-copy">
+                        <strong>{achievement.name}</strong>
+                        <small>{achievement.description}</small>
+                      </span>
+                      <span className="achievement-status">
+                        {earned ? "Earned" : "Locked"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           {activeTab === "Trade" && (
             <section className="production-workbench" aria-label="Trade">
               <div className="workbench-heading">
@@ -672,17 +756,115 @@ function App() {
           )}
 
           {activeTab === "Stats" && (
-            <section className="production-workbench" aria-label="Stats">
+            <section className="production-workbench" aria-label="Statistics">
               <div className="workbench-heading">
                 <div>
                   <p className="eyebrow">Records</p>
-                  <h3>Stats</h3>
+                  <h3>Statistics</h3>
+                </div>
+                <span>
+                  <ChartColumn size={15} strokeWidth={1.8} />
+                  {formatDuration(statistics.playTimeMs)} played
+                </span>
+              </div>
+
+              <p className="gamepedia-category">Actions</p>
+              <div className="stat-grid">
+                {statDefinitions.map((stat) => (
+                  <button
+                    type="button"
+                    key={stat.key}
+                    className="stat-card clickable"
+                    onClick={() => openGamepediaAt(stat.key)}
+                    title={`Open ${stat.name} in gamepedia`}
+                  >
+                    <span>{stat.name}</span>
+                    <strong>{fmt(gameState.getStatValue(stat.key))}</strong>
+                  </button>
+                ))}
+                <div className="stat-card">
+                  <span>Production clicks</span>
+                  <strong>{fmt(statistics.productionClicks)}</strong>
+                </div>
+                <div className="stat-card">
+                  <span>UI clicks</span>
+                  <strong>{fmt(statistics.uiClicks)}</strong>
                 </div>
               </div>
-              <p className="tab-placeholder-copy">
-                Lifetime tallies for clicks, buildings, and resources will
-                live here.
+
+              <p className="gamepedia-category">Time</p>
+              <div className="stat-grid">
+                <div className="stat-card">
+                  <span>Played (all time)</span>
+                  <strong>{formatDuration(statistics.playTimeMs)}</strong>
+                </div>
+                <div className="stat-card">
+                  <span>Played (this run)</span>
+                  <strong>{formatDuration(statistics.runTimeMs)}</strong>
+                </div>
+              </div>
+
+              <p className="gamepedia-category">Construction</p>
+              <div className="stat-grid">
+                <div className="stat-card">
+                  <span>Buildings built (all time)</span>
+                  <strong>{fmt(statistics.buildingsBuilt)}</strong>
+                </div>
+                <div className="stat-card">
+                  <span>Buildings standing</span>
+                  <strong>{fmt(gameState.builtBuildings.length)}</strong>
+                </div>
+              </div>
+              {builtByKeyRows.length > 0 && (
+                <div className="stat-row-list">
+                  {builtByKeyRows.map(({ key, name, count }) => (
+                    <div className="stat-row" key={key}>
+                      <span>{name}</span>
+                      <strong>{fmt(count)}</strong>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="gamepedia-category">Fastest battles</p>
+              <p className="stat-note">
+                Run time from the start of a game to each victory.
               </p>
+              <div className="stat-row-list">
+                {encounterDefinitions.map((encounter) => {
+                  const best = gameState.getFastestBattleTime(encounter.key);
+                  return (
+                    <div className="stat-row" key={encounter.key}>
+                      <span>{encounter.name}</span>
+                      <strong>
+                        {best === undefined ? "\u2014" : formatDuration(best)}
+                      </strong>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="gamepedia-category">Fastest ages</p>
+              {gameState.enteredAges.length === 0 ? (
+                <p className="stat-note">
+                  Fastest times to each age appear here once ages are
+                  implemented.
+                </p>
+              ) : (
+                <div className="stat-row-list">
+                  {gameState.enteredAges.map((ageId) => {
+                    const best = gameState.getFastestAgeTime(ageId);
+                    return (
+                      <div className="stat-row" key={ageId}>
+                        <span>{ageId}</span>
+                        <strong>
+                          {best === undefined ? "\u2014" : formatDuration(best)}
+                        </strong>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           )}
 

@@ -21,7 +21,17 @@ import {
   type BuildingCost,
   type BuildingKey,
 } from "./buildings";
+import {
+  achievementDefinitions,
+  type AchievementRequirement,
+} from "./achievements";
 import { encounterDefinitions } from "./encounters";
+import { statDefinitions } from "./stats";
+import {
+  emptyStatistics,
+  tickMilliseconds,
+  type Statistics,
+} from "./statistics";
 import { upgradeDefinitions } from "./upgrades";
 import { collectCostReductions, type Bonus } from "./bonus";
 
@@ -29,6 +39,13 @@ type BuildingCostOverrides = Partial<Record<BuildingKey, BuildingCost[]>>;
 
 const capacityKey = (buildingKey: BuildingKey): CapacityResourceKey =>
   `${buildingKey}Capacity` as CapacityResourceKey;
+
+/**
+ * Factor-source label for a manual click. It is the click power stat's id, so the
+ * Gamepedia factor list links the row to the stat page (§13.2 decision 2).
+ */
+const clickPowerStatSource =
+  statDefinitions.find(({ kind }) => kind === "clickPower")?.key ?? "manual click";
 
 /** Applies a tick rate to a resource amount, clamped so it never goes negative. */
 const applyRate = (amount: ExpNumber, rate: ExpNumber): ExpNumber => {
@@ -46,6 +63,8 @@ export class CivilizationState {
   readonly boughtUpgrades: readonly string[];
   readonly defeatedEncounters: readonly string[];
   readonly enteredAges: readonly string[];
+  readonly earnedAchievements: readonly string[];
+  readonly statistics: Statistics;
 
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
@@ -57,6 +76,8 @@ export class CivilizationState {
     boughtUpgrades: readonly string[] = [],
     defeatedEncounters: readonly string[] = [],
     enteredAges: readonly string[] = [],
+    earnedAchievements: readonly string[] = [],
+    statistics: Statistics = emptyStatistics(),
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -67,6 +88,8 @@ export class CivilizationState {
     this.boughtUpgrades = boughtUpgrades;
     this.defeatedEncounters = defeatedEncounters;
     this.enteredAges = enteredAges;
+    this.earnedAchievements = earnedAchievements;
+    this.statistics = statistics;
 
     const houses = this.buildingCount("house");
     const townHalls = this.buildingCount("town-hall");
@@ -127,9 +150,23 @@ export class CivilizationState {
   gather(resourceKey: ResourceKey): CivilizationState {
     if (!(resourceKey in this.resources)) return this;
     const amount = this.computeClickGain(resourceKey);
-    return this.withResources({
+    return this.withStatistics({
+      ...this.statistics,
+      productionClicks: this.statistics.productionClicks.add(ExpNumber.ONE),
+    }).withResources({
       ...this.resources,
       [resourceKey]: this.resources[resourceKey].add(amount),
+    });
+  }
+
+  /**
+   * Counts one click anywhere in the UI shell. Production clicks are counted by
+   * `gather()` instead, so the UI marks its gather buttons to be skipped.
+   */
+  recordUiClick(): CivilizationState {
+    return this.withStatistics({
+      ...this.statistics,
+      uiClicks: this.statistics.uiClicks.add(ExpNumber.ONE),
     });
   }
 
@@ -290,7 +327,26 @@ export class CivilizationState {
         this.computeResourceRate(resourceKey),
       );
     }
-    return this.withResources(resources);
+    // One tick is one second of play time for both the lifetime counter and the
+    // current run (a future prestige resets `runTimeMs` only).
+    const statistics: Statistics = {
+      ...this.statistics,
+      playTimeMs: this.statistics.playTimeMs + tickMilliseconds,
+      runTimeMs: this.statistics.runTimeMs + tickMilliseconds,
+    };
+    // Achievements are evaluated after the tick's changes so the check always runs
+    // after a domain event has landed (roadmap Milestone 6).
+    return this.withState(
+      resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      statistics,
+    ).checkAchievements();
   }
 
   getFactors(resourceKey: ResourceKey): ResourceFactors {
@@ -385,16 +441,53 @@ export class CivilizationState {
     const definition = resourceDefinitions.find(
       ({ key }) => key === resourceKey,
     );
+    // The global click power stat scales every manual click (§13.2 decision 2);
+    // the resource's own `productionPerWorker` stays resource data.
+    const clickPower = this.computeClickPower().mul(
+      ExpNumber.fromNumber(definition?.productionPerWorker ?? 1),
+    );
     return computeResourceRate({
-      additional: [
-        [
-          "manual click",
-          ExpNumber.fromNumber(definition?.productionPerWorker ?? 1),
-        ],
-      ],
+      additional: [[clickPowerStatSource, clickPower]],
       multiplicative: factors.multiplicative,
       drain: [],
     });
+  }
+
+  /**
+   * The global click power stat: base 1 plus every `clickPower` bonus in force.
+   * Flats sum, multipliers compound — the resource-bonus rule of §13.1, reused.
+   */
+  computeClickPower(): ExpNumber {
+    let flat = ExpNumber.ONE;
+    let multiplier = ExpNumber.ONE;
+    for (const [, bonus] of this.activeBonuses()) {
+      if (!this.isClickPowerDestination(String(bonus.destination))) continue;
+      if (bonus.type === "resourceFlat") flat = flat.add(bonus.value);
+      else if (bonus.type === "resourceMultiplier")
+        multiplier = multiplier.mul(bonus.value);
+    }
+    return flat.mul(multiplier);
+  }
+
+  /** The current value of a computed stat (`clickPower`, `autoClickRate`, …). */
+  getStatValue(statId: string): ExpNumber {
+    const stat = statDefinitions.find(({ key }) => key === statId);
+    if (!stat) return ExpNumber.ZERO;
+    switch (stat.kind) {
+      case "clickPower":
+        return this.computeClickPower();
+      case "autoClickRate":
+        return ExpNumber.fromNumber(this.autoClicksPerSecond);
+      default:
+        return ExpNumber.ZERO;
+    }
+  }
+
+  /** True when `destination` names a stat whose kind is the global click power. */
+  private isClickPowerDestination(destination: string): boolean {
+    return statDefinitions.some(
+      ({ key, kind }) => kind === "clickPower" && key === destination,
+    );
   }
 
   setAutoClicksPerSecond(autoClicksPerSecond: number): CivilizationState {
@@ -410,18 +503,11 @@ export class CivilizationState {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return ExpNumber.ZERO;
     const capacity = capacityKey(building.key);
-    // Effective capacity: the stored base amount times every bought capacity
-    // multiplier (§13.7 decision 3 — capacity keeps its own representation).
+    // Effective capacity: the stored base amount times every capacity multiplier in
+    // force, from any bonus source (§13.7 decision 3 — capacity keeps its own
+    // representation).
     let max = this.resources[capacity];
-    for (const [, bonus] of this.boughtUpgradeBonuses()) {
-      if (
-        bonus.type === "resourceMultiplier" &&
-        bonus.destination === capacity
-      ) {
-        max = max.mul(bonus.value);
-      }
-    }
-    for (const [, bonus] of this.defeatedEncounterBonuses()) {
+    for (const [, bonus] of this.activeBonuses()) {
       if (
         bonus.type === "resourceMultiplier" &&
         bonus.destination === capacity
@@ -441,7 +527,7 @@ export class CivilizationState {
     if (!building) return [];
     const costs = this.buildingCostOverrides[building.key] ?? building.costs;
     const reductions = collectCostReductions(
-      this.boughtUpgradeBonuses()
+      this.activeBonuses()
         .filter(([, bonus]) => bonus.destination === building.key)
         .map(([, bonus]) => bonus),
     );
@@ -703,7 +789,29 @@ export class CivilizationState {
       newBuildings.push(buildingKey);
     }
 
-    return this.withState(resources, this.buildingCostOverrides, newBuildings);
+    return this.withState(
+      resources,
+      this.buildingCostOverrides,
+      newBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      {
+        ...this.statistics,
+        // Cumulative: a building count never falls, so these are lifetime totals.
+        buildingsBuilt: this.statistics.buildingsBuilt.add(
+          ExpNumber.fromNumber(count),
+        ),
+        buildingsBuiltByKey: {
+          ...this.statistics.buildingsBuiltByKey,
+          [buildingKey]: (
+            this.statistics.buildingsBuiltByKey[buildingKey] ?? ExpNumber.ZERO
+          ).add(ExpNumber.fromNumber(count)),
+        },
+      },
+    );
   }
 
   canBuild(buildingKey: string, count: number = 1): boolean {
@@ -737,6 +845,35 @@ export class CivilizationState {
     );
   }
 
+  /**
+   * Bonuses from earned achievements, paired with the achievement id as the source.
+   * Achievements never carry unlock lists, but their *rewards* are ordinary bonuses
+   * (§13.1/§13.4), derived from the earned id list rather than stored as values.
+   */
+  private earnedAchievementBonuses(): [achievementId: string, bonus: Bonus][] {
+    return this.earnedAchievements.flatMap((achievementId) =>
+      (
+        achievementDefinitions.find(({ key }) => key === achievementId)
+          ?.bonuses ?? []
+      ).map(
+        (bonus) =>
+          [achievementId, bonus] as [achievementId: string, bonus: Bonus],
+      ),
+    );
+  }
+
+  /**
+   * Every bonus currently in force, paired with its source id. One seam for all
+   * bonus sources keeps capacities, costs and stats on the same application path.
+   */
+  private activeBonuses(): [sourceId: string, bonus: Bonus][] {
+    return [
+      ...this.boughtUpgradeBonuses(),
+      ...this.defeatedEncounterBonuses(),
+      ...this.earnedAchievementBonuses(),
+    ];
+  }
+
   defeatEncounter(encounterId: string): CivilizationState {
     if (this.defeatedEncounters.includes(encounterId)) return this;
     return this.withState(
@@ -746,6 +883,87 @@ export class CivilizationState {
       this.autoClicksPerSecond,
       this.boughtUpgrades,
       [...this.defeatedEncounters, encounterId],
+      this.enteredAges,
+      this.earnedAchievements,
+      {
+        ...this.statistics,
+        fastestBattleMs: this.recordFastest(
+          this.statistics.fastestBattleMs,
+          encounterId,
+        ),
+      },
+    );
+  }
+
+  isAchievementEarned(achievementId: string): boolean {
+    return this.earnedAchievements.includes(achievementId);
+  }
+
+  /**
+   * The fastest run time at which `id` was reached, kept across runs: a record
+   * already set is only replaced by a strictly faster one.
+   */
+  private recordFastest(
+    times: Record<string, number>,
+    id: string,
+  ): Record<string, number> {
+    const best = times[id];
+    if (best !== undefined && best <= this.statistics.runTimeMs) return times;
+    return { ...times, [id]: this.statistics.runTimeMs };
+  }
+
+  /** Play time (ms) of the fastest recorded run that entered this age, if any. */
+  getFastestAgeTime(ageId: string): number | undefined {
+    return this.statistics.fastestAgeMs[ageId];
+  }
+
+  /** Play time (ms) of the fastest recorded run that won this encounter, if any. */
+  getFastestBattleTime(encounterId: string): number | undefined {
+    return this.statistics.fastestBattleMs[encounterId];
+  }
+
+  private meetsRequirement(requirement: AchievementRequirement): boolean {
+    switch (requirement.type) {
+      case "resource":
+        return this.resources[requirement.resource].gte(requirement.amount);
+      case "population":
+        return this.resources.population.gte(requirement.amount);
+      case "clicks":
+        return this.statistics.productionClicks.gte(requirement.amount);
+      case "building-count":
+        return this.buildingCount(requirement.building) >= requirement.count;
+      case "encounter":
+        return this.defeatedEncounters.includes(requirement.encounterId);
+      case "upgrade-count":
+        return this.boughtUpgrades.length >= requirement.count;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Records every achievement whose requirement is met, once. Earned ids are the
+   * only achievement data in state – never applied bonuses – so migrations and
+   * re-balancing stay safe (roadmap Milestone 6). Returns `this` when nothing is new.
+   */
+  checkAchievements(): CivilizationState {
+    const newlyEarned = achievementDefinitions
+      .filter(
+        ({ key, requirement }) =>
+          !this.earnedAchievements.includes(key) &&
+          this.meetsRequirement(requirement),
+      )
+      .map(({ key }) => key);
+    if (newlyEarned.length === 0) return this;
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      [...this.earnedAchievements, ...newlyEarned],
     );
   }
 
@@ -764,6 +982,8 @@ export class CivilizationState {
       this.boughtUpgrades,
       this.defeatedEncounters,
       this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
     );
   }
 
@@ -780,6 +1000,22 @@ export class CivilizationState {
       this.boughtUpgrades,
       this.defeatedEncounters,
       this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+    );
+  }
+
+  private withStatistics(statistics: Statistics): CivilizationState {
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      statistics,
     );
   }
 
@@ -791,6 +1027,8 @@ export class CivilizationState {
     boughtUpgrades = this.boughtUpgrades,
     defeatedEncounters = this.defeatedEncounters,
     enteredAges = this.enteredAges,
+    earnedAchievements = this.earnedAchievements,
+    statistics = this.statistics,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -802,6 +1040,8 @@ export class CivilizationState {
       boughtUpgrades,
       defeatedEncounters,
       enteredAges,
+      earnedAchievements,
+      statistics,
     );
   }
 
@@ -815,6 +1055,11 @@ export class CivilizationState {
       this.boughtUpgrades,
       this.defeatedEncounters,
       [...this.enteredAges, ageId],
+      this.earnedAchievements,
+      {
+        ...this.statistics,
+        fastestAgeMs: this.recordFastest(this.statistics.fastestAgeMs, ageId),
+      },
     );
   }
 }

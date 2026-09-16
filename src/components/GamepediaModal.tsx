@@ -4,18 +4,22 @@ import {
   ArrowUpRight,
   BookOpen,
   Building2,
+  ChartColumn,
   Coins,
   Leaf,
   Pickaxe,
   Search,
   Sparkles,
   Swords,
+  Trophy,
   Users,
   Wheat,
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { BuildingDefinition } from "../game/buildings";
+import type { AchievementDefinition } from "../game/achievements";
+import type { Bonus } from "../game/bonus";
 import type { UpgradeDefinition } from "../game/upgrades";
 import type { CivilizationState } from "../game/civilizationState";
 import {
@@ -52,6 +56,8 @@ const categoryTabs: CategoryTab[] = [
   { category: "resource", label: "Resources", icon: Leaf },
   { category: "building", label: "Buildings", icon: Building2 },
   { category: "upgrade", label: "Upgrades", icon: ArrowUpRight },
+  { category: "achievement", label: "Achievements", icon: Trophy },
+  { category: "stat", label: "Stats", icon: ChartColumn },
   { category: "research", label: "Research", icon: BookOpen },
   { category: "combat", label: "Combat", icon: Swords },
 ];
@@ -61,6 +67,8 @@ const categoryLabels: Record<GamepediaCategory, string> = {
   capacity: "Capacity",
   building: "Buildings",
   upgrade: "Upgrades",
+  achievement: "Achievements",
+  stat: "Stats",
   research: "Research",
   combat: "Combat",
 };
@@ -96,6 +104,61 @@ const factorSourceLabel = (source: ResourceFactor[0]): string =>
 
 const factorSourceId = (source: ResourceFactor[0]): string | undefined =>
   typeof source === "string" ? source : undefined;
+
+/** Display name of a bonus destination (resource, capacity, building or stat id). */
+const bonusDestinationName = (destination: string): string => {
+  const entry = gamepedia.get(destination);
+  return entry ? displayName(entry.object) : destination;
+};
+
+/** What a bonus modifies, e.g. "Food production" or "Click power". */
+const bonusEffectLabel = (bonus: Bonus): string => {
+  const destinationId = String(bonus.destination);
+  const target = bonusDestinationName(destinationId);
+  // A stat is a value in its own right, so its name alone reads best.
+  if (gamepedia.get(destinationId)?.category === "stat") return target;
+  switch (bonus.type) {
+    case "resourceMultiplier":
+      return `${target} production`;
+    case "resourceFlat":
+      return `${target} gain`;
+    case "resourceDrain":
+      return `${target} drain`;
+    case "costReductionPercent":
+      return `${target} cost`;
+    case "costReductionFactor":
+      return `${target} growth factor`;
+    case "costReductionFlat":
+      return `${target} cost`;
+    case "costReductionBase":
+      return `${target} base cost`;
+    default:
+      return target;
+  }
+};
+
+/** The signed size of a bonus, e.g. "×1.25", "−50%" or "+2". */
+const bonusValueText = (bonus: Bonus, format: NumberFormat): string => {
+  switch (bonus.type) {
+    case "resourceMultiplier":
+      return `×${formatNumber(bonus.value, format)}`;
+    case "costReductionPercent":
+      return `−${formatNumber(
+        bonus.value.mul(ExpNumber.fromNumber(100)),
+        format,
+      )}%`;
+    case "costReductionFactor":
+    case "costReductionFlat":
+    case "costReductionBase":
+      return `−${formatNumber(bonus.value, format)}`;
+    case "resourceFlat":
+      return `+${formatNumber(bonus.value, format)}`;
+    case "resourceDrain":
+      return `−${formatNumber(bonus.value, format)}`;
+    default:
+      return formatNumber(bonus.value, format);
+  }
+};
 
 const factorSourceIcon = (source: ResourceFactor[0]): LucideIcon => {
   if (source instanceof ResourceDefinition) return Users;
@@ -503,48 +566,6 @@ export default function GamepediaModal({
 
   const renderUpgradeDetail = (entry: GamepediaEntry) => {
     const upgrade = entry.object as UpgradeDefinition;
-    const bonusLabel = (bonus: UpgradeDefinition["bonuses"][number]) => {
-      const destinationId = String(bonus.destination);
-      const destinationEntry = gamepedia.get(destinationId);
-      const destinationName = destinationEntry
-        ? displayName(destinationEntry.object)
-        : destinationId;
-
-      switch (bonus.type) {
-        case "resourceMultiplier":
-          return `${destinationName} production`;
-        case "costReductionPercent":
-          return `${destinationName} cost`;
-        case "costReductionFactor":
-          return `${destinationName} growth factor`;
-        case "costReductionFlat":
-          return `${destinationName} cost`;
-        case "costReductionBase":
-          return `${destinationName} base cost`;
-        default:
-          return destinationName;
-      }
-    };
-
-    const bonusValue = (bonus: UpgradeDefinition["bonuses"][number]) => {
-      switch (bonus.type) {
-        case "resourceMultiplier":
-          return `×${formatNumber(bonus.value, numberFormat)}`;
-        case "costReductionPercent":
-          return `−${formatNumber(
-            bonus.value.mul(ExpNumber.fromNumber(100)),
-            numberFormat,
-          )}%`;
-        case "costReductionFactor":
-          return `−${formatNumber(bonus.value, numberFormat)}`;
-        case "costReductionFlat":
-          return `−${formatNumber(bonus.value, numberFormat)}`;
-        case "costReductionBase":
-          return `−${formatNumber(bonus.value, numberFormat)}`;
-        default:
-          return formatNumber(bonus.value, numberFormat);
-      }
-    };
 
     return (
       <div className="gamepedia-detail">
@@ -572,11 +593,11 @@ export default function GamepediaModal({
             >
               <div className="gamepedia-effect-copy">
                 <span className="gamepedia-effect-meta">
-                  {bonusLabel(bonus)}
+                  {bonusEffectLabel(bonus)}
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
-                {bonusValue(bonus)}
+                {bonusValueText(bonus, numberFormat)}
               </strong>
             </div>
           ))}
@@ -587,11 +608,79 @@ export default function GamepediaModal({
     );
   };
 
+  const renderAchievementDetail = (entry: GamepediaEntry) => {
+    const achievement = entry.object as AchievementDefinition;
+    const earned = gameState.isAchievementEarned(achievement.key);
+    return (
+      <div className="gamepedia-detail">
+        {renderDetailHeader(entry)}
+        <p className="gamepedia-detail-description">
+          {entry.object.description}
+        </p>
+
+        <p className="gamepedia-category">Record</p>
+        <div className="gamepedia-stats">
+          <div className="gamepedia-stat">
+            <span>Status</span>
+            <strong>{earned ? "Earned" : "Locked"}</strong>
+          </div>
+        </div>
+
+        {achievement.bonuses.length > 0 && (
+          <>
+            <p className="gamepedia-category">Reward</p>
+            <div className="gamepedia-effect-list">
+              {achievement.bonuses.map((bonus, index) => (
+                <div
+                  className="gamepedia-effect-row"
+                  key={`${bonus.type}-${bonus.destination}-${index}`}
+                >
+                  <div className="gamepedia-effect-copy">
+                    <span className="gamepedia-effect-meta">
+                      {bonusEffectLabel(bonus)}
+                    </span>
+                  </div>
+                  <strong className="gamepedia-effect-total">
+                    {bonusValueText(bonus, numberFormat)}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {renderRelated(entry)}
+      </div>
+    );
+  };
+
+  const renderStatDetail = (entry: GamepediaEntry) => (
+    <div className="gamepedia-detail">
+      {renderDetailHeader(entry)}
+      <p className="gamepedia-detail-description">{entry.object.description}</p>
+
+      <p className="gamepedia-category">Current value</p>
+      <div className="gamepedia-stats">
+        <div className="gamepedia-stat">
+          <span>Value</span>
+          <strong>
+            {formatAmount(gameState.getStatValue(entry.object.id))}
+          </strong>
+        </div>
+      </div>
+
+      {renderRelated(entry)}
+    </div>
+  );
+
   const renderDetail = (entry: GamepediaEntry) => {
     if (entry.category === "building") return renderBuildingDetail(entry);
     if (entry.category === "resource") return renderResourceDetail(entry);
     if (entry.category === "capacity") return renderCapacityDetail(entry);
     if (entry.category === "upgrade") return renderUpgradeDetail(entry);
+    if (entry.category === "achievement")
+      return renderAchievementDetail(entry);
+    if (entry.category === "stat") return renderStatDetail(entry);
     return renderGenericDetail(entry);
   };
 

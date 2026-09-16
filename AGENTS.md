@@ -35,8 +35,17 @@ toward a 10-billion population and an interstellar colony ship
   `UpgradeDefinition` registry with the 32 production-enhancer tiers
   (`src/game/upgrades.ts`), the Upgrades tab, unlock-gated buildings (barracks at 5
   town halls; smithy battle-gated; university at 20) and the `military`/`metalwork`
-  resources. **Not yet implemented:** saves, ages, research, achievements, combat,
-  statistics, offline progress, `costReductionBase`/`costReductionFlat` data. `temp/`
+  resources. **Implemented (achievement slice):** the `AchievementDefinition` registry
+  (`src/game/achievements.ts` + `data/achievements.json`), five data-driven requirement
+  types, `CivilizationState.checkAchievements()` (run from `tick()`), the
+  `earnedAchievements` id list, the Achievements tab and the `achievement` Gamepedia
+  category. **Implemented (statistics slice):** `Statistics` on the state
+  (`src/game/statistics.ts`) — production clicks, UI clicks, buildings built (total and
+  per building), lifetime and per-run play time, and fastest age/battle records — the
+  live Stats tab, the `stat` definitions/Gamepedia category, and click power as a
+  global stat that the five click-milestone achievements raise (+1/+2/+5/+20/+100).
+  **Not yet implemented:** saves, ages, research, combat,
+  offline progress, `costReductionBase`/`costReductionFlat` data. `temp/`
   holds exploratory combat prototypes that are not compiled and not wired into the app.
   Full bonus/buyable/upgrade design: **§13**.
 - **Current implementation target: the first loop** — one playthrough from Ancient through
@@ -103,6 +112,13 @@ idle-civ/
       gameObject.ts         abstract GameObject base (id, description, seen)
       resources.ts          resource/capacity keys, definitions, factor model, rates
       buildings.ts          BuildingDefinition + the 12 building definitions
+      bonus.ts              Bonus union + factories + cost-reduction folding (§13.1)
+      upgrades.ts           UpgradeDefinition registry (JSON-backed) + unlock gates
+      encounters.ts         EncounterDefinition registry (JSON-backed), victory bonuses
+      achievements.ts       AchievementDefinition registry (JSON-backed) + requirements + rewards
+      stats.ts              StatDefinition registry (JSON-backed): clickPower, autoClickRate
+      statistics.ts         Statistics type: clicks, buildings built, play time, best times
+      data/                 JSON definition payloads (buildings, upgrades, encounters, achievements, stats)
       workerProduction.ts   WorkerProduction: per-resource worker + auto-click maths
       civilizationState.ts  the engine: state, tick, gather, build, workers, costs (585 lines)
       gamepedia.ts          registry + relation graph (module-level registration)
@@ -220,28 +236,40 @@ meantime.
 ### 4.5 `CivilizationState` — the engine (`src/game/civilizationState.ts`)
 
 Immutable state holding `resources`, `workers`, `builtBuildings` (one string entry per
-built building), `resourceFactors`, `buildingCostOverrides`, `autoClicksPerSecond`.
+built building), `resourceFactors`, `buildingCostOverrides`, `autoClicksPerSecond`, the
+id lists `boughtUpgrades`, `defeatedEncounters`, `enteredAges`, `earnedAchievements`,
+and `statistics` (`src/game/statistics.ts`).
 
 Getters: `population` (= `resources.population`), `maximumPopulation` /
 `housingCapacity` (= `peopleCapacity`), `assignedWorkers`, `availableWorkers`.
 
 | Method | Behaviour |
 | --- | --- |
-| `tick()` | Applies `computeResourceRate()` to each **production** resource, clamped at 0 |
-| `gather(key)` | Adds `computeClickGain(key)` = `productionPerWorker × Π multipliers` (drains excluded) |
+| `tick()` | Applies `computeResourceRate()` to each **production** resource (clamped at 0), advances both play-time counters by one second, then `checkAchievements()` |
+| `gather(key)` | Adds `computeClickGain(key)` = `clickPower × productionPerWorker × Π multipliers` (drains excluded) and counts one production click |
 | `assignWorker` / `unassignWorker` | Clamped by available workers / current count |
 | `autoAssignWorkers(count = 10)` | Keeps food ≈ 10× the other resources while equalising the others |
-| `build(key, count)` | No-op unless `canBuild()`; subtracts cost, applies special resource deltas, appends ids |
+| `build(key, count)` | No-op unless `canBuild()`; subtracts cost, applies special resource deltas, appends ids, adds to the cumulative building counters |
 | `autoBuyBuildings()` | One pass in definition order, buying `getMaxAffordableBuildings()` each |
 | `upgradeBuildingLimit(key, slots)` | Raises `` `${key}Capacity` `` |
 | `upgradeBuildingCosts(key, costs)` | Per-building cost override (for future upgrades) |
 | `addFactor(key, type, factor)` | Appends a factor (for future upgrades/research) |
-| `setAutoClicksPerSecond(n)` | Dev-tools auto clicker |
+| `setAutoClicksPerSecond(n)` | Dev-tools auto clicker (also the current `autoClickRate` stat value) |
+| `recordUiClick()` | Counts one click anywhere in the UI shell (production clicks are counted by `gather()`) |
+| `computeClickPower()` | The global click power stat: base 1, `resourceFlat` bonuses sum, `resourceMultiplier` bonuses compound |
+| `getStatValue(statId)` | Current value of any computed stat from `statDefinitions` |
+| `buyUpgrade(id)` | No-op unless unlocked and affordable; pays the cost and appends the id |
+| `defeatEncounter(id)` | Idempotent; appends the encounter id and records the fastest victory time |
+| `enterAge(id)` | Idempotent; appends the age id and records the fastest entry time |
+| `checkAchievements()` | Appends every achievement whose requirement is met; returns `this` when nothing is new |
 
 Queries: `getFactors`, `computeResourceRate`, `computeClickGain`, `getBuildingMax`,
 `getBuildingCost`, `formatBuildingCost`, `getMaxAffordableBuildings`,
 `getBuildingCount`, `isBuildingAtCapacity`, `hasResourcesForBuilding`,
-`getBuildFailureReason`.
+`isBuildingAvailable`, `getBuildFailureReason`, `isUpgradeUnlocked`,
+`isUpgradeBought`, `getUpgradeCost`, `hasResourcesForUpgrade`,
+`getUpgradeFailureReason`, `isAchievementEarned`, `getFastestAgeTime`,
+`getFastestBattleTime`.
 
 `getBuildFailureReason()` returns `"locked" | "capacity" | "resources" | null`; the UI
 switches on that vocabulary to pick its notice text, so keep the strings stable.
@@ -250,6 +278,12 @@ Notable internals: `getFactors()` merges worker production (only for production 
 phrased as a `WorkerProduction` source), a `"dev auto clicker"` entry when
 `autoClicksPerSecond > 0`, caller-added factors from `resourceFactors`, and building
 `resourceMultiplier^count` / `resourceDrain.amount × count` contributions.
+`computeClickGain()` is the only click path: it multiplies the global click power stat by
+the resource's `productionPerWorker` and the resource multipliers, and names the factor
+source after the `clickPower` stat so the Gamepedia links it.
+`activeBonuses()` is the single bonus seam: bought upgrades + defeated encounters +
+earned achievements, each paired with its source id, feeding `getFactors()`,
+`getBuildingMax()`, `getBuildingCost()` and `computeClickPower()`.
 `getMaxAffordableBuildings()` caps its search at 1,000,000 and uses a doubling probe
 plus binary search, so MAX stays O(log n) with O(1) cost checks.
 
@@ -257,7 +291,8 @@ plus binary search, so MAX stays O(log n) with O(1) cost checks.
 
 A `Map<string, GamepediaEntry>` where
 `GamepediaEntry = { object: GameObject; category; relatedIds: string[] }` and
-`GamepediaCategory = "resource" | "capacity" | "building" | "upgrade" | "research" | "combat"`.
+`GamepediaCategory = "resource" | "capacity" | "building" | "upgrade" | "achievement"
+| "stat" | "research" | "combat"`.
 
 API: `register` (throws on duplicate id), `get`, `require` (throws on unknown),
 `relatedTo` (filters out undiscovered entries), `reveal`, `visible` (discovered only —
@@ -267,22 +302,28 @@ visible entries), `buildRelations()` (makes `relatedIds` bidirectional), `all()`
 
 **Registration happens as a module side effect at import time:** resources, population
 and science (all `seen = true`), capacities (`seen = true`), then buildings
-(`seen = building.available`), then `buildRelations()`. Consequences:
+(`seen = building.available`), then upgrades, encounters and achievements (`seen` stays
+`false` — the App reveals them when their unlock fires / the encounter is won / the
+achievement is earned), then `buildRelations()`. Consequences:
 
 - Importing `gamepedia.ts` is enough to populate it; never build a second registry.
 - Building `relatedIds` are derived automatically from costs and effects
   (cost resources, multiplier target, drain target, `capacityProvided.building`).
+  Upgrades and encounters derive them from their bonus destinations, and achievements
+  from their requirement target (resource, `population`, building or encounter id).
 - `buildingsForResource(resourceId)` returns buildings linked to a resource.
 
-Only `resource`, `capacity` and `building` entries exist today — the `upgrade`,
-`research` and `combat` categories are wired through the types and the modal tabs but
-carry no data, so those tabs show "Nothing discovered here yet". `capacity` entries have
-no tab of their own; they are reached through links from buildings and factors.
+`resource`, `capacity`, `building`, `upgrade`, `achievement`, `stat` and `combat`
+entries exist today (combat holds the one `first-battle` encounter; upgrades hold the 32
+enhancer tiers; `stat` holds `clickPower` and `autoClickRate`, both `seen = true` because
+computed values are visible from the start). The `research` category is wired through the
+types and the modal tabs but carries no data, so that tab shows "Nothing discovered here
+yet". `capacity` entries have no tab of their own; they are reached through links from
+buildings and factors.
 
-Planned addition (§13.2): a **`stat`** category (click power, automated click power, …
-and other computed values), alongside the future `unit` and `battle` categories — an
-in-game stats tab will link into these pages, which the modal already supports through its
-`focusId` prop.
+Planned addition (§13.2): the future `unit` and `battle` categories — an
+in-game stats tab already links into the `stat` pages through the modal's `focusId`
+prop.
 
 ### 4.7 Numbers: `ExpNumber` + `formatNumber`
 
@@ -308,6 +349,8 @@ notation. `compactSuffix(tier)` is exported for reuse.
 Always pipe user-visible numbers through `formatNumber` (`App.tsx` wraps it as
 `const fmt = (n) => formatNumber(n, numberFormat)`); never render a raw `ExpNumber`
 in the UI. The Gamepedia modal floors first via its local `formatAmount()`.
+Durations (play time, fastest-run records) go through `formatDuration(ms)`
+("3d 4h 5m" / "1h 2m 5s" / "1m 5s" / "0s"), also in `numberFormat.ts`.
 
 ### 4.8 `WorkerProduction` (`src/game/workerProduction.ts`)
 
@@ -329,11 +372,19 @@ when a non-production key is used) silently yields `ExpNumber.ZERO` rather than 
   tab list, resource summary, cosmetic "Autosaving" footer), `world-panel` (breadcrumb
   topbar + per-tab content + notice bar), `buildings-panel` (building grid), plus a
   floating `.fab-container` with the multiplier buttons and the Pedia FAB.
-- Tabs (`Tab` type + `tabs` array): `Production`, `Upgrades`, `Army`, `Research`,
-  `Settings`, `Dev Tools`, rendered inline via `{activeTab === "X" && (...)}`.
-  **`Army` and `Research` render no section at all** (blank content area); `Upgrades` is
-  placeholder copy. The era card is hardcoded ("Neolithic Dawn", "Year 12",
-  "68% to Bronze Age") — see §9.
+- Tabs (`Tab` type + `tabs` array): `Production`, `Upgrades`, `Achievements`,
+  `Army`, `Research`, `Trade`, `Settings`, `Stats`, `Dev Tools`, rendered inline via
+  `{activeTab === "X" && (...)}`. **`Army` and `Research` render no section at all**
+  (blank content area) and `Trade` is placeholder copy; `Achievements` lists
+  every achievement from `achievementDefinitions` with an earned/locked state read from
+  `gameState.isAchievementEarned()`, and clicking a card opens its Gamepedia page;
+  `Stats` renders the tracked `gameState.statistics` (clicks, play time, buildings built,
+  fastest age/battle records) plus one clickable card per `statDefinitions` entry that
+  opens that stat's Gamepedia page. The
+  era card is hardcoded ("Neolithic Dawn", "Year 12", "68% to Bronze Age") — see §9.
+- UI clicks are counted once per click by an `onClickCapture` handler on `<main>` that
+  calls `gameState.recordUiClick()`, skipping anything inside a `[data-production-click]`
+  element (the gather buttons, which the engine counts as production clicks instead).
 - Game loop: one `useEffect` with `window.setInterval(..., 1000)` that calls `tick()`
   and then `autoBuyBuildings()` / `autoAssignWorkers()` when the Dev Tools toggles are
   on. Every update goes through `setGameState((current) => ...)` — keep it that way so
@@ -449,6 +500,48 @@ Validation ladder — do the narrowest useful thing, then the full build:
 5. `npm run dev` + click through the affected screen when the change is visual.
 6. Report: files changed, behaviour change, exact validation output, remaining risks.
 
+### 7.1 Tool discipline — read, edit, compile in one pass
+
+Models routinely spend 3–10 commands on a change that needs 2 rounds. The pattern that
+works here: **batch everything, and never run a command to learn something this file
+already tells you.**
+
+**Reading files**
+- Know which files you need? Read them **all in one parallel batch** — the file you will
+  edit, one nearby usage, and the JSON payload that backs it. Do not read a 20-line
+  slice at a guessed offset, see it is wrong, and guess again: read the whole file (or a
+  generous range) **once**.
+- Use the file-read tool for content, not shell `Get-Content` / `Select-String`.
+- Search only when the location is genuinely unknown, and put **all queries in one
+  call**; prefer precise regexes over broad keywords. Never re-search a file you are
+  about to read anyway.
+
+**Editing files**
+- Use the edit tool with exact `old_text → new_text` chunks, and emit **all independent
+  edits (different files, or non-overlapping regions of one file) in the same message**
+  instead of one edit per turn.
+- Never rewrite a whole file via shell heredoc/redirect, and never `sed`/PowerShell-
+  replace inside tracked files.
+- Do not re-read a file after every edit — the edit result confirms the change. Verify
+  with the build; spot-read only the regions you are genuinely unsure about.
+
+**Compiling / validating**
+- Run both gates **in one batched command**, with output redirected (see PowerShell
+  notes below) and scratch files cleaned up in the same command:
+
+  ```powershell
+  cmd /c ".\tools\node\npm.cmd run build > build_out.txt 2>&1"; cmd /c ".\tools\node\npm.cmd run lint > lint_out.txt 2>&1"; Get-Content build_out.txt -Tail 30; Get-Content lint_out.txt -Tail 10; Remove-Item build_out.txt, lint_out.txt
+  ```
+
+- `tsc` reports **all** errors at once — fix every reported error in one pass of edits,
+  then rebuild once. Build-fix-build-fix loops are the main waste.
+- Budget: a typical change is **one batch of reads → one batch of edits → one batched
+  build + lint**. Exceeding that needs a stated reason (genuinely unknown code, a failed
+  build), not a shrug.
+- Do not probe the environment with commands for facts documented here: node/npm are
+  vendored at `tools/node/`, the script list is above, `;` chains commands (not `&&`),
+  and `temp/` is the only allowed scratch location.
+
 **PowerShell notes:** chain commands with `;`, not `&&`. When a dev server or build
 output matters, redirect to a file and read it back, because the integrated terminal
 sometimes fails to capture streamed output:
@@ -517,9 +610,16 @@ with a roadmap entry already assigned.
   validated (roadmap Milestone 3: JSON primary, XML/Base64 interchanges, migrations,
   offline progress).
 - **`Army` and `Research` tabs stay hidden until their gates fire** (barracks unlocks at
-  5 town halls; university at 20 — currently unreachable since town-hall capacity is 10)
-  **and render no content**. The Upgrades tab lists unlocked enhancer tiers; the
-  Gamepedia `research` / `combat` categories still have no data.
+  5 town halls; university at 20 — the default town-hall capacity is now **1** and only
+  the `first-battle` encounter bonus raises it ×10, so both gates need that victory
+  first) **and render no content**. The Upgrades tab lists unlocked enhancer tiers; the
+  Gamepedia `combat` category holds only the placeholder `first-battle` encounter (won
+  from the Dev Tools button) and `research` still has no data.
+- **Achievements are not persisted.** `earnedAchievements` lives in state like every
+  other field, so it is lost on reload until the save system lands (roadmap Milestone 3).
+- **Achievement checks run in `tick()`**, so an achievement whose requirement a UI action
+  satisfies (a purchase, a victory) is recorded on the next tick, at most one second
+  later — not synchronously with the action.
 - **The era card is hardcoded** ("Neolithic Dawn", "Year 12", "68% to Bronze Age"). It
   does not match the seven-age model in the roadmap (Ancient → Modern/Space keyed on
   powers of ten). Treat it as a mock-up: do not build logic on those strings.
@@ -601,7 +701,7 @@ Full detail in `docs/roadmap.md`; this is orientation only.
 | 3 — Save system (versioned JSON/XML/Base64 + migrations) | **Not started** |
 | 4 — Action multiplier (1 / 10 / MAX) | **Partly done** — the UI has 1, 10, powers of ten and Max; the engine has `getMaxAffordableBuildings()` and clamped worker commands, but no shared `getActionQuantity()` |
 | 5 — Statistics | **Not started** |
-| 6 — Achievements | **Not started** |
+| 6 — Achievements | **First slice done** — `src/game/achievements.ts` + `data/achievements.json` (12 milestone records, five requirement types), `CivilizationState.checkAchievements()` evaluated at the end of `tick()`, `earnedAchievements` id list, Achievements tab, `achievement` Gamepedia category. Age-transition and click-power achievements still pending (they need ages and the `stat` family) |
 | 7 — Upgrades | **First slice done** — bonus type, 32 enhancer upgrades (capacity/production, plus cost reductions on tiers 3–8), Upgrades tab, unlock-gated buildings, cost-reduction engine path. Flat/drain/base bonus data and research/achievement/battle sources still pending; full model in **§13** |
 | 8 — Battle system | **Prototype only** (`temp/`; campaign v2 fixes the content scope: 23 encounters, 7 age bosses, 79 units) |
 | 9 — Research tree | **Not started** |
@@ -663,9 +763,10 @@ A change is done when:
 > enhancer tiers), the `UpgradeDefinition` registry with the 32 production-enhancer
 > tiers (`src/game/upgrades.ts`), the Upgrades tab, and the building unlock gates.
 > Still design-only: `resourceFlat`/`resourceDrain` and `costReductionBase`/`Flat`
-> data, research/units/encounters, achievements and all prestige semantics. Check the
+> data, research/units, and all prestige semantics. Check the
 > engine before assuming a symbol exists, and §13.7 for what is decided versus
-> deferred.
+> deferred. Achievements now have their own slice (§10, milestone 6) and are permanent
+> records only — they never carry unlock lists.
 
 > **Scope: the first loop comes first.** The immediate target is one playthrough — Ancient
 > through the 10-billion population goal and the colony-ship launch. **Prestige is deferred

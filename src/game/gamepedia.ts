@@ -1,6 +1,8 @@
 import { buildingDefinitions, type BuildingDefinition } from "./buildings";
+import { achievementDefinitions } from "./achievements";
 import { encounterDefinitions } from "./encounters";
 import { GameObject } from "./gameObject";
+import { statDefinitions } from "./stats";
 import { upgradeDefinitions } from "./upgrades";
 import {
   capacityDefinitions,
@@ -14,6 +16,8 @@ export type GamepediaCategory =
   | "capacity"
   | "building"
   | "upgrade"
+  | "achievement"
+  | "stat"
   | "research"
   | "combat";
 
@@ -166,6 +170,43 @@ for (const encounter of encounterDefinitions) {
     object: encounter,
     category: "combat",
     relatedIds: [...new Set(relatedIds)],
+  });
+}
+
+for (const achievement of achievementDefinitions) {
+  const { requirement } = achievement;
+  // Requirements name resources, buildings and encounters by id, and rewards name
+  // their destination the same way, so the same derivation that feeds
+  // building/upgrade relations also links achievements.
+  const relatedIds = [
+    ...(requirement.type === "resource"
+      ? [requirement.resource]
+      : requirement.type === "population"
+        ? [populationDefinition.id]
+        : requirement.type === "building-count"
+          ? [requirement.building]
+          : requirement.type === "encounter"
+            ? [requirement.encounterId]
+            : []),
+    ...achievement.bonuses.map(({ destination }) => String(destination)),
+  ];
+  // seen stays false at registration: an achievement is a permanent record that
+  // appears in the Gamepedia the moment it is earned (App reveals on every
+  // state change), per AGENTS.md §13.4.
+  gamepedia.register({
+    object: achievement,
+    category: "achievement",
+    relatedIds: [...new Set(relatedIds)],
+  });
+}
+
+for (const stat of statDefinitions) {
+  // Stats are computed values, not discoveries: they are visible from the start.
+  stat.seen = true;
+  gamepedia.register({
+    object: stat,
+    category: "stat",
+    relatedIds: [],
   });
 }
 

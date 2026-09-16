@@ -74,6 +74,23 @@ export function compactSuffix(tier: number): string {
   return tier <= 0 ? "" : columnLetters(tier);
 }
 
+/**
+ * Formats a duration in milliseconds as `3d 4h 5m`, `4h 2m 5s` or `1m 5s`
+ * (components are not zero-padded). Sub-second values render as `0s`; negative
+ * values clamp to `0s`.
+ */
+export function formatDuration(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const days = Math.floor(totalSeconds / 86_400);
+  const hours = Math.floor((totalSeconds % 86_400) / 3_600);
+  const minutes = Math.floor((totalSeconds % 3_600) / 60);
+  const seconds = totalSeconds % 60;
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
+}
+
 function scaled(fraction: number): string {
   const rounded = Number(fraction.toFixed(2));
   const nearestInt = Math.round(rounded);

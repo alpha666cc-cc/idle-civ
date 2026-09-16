@@ -144,12 +144,12 @@ loop beyond that is deferred by decision.
 | Bonus application | 🟢 | `resourceMultiplier` (production + capacities) and cost reductions (`percent`, `factor`) live; `flat`/`drain`/`base` types have engine paths but no data |
 | Upgrade lifecycle | 🟢 | `seen` → Gamepedia reveal (permanent), `unlocked` → tab, `bought` → bonuses derived from id list; purchase is one-shot |
 | Unlock gates | 🟢 | Buildings: `building-count` (barracks/university) and `battle` (smithy, placeholder id `first-battle`); Upgrades: `building-capacity` ratio 0.98 |
-| UI tabs | 🟢 | Production, Upgrades, Settings, Dev Tools; **Army** hidden until barracks exists; **Research** hidden until university exists (both render no content yet) |
-| Gamepedia | 🟢 | Registry + relations + search + reveal; categories resource/capacity/building/upgrade populated, research/combat empty; stat/unit/battle categories planned |
+| UI tabs | 🟢 | Production, Upgrades, Achievements, Trade (hidden until a market exists), Settings, Stats, Dev Tools; **Army** hidden until barracks exists; **Research** hidden until university exists (both render no content yet) |
+| Gamepedia | 🟢 | Registry + relations + search + reveal; categories resource/capacity/building/upgrade/achievement populated, research/combat empty; stat/unit/battle categories planned |
 | Number formats | 🟢 | scientific / engineering / named / compact; only persisted preference (`localStorage`, try/catch-wrapped) |
 | Saves | 🔵 | **None.** Everything resets on reload; roadmap Milestone 3: versioned JSON primary, XML/Base64 interchanges, migrations; offline gains will use an efficiency factor `E_off` = 25–50% of active production, capped at 12 h |
 | Statistics | 🔵 | Milestone 5 — derived from command-style actions + result events; stats tab + `stat` Gamepedia category (click power, auto-click rate) |
-| Achievements | 🔵 | Milestone 6 — permanent records; first age arrival fires a historical achievement; **never** unlock carriers (prestige relock constraint) |
+| Achievements | 🟢 | 12 milestone records (`src/game/data/achievements.json`): resource/population/building-count/encounter/upgrade-count requirements, evaluated by `CivilizationState.checkAchievements()` at the end of `tick()`; earned ids only in state; revealed in the Gamepedia, listed in the Achievements tab; age + click milestones still pending |
 | Ages / era card | 🔵 | Sidebar era card is a hardcoded mock ("Neolithic Dawn", "Year 12", "68% to Bronze Age") — do not build on it |
 | Battle system | 🔵 | Milestone 8 — campaign prototype (`temp/campaign_v2.json`, not compiled/wired): **23 encounters** (2 regular + 1 age-end boss per age, 5 in Modern/Space) over a **79-unit roster** (`temp/unit-v2-currated.json`); unit availability comes from the research tree/battle rewards, not per-encounter lists; wolf first; victories apply data-driven rewards (caps, upgrades, unlocks) |
 | Research tree | 🔵 | Milestone 9 — `era` field referencing age ids |
@@ -165,7 +165,7 @@ loop beyond that is deferred by decision.
 | 3 — Saves | Versioned JSON (+ XML/Base64 codecs), migrations, **offline progress**; persist `seen`/`unlocked`/`bought` per upgrade |
 | 4 — Action multiplier | Shared `getActionQuantity()` seam (UI multipliers already exist) |
 | 5 — Statistics | Command-style actions → result events → stats tab |
-| 6 — Achievements | Permanent records; click-power ×2 at 100/1k/10k/100k/1M clicks (planned placeholder) |
+| 6 — Achievements | Age-transition achievements + click-power milestones (`×2` click power at 100/1k/10k/100k/1M clicks); the 12 milestone records and the engine/tab/Gamepedia wiring are done |
 | 7 — Upgrades (rest) | `resourceFlat`/`resourceDrain`/`costReductionBase`/`costReductionFlat` data; research/achievement/battle unlock sources |
 | 8 — Battles | Deterministic combat for 23 encounters (2 regular + 1 boss per age; 5 in Modern/Space) over a 79-unit roster; wolf first (unlocks smithy + town-hall cap 100); content reference: `temp/campaign_v2.json` |
 | 9 — Research | Tree keyed to ages |
@@ -196,7 +196,7 @@ loop beyond that is deferred by decision.
 | Ages | 0 | 7 |
 | Units / encounters | 0 | 79-unit roster + 23 encounters (7 age-end bosses) |
 | Research | 0 | 1 tree across 7 eras |
-| Achievements | 0 | ages + milestones + click milestones |
+| Achievements | 12 (milestone set) | ages + milestones + click milestones |
 | Saves | 0 | versioned JSON + 2 interchange codecs + offline |
 | Screens | 1 (tabs) | 1 + stats tab + modal |
 | Code | ~4,500 lines src | roadmap recommends a `src/game/data/` split first |
