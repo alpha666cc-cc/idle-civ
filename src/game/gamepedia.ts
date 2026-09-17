@@ -6,6 +6,7 @@ import {
 import { encounterDefinitions } from "./encounters";
 import { GameObject } from "./gameObject";
 import { upgradeDefinitions } from "./upgrades";
+import { unitDefinitions } from "./units";
 import {
   attributeDefinitions,
   populationDefinition,
@@ -16,6 +17,7 @@ export type GamepediaCategory =
   | "resource"
   | "capacity"
   | "building"
+  | "unit"
   | "upgrade"
   | "achievement"
   | "stat"
@@ -46,7 +48,8 @@ const achievementRelatedIds = (achievement: AchievementDefinition): string[] => 
           : requirement.type === "encounter"
             ? [requirement.encounterId]
             : []),
-    ...achievement.bonuses.map(({ destination }) => String(destination)),
+    ...achievement.bonuses.map(({ destination }) =>
+      String(destination).split(".")[0]),
   ];
 };
 
@@ -192,7 +195,8 @@ for (const building of buildingDefinitions) {
 for (const upgrade of upgradeDefinitions) {
   const relatedIds = [
     ...upgrade.costs.map(({ resource }) => resource),
-    ...upgrade.bonuses.map(({ destination }) => destination),
+    ...upgrade.bonuses.map(({ destination }) =>
+      String(destination).split(".")[0]),
   ];
   // seen stays false at registration: upgrades are revealed when their
   // unlock condition fires (App reveals on every state change).
@@ -204,13 +208,26 @@ for (const upgrade of upgradeDefinitions) {
 }
 
 for (const encounter of encounterDefinitions) {
-  const relatedIds = encounter.bonuses.map(({ destination }) =>
-    String(destination),
-  );
+  const relatedIds = [
+    ...encounter.bonuses.map(({ destination }) => String(destination)),
+    // Battles link to every unit in the opposing army; buildRelations() makes
+    // the reverse unit → battle link.
+    ...encounter.enemyArmy.map(({ unitId }) => unitId),
+  ];
   gamepedia.register({
     object: encounter,
     category: "combat",
     relatedIds: [...new Set(relatedIds)],
+  });
+}
+
+for (const unit of unitDefinitions) {
+  // Units are revealed when their roster window opens (App reveals on state
+  // change); seen stays false at registration.
+  gamepedia.register({
+    object: unit,
+    category: "unit",
+    relatedIds: [...new Set(unit.costs.map(({ resource }) => resource))],
   });
 }
 

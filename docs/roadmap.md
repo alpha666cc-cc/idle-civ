@@ -240,18 +240,40 @@ type UnitDefinition = {
 };
 ```
 
-Encounter pacing is settled by the campaign prototype (`temp/campaign_v2.json`): **23 encounters — two regular battles plus one age-end boss for each of the six earlier ages, and five battles (4 + final boss) in Modern/Space**. The first encounter is a wolf in the opening Ancient age; defeating it expands the town-hall count beyond the default cap of 10. Each victory applies a data-driven reward such as a raised building cap, an upgrade, or a research unlock, so combat acts as a pacing gate alongside the age population thresholds; each boss ends its age (`unlocksNextAge`). Unit availability inside an age is deliberately **not** an encounter concern: new units arrive through the research tree (Milestone 9) and as battle rewards, via the standard explicit unlock id lists. The curated unit roster behind these battles lives in `temp/unit-v2-currated.json` (79 units across the seven ages). Encounters should be data-driven with stable IDs, an age reference, an age-relative population window, a historical year, enemy unit snapshots, and deterministic rewards applied to the save:
+Encounter pacing is settled by the campaign prototype (`temp/campaign_v2.json`, trimmed
+into `src/game/data/encounters.json`): **23 encounters — two regular battles plus one
+age-end boss for each of the six earlier ages, and five battles (4 + final boss) in
+Modern/Space**. The first encounter is a wolf (`age0_1_first_fire`) in the opening
+Ancient age; defeating it expands the town-hall count beyond the default cap of 10. Each
+victory applies a data-driven reward (bonuses, unlocks, enemy boosts on the same bonus
+channel as upgrades). **Implemented (first battle slice):** unit definitions
+(`src/game/units.ts` + `data/units.json`, hp/attack scaled ×8 per age, cost factor 1.2),
+a deterministic seeded stack/hp-pool simulation (`src/game/battle.ts`, ≤ 200 rounds with
+an explicit stalemate outcome), `armyPower = attack × accuracy × √(hp ÷ (1 − armor))`
+summed over stacks, and an Army tab that buys units and plays battles back at one round
+per second. The `popMin`/`popMax` per-battle windows below were **dropped in the
+implemented data** (battle entrance currently follows victory order only) — reintroduce
+them only if the pacing simulation needs a finer gate. Unit availability inside an age
+is deliberately **not** an encounter concern: new units arrive through the research tree
+(Milestone 9) and as battle rewards, via the standard explicit unlock id lists. The
+curated unit roster lives in `src/game/data/units.json` (79 units across the seven
+ages). Encounters are data-driven with stable IDs, an age reference, a historical year,
+enemy unit snapshots, and deterministic rewards applied to the state:
 
 ```ts
+type EnemyStack = { unitId: string; count: number; label?: string };
+
 type EncounterDefinition = {
   id: string;
-  age: string; // age definition ID (see Milestone 2)
-  popMin: number; // age-relative unlock window (e.g. 1200–3000 in Iron Age)
-  popMax: number;
-  year: number; // historical year, for flavour and encounter windows
-  isBoss: boolean; // age-end bosses unlock the next age
-  enemies: UnitDefinition[];
-  rewards: EffectDefinition[]; // e.g. raise the town-hall maxCount cap
+  name: string;
+  age: number; // 0-based age index; age-end bosses gate the next age
+  year: number; // historical year, shown on the Gamepedia battle page
+  isBoss: boolean;
+  historical?: string; // short original blurb, Gamepedia battle page
+  enemyArmy: EnemyStack[]; // authored enemy stacks (soft balance checks)
+  enemyBoosts: Bonus[]; // fake-research boosts balancing later ages
+  bonuses: Bonus[]; // victory rewards (same bonus channel as upgrades)
+  unlocks: string[]; // explicit unlock id list, fired on victory
 };
 ```
 
@@ -285,7 +307,7 @@ Reading the matrix:
 - The population windows here are the **age boundaries from the roadmap's 7-age model**, not
   the per-battle `popMin`/`popMax` windows from `temp/campaign_v2.json` (those are a separate
   pacing layer for battle entrance, handled by Milestone 8 and the pacing simulation).
-- Wolves (the `first-battle` encounter) indirectly affect this only by being a potential
+- Wolves (the `age0_1_first_fire` encounter) indirectly affect this only by being a potential
   session-loss event; the model above doesn't yet credit that. If wolves block ~1 night of
   progress, add roughly one pause somewhere in Ages 2–4.
 

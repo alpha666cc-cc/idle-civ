@@ -18,5 +18,10 @@
     "key": "buildingPower",
     "label": "Building power",
     "description": "Global multiplier on every building's power. Endgame bonuses raise it for all buildings at once."
+  },
+  {
+    "key": "armyPower",
+    "label": "Army power",
+    "description": "Combined fighting strength of every owned unit, summed from each stack's attack, accuracy, armour and hit points. Shown on both army headers in battle."
   }
 ]

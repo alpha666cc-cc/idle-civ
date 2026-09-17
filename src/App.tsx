@@ -47,6 +47,11 @@ import {
   type ProductionResourceKey,
   type ResourceKey,
 } from "./game/attributes";
+import ArmyPanel from "./components/ArmyPanel";
+import {
+  isBuyableUnit,
+  unitDefinitions,
+} from "./game/units";
 
 type Tab =
   | "Production"
@@ -269,13 +274,21 @@ function App() {
     return () => window.clearInterval(timer);
   }, [autoBuyBuildings, autoAssignWorkers]);
 
-  // Reveal upgrades in the Gamepedia the moment their unlock condition fires.
+  // Reveal upgrades, units and battles in the Gamepedia the moment their
+  // unlock condition fires.
   useEffect(() => {
     for (const upgrade of upgradeDefinitions) {
       if (gameState.isUpgradeUnlocked(upgrade.key)) {
         gamepedia.reveal(upgrade.key);
       }
     }
+    for (const unit of unitDefinitions) {
+      if (isBuyableUnit(unit) && gameState.isUnitAvailable(unit.key)) {
+        gamepedia.reveal(unit.key);
+      }
+    }
+    const nextBattle = gameState.getNextBattle();
+    if (nextBattle) gamepedia.reveal(nextBattle.key);
     for (const encounterId of gameState.defeatedEncounters) {
       gamepedia.reveal(encounterId);
     }
@@ -679,24 +692,33 @@ function App() {
                 />
               </label>
               <div className="dev-tools-control">
-                <span>Win first battle (dev)</span>
+                <span>Win next battle (dev)</span>
                 <button
                   type="button"
                   onClick={() =>
-                    setGameState((current) =>
-                      current.defeatEncounter("first-battle"),
-                    )
+                    setGameState((current) => {
+                      const next = current.getNextBattle();
+                      return next ? current.resolveBattle(next.key) : current;
+                    })
                   }
-                  disabled={gameState.defeatedEncounters.includes(
-                    "first-battle",
-                  )}
+                  disabled={!gameState.getNextBattle()}
                 >
-                  {gameState.defeatedEncounters.includes("first-battle")
-                    ? "First battle won"
-                    : "Defeat first battle"}
+                  {gameState.getNextBattle()
+                    ? `Resolve ${gameState.getNextBattle()!.key}`
+                    : "Campaign complete"}
                 </button>
               </div>
             </section>
+          )}
+
+          {activeTab === "Army" && (
+            <ArmyPanel
+              gameState={gameState}
+              setGameState={setGameState}
+              multiplier={multiplier}
+              fmt={fmt}
+              onOpenGamepedia={openGamepediaAt}
+            />
           )}
 
           {activeTab === "Production" && (

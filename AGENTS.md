@@ -44,9 +44,22 @@ toward a 10-billion population and an interstellar colony ship
   per building), lifetime and per-run play time, and fastest age/battle records — the
   live Stats tab, the `stat` definitions/Gamepedia category, and click power as a
   global stat that the five click-milestone achievements raise (+1/+2/+5/+20/+100).
-  **Not yet implemented:** saves, ages, research, combat,
-  offline progress, `costReductionBase`/`costReductionFlat` data. `temp/`
-  holds exploratory combat prototypes that are not compiled and not wired into the app.
+  **Implemented (units & battle slice, Milestone 8):** the `UnitDefinition` registry
+  (79 JSON-backed units, `src/game/units.ts` + `data/units.json`), `unitCounts` on the
+  state with unit buy/cost paths on the shared buyable evaluator, per-unit effective
+  stats folding the three stat bonus scopes (`<unit>.<stat>`, `tag.<tag>.<stat>`,
+  `unitAll.<stat>`; enemy boosts use the same channel), the deterministic stack
+  battle sim (`src/game/battle.ts`, seed = battle id + both army signatures,
+  ≤ 200 rounds, played back at 1 round/sec), campaign battles in
+  `data/encounters.json` (`age`/`year`/`isBoss`/`enemyArmy`/`enemyBoosts`),
+  `resolveBattle()` + `getNextBattle()` (units are never lost — post-battle counts
+  are restored), the Army tab (`components/ArmyPanel.tsx`; roster window =
+  current age + previous age, age = boss victories) and the `unit` Gamepedia
+  category with per-stat subtabs. Unit icons are vendored game-icons.net SVGs
+  (`public/units/`, CC BY 3.0 — regenerate with `node tools/gen/icons.mjs`).
+  **Not yet implemented:** saves, ages, research,
+  offline progress, `attributeDrain`/`costReductionFlat` bonus data, unit
+  retirement (old units stay owned and counted in army power).
   Full bonus/buyable/upgrade design: **§13**.
 - **Current implementation target: the first loop** — one playthrough from Ancient through
   the 10-billion population goal and the colony-ship launch. Prestige is deliberately
@@ -99,15 +112,18 @@ idle-civ/
   tsconfig.json             solution file -> tsconfig.app.json + tsconfig.node.json
   .oxlintrc.json            plugins react/typescript/oxc, 2 explicit rules
   .vscode/                  tasks (Start Vite, Build), chrome launch, PATH + Prettier
-  public/                   favicon.svg (used), icons.svg (currently unused)
+  public/                   favicon.svg (used), icons.svg (currently unused), units/ (79 vendored unit SVGs + ATTRIBUTION.md)
   tools/node/               vendored Node v22.23.2 + npm 10.9.8 (PATH is patched to it)
-  temp/                     exploratory prototypes: battle.ts, campaign.json, units100.json
+  tools/gen/                data + icon generators (units.mjs, battles.mjs, icons.mjs + icon-index.txt)
+  temp/                     exploratory prototypes: battle.ts, campaign_v2.json, unit100-v3.json
   src/
     main.tsx                createRoot + <StrictMode> + styles.css
-    App.tsx                 the entire single-screen UI (~693 lines)
-    styles.css              one global stylesheet (~1356 lines), CSS custom properties
+    App.tsx                 the single-screen UI shell (tabs, game loop, dev tools)
+    styles.css              one global stylesheet, CSS custom properties
     components/
-      GamepediaModal.tsx    codex modal: list, search, per-category detail views (605 lines)
+      GamepediaModal.tsx    codex modal: list, search, per-category detail views
+      ArmyPanel.tsx         Army tab: unit roster, buy path, battle panel (1 round/sec playback)
+      unitIcons.ts          per-unit icon resolution (vendored SVG map + lucide fallback)
     game/                   pure domain layer, zero React imports
       gameObject.ts         abstract GameObject base (id, description, seen)
       attributes.ts         attribute (resource/capacity/stat) keys, definitions, factor model, rates
@@ -115,6 +131,8 @@ idle-civ/
       bonus.ts              Bonus union + factories + cost-reduction folding (§13.1)
       upgrades.ts           UpgradeDefinition registry (JSON-backed) + unlock gates
       encounters.ts         EncounterDefinition registry (JSON-backed), victory bonuses
+      units.ts              UnitDefinition registry (JSON-backed), stat scopes, power
+      battle.ts             deterministic stack battle simulation + armyPower
       achievements.ts       AchievementDefinition registry (JSON-backed) + requirements + rewards
       statistics.ts         Statistics type: clicks, buildings built, play time, best times
       data/                 JSON definition payloads (buildings, upgrades, encounters, achievements, stats)
@@ -224,8 +242,8 @@ drains 1 food/sec each), `house`, `farm`, `lumber-yard`, `quarry`, `gold-mine`,
 Current data conventions: production buildings give `resourceMultiplier` `×1.1` each;
 `house` gives `+10 peopleCapacity`; `town-hall` gives `+10 houseCapacity`;
 `smithy`/`barracks`/`university` each produce 1/sec of `metalwork`/`military`/`science`
-(`resourceProduction`) and carry unlock gates — smithy on the `first-battle` encounter
-(placeholder, no battles yet), barracks at 5 town halls, university at 20.
+(`resourceProduction`) and carry unlock gates — smithy on the first age-0 battle
+`age0_1_first_fire`, barracks at 5 town halls, university at 20.
 `market`/`monument` have no effects; monument stays `available: false`.
 
 `effects` is a **per-building stopgap**. The target model is a shared
@@ -294,8 +312,8 @@ plus binary search, so MAX stays O(log n) with O(1) cost checks.
 
 A `Map<string, GamepediaEntry>` where
 `GamepediaEntry = { object: GameObject; category; relatedIds: string[] }` and
-`GamepediaCategory = "resource" | "capacity" | "building" | "upgrade" | "achievement"
-| "stat" | "research" | "combat"`.
+`GamepediaCategory = "resource" | "capacity" | "building" | "unit" | "upgrade"
+| "achievement" | "stat" | "research" | "combat"`.
 
 API: `register` (throws on duplicate id), `get`, `require` (throws on unknown),
 `relatedTo` (filters out undiscovered entries), `reveal`, `visible` (discovered only —
@@ -316,17 +334,17 @@ achievement is earned), then `buildRelations()`. Consequences:
   from their requirement target (resource, `population`, building or encounter id).
 - `buildingsForResource(resourceId)` returns buildings linked to a resource.
 
-`resource`, `capacity`, `building`, `upgrade`, `achievement`, `stat` and `combat`
-entries exist today (combat holds the one `first-battle` encounter; upgrades hold the 32
-enhancer tiers; `stat` holds `clickPower` and `autoClickRate`, both `seen = true` because
-computed values are visible from the start). The `research` category is wired through the
-types and the modal tabs but carries no data, so that tab shows "Nothing discovered here
-yet". `capacity` entries have no tab of their own; they are reached through links from
-buildings and factors.
+`resource`, `capacity`, `building`, `unit`, `upgrade`, `achievement`, `stat` and
+`combat` entries exist today (combat holds the 23 campaign battles; upgrades hold the 32
+enhancer tiers; `stat` holds `clickPower`, `autoClickRate` and `armyPower`, all
+`seen = true` because computed values are visible from the start). The `research`
+category is wired through the types and the modal tabs but carries no data, so that tab
+shows "Nothing discovered here yet". `capacity` entries have no tab of their own; they
+are reached through links from buildings and factors.
 
-Planned addition (§13.2): the future `unit` and `battle` categories — an
-in-game stats tab already links into the `stat` pages through the modal's `focusId`
-prop.
+Unit entries derive `relatedIds` from their cost resources, and battle entries link
+their `enemyArmy` unit ids; the modal's unit page shows the unit's description and a
+per-stat subtab grid, the battle page shows the historical blurb and the enemy roster.
 
 ### 4.7 Numbers: `ExpNumber` + `formatNumber`
 
@@ -377,7 +395,9 @@ when a non-production key is used) silently yields `ExpNumber.ZERO` rather than 
   floating `.fab-container` with the multiplier buttons and the Pedia FAB.
 - Tabs (`Tab` type + `tabs` array): `Production`, `Upgrades`, `Achievements`,
   `Army`, `Research`, `Trade`, `Settings`, `Stats`, `Dev Tools`, rendered inline via
-  `{activeTab === "X" && (...)}`. **`Army` and `Research` render no section at all**
+  `{activeTab === "X" && (...)}`. **`Army` renders `components/ArmyPanel.tsx`**
+  (roster + battle panel; it opens only once a battle has been revealed/won),
+  `Research` still renders no section at all
   (blank content area) and `Trade` is placeholder copy; `Achievements` renders one
   cumulative card per milestone-chain `family` — earned tiers' rewards, live progress via
   `getNextAchievementGoal()`/`getRequirementValue()`, `locked`/`partial`/`complete`
@@ -615,12 +635,13 @@ with a roadmap entry already assigned.
   only persisted value is the number format. Any real persistence must be versioned and
   validated (roadmap Milestone 3: JSON primary, XML/Base64 interchanges, migrations,
   offline progress).
-- **`Army` and `Research` tabs stay hidden until their gates fire** (barracks unlocks at
-  5 town halls; university at 20 — the default town-hall capacity is now **1** and only
-  the `first-battle` encounter bonus raises it ×10, so both gates need that victory
-  first) **and render no content**. The Upgrades tab lists unlocked enhancer tiers; the
-  Gamepedia `combat` category holds only the placeholder `first-battle` encounter (won
-  from the Dev Tools button) and `research` still has no data.
+- **`Army` and `Research` tabs stay hidden until their gates fire** (the Army tab opens
+  once the first battle is revealed/won; Research has no content yet). The Army tab is
+  implemented (`components/ArmyPanel.tsx`): 79-unit buyable roster (current age +
+  previous age), deterministic stack battles at 1 round/sec, enemy boosts, victory
+  bonuses, and unit restoration after battle. The Gamepedia `unit` category holds all
+  79 units (per-stat subtabs) and `combat` holds the 23 campaign battles; `research`
+  still has no data.
 - **Achievements are not persisted.** `earnedAchievements` lives in state like every
   other field, so it is lost on reload until the save system lands (roadmap Milestone 3).
 - **Achievement checks run in `tick()`**, so an achievement whose requirement a UI action
@@ -640,15 +661,17 @@ with a roadmap entry already assigned.
   (`costReductionPercent`/`costReductionBase`/`costReductionFactor` are used by the
   enhancer and Master Builder tiers).
   **Still unbuilt:** `attributeDrain` and `costReductionFlat` bonus data
-  (the engine path exists), unit
-  definitions, research/achievement/battle unlock sources (the smithy battle gate
-  cannot fire yet).
-- **`temp/battle.ts`, `temp/campaign.json`, `temp/units100.json`** (and the newer
-  `campaign_v2.json`, `unit-v2-currated.json`, `unit100-v2.json`) are exploration
-  artifacts for the combat system — still not compiled, not linted, not imported from
-  `src/`. The v2 files are the **content reference for battle scope** by owner decision:
-  23 encounters (2 regular + 1 age-end boss per age, 5 in Modern/Space) and a 79-unit
-  roster; the roadmap's Milestone 8 reflects that scope.
+  (the engine path exists), research/achievement/battle unlock sources (the smithy
+  battle gate cannot fire yet).
+- **Old units are never retired** — a unit stays owned, counted in army power and shown
+  (in the roster window) forever. Unit retirement (and cost-tied spam control) is a
+  planned follow-up; until then battles act only as soft checks against old-unit spam.
+- **The `temp/` prototype files** (`battle.ts`, `campaign_v2.json`, `unit100-v3.json`,
+  and their earlier variants) are exploration artifacts — not compiled, not linted, not
+  imported from `src/`. They are superseded by the implemented slice: `src/game/battle.ts`,
+  `src/game/units.ts` + `data/units.json` (79 units), and `data/encounters.json`
+  (23 encounters, 7 age bosses — campaign v3 scope, with `age`/`year`/`isBoss`/
+  `enemyArmy`/`enemyBoosts`).
 
 **Engine debt and gotchas**
 
@@ -711,7 +734,7 @@ Full detail in `docs/roadmap.md`; this is orientation only.
 | 5 — Statistics | **Not started** |
 | 6 — Achievements | **First slice done** — `src/game/achievements.ts` + `data/achievements.json` (12 milestone records, five requirement types), `CivilizationState.checkAchievements()` evaluated at the end of `tick()`, `earnedAchievements` id list, Achievements tab, `achievement` Gamepedia category. Age-transition and click-power achievements still pending (they need ages and the `stat` family) |
 | 7 — Upgrades | **First slice done** — bonus type, 32 enhancer upgrades (capacity/production, plus cost reductions on tiers 3–8), Upgrades tab, unlock-gated buildings, cost-reduction engine path. Flat/drain/base bonus data and research/achievement/battle sources still pending; full model in **§13** |
-| 8 — Battle system | **Prototype only** (`temp/`; campaign v2 fixes the content scope: 23 encounters, 7 age bosses, 79 units) |
+| 8 — Battle system | **First slice done** — `src/game/battle.ts` (deterministic stack sim, seed = battle id + army signatures, ≤ 200 rounds), `src/game/units.ts` + `data/units.json` (79 units, cost factor 1.2, per-age hp/attack scale), 23 encounters in `data/encounters.json` with enemy boosts and victory bonuses, `unitCounts` + buy/resolve paths on the engine, Army tab (`components/ArmyPanel.tsx`), unit icons vendored from game-icons.net (`public/units/`). Unit retirement, research-sourced unlocks and unit boosts via research are pending |
 | 9 — Research tree | **Not started** |
 | 10 — Game-length simulation | **Not started** |
 
@@ -895,10 +918,10 @@ Reconciliation with the code as it stands:
      The modal already supports this through its `focusId` prop, so wire it through the
      existing `gamepediaFocusId` state — do not add a second navigation mechanism.
   2. The **`stat` category joins the other Gamepedia categories** — production, building,
-     unit, research, battle, upgrades, stat, etc. Note today's `GamepediaCategory` union is
-     only `resource | capacity | building | upgrade | research | combat`, so `stat` plus
-     `unit` / `battle` (and possibly a production-vs-building resource split) are
-     reconciliation work for when those definitions land.
+     unit, research, battle, upgrades, stat, etc. The `unit` and `stat` categories are
+     now implemented (79 unit entries with per-stat subtabs; `clickPower`,
+     `autoClickRate` and `armyPower` stats); `combat` holds the 23 campaign battles;
+     a production-vs-building resource split remains reconciliation work.
 - Implementation shape (implemented): the **attribute registry** in
   `src/game/attributes.ts` — `AttributeDefinition` with
   `family: "amount" | "capacity" | "derived"` — registered in the Gamepedia, with the
@@ -923,7 +946,10 @@ A **buyable** is anything with a `BuildingCost` list, i.e. anything the player s
 resources to acquire:
 
 - **buildings** — the 12 existing definitions (§4.4)
-- **units** — not implemented (see the `temp/` prototype and roadmap Milestone 8)
+- **units** — implemented (Milestone 8): the 79-unit roster in `data/units.json`, bought
+  through the same evaluator (`buyUnit`/`getUnitCost`/`getMaxAffordableCount`), with no
+  capacity cap (§13.3 decisions). Unit costs use growth factor **1.2** (rapid cost
+  scaling keeps old-unit spam in check until retirement lands).
 
 Because both share the `BuildingCost` shape, the four cost-reduction bonus types apply
 to both uniformly. Decisions for units:
@@ -1081,8 +1107,8 @@ unlock gates). The remaining seams to reuse instead of adding parallel machinery
   `costReductionBase` / `costReductionFactor`; expect them to be absorbed into, or
   replaced by, the bonus path.
 - The Upgrades tab lists unlocked unbought upgrades and the Gamepedia `upgrade`
-  category fills as unlocks fire (App reveals on every state change). `research` /
-  `combat` categories are still empty.
+  category fills as unlocks fire (App reveals on every state change). `combat` holds
+  the 23 campaign battles; `research` is still empty.
 - Sequencing: the roadmap's recommended order puts saves and statistics *before*
   upgrades. Do not start without agreeing the target milestone, because
   `seen`/`unlocked`/`bought` are meaningless until a save exists.

@@ -1,0 +1,114 @@
+add stats : track everything that is usual in idle game ( look at realm grinder)
+- production clicks, time played from start, time played this game ( will reset at prestige), 
+total buildings
+I am also interested at fastest time to age X and fastest time to battle
+
+also number of clicks in UI if able (excluding production click)
+
+
+
+-> add achievement for click 100-1K-10K-100K-1M boosting click power ( production click) adding +1/+2/+5/+20/+100 to click power   
+
+
+16-21h
+
+
+add building power as bonus : building power boost all effects by its factor.
+( if farm do *1.1 and +5 to whatever ( food), after building power +2 it does *1.2 and +10)
+
+rework cumulative achievement
+only the next tier should be visible-> I made 1500 clicks , the achievement with 1000 clicks lists the bonus from achievement 100 click and 1000 clicks and say 10000 clicks is now the goal)
+( maybe an intermediate color to help, betwenn, not achieved at all and totally finished)
+
+add achivement to 10 -> 100 -> 1K ... 1B farm that grants building power * 2 -> 3 -> 4 ....( log10(#farm)+1), cumulative  ...for all production helper building
+add achievement to resources held (100 -> 1K ... 1B ) that grant + log(#value) / second
+add achievement to 1000 -> 10K .... total building taht reduct costd for building  by log(#value)-1
+add achievement to 1000 -> 10K .... total units constructed taht reduct costd for building  by log(#value)-1
+
+
+17-01h
+
+time for big milestone
+add units and battle, units are in temp/unit100-v3.json (json is nearly finished stats might need a little scaling but we don't need it now)
+review prototype battle in temp/battle.ts there may be a large number of units ( millions)
+battle planned are in temp/campaign_v2.json (need a little trimming (create a v3 if needed), pop reference,ageName, and player army is not needed ( year is for gamepedia... will explain later))
+
+ui wise, I want the one icon for each unit in the tabs ( most hidden at start, old age unit will be depreciated at one point so the number of icon should be two or 3 ages max)
+you can click to buy one, it displays the #bought ,the cost of the next buy and the stat of units n that makes a columen on the left, on the right, there is the next battle opponrn army ( same : icon, name , number stats ( no costs obviously)
+we need a method to calculate global power ( don't know how, any suggestion?) we display the total power of each army with a battle button at center
+if you click, battle starts , one second each round ( there are round in the battle script right?), update living units count.
+if win , bonus form the battle, go to nex battle, if lose nothing . in all case, units after battle are restored to the number before battle ( no death)
+
+units are both a buyable ( like building ) and a receptacle for bonus. 
+for next milestones, unlock of other units will go tjrough research, research will also boost units either by name ( hoplite.atk +100 or *2); by type/tag  (all bowmen range +1) or by  all units ( all units.hp *1.1)
+
+gamepadia of units shall have a description of the unit ( air , ranged ... ) and one subtab for each stat ( attribute stanadard display
+gamepadia of battle shall have a description of the historical battle ( from wikipedia for example , keep it short), the list of units of the opponent and number.
+
+opponent will probably have boosts from fake research to balance the battles in later ages
+for icons, there is a resource folder in D:\work\dev\assets\Kenney Game Assets 1 version 42 otherwise search the net
+
+
+
+ages; I want the age to be clickable, you can click it when :
+- you have finished the battle for the age
+- you got approximately the max population of the age... (all buildings = 125% of pop max should be fine)
+on age , retired N-2 units: entering age 2 classical retires all units of age 0 (for now no compensation except a stat about wasted resources ( and probably achievement at one point) )
+wasted resources details will follow for now 1 point for each lost resources
+unlock all research for the age
+also multiply town hall capacity by 10. ( for now, will will probably have research that boost townhall bonus to house capacity and/or house bonus to citizen capacity : future task add a unit test somewhere that the age boundary is not broken by research)
+( can probably be treated as an upgrade by the system (with free cost)... advice ?)
+also record time stat if fastest since beginning of loop 
+
+
+save system :
+
+autosave input in seconds in settings (' default 10')
+add  import/export/save button in settings (save does save internally same as autosave)
+add 3 radio to save : base64 ( save in json encode to base 64 and put in clipboard), json (open savediledialog ( or modern equivalent) select a file in json ), xml ( same as json but in xml)
+add a button in dev tools to reset to start.
+add unit tests to always garanty save is not corrupted by update.
+
+
+
+
+market will open a trade tab, first it will allow to trade gold from/to resources with a value/s equal to a new attribute ( trade power), market will generate trade power (like barraks generate military
+will later create resources generator ( trade routes)
+base value gold -> need a ratio fro each resource (all those that are in the summary). 
+sell, sell  resrouce/ratio for 1 gold. ( if food has 1/10 ratio, sell 10 food for 1 gold)
+or science has 50 (sell one science for 50 gold)
+buying is the reverse (10 factor: If I sell 1 military for 10 gold, I buy 1 military for 100 gold)-> the disappearing goes to wasted resource stats.  ( rework wasted resources to count in gold equivalent with the ratios)
+if I have 500 trade pwoer, I can trade 500 gold to equivalent)
+
+
+
+implement science ( user action beofre, review tech tree.json)
+for now no harcoded cost , first science is 1K research, multiplied by 10 for each next research ( we will see later on if it works)
+
+reseach panel, I want a vertical tree that is contains in the main area, you can scroll to the bottom 
+( default position is : higher non reserched research yet is on the second row from the top)
+
+one clear delimitation bar for each age ( and maybe different background)
+
+each research as a card with an icon, its name,below its effects, cost, and a buy button ( red or green)
+arrows shows whcich research it unlocks (all arrows go right or bottom ( bottom left is ok) so taht the order is clear)
+
+
+
+
+
+
+simulation
+stat from scratch first ( we wil make snapshot at the end of each age)
+assume 10 click or 1 action/second ( action, but something, add or remove workers, launch battle) for first age 
+then do actions( buy all, change workers) then skip one minute then continue
+record productions/#buildings at the end of each battle and age ( battle are submilestone, especially the first one)
+launch with an objective ( N of one particular building, reach a particular age or battle)
+the simulator will need to have mutilple strategies ( please advice )
+add a vs target to launch simulator
+
+-> optional can we launch several thread to simulate diffrent strategy : start launch X thread with  X strategy, after one hour equivalent game, see which worked best 
+( record the best, so next time it is one of the strategy used for this part as well), take the best strategy results and relaucnh X threads etc
+
+
+ 

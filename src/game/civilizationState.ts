@@ -34,16 +34,79 @@ import {
   openEndedHoarderChains,
   type AchievementRequirement,
 } from "./achievements";
-import { encounterDefinitions } from "./encounters";
+import {
+  armyPower,
+  battleSeed,
+  simulateBattle,
+  type ArmyStack,
+  type BattleSimulation,
+} from "./battle";
+import {
+  findEncounterDefinition,
+  encounterDefinitions,
+  type EncounterDefinition,
+} from "./encounters";
+import {
+  findUnitDefinition,
+  isBuyableUnit,
+  maximumArmor,
+  parseUnitStatTarget,
+  unitDefinitions,
+  unitMatchesStatTarget,
+  type UnitDefinition,
+  type UnitStatKey,
+  type UnitStats,
+} from "./units";
 import {
   emptyStatistics,
   tickMilliseconds,
   type Statistics,
 } from "./statistics";
 import { upgradeDefinitions } from "./upgrades";
-import { collectCostReductions, type Bonus } from "./bonus";
+import { collectCostReductions, type Bonus, type CostReductions } from "./bonus";
+
+/** One cost entry rewritten by the §13.1 per-unit reduction order. */
+type CostParameters = {
+  cost: BuildingCost;
+  unitBase: ExpNumber;
+  unitFactor: ExpNumber;
+  reductions: CostReductions;
+};
 
 type BuildingCostOverrides = Partial<Record<BuildingKey, BuildingCost[]>>;
+
+/** Units have no capacity limit (§13.3), so the MAX probe stops here. */
+const maximumUnitPurchase = 1_000_000;
+
+/**
+ * The largest N for which `canAffordCount(N)` holds, given per-unit costs that
+ * never decrease. A doubling probe finds a tight upper bound and a binary search
+ * finishes, so the whole thing is O(log N) evaluations of an O(1) cost check —
+ * shared by buildings and units so both keep buy-N and buy-MAX on one evaluator.
+ */
+const maxAffordableCount = (
+  canAffordCount: (count: number) => boolean,
+  upperBound: number,
+): number => {
+  if (!canAffordCount(1)) return 0;
+  let probe = 1;
+  while (probe < upperBound && canAffordCount(probe * 2)) {
+    probe *= 2;
+  }
+  if (probe >= upperBound && canAffordCount(upperBound)) return upperBound;
+
+  let low = probe;
+  let high = Math.min(probe * 2, upperBound);
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (canAffordCount(middle)) {
+      low = middle;
+    } else {
+      high = middle - 1;
+    }
+  }
+  return low;
+};
 
 const capacityKey = (buildingKey: BuildingKey): CapacityResourceKey =>
   `${buildingKey}Capacity` as CapacityResourceKey;
@@ -75,6 +138,12 @@ const derivedAttributeComputations: Record<
   autoClickRate: {
     value: (state) => ExpNumber.fromNumber(state.autoClicksPerSecond),
     base: (state) => ExpNumber.fromNumber(state.autoClicksPerSecond),
+  },
+  armyPower: {
+    // Like the auto-click rate, the base *is* the current reading: army power is
+    // summed from unit stats, so no bonus targets this attribute directly.
+    value: (state) => state.getArmyPower(),
+    base: (state) => state.getArmyPower(),
   },
 };
 
@@ -130,6 +199,8 @@ export class CivilizationState {
   readonly enteredAges: readonly string[];
   readonly earnedAchievements: readonly string[];
   readonly statistics: Statistics;
+  /** Units owned per unit id. Casualties never touch this (armies are restored). */
+  readonly unitCounts: Record<string, ExpNumber>;
 
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
@@ -143,6 +214,7 @@ export class CivilizationState {
     enteredAges: readonly string[] = [],
     earnedAchievements: readonly string[] = [],
     statistics: Statistics = emptyStatistics(),
+    unitCounts: Record<string, ExpNumber> = {},
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -155,6 +227,7 @@ export class CivilizationState {
     this.enteredAges = enteredAges;
     this.earnedAchievements = earnedAchievements;
     this.statistics = statistics;
+    this.unitCounts = unitCounts;
 
     const houses = this.buildingCount("house");
     const townHalls = this.buildingCount("town-hall");
@@ -666,13 +739,24 @@ export class CivilizationState {
     };
   }
 
-  getBuildingCostModifiers(buildingKey: string) {
-    const sources = this.activeBonuses().filter(([, bonus]) =>
-      bonus.destination === buildingKey && bonus.type.startsWith("costReduction"),
+  /** Cost-reduction bonuses targeting one buyable, folded the §13.1 way. */
+  private costReductionsFor(buyableId: string) {
+    const sources = this.activeBonuses().filter(
+      ([, bonus]) =>
+        bonus.destination === buyableId &&
+        bonus.type.startsWith("costReduction"),
     );
-    const reductions = collectCostReductions(sources.map(([, bonus]) => bonus));
+    return {
+      sources,
+      reductions: collectCostReductions(sources.map(([, bonus]) => bonus)),
+    };
+  }
+
+  getBuildingCostModifiers(buildingKey: string) {
+    const { sources, reductions } = this.costReductionsFor(buildingKey);
     const globalMultiplier = ExpNumber.max(
-      ExpNumber.ZERO, this.getAttributeValue("buildingCostMultiplier"),
+      ExpNumber.ZERO,
+      this.getAttributeValue("buildingCostMultiplier"),
     );
     return {
       sources,
@@ -681,19 +765,40 @@ export class CivilizationState {
     };
   }
 
-  getBuildingCostParameters(buildingKey: string) {
-    const building = buildingDefinitions.find(({ key }) => key === buildingKey);
-    if (!building) return [];
-    const costs = this.buildingCostOverrides[building.key] ?? building.costs;
-    const { reductions } = this.getBuildingCostModifiers(buildingKey);
+  /** Units are buyables (§13.3), so they take the same four cost-reduction types. */
+  getUnitCostModifiers(unitId: string) {
+    return this.costReductionsFor(unitId);
+  }
+
+  /** Per-unit pipeline inputs, shared by buildings, units and their previews. */
+  private costParameters(
+    costs: BuildingCost[],
+    reductions: CostReductions,
+  ): CostParameters[] {
     return costs.map((cost) => ({
       cost,
       unitBase: ExpNumber.max(ExpNumber.ZERO, cost.base.mul(reductions.base)),
       unitFactor: ExpNumber.max(
-        ExpNumber.ONE, ExpNumber.fromNumber(cost.factor).sub(reductions.factor),
+        ExpNumber.ONE,
+        ExpNumber.fromNumber(cost.factor).sub(reductions.factor),
       ),
       reductions,
     }));
+  }
+
+  getBuildingCostParameters(buildingKey: string): CostParameters[] {
+    const building = buildingDefinitions.find(({ key }) => key === buildingKey);
+    if (!building) return [];
+    const costs = this.buildingCostOverrides[building.key] ?? building.costs;
+    const { reductions } = this.getBuildingCostModifiers(buildingKey);
+    return this.costParameters(costs, reductions);
+  }
+
+  getUnitCostParameters(unitId: string): CostParameters[] {
+    const unit = findUnitDefinition(unitId);
+    if (!unit) return [];
+    const { reductions } = this.getUnitCostModifiers(unitId);
+    return this.costParameters(unit.costs, reductions);
   }
 
   getBuildingCost(
@@ -701,9 +806,97 @@ export class CivilizationState {
     buildingsAlreadyBuilt: number,
     count: number = 1,
   ): BuildingCost[] {
-    return this.getBuildingCostParameters(buildingKey).map(({
-      cost, unitBase, unitFactor, reductions,
-    }) => {
+    return this.costSeries(
+      this.getBuildingCostParameters(buildingKey),
+      ExpNumber.fromNumber(buildingsAlreadyBuilt),
+      count,
+    );
+  }
+
+  /** Cost of the next `count` units, growing with the number already owned. */
+  getUnitCost(unitId: string, count: number = 1): BuildingCost[] {
+    return this.costSeries(
+      this.getUnitCostParameters(unitId),
+      this.getUnitCount(unitId),
+      count,
+    );
+  }
+
+  /** Owned count of one unit (units have no capacity ceiling, §13.3). */
+  getUnitCount(unitId: string): ExpNumber {
+    return this.unitCounts[unitId] ?? ExpNumber.ZERO;
+  }
+
+  /**
+   * Every unit-stat bonus aimed at one unit, split per stat into summed flats
+   * and compounded multipliers — the §13.1 stacking rule applied to units.
+   */
+  private collectUnitStatFactors(
+    unit: UnitDefinition,
+    sources: readonly (readonly [sourceId: string, bonus: Bonus])[],
+  ): Record<UnitStatKey, { flat: ExpNumber; multiplier: ExpNumber }> {
+    const factors: Record<
+      UnitStatKey,
+      { flat: ExpNumber; multiplier: ExpNumber }
+    > = {
+      hp: { flat: ExpNumber.ZERO, multiplier: ExpNumber.ONE },
+      attack: { flat: ExpNumber.ZERO, multiplier: ExpNumber.ONE },
+      armor: { flat: ExpNumber.ZERO, multiplier: ExpNumber.ONE },
+      range: { flat: ExpNumber.ZERO, multiplier: ExpNumber.ONE },
+      speed: { flat: ExpNumber.ZERO, multiplier: ExpNumber.ONE },
+      accuracy: { flat: ExpNumber.ZERO, multiplier: ExpNumber.ONE },
+    };
+    for (const [, bonus] of sources) {
+      if (bonus.type !== "attributeFlat" && bonus.type !== "attributeMultiplier")
+        continue;
+      const target = parseUnitStatTarget(bonus.destination);
+      if (!target || !unitMatchesStatTarget(unit, target)) continue;
+      const bucket = factors[target.stat];
+      if (bonus.type === "attributeFlat")
+        bucket.flat = bucket.flat.add(bonus.value);
+      else bucket.multiplier = bucket.multiplier.mul(bonus.value);
+    }
+    return factors;
+  }
+
+  /** Base stats, then summed flats, then compounded multipliers — per stat. */
+  private unitStatsFromFactors(
+    unit: UnitDefinition,
+    factors: Record<UnitStatKey, { flat: ExpNumber; multiplier: ExpNumber }>,
+  ): UnitStats {
+    const grown = (stat: UnitStatKey): ExpNumber => {
+      const base =
+        stat === "hp" || stat === "attack"
+          ? unit.stats[stat]
+          : ExpNumber.fromNumber(unit.stats[stat]);
+      return ExpNumber.max(
+        ExpNumber.ZERO,
+        base.add(factors[stat].flat).mul(factors[stat].multiplier),
+      );
+    };
+    const scalar = (stat: UnitStatKey, upper: number): number =>
+      Math.min(upper, Math.max(0, grown(stat).toNumber()));
+    return {
+      hp: grown("hp"),
+      attack: grown("attack"),
+      armor: scalar("armor", maximumArmor),
+      range: Math.max(0, grown("range").toNumber()),
+      speed: Math.max(0, grown("speed").toNumber()),
+      accuracy: scalar("accuracy", 1),
+    };
+  }
+
+  /**
+   * Cumulative cost of `count` units starting at `alreadyBuilt`. Per unit:
+   * base → factor → percent → flat, clamped at zero. The closed-form series keeps
+   * buy-N and buy-MAX on one O(1) evaluator (§13.1/§13.6).
+   */
+  private costSeries(
+    parameters: readonly CostParameters[],
+    buildingsAlreadyBuilt: ExpNumber,
+    count: number,
+  ): BuildingCost[] {
+    return parameters.map(({ cost, unitBase, unitFactor, reductions }) => {
       // Per-unit pipeline: base → factor → percent → flat, clamped at zero.
       const firstGross = unitBase
         .mul(unitFactor.pow(buildingsAlreadyBuilt))
@@ -1058,6 +1251,166 @@ export class CivilizationState {
     return this.earnedAchievements.includes(achievementId);
   }
 
+  /** Highest age reached: a boss victory moves the civilization into the next. */
+  getCurrentAge(): number {
+    let age = 0;
+    for (const key of this.defeatedEncounters) {
+      const encounter = findEncounterDefinition(key);
+      if (!encounter) continue;
+      age = Math.max(age, encounter.isBoss ? encounter.age + 1 : encounter.age);
+    }
+    return age;
+  }
+
+  /** Can the player buy this unit: base-available, or unlocked by a won battle. */
+  isUnitAvailable(unitId: string): boolean {
+    const unit = findUnitDefinition(unitId);
+    if (!unit || !isBuyableUnit(unit)) return false;
+    if (unit.available) return true;
+    return encounterDefinitions.some(
+      (encounter) =>
+        encounter.unlocks.includes(unitId) &&
+        this.defeatedEncounters.includes(encounter.key),
+    );
+  }
+
+  /** The Army tab's buyable roster: current + previous age, unlocked only. */
+  getRosterUnits(): UnitDefinition[] {
+    const currentAge = this.getCurrentAge();
+    return unitDefinitions.filter(
+      (unit) =>
+        isBuyableUnit(unit) &&
+        this.isUnitAvailable(unit.key) &&
+        unit.age >= currentAge - 1 &&
+        unit.age <= currentAge,
+    );
+  }
+
+  hasResourcesForUnit(unitId: string, count: number = 1): boolean {
+    return this.getUnitCost(unitId, count).every(
+      ({ resource, base }) => this.resources[resource].gte(base),
+    );
+  }
+
+  getUnitFailureReason(
+    unitId: string,
+    count: number = 1,
+  ): "locked" | "resources" | null {
+    if (!this.isUnitAvailable(unitId)) return "locked";
+    if (!this.hasResourcesForUnit(unitId, count)) return "resources";
+    return null;
+  }
+
+  canBuyUnit(unitId: string, count: number = 1): boolean {
+    return this.getUnitFailureReason(unitId, count) === null;
+  }
+
+  /** Buy-MAX for units (no capacity cap): the shared O(log n) probe. */
+  getMaxAffordableUnits(unitId: string): number {
+    if (!this.isUnitAvailable(unitId)) return 0;
+    return maxAffordableCount(
+      (n) => this.hasResourcesForUnit(unitId, n),
+      maximumUnitPurchase,
+    );
+  }
+
+  buyUnit(unitId: string, count: number = 1): CivilizationState {
+    if (count <= 0 || !this.canBuyUnit(unitId, count)) return this;
+    const cost = this.getUnitCost(unitId, count);
+    const resources = { ...this.resources };
+    for (const { resource, base } of cost) {
+      resources[resource] = resources[resource].sub(base);
+    }
+    return this.withResources(resources).withUnitCount(
+      unitId,
+      this.getUnitCount(unitId).add(ExpNumber.fromNumber(count)),
+    );
+  }
+
+  /** The player's army as battle stacks, with every bonus in force applied. */
+  getArmyStacks(): ArmyStack[] {
+    const stacks: ArmyStack[] = [];
+    for (const unit of unitDefinitions) {
+      const count = this.getUnitCount(unit.key);
+      if (count.lte(ExpNumber.ZERO)) continue;
+      const stats = this.getUnitStats(unit.key);
+      if (stats) stacks.push({ unitId: unit.key, count, stats });
+    }
+    return stacks;
+  }
+
+  getArmyPower(): ExpNumber {
+    return armyPower(this.getArmyStacks());
+  }
+
+  /** Effective stats of one unit, with every active bonus applied. */
+  getUnitStats(unitId: string): UnitStats | undefined {
+    const unit = findUnitDefinition(unitId);
+    if (!unit) return undefined;
+    return this.unitStatsFromFactors(
+      unit,
+      this.collectUnitStatFactors(unit, this.activeBonuses()),
+    );
+  }
+
+  /** One enemy army, with the battle's "fake research" boosts applied. */
+  getEnemyStacks(encounterId: string): ArmyStack[] {
+    const encounter = findEncounterDefinition(encounterId);
+    if (!encounter) return [];
+    const boosts = encounter.enemyBoosts.map(
+      (bonus) => [encounter.key, bonus] as const,
+    );
+    const stacks: ArmyStack[] = [];
+    for (const { unitId, count } of encounter.enemyArmy) {
+      const unit = findUnitDefinition(unitId);
+      if (!unit) continue;
+      const stats = this.unitStatsFromFactors(
+        unit,
+        this.collectUnitStatFactors(unit, boosts),
+      );
+      stacks.push({ unitId, count: ExpNumber.fromNumber(count), stats });
+    }
+    return stacks;
+  }
+
+  /** The next battle the campaign offers: the first not-yet-won encounter. */
+  getNextBattle(): EncounterDefinition | undefined {
+    return encounterDefinitions.find(
+      (encounter) => !this.defeatedEncounters.includes(encounter.key),
+    );
+  }
+
+  /**
+   * Runs the fight without touching any state, so the UI can play the round log
+   * back one round per second before the result is applied. The seed folds in
+   * the battle id, so the same armies fight the same battle every replay.
+   */
+  simulateEncounter(encounterId: string): BattleSimulation | undefined {
+    const encounter = findEncounterDefinition(encounterId);
+    if (!encounter) return undefined;
+    const player = this.getArmyStacks();
+    const enemy = this.getEnemyStacks(encounterId);
+    if (player.length === 0 || enemy.length === 0) return undefined;
+    return simulateBattle(player, enemy, {
+      seed: battleSeed(player, enemy, encounter.key),
+    });
+  }
+
+  /**
+   * Applies a finished battle: a player win records the victory (and its
+   * unlocks); a loss or stalemate changes nothing. Casualties never persist —
+   * `unitCounts` is untouched, so armies are restored after every battle.
+   */
+  resolveBattle(
+    encounterId: string,
+    simulation?: BattleSimulation,
+  ): CivilizationState {
+    if (this.defeatedEncounters.includes(encounterId)) return this;
+    const result = simulation ?? this.simulateEncounter(encounterId);
+    if (!result || result.outcome !== "player") return this;
+    return this.defeatEncounter(encounterId);
+  }
+
   /**
    * The fastest run time at which `id` was reached, kept across runs: a record
    * already set is only replaced by a strictly faster one.
@@ -1253,6 +1606,7 @@ export class CivilizationState {
       this.enteredAges,
       this.earnedAchievements,
       this.statistics,
+      this.unitCounts,
     );
   }
 
@@ -1271,6 +1625,7 @@ export class CivilizationState {
       this.enteredAges,
       this.earnedAchievements,
       this.statistics,
+      this.unitCounts,
     );
   }
 
@@ -1288,6 +1643,24 @@ export class CivilizationState {
     );
   }
 
+  private withUnitCount(unitId: string, count: ExpNumber): CivilizationState {
+    const unitCounts = { ...this.unitCounts };
+    if (count.lte(ExpNumber.ZERO)) delete unitCounts[unitId];
+    else unitCounts[unitId] = count;
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      unitCounts,
+    );
+  }
+
   private withState(
     resources: ResourceAmounts,
     costOverrides: BuildingCostOverrides,
@@ -1298,6 +1671,7 @@ export class CivilizationState {
     enteredAges = this.enteredAges,
     earnedAchievements = this.earnedAchievements,
     statistics = this.statistics,
+    unitCounts = this.unitCounts,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -1311,6 +1685,7 @@ export class CivilizationState {
       enteredAges,
       earnedAchievements,
       statistics,
+      unitCounts,
     );
   }
 

@@ -49,7 +49,7 @@
     "key": "wolf-slayer",
     "name": "Wolf Slayer",
     "description": "Win the first battle and drive the wolves from the fields.",
-    "requirement": { "type": "encounter", "encounterId": "first-battle" }
+    "requirement": { "type": "encounter", "encounterId": "age0_1_first_fire" }
   },
   {
     "key": "hall-of-halls",

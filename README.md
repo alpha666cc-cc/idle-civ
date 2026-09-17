@@ -13,6 +13,12 @@ npm run dev
 
 The repository also includes VS Code Run and Debug configuration under `.vscode/`.
 
+## Assets & credits
+
+Unit icons are from [game-icons.net](https://game-icons.net/) (CC BY 3.0), vendored
+under `public/units/` with per-icon author credits in
+[`public/units/ATTRIBUTION.md`](public/units/ATTRIBUTION.md).
+
 ## Template notes
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.

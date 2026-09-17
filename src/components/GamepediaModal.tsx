@@ -18,6 +18,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { BuildingDefinition } from "../game/buildings";
+import type { EncounterDefinition } from "../game/encounters";
+import {
+  unitStatKeys,
+  unitStatLabels,
+  type UnitDefinition,
+  type UnitStatKey,
+} from "../game/units";
 import type { AchievementDefinition } from "../game/achievements";
 import type { Bonus } from "../game/bonus";
 import type { UpgradeDefinition } from "../game/upgrades";
@@ -55,22 +62,24 @@ type FactorTab = "additional" | "multiplicative" | "drain";
 const categoryTabs: CategoryTab[] = [
   { category: "resource", label: "Resources", icon: Leaf },
   { category: "building", label: "Buildings", icon: Building2 },
+  { category: "unit", label: "Units", icon: Swords },
   { category: "upgrade", label: "Upgrades", icon: ArrowUpRight },
   { category: "achievement", label: "Achievements", icon: Trophy },
   { category: "stat", label: "Stats", icon: ChartColumn },
   { category: "research", label: "Research", icon: BookOpen },
-  { category: "combat", label: "Combat", icon: Swords },
+  { category: "combat", label: "Battles", icon: Swords },
 ];
 
 const categoryLabels: Record<GamepediaCategory, string> = {
   resource: "Resources",
   capacity: "Capacity",
   building: "Buildings",
+  unit: "Units",
   upgrade: "Upgrades",
   achievement: "Achievements",
   stat: "Stats",
   research: "Research",
-  combat: "Combat",
+  combat: "Battles",
 };
 
 const factorTabLabels: Record<FactorTab, string> = {
@@ -787,7 +796,114 @@ export default function GamepediaModal({
     );
   };
 
+  /** "Health 12 · Arm 25%" style text; fractions render as percentages. */
+  const unitStatText = (
+    key: UnitStatKey,
+    value: ExpNumber | number,
+  ): string => {
+    if (key === "armor" || key === "accuracy") {
+      return `${Math.round(Number(value) * 100)}%`;
+    }
+    return formatNumber(value, numberFormat);
+  };
+
+  const renderUnitDetail = (entry: GamepediaEntry) => {
+    const unit = entry.object as UnitDefinition;
+    const effective = gameState.getUnitStats(unit.key) ?? unit.stats;
+    return (
+      <div className="gamepedia-detail">
+        {renderDetailHeader(entry)}
+        <p className="gamepedia-detail-description">{unit.description}</p>
+        <p className="gamepedia-category">
+          Icon:{" "}
+          <a
+            href="https://game-icons.net/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            game-icons.net
+          </a>{" "}
+          (CC BY 3.0 — see public/units/ATTRIBUTION.md)
+        </p>
+        <p className="gamepedia-category">{unit.typeSummary}</p>
+        <p className="gamepedia-category">
+          Can hit: {unit.targetSummary || "—"}
+        </p>
+        <p className="gamepedia-category">Stats (current, bonuses applied)</p>
+        <div className="gamepedia-stats">
+          {unitStatKeys.map((key) => (
+            <div className="gamepedia-stat" key={key}>
+              <span>{unitStatLabels[key]}</span>
+              <strong>{unitStatText(key, effective[key])}</strong>
+            </div>
+          ))}
+        </div>
+        {unit.costs.length > 0 ? (
+          <>
+            <p className="gamepedia-category">Base cost (next unit)</p>
+            <div className="gamepedia-stats">
+              {unit.costs.map(({ resource, base }) => (
+                <div className="gamepedia-stat" key={resource}>
+                  <span>{renderReference(resource)}</span>
+                  <strong>{formatAmount(base)}</strong>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="gamepedia-category">Enemy-only unit</p>
+        )}
+        {renderRelated(entry)}
+      </div>
+    );
+  };
+
+  const renderBattleDetail = (entry: GamepediaEntry) => {
+    const encounter = entry.object as EncounterDefinition;
+    return (
+      <div className="gamepedia-detail">
+        {renderDetailHeader(entry)}
+        <p className="gamepedia-detail-description">
+          {encounter.description}
+        </p>
+        {encounter.historical && (
+          <p className="gamepedia-detail-description">
+            {encounter.historical}
+          </p>
+        )}
+        <p className="gamepedia-category">Enemy army</p>
+        <div className="gamepedia-effect-list">
+          {encounter.enemyArmy.map((stack) => (
+            <div className="gamepedia-effect-row" key={stack.unitId}>
+              <div className="gamepedia-effect-copy">
+                <span className="gamepedia-effect-meta">
+                  {stack.label ?? renderReference(stack.unitId)}
+                </span>
+              </div>
+              <strong className="gamepedia-effect-total">
+                ×{formatNumber(stack.count, numberFormat)}
+              </strong>
+            </div>
+          ))}
+        </div>
+        <div className="gamepedia-stats">
+          <div className="gamepedia-stat">
+            <span>Year</span>
+            <strong>{encounter.year}</strong>
+          </div>
+          <div className="gamepedia-stat">
+            <span>Boss</span>
+            <strong>{encounter.isBoss ? "Yes" : "No"}</strong>
+          </div>
+        </div>
+        {renderRelated(entry)}
+      </div>
+    );
+  };
+
   const renderDetail = (entry: GamepediaEntry) => {
+    if (entry.category === "unit") return renderUnitDetail(entry);
+    if (entry.category === "combat") return renderBattleDetail(entry);
     if (entry.category === "building") return renderBuildingDetail(entry);
     if (entry.category === "resource") return renderResourceDetail(entry);
     if (entry.category === "capacity") return renderCapacityDetail(entry);

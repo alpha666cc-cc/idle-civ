@@ -15,7 +15,7 @@
       },
       {
         "type": "building_cost_reduction",
-        "target": "all",
+        "target": "farm",
         "value": "small"
       }
     ]
@@ -32,8 +32,8 @@
     ],
     "effects": [
       {
-        "type": "resource_capacity",
-        "target": "food",
+        "type": "building_cost_reduction",
+        "target": "house",
         "value": "small"
       },
       {
@@ -60,8 +60,8 @@
         "value": "small"
       },
       {
-        "type": "building_cost_reduction",
-        "target": "all",
+        "type": "production_multiplier",
+        "target": "wood",
         "value": "small"
       }
     ]

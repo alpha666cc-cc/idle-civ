@@ -4,7 +4,8 @@
 > systems, and remaining scope — so an AI (or a new contributor) can estimate the project
 > without reading the codebase or the full roadmap.
 >
-> **Snapshot:** commit `857b4d9` (branch `main`), 2026-09-15.
+> **Snapshot:** commit `fa8dd68` (branch `main`) with the Milestone 8 first slice in the
+> working tree, 2026-09-17.
 > **Sources of truth:** `src/game/*.ts` (live definitions) and `docs/roadmap.md`
 > (planned design). This file is a hand-authored snapshot — regenerate it after large
 > content changes.
@@ -19,7 +20,9 @@ Vite, no backend). The player gathers food/wood/stone/gold, assigns workers, buy
 building types with exponentially scaling costs, and pushes population toward the campaign
 goal of **10 billion people**, finishing with a **colony-ship launch**. A bonus/upgrade
 layer (32 enhancer tiers), unlock gates, and an in-game codex (Gamepedia) already exist.
-Ages, saves, statistics, achievements, battles, and research are still on the roadmap.
+So do statistics, achievements, and the battle first slice (79 buyable units, 23
+deterministic campaign encounters with a playback Army tab). Ages, saves, research, and
+prestige are still on the roadmap.
 Prestige is deliberately deferred until the first loop is done.
 
 ## 2. Resources (20 live, 2 planned)
@@ -169,7 +172,7 @@ Master Builder rewards target the derived `buildingCostMultiplier` stat (base ×
 | 5 — Statistics | Command-style actions → result events → stats tab |
 | 6 — Achievements | Age-transition achievements; milestone chains (building powers, hoarders, Master Builder) + cumulative family cards + open-ended hoarder tiers are done |
 | 7 — Upgrades (rest) | `attributeFlat`/`attributeDrain`/`costReductionBase`/`costReductionFlat` data; research/achievement/battle unlock sources |
-| 8 — Battles | Deterministic combat for 23 encounters (2 regular + 1 boss per age; 5 in Modern/Space) over a 79-unit roster; wolf first (unlocks smithy + town-hall cap 100); content reference: `temp/campaign_v2.json` |
+| 8 — Battles | **First slice done** — `src/game/units.ts` + `data/units.json` (79 units, per-age hp/attack scale ×8, cost factor 1.2), `src/game/battle.ts` (seeded deterministic stack/hp-pool sim, ≤ 200 rounds, stalemate outcome, `armyPower = attack × accuracy × √(hp ÷ (1 − armor))` summed over stacks), units as buyables **and** bonus receptacles (`hoplite.attack`, `tag.ranged.range`, `unitAll.hp` scopes; enemy boosts use the same channel), Army tab (unit column + enemy army + battle playback at 1 round/sec, units restored after battle), Gamepedia `unit`/`combat` pages, 79 vendored game-icons.net SVGs (CC BY 3.0, `public/units/ATTRIBUTION.md`). Remaining: unit retirement window, research-driven unlocks (Milestone 9), balance pass on cross-age enemy counts |
 | 9 — Research | Tree keyed to ages |
 | 10 — Simulation | Headless pacing run; requires proposing Vitest first (no test runner today) |
 | Deferred | Prestige mechanics, prestige bonuses, interstellar loop, colony ship |
@@ -196,7 +199,7 @@ Master Builder rewards target the derived `buildingCostMultiplier` stat (base ×
 | Resources | 20 (4 production, 1 population, 3 building, 12 capacity) | + 2 stats (click power, auto-click rate) |
 | Upgrades | 32 enhancer tiers | + research-gated, achievement-gated, battle-reward upgrades |
 | Ages | 0 | 7 |
-| Units / encounters | 0 | 79-unit roster + 23 encounters (7 age-end bosses) |
+| Units / encounters | 79 units, 23 encounters (7 age bosses) | 79-unit roster + 23 encounters (7 age-end bosses) |
 | Research | 0 | 1 tree across 7 eras |
 | Achievements | 72 concrete + open-ended hoarder tiers | ages + unit chains |
 | Saves | 0 | versioned JSON + 2 interchange codecs + offline |
