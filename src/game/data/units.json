@@ -5,12 +5,8 @@
     "description": "Hunter-spearmen with fire-hardened pikes. The first defenders of the settlement, and its last resort.",
     "age": 0,
     "domain": "ground",
-    "tags": [
-      "infantry"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["infantry"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 100,
     "attack": 18,
@@ -19,17 +15,10 @@
     "speed": 5,
     "accuracy": 0.95,
     "available": true,
+    "tier": 1,
     "costs": [
-      {
-        "resource": "military",
-        "base": 200,
-        "factor": 1.2
-      },
-      {
-        "resource": "food",
-        "base": 10000,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 200, "factor": 1.2},
+      {"resource": "food", "base": 10000, "factor": 1.2}
     ]
   },
   {
@@ -38,13 +27,8 @@
     "description": "Whirls a river stone at anything within a few paces. Quick to raise, easy to replace.",
     "age": 0,
     "domain": "ground",
-    "tags": [
-      "ranged"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["ranged"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 45,
     "attack": 10,
@@ -53,17 +37,10 @@
     "speed": 7,
     "accuracy": 0.55,
     "available": false,
+    "tier": 2,
     "costs": [
-      {
-        "resource": "military",
-        "base": 500,
-        "factor": 1.2
-      },
-      {
-        "resource": "stone",
-        "base": 20000,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 500, "factor": 1.2},
+      {"resource": "stone", "base": 20000, "factor": 1.2}
     ]
   },
   {
@@ -72,14 +49,8 @@
     "description": "Flint-tipped arrows fly further than any thrown stone, and can reach a bird in flight.",
     "age": 0,
     "domain": "ground",
-    "tags": [
-      "ranged"
-    ],
-    "canHit": [
-      "ground",
-      "air",
-      "naval"
-    ],
+    "tags": ["ranged"],
+    "canHit": ["ground","air","naval"],
     "bonusVs": [],
     "hp": 50,
     "attack": 12,
@@ -88,17 +59,10 @@
     "speed": 6,
     "accuracy": 0.6,
     "available": false,
+    "tier": 3,
     "costs": [
-      {
-        "resource": "military",
-        "base": 2000,
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": 100000,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 2000, "factor": 1.2},
+      {"resource": "wood", "base": 100000, "factor": 1.2}
     ]
   },
   {
@@ -107,12 +71,8 @@
     "description": "Hunts in a pack and closes fast. Nothing a trained line cannot handle, and nothing a lone hunter can.",
     "age": 0,
     "domain": "ground",
-    "tags": [
-      "beast"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["beast"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 60,
     "attack": 15,
@@ -120,8 +80,7 @@
     "range": 1,
     "speed": 8,
     "accuracy": 0.9,
-    "available": false,
-    "costs": []
+    "available": false
   },
   {
     "id": "bear",
@@ -129,12 +88,8 @@
     "description": "Half a ton of muscle and claw. Slow to rouse, and it does not stop when it is hurt.",
     "age": 0,
     "domain": "ground",
-    "tags": [
-      "beast"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["beast"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 150,
     "attack": 25,
@@ -142,8 +97,7 @@
     "range": 1,
     "speed": 4,
     "accuracy": 0.85,
-    "available": false,
-    "costs": []
+    "available": false
   },
   {
     "id": "canoe",
@@ -151,13 +105,8 @@
     "description": "A dugout hull for river and coast. Carries a raiding party, and nothing heavier.",
     "age": 0,
     "domain": "naval",
-    "tags": [
-      "naval"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
+    "tags": ["naval"],
+    "canHit": ["ground","naval"],
     "bonusVs": [],
     "hp": 80,
     "attack": 12,
@@ -166,17 +115,10 @@
     "speed": 6,
     "accuracy": 0.7,
     "available": false,
+    "tier": 4,
     "costs": [
-      {
-        "resource": "military",
-        "base": 50000,
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": 10000000,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 50000, "factor": 1.2},
+      {"resource": "wood", "base": 1.0000e+7, "factor": 1.2}
     ]
   },
   {
@@ -185,16 +127,9 @@
     "description": "Bronze heads on long shafts, braced against cavalry. The point is meant for armour.",
     "age": 0,
     "domain": "ground",
-    "tags": [
-      "infantry",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["infantry","anti-armor"],
+    "canHit": ["ground"],
+    "bonusVs": ["armored"],
     "hp": 90,
     "attack": 20,
     "armor": 0.2,
@@ -202,17 +137,10 @@
     "speed": 5,
     "accuracy": 0.85,
     "available": false,
+    "tier": 5,
     "costs": [
-      {
-        "resource": "military",
-        "base": 1000000,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 10000,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 1.0000e+6, "factor": 1.2},
+      {"resource": "metalwork", "base": 10000, "factor": 1.2}
     ]
   },
   {
@@ -221,12 +149,8 @@
     "description": "Heavy bronze axes for close work; no shield line survives them for long.",
     "age": 0,
     "domain": "ground",
-    "tags": [
-      "infantry"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["infantry"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 110,
     "attack": 26,
@@ -235,17 +159,10 @@
     "speed": 5,
     "accuracy": 0.9,
     "available": false,
+    "tier": 6,
     "costs": [
-      {
-        "resource": "military",
-        "base": 2027794.7253007605,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 202779.47253007605,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 2.0278e+6, "factor": 1.2},
+      {"resource": "metalwork", "base": 202779.47253007605, "factor": 1.2}
     ]
   },
   {
@@ -254,12 +171,8 @@
     "description": "Two horses, a driver and a fighting platform. Terrifying in the open, useless in a bog.",
     "age": 0,
     "domain": "ground",
-    "tags": [
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 180,
     "attack": 35,
@@ -268,17 +181,10 @@
     "speed": 8,
     "accuracy": 0.7,
     "available": false,
+    "tier": 7,
     "costs": [
-      {
-        "resource": "military",
-        "base": 4111951.447957586,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 411195.1447957586,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 4.1120e+6, "factor": 1.2},
+      {"resource": "metalwork", "base": 411195.1447957586, "factor": 1.2}
     ]
   },
   {
@@ -287,14 +193,8 @@
     "description": "Bronze-tipped arrows in massed volleys. Cheap damage at a safe distance.",
     "age": 0,
     "domain": "ground",
-    "tags": [
-      "ranged"
-    ],
-    "canHit": [
-      "ground",
-      "air",
-      "naval"
-    ],
+    "tags": ["ranged"],
+    "canHit": ["ground","air","naval"],
     "bonusVs": [],
     "hp": 60,
     "attack": 16,
@@ -303,17 +203,10 @@
     "speed": 6,
     "accuracy": 0.7,
     "available": false,
+    "tier": 8,
     "costs": [
-      {
-        "resource": "military",
-        "base": 8338193.4568612175,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 833819.3456861217,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 8.3382e+6, "factor": 1.2},
+      {"resource": "metalwork", "base": 833819.3456861217, "factor": 1.2}
     ]
   },
   {
@@ -322,14 +215,8 @@
     "description": "Bronze-age galley packed with rowers and a ram at the waterline.",
     "age": 0,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "ranged"
-    ],
-    "canHit": [
-      "naval",
-      "ground"
-    ],
+    "tags": ["naval","ranged"],
+    "canHit": ["naval","ground"],
     "bonusVs": [],
     "hp": 250,
     "attack": 30,
@@ -338,22 +225,11 @@
     "speed": 6,
     "accuracy": 0.65,
     "available": false,
+    "tier": 9,
     "costs": [
-      {
-        "resource": "military",
-        "base": 16908144.710360494,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 1690814.4710360493,
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": 33816289.42072099,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 1.6908e+7, "factor": 1.2},
+      {"resource": "metalwork", "base": 1.6908e+6, "factor": 1.2},
+      {"resource": "wood", "base": 3.3816e+7, "factor": 1.2}
     ]
   },
   {
@@ -362,16 +238,9 @@
     "description": "Torsion artillery that lobs stones over a wall and through a shield line.",
     "age": 0,
     "domain": "ground",
-    "tags": [
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["anti-armor"],
+    "canHit": ["ground","naval"],
+    "bonusVs": ["armored"],
     "hp": 100,
     "attack": 50,
     "armor": 0.1,
@@ -379,17 +248,10 @@
     "speed": 2,
     "accuracy": 0.45,
     "available": false,
+    "tier": 10,
     "costs": [
-      {
-        "resource": "military",
-        "base": 34286246.65829096,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 3428624.665829096,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 3.4286e+7, "factor": 1.2},
+      {"resource": "metalwork", "base": 3.4286e+6, "factor": 1.2}
     ]
   },
   {
@@ -398,16 +260,9 @@
     "description": "Iron-pointed pikes for the phalanx. Cheaper than bronze and harder to blunt.",
     "age": 1,
     "domain": "ground",
-    "tags": [
-      "infantry",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["infantry","anti-armor"],
+    "canHit": ["ground"],
+    "bonusVs": ["armored"],
     "hp": 760,
     "attack": 192,
     "armor": 0.25,
@@ -415,17 +270,10 @@
     "speed": 5,
     "accuracy": 0.85,
     "available": false,
+    "tier": 11,
     "costs": [
-      {
-        "resource": "military",
-        "base": 69525470.12404324,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 6952547.0124043245,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 6.9525e+7, "factor": 1.2},
+      {"resource": "metalwork", "base": 6.9525e+6, "factor": 1.2}
     ]
   },
   {
@@ -434,12 +282,8 @@
     "description": "Short iron blade and a big shield; the workhorse of the first iron armies.",
     "age": 1,
     "domain": "ground",
-    "tags": [
-      "infantry"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["infantry"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 920,
     "attack": 240,
@@ -448,17 +292,10 @@
     "speed": 5,
     "accuracy": 0.85,
     "available": false,
+    "tier": 12,
     "costs": [
-      {
-        "resource": "military",
-        "base": 140983381.59159046,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 14098338.159159046,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 1.4098e+8, "factor": 1.2},
+      {"resource": "metalwork", "base": 1.4098e+7, "factor": 1.2}
     ]
   },
   {
@@ -467,12 +304,8 @@
     "description": "An iron-age chariot with a heavier crew and a longer reach than its bronze ancestor.",
     "age": 1,
     "domain": "ground",
-    "tags": [
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 1600,
     "attack": 320,
@@ -481,17 +314,10 @@
     "speed": 8,
     "accuracy": 0.7,
     "available": false,
+    "tier": 13,
     "costs": [
-      {
-        "resource": "military",
-        "base": 285885357.5464915,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 28588535.75464915,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 2.8589e+8, "factor": 1.2},
+      {"resource": "metalwork", "base": 2.8589e+7, "factor": 1.2}
     ]
   },
   {
@@ -500,12 +326,8 @@
     "description": "Riders who fight from the saddle rather than riding to the fight. Speed is the armour.",
     "age": 1,
     "domain": "ground",
-    "tags": [
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 1440,
     "attack": 288,
@@ -514,17 +336,10 @@
     "speed": 8,
     "accuracy": 0.75,
     "available": false,
+    "tier": 14,
     "costs": [
-      {
-        "resource": "military",
-        "base": 579716820.0734974,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 57971682.007349744,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 5.7972e+8, "factor": 1.2},
+      {"resource": "metalwork", "base": 5.7972e+7, "factor": 1.2}
     ]
   },
   {
@@ -533,14 +348,8 @@
     "description": "A decked galley with an iron-shod ram, built to sink rather than to board.",
     "age": 1,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "armored"
-    ],
-    "canHit": [
-      "naval",
-      "ground"
-    ],
+    "tags": ["naval","armored"],
+    "canHit": ["naval","ground"],
     "bonusVs": [],
     "hp": 2400,
     "attack": 280,
@@ -549,22 +358,11 @@
     "speed": 5,
     "accuracy": 0.6,
     "available": false,
+    "tier": 15,
     "costs": [
-      {
-        "resource": "military",
-        "base": 1175546709.913168,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 117554670.9913168,
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": 2351093419.826336,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 1.1755e+9, "factor": 1.2},
+      {"resource": "metalwork", "base": 1.1755e+8, "factor": 1.2},
+      {"resource": "wood", "base": 2.3511e+9, "factor": 1.2}
     ]
   },
   {
@@ -573,12 +371,8 @@
     "description": "A war elephant with a howdah on its back. Breaks a line by weight alone.",
     "age": 1,
     "domain": "ground",
-    "tags": [
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 2800,
     "attack": 360,
@@ -587,22 +381,11 @@
     "speed": 4,
     "accuracy": 0.75,
     "available": false,
+    "tier": 16,
     "costs": [
-      {
-        "resource": "military",
-        "base": 2383767417.706585,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 238376741.7706585,
-        "factor": 1.2
-      },
-      {
-        "resource": "food",
-        "base": 11918837088.532925,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 2.3838e+9, "factor": 1.2},
+      {"resource": "metalwork", "base": 2.3838e+8, "factor": 1.2},
+      {"resource": "food", "base": 1.1919e+10, "factor": 1.2}
     ]
   },
   {
@@ -611,19 +394,9 @@
     "description": "Bolt-throwing engine on a wooden frame. Long range, slow to reload, indifferent to arrows.",
     "age": 1,
     "domain": "ground",
-    "tags": [
-      "anti-armor",
-      "ranged"
-    ],
-    "canHit": [
-      "ground",
-      "naval",
-      "air"
-    ],
-    "bonusVs": [
-      "armored",
-      "air"
-    ],
+    "tags": ["anti-armor","ranged"],
+    "canHit": ["ground","naval","air"],
+    "bonusVs": ["armored","air"],
     "hp": 880,
     "attack": 440,
     "armor": 0.15,
@@ -631,17 +404,10 @@
     "speed": 2,
     "accuracy": 0.6,
     "available": false,
+    "tier": 17,
     "costs": [
-      {
-        "resource": "military",
-        "base": 4833790995.969228,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 483379099.59692276,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 4.8338e+9, "factor": 1.2},
+      {"resource": "metalwork", "base": 4.8338e+8, "factor": 1.2}
     ]
   },
   {
@@ -650,14 +416,8 @@
     "description": "Five banks of oars and a reinforced bow; the heaviest ram afloat in its age.",
     "age": 1,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "armored"
-    ],
-    "canHit": [
-      "naval",
-      "ground"
-    ],
+    "tags": ["naval","armored"],
+    "canHit": ["naval","ground"],
     "bonusVs": [],
     "hp": 3200,
     "attack": 360,
@@ -666,22 +426,11 @@
     "speed": 5,
     "accuracy": 0.6,
     "available": false,
+    "tier": 18,
     "costs": [
-      {
-        "resource": "military",
-        "base": 9801935884.83271,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 980193588.483271,
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": 19603871769.66542,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 9.8019e+9, "factor": 1.2},
+      {"resource": "metalwork", "base": 9.8019e+8, "factor": 1.2},
+      {"resource": "wood", "base": 1.9604e+10, "factor": 1.2}
     ]
   },
   {
@@ -690,13 +439,8 @@
     "description": "Drilled infantry who can hold a line, throw, and rotate under pressure.",
     "age": 2,
     "domain": "ground",
-    "tags": [
-      "infantry",
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["infantry","armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 7680,
     "attack": 1792,
@@ -705,17 +449,10 @@
     "speed": 5,
     "accuracy": 0.9,
     "available": false,
+    "tier": 19,
     "costs": [
-      {
-        "resource": "military",
-        "base": 19876313885,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 1987631389,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 1.9876e+10, "factor": 1.2},
+      {"resource": "metalwork", "base": 1.9876e+9, "factor": 1.2}
     ]
   },
   {
@@ -724,13 +461,8 @@
     "description": "Shield-wall infantry with a long spear and heavy panoply. Unbeaten head-on.",
     "age": 2,
     "domain": "ground",
-    "tags": [
-      "infantry",
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["infantry","armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 8320,
     "attack": 1920,
@@ -739,17 +471,10 @@
     "speed": 4,
     "accuracy": 0.85,
     "available": false,
+    "tier": 20,
     "costs": [
-      {
-        "resource": "military",
-        "base": 2306171043619,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 230617104362,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 2.3062e+12, "factor": 1.2},
+      {"resource": "metalwork", "base": 2.3062e+11, "factor": 1.2}
     ]
   },
   {
@@ -758,12 +483,8 @@
     "description": "Companion cavalry: the decisive shock charge aimed at a gap, not the front.",
     "age": 2,
     "domain": "ground",
-    "tags": [
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 12800,
     "attack": 2560,
@@ -772,17 +493,10 @@
     "speed": 8,
     "accuracy": 0.8,
     "available": false,
+    "tier": 21,
     "costs": [
-      {
-        "resource": "military",
-        "base": 1042322873622305,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 104232287362231,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 1.0423e+15, "factor": 1.2},
+      {"resource": "metalwork", "base": 1.0423e+14, "factor": 1.2}
     ]
   },
   {
@@ -791,14 +505,8 @@
     "description": "Composite bow shooting from a horse or a hill; range and mobility together.",
     "age": 2,
     "domain": "ground",
-    "tags": [
-      "ranged"
-    ],
-    "canHit": [
-      "ground",
-      "air",
-      "naval"
-    ],
+    "tags": ["ranged"],
+    "canHit": ["ground","air","naval"],
     "bonusVs": [],
     "hp": 4800,
     "attack": 1408,
@@ -807,17 +515,10 @@
     "speed": 6,
     "accuracy": 0.75,
     "available": false,
+    "tier": 22,
     "costs": [
-      {
-        "resource": "military",
-        "base": 1273224217503141400,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 127322421750314130,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 1.2732e+18, "factor": 1.2},
+      {"resource": "metalwork", "base": 1.2732e+17, "factor": 1.2}
     ]
   },
   {
@@ -826,16 +527,9 @@
     "description": "Arm-throwing engine that arcs a stone into a fortified position.",
     "age": 2,
     "domain": "ground",
-    "tags": [
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["anti-armor"],
+    "canHit": ["ground","naval"],
+    "bonusVs": ["armored"],
     "hp": 7680,
     "attack": 3840,
     "armor": 0.15,
@@ -843,17 +537,10 @@
     "speed": 2,
     "accuracy": 0.5,
     "available": false,
+    "tier": 23,
     "costs": [
-      {
-        "resource": "military",
-        "base": 2.9144274719959775e+22,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 2.9144274719959773e+21,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 2.9144e+22, "factor": 1.2},
+      {"resource": "metalwork", "base": 2.9144e+21, "factor": 1.2}
     ]
   },
   {
@@ -862,15 +549,9 @@
     "description": "A hull packed with pitch and set alight, steered into an enemy fleet.",
     "age": 2,
     "domain": "naval",
-    "tags": [
-      "naval"
-    ],
-    "canHit": [
-      "naval"
-    ],
-    "bonusVs": [
-      "naval"
-    ],
+    "tags": ["naval"],
+    "canHit": ["naval"],
+    "bonusVs": ["naval"],
     "hp": 9600,
     "attack": 3840,
     "armor": 0.1,
@@ -878,22 +559,11 @@
     "speed": 7,
     "accuracy": 0.6,
     "available": false,
+    "tier": 24,
     "costs": [
-      {
-        "resource": "military",
-        "base": 3.9717958438116907e+27,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 3.9717958438116906e+26,
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": 7.943591687623383e+26,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 3.9718e+27, "factor": 1.2},
+      {"resource": "metalwork", "base": 3.9718e+26, "factor": 1.2},
+      {"resource": "wood", "base": 7.9436e+26, "factor": 1.2}
     ]
   },
   {
@@ -902,12 +572,8 @@
     "description": "A single blade in the right tent. Fragile, fast, and lethal to a commander.",
     "age": 2,
     "domain": "ground",
-    "tags": [
-      "infantry"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["infantry"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 3840,
     "attack": 2240,
@@ -916,17 +582,10 @@
     "speed": 9,
     "accuracy": 0.9,
     "available": false,
+    "tier": 25,
     "costs": [
-      {
-        "resource": "military",
-        "base": 7.90567577231802e+33,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 7.90567577231802e+32,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 7.9057e+33, "factor": 1.2},
+      {"resource": "metalwork", "base": 7.9057e+32, "factor": 1.2}
     ]
   },
   {
@@ -935,9 +594,7 @@
     "description": "A trade galley with wide holds and a small crew. Barely fights, but sails anywhere.",
     "age": 2,
     "domain": "naval",
-    "tags": [
-      "naval"
-    ],
+    "tags": ["naval"],
     "canHit": [],
     "bonusVs": [],
     "hp": 12800,
@@ -947,22 +604,11 @@
     "speed": 6,
     "accuracy": 0.5,
     "available": false,
+    "tier": 26,
     "costs": [
-      {
-        "resource": "military",
-        "base": 4.8700457023846794e+41,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 4.87004570238468e+40,
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": 9.740091404769361e+40,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 4.8700e+41, "factor": 1.2},
+      {"resource": "metalwork", "base": 4.8700e+40, "factor": 1.2},
+      {"resource": "wood", "base": 9.7401e+40, "factor": 1.2}
     ]
   },
   {
@@ -971,12 +617,8 @@
     "description": "Plate armour, a lance and a destrier. The dominant shock arm of its age.",
     "age": 3,
     "domain": "ground",
-    "tags": [
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 112640,
     "attack": 23040,
@@ -985,17 +627,10 @@
     "speed": 7,
     "accuracy": 0.85,
     "available": false,
+    "tier": 27,
     "costs": [
-      {
-        "resource": "military",
-        "base": 4.933207789809747e+81,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 4.933207789809747e+80,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 4.9332e+81, "factor": 1.2},
+      {"resource": "metalwork", "base": 4.9332e+80, "factor": 1.2}
     ]
   },
   {
@@ -1004,17 +639,9 @@
     "description": "Yew bows with a high draw weight: massed arrow storms at long range.",
     "age": 3,
     "domain": "ground",
-    "tags": [
-      "ranged"
-    ],
-    "canHit": [
-      "ground",
-      "air",
-      "naval"
-    ],
-    "bonusVs": [
-      "air"
-    ],
+    "tags": ["ranged"],
+    "canHit": ["ground","air","naval"],
+    "bonusVs": ["air"],
     "hp": 38400,
     "attack": 14336,
     "armor": 0.1,
@@ -1022,17 +649,10 @@
     "speed": 6,
     "accuracy": 0.78,
     "available": false,
+    "tier": 28,
     "costs": [
-      {
-        "resource": "military",
-        "base": 1.609037022221214e+99,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 1.6090370222212142e+98,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 1.6090e+99, "factor": 1.2},
+      {"resource": "metalwork", "base": 1.6090e+98, "factor": 1.2}
     ]
   },
   {
@@ -1041,18 +661,9 @@
     "description": "Slow to span, but a bolt punches through mail at close range.",
     "age": 3,
     "domain": "ground",
-    "tags": [
-      "ranged",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "air",
-      "naval"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["ranged","anti-armor"],
+    "canHit": ["ground","air","naval"],
+    "bonusVs": ["armored"],
     "hp": 43520,
     "attack": 16384,
     "armor": 0.2,
@@ -1060,17 +671,10 @@
     "speed": 4,
     "accuracy": 0.75,
     "available": false,
+    "tier": 29,
     "costs": [
-      {
-        "resource": "military",
-        "base": 6.584959691562432e+120,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 6.584959691562432e+119,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 6.5850e+120, "factor": 1.2},
+      {"resource": "metalwork", "base": 6.5850e+119, "factor": 1.2}
     ]
   },
   {
@@ -1079,13 +683,8 @@
     "description": "Professional infantry with mail, spear and poleaxe; the core of a medieval host.",
     "age": 3,
     "domain": "ground",
-    "tags": [
-      "infantry",
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["infantry","armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 76800,
     "attack": 17920,
@@ -1094,17 +693,10 @@
     "speed": 5,
     "accuracy": 0.85,
     "available": false,
+    "tier": 30,
     "costs": [
-      {
-        "resource": "military",
-        "base": 1.6924051057117718e+147,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 1.6924051057117717e+146,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 1.6924e+147, "factor": 1.2},
+      {"resource": "metalwork", "base": 1.6924e+146, "factor": 1.2}
     ]
   },
   {
@@ -1113,16 +705,9 @@
     "description": "Counterweight engine that drops a stone onto a wall from far beyond bowshot.",
     "age": 3,
     "domain": "ground",
-    "tags": [
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["anti-armor"],
+    "canHit": ["ground","naval"],
+    "bonusVs": ["armored"],
     "hp": 66560,
     "attack": 40960,
     "armor": 0.1,
@@ -1130,17 +715,10 @@
     "speed": 1,
     "accuracy": 0.5,
     "available": false,
+    "tier": 31,
     "costs": [
-      {
-        "resource": "military",
-        "base": 5.67046546724687e+179,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 5.670465467246871e+178,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 5.6705e+179, "factor": 1.2},
+      {"resource": "metalwork", "base": 5.6705e+178, "factor": 1.2}
     ]
   },
   {
@@ -1149,12 +727,8 @@
     "description": "Broad-hulled trader turned transport. Carries an army's baggage and its horses.",
     "age": 3,
     "domain": "naval",
-    "tags": [
-      "naval"
-    ],
-    "canHit": [
-      "naval"
-    ],
+    "tags": ["naval"],
+    "canHit": ["naval"],
     "bonusVs": [],
     "hp": 153600,
     "attack": 12800,
@@ -1163,22 +737,11 @@
     "speed": 5,
     "accuracy": 0.6,
     "available": false,
+    "tier": 32,
     "costs": [
-      {
-        "resource": "military",
-        "base": 7.28607862718645e+218,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 7.286078627186451e+217,
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": 1.4572157254372905e+218,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 7.2861e+218, "factor": 1.2},
+      {"resource": "metalwork", "base": 7.2861e+217, "factor": 1.2},
+      {"resource": "wood", "base": 1.4572e+218, "factor": 1.2}
     ]
   },
   {
@@ -1187,13 +750,8 @@
     "description": "Shallow-draught hull that rows up a river and beaches without a harbour.",
     "age": 3,
     "domain": "naval",
-    "tags": [
-      "naval"
-    ],
-    "canHit": [
-      "naval",
-      "ground"
-    ],
+    "tags": ["naval"],
+    "canHit": ["naval","ground"],
     "bonusVs": [],
     "hp": 143360,
     "attack": 17920,
@@ -1202,22 +760,11 @@
     "speed": 7,
     "accuracy": 0.65,
     "available": false,
+    "tier": 33,
     "costs": [
-      {
-        "resource": "military",
-        "base": 1.5768335266346983e+267,
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": 1.5768335266346982e+266,
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": 3.153667053269191e+266,
-        "factor": 1.2
-      }
+      {"resource": "military", "base": 1.5768e+267, "factor": 1.2},
+      {"resource": "metalwork", "base": 1.5768e+266, "factor": 1.2},
+      {"resource": "wood", "base": 3.1537e+266, "factor": 1.2}
     ]
   },
   {
@@ -1226,16 +773,9 @@
     "description": "Early gunpowder artillery, enormous and slow, built to break stone gates.",
     "age": 3,
     "domain": "ground",
-    "tags": [
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["anti-armor"],
+    "canHit": ["ground","naval"],
+    "bonusVs": ["armored"],
     "hp": 71680,
     "attack": 35840,
     "armor": 0.15,
@@ -1243,17 +783,10 @@
     "speed": 2,
     "accuracy": 0.45,
     "available": false,
+    "tier": 34,
     "costs": [
-      {
-        "resource": "military",
-        "base": "2.5801e326",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "2.5801e325",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "2.5801e326", "factor": 1.2},
+      {"resource": "metalwork", "base": "2.5801e325", "factor": 1.2}
     ]
   },
   {
@@ -1262,14 +795,8 @@
     "description": "Lateen-sailed hull that can beat upwind; explores and raids far from home.",
     "age": 3,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "ranged"
-    ],
-    "canHit": [
-      "naval",
-      "ground"
-    ],
+    "tags": ["naval","ranged"],
+    "canHit": ["naval","ground"],
     "bonusVs": [],
     "hp": 163840,
     "attack": 15360,
@@ -1278,22 +805,11 @@
     "speed": 6,
     "accuracy": 0.6,
     "available": false,
+    "tier": 35,
     "costs": [
-      {
-        "resource": "military",
-        "base": "2.0145e398",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "2.0145e397",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "4.0290e397",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "2.0145e398", "factor": 1.2},
+      {"resource": "metalwork", "base": "2.0145e397", "factor": 1.2},
+      {"resource": "wood", "base": "4.0290e397", "factor": 1.2}
     ]
   },
   {
@@ -1302,13 +818,8 @@
     "description": "Black-powder volleys in ranks. Terrifying to cavalry, helpless in the rain.",
     "age": 4,
     "domain": "ground",
-    "tags": [
-      "ranged"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["ranged"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 348160,
     "attack": 225280,
@@ -1317,17 +828,10 @@
     "speed": 3,
     "accuracy": 0.55,
     "available": false,
+    "tier": 36,
     "costs": [
-      {
-        "resource": "military",
-        "base": "2.4350e794",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "2.4350e793",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "2.4350e794", "factor": 1.2},
+      {"resource": "metalwork", "base": "2.4350e793", "factor": 1.2}
     ]
   },
   {
@@ -1336,13 +840,8 @@
     "description": "Pike and shot's other half: a hedge of points that keeps cavalry at bay.",
     "age": 4,
     "domain": "ground",
-    "tags": [
-      "infantry",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["infantry","anti-armor"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 491520,
     "attack": 122880,
@@ -1351,17 +850,10 @@
     "speed": 4,
     "accuracy": 0.8,
     "available": false,
+    "tier": 37,
     "costs": [
-      {
-        "resource": "military",
-        "base": "7.8179e998",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "7.8179e997",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "7.8179e998", "factor": 1.2},
+      {"resource": "metalwork", "base": "7.8179e997", "factor": 1.2}
     ]
   },
   {
@@ -1370,14 +862,8 @@
     "description": "Mounted infantry who ride to the fight and shoot from the ground on arrival.",
     "age": 4,
     "domain": "ground",
-    "tags": [
-      "ranged",
-      "armored"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["ranged","armored"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 737280,
     "attack": 172032,
@@ -1386,17 +872,10 @@
     "speed": 8,
     "accuracy": 0.6,
     "available": false,
+    "tier": 38,
     "costs": [
-      {
-        "resource": "military",
-        "base": "3.7972e1256",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "3.7972e1255",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "3.7972e1256", "factor": 1.2},
+      {"resource": "metalwork", "base": "3.7972e1255", "factor": 1.2}
     ]
   },
   {
@@ -1405,12 +884,8 @@
     "description": "Heavy cavalry in steel breastplates, charging home in a single mass.",
     "age": 4,
     "domain": "ground",
-    "tags": [
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 983040,
     "attack": 204800,
@@ -1419,17 +894,10 @@
     "speed": 7,
     "accuracy": 0.8,
     "available": false,
+    "tier": 39,
     "costs": [
-      {
-        "resource": "military",
-        "base": "6.4957e1580",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "6.4957e1579",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "6.4957e1580", "factor": 1.2},
+      {"resource": "metalwork", "base": "6.4957e1579", "factor": 1.2}
     ]
   },
   {
@@ -1438,16 +906,9 @@
     "description": "Mobile field gun with an iron barrel. Shreds formations and siege works alike.",
     "age": 4,
     "domain": "ground",
-    "tags": [
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["anti-armor"],
+    "canHit": ["ground","naval"],
+    "bonusVs": ["armored"],
     "hp": 614400,
     "attack": 348160,
     "armor": 0.15,
@@ -1455,17 +916,10 @@
     "speed": 2,
     "accuracy": 0.5,
     "available": false,
+    "tier": 40,
     "costs": [
-      {
-        "resource": "military",
-        "base": "9.3215e1988",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "9.3215e1987",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "9.3215e1988", "factor": 1.2},
+      {"resource": "metalwork", "base": "9.3215e1987", "factor": 1.2}
     ]
   },
   {
@@ -1474,14 +928,8 @@
     "description": "Ocean-going hull with heavy timbers and a broadside of guns.",
     "age": 4,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "armored"
-    ],
-    "canHit": [
-      "naval",
-      "ground"
-    ],
+    "tags": ["naval","armored"],
+    "canHit": ["naval","ground"],
     "bonusVs": [],
     "hp": 2048000,
     "attack": 204800,
@@ -1490,22 +938,11 @@
     "speed": 5,
     "accuracy": 0.6,
     "available": false,
+    "tier": 41,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.7249e2502",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.7249e2501",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "3.4498e2501",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.7249e2502", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.7249e2501", "factor": 1.2},
+      {"resource": "wood", "base": "3.4498e2501", "factor": 1.2}
     ]
   },
   {
@@ -1514,14 +951,8 @@
     "description": "Fast sailing warship built for escort, patrol and raiding rather than the line.",
     "age": 4,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "ranged"
-    ],
-    "canHit": [
-      "naval",
-      "ground"
-    ],
+    "tags": ["naval","ranged"],
+    "canHit": ["naval","ground"],
     "bonusVs": [],
     "hp": 1843200,
     "attack": 184320,
@@ -1530,22 +961,11 @@
     "speed": 6,
     "accuracy": 0.62,
     "available": false,
+    "tier": 42,
     "costs": [
-      {
-        "resource": "military",
-        "base": "2.3578e3148",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "2.3578e3147",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "4.7157e3147",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "2.3578e3148", "factor": 1.2},
+      {"resource": "metalwork", "base": "2.3578e3147", "factor": 1.2},
+      {"resource": "wood", "base": "4.7157e3147", "factor": 1.2}
     ]
   },
   {
@@ -1554,13 +974,8 @@
     "description": "A licensed raider: light guns, deep holds, and a crew paid in plunder.",
     "age": 4,
     "domain": "naval",
-    "tags": [
-      "naval"
-    ],
-    "canHit": [
-      "naval",
-      "ground"
-    ],
+    "tags": ["naval"],
+    "canHit": ["naval","ground"],
     "bonusVs": [],
     "hp": 1556480,
     "attack": 163840,
@@ -1569,22 +984,11 @@
     "speed": 7,
     "accuracy": 0.65,
     "available": false,
+    "tier": 43,
     "costs": [
-      {
-        "resource": "military",
-        "base": "3.4628e3961",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "3.4628e3960",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "6.9255e3960",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "3.4628e3961", "factor": 1.2},
+      {"resource": "metalwork", "base": "3.4628e3960", "factor": 1.2},
+      {"resource": "wood", "base": "6.9255e3960", "factor": 1.2}
     ]
   },
   {
@@ -1593,13 +997,8 @@
     "description": "Bayoneted muskets and formal drill. Holds a line by discipline alone.",
     "age": 5,
     "domain": "ground",
-    "tags": [
-      "infantry"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["infantry"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 3276800,
     "attack": 1310720,
@@ -1608,22 +1007,11 @@
     "speed": 4,
     "accuracy": 0.65,
     "available": false,
+    "tier": 44,
     "costs": [
-      {
-        "resource": "military",
-        "base": "3.9969e7920",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "3.9969e7919",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "1.9985e7920",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "3.9969e7920", "factor": 1.2},
+      {"resource": "metalwork", "base": "3.9969e7919", "factor": 1.2},
+      {"resource": "science", "base": "1.9985e7920", "factor": 1.2}
     ]
   },
   {
@@ -1632,13 +1020,8 @@
     "description": "Rifled barrels and aimed fire; kills at ranges the old muskets only hoped for.",
     "age": 5,
     "domain": "ground",
-    "tags": [
-      "ranged"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["ranged"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 3112960,
     "attack": 1474560,
@@ -1647,22 +1030,11 @@
     "speed": 5,
     "accuracy": 0.7,
     "available": false,
+    "tier": 45,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.2871e9471",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.2871e9470",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "6.4354e9470",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.2871e9471", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.2871e9470", "factor": 1.2},
+      {"resource": "science", "base": "6.4354e9470", "factor": 1.2}
     ]
   },
   {
@@ -1671,14 +1043,8 @@
     "description": "Mounted infantry with modern carbines: mobility plus firepower.",
     "age": 5,
     "domain": "ground",
-    "tags": [
-      "ranged",
-      "armored"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["ranged","armored"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 6225920,
     "attack": 1572864,
@@ -1687,22 +1053,11 @@
     "speed": 8,
     "accuracy": 0.7,
     "available": false,
+    "tier": 46,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.6046e11325",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.6046e11324",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "8.0232e11324",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.6046e11325", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.6046e11324", "factor": 1.2},
+      {"resource": "science", "base": "8.0232e11324", "factor": 1.2}
     ]
   },
   {
@@ -1711,12 +1066,8 @@
     "description": "Horse cavalry with a long lance, still useful in the charge's last decades.",
     "age": 5,
     "domain": "ground",
-    "tags": [
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 6553600,
     "attack": 1572864,
@@ -1725,22 +1076,11 @@
     "speed": 8,
     "accuracy": 0.75,
     "available": false,
+    "tier": 47,
     "costs": [
-      {
-        "resource": "military",
-        "base": "2.1582e13542",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "2.1582e13541",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "1.0791e13542",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "2.1582e13542", "factor": 1.2},
+      {"resource": "metalwork", "base": "2.1582e13541", "factor": 1.2},
+      {"resource": "science", "base": "1.0791e13542", "factor": 1.2}
     ]
   },
   {
@@ -1749,17 +1089,9 @@
     "description": "Hand-cranked multibarrel gun. Devastating in a fixed position, quick to jam.",
     "age": 5,
     "domain": "ground",
-    "tags": [
-      "ranged",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
-    "bonusVs": [
-      "infantry"
-    ],
+    "tags": ["ranged","anti-armor"],
+    "canHit": ["ground","air"],
+    "bonusVs": ["infantry"],
     "hp": 3932160,
     "attack": 1966080,
     "armor": 0.2,
@@ -1767,22 +1099,11 @@
     "speed": 2,
     "accuracy": 0.6,
     "available": false,
+    "tier": 48,
     "costs": [
-      {
-        "resource": "military",
-        "base": "4.7469e16193",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "4.7469e16192",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "2.3734e16193",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "4.7469e16193", "factor": 1.2},
+      {"resource": "metalwork", "base": "4.7469e16192", "factor": 1.2},
+      {"resource": "science", "base": "2.3734e16193", "factor": 1.2}
     ]
   },
   {
@@ -1791,14 +1112,8 @@
     "description": "Iron-plated hull with a revolving turret and no sails at all.",
     "age": 5,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "armored"
-    ],
-    "canHit": [
-      "naval",
-      "ground"
-    ],
+    "tags": ["naval","armored"],
+    "canHit": ["naval","ground"],
     "bonusVs": [],
     "hp": 22937600,
     "attack": 2293760,
@@ -1807,27 +1122,12 @@
     "speed": 3,
     "accuracy": 0.6,
     "available": false,
+    "tier": 49,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.4231e19364",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.4231e19363",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "2.8462e19363",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "7.1154e19363",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.4231e19364", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.4231e19363", "factor": 1.2},
+      {"resource": "wood", "base": "2.8462e19363", "factor": 1.2},
+      {"resource": "science", "base": "7.1154e19363", "factor": 1.2}
     ]
   },
   {
@@ -1836,13 +1136,8 @@
     "description": "Rigid airship for observation and night bombing. Slow, huge, and vulnerable.",
     "age": 5,
     "domain": "air",
-    "tags": [
-      "air",
-      "armored"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["air","armored"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 13107200,
     "attack": 1966080,
@@ -1851,22 +1146,11 @@
     "speed": 4,
     "accuracy": 0.55,
     "available": false,
+    "tier": 50,
     "costs": [
-      {
-        "resource": "military",
-        "base": "2.1820e23155",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "2.1820e23154",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "1.0910e23155",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "2.1820e23155", "factor": 1.2},
+      {"resource": "metalwork", "base": "2.1820e23154", "factor": 1.2},
+      {"resource": "science", "base": "1.0910e23155", "factor": 1.2}
     ]
   },
   {
@@ -1875,14 +1159,8 @@
     "description": "Canvas and wire fighter; it owns the air until something faster appears.",
     "age": 5,
     "domain": "air",
-    "tags": [
-      "air",
-      "ranged"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["air","ranged"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 5898240,
     "attack": 1638400,
@@ -1891,22 +1169,11 @@
     "speed": 9,
     "accuracy": 0.65,
     "available": false,
+    "tier": 51,
     "costs": [
-      {
-        "resource": "military",
-        "base": "7.7939e27688",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "7.7939e27687",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "3.8970e27688",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "7.7939e27688", "factor": 1.2},
+      {"resource": "metalwork", "base": "7.7939e27687", "factor": 1.2},
+      {"resource": "science", "base": "3.8970e27688", "factor": 1.2}
     ]
   },
   {
@@ -1915,16 +1182,9 @@
     "description": "Indirect-fire artillery that drops shells into trenches behind a ridge.",
     "age": 5,
     "domain": "ground",
-    "tags": [
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["anti-armor"],
+    "canHit": ["ground","naval"],
+    "bonusVs": ["armored"],
     "hp": 5242880,
     "attack": 3112960,
     "armor": 0.15,
@@ -1932,22 +1192,11 @@
     "speed": 2,
     "accuracy": 0.55,
     "available": false,
+    "tier": 52,
     "costs": [
-      {
-        "resource": "military",
-        "base": "2.8773e33110",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "2.8773e33109",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "1.4387e33110",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "2.8773e33110", "factor": 1.2},
+      {"resource": "metalwork", "base": "2.8773e33109", "factor": 1.2},
+      {"resource": "science", "base": "1.4387e33110", "factor": 1.2}
     ]
   },
   {
@@ -1956,15 +1205,9 @@
     "description": "A petrol-driven boat that attacks unseen, and sinks if it is seen.",
     "age": 5,
     "domain": "naval",
-    "tags": [
-      "naval"
-    ],
-    "canHit": [
-      "naval"
-    ],
-    "bonusVs": [
-      "naval"
-    ],
+    "tags": ["naval"],
+    "canHit": ["naval"],
+    "bonusVs": ["naval"],
     "hp": 11468800,
     "attack": 2129920,
     "armor": 0.4,
@@ -1972,27 +1215,12 @@
     "speed": 4,
     "accuracy": 0.6,
     "available": false,
+    "tier": 53,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.7841e39593",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.7841e39592",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "3.5681e39592",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "8.9204e39592",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.7841e39593", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.7841e39592", "factor": 1.2},
+      {"resource": "wood", "base": "3.5681e39592", "factor": 1.2},
+      {"resource": "science", "base": "8.9204e39592", "factor": 1.2}
     ]
   },
   {
@@ -2001,13 +1229,8 @@
     "description": "Bolt-action rifle, entrenching tool and gas mask; a war of attrition in one soldier.",
     "age": 6,
     "domain": "ground",
-    "tags": [
-      "infantry"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["infantry"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 23592960,
     "attack": 9175040,
@@ -2016,22 +1239,11 @@
     "speed": 5,
     "accuracy": 0.7,
     "available": false,
+    "tier": 54,
     "costs": [
-      {
-        "resource": "military",
-        "base": "4.8460e79183",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "4.8460e79182",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "2.4230e79183",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "4.8460e79183", "factor": 1.2},
+      {"resource": "metalwork", "base": "4.8460e79182", "factor": 1.2},
+      {"resource": "science", "base": "2.4230e79183", "factor": 1.2}
     ]
   },
   {
@@ -2040,13 +1252,8 @@
     "description": "Semi-automatic rifles, grenades and radios: the first fully modern foot soldier.",
     "age": 6,
     "domain": "ground",
-    "tags": [
-      "infantry"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["infantry"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 28835840,
     "attack": 11010048,
@@ -2055,22 +1262,11 @@
     "speed": 5,
     "accuracy": 0.75,
     "available": false,
+    "tier": 55,
     "costs": [
-      {
-        "resource": "military",
-        "base": "8.9164e84922",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "8.9164e84921",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "4.4582e84922",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "8.9164e84922", "factor": 1.2},
+      {"resource": "metalwork", "base": "8.9164e84921", "factor": 1.2},
+      {"resource": "science", "base": "4.4582e84922", "factor": 1.2}
     ]
   },
   {
@@ -2079,14 +1275,8 @@
     "description": "Halftrack-borne infantry: they arrive with the armour and fight with it.",
     "age": 6,
     "domain": "ground",
-    "tags": [
-      "ranged",
-      "armored"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["ranged","armored"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 57671680,
     "attack": 14417920,
@@ -2095,22 +1285,11 @@
     "speed": 9,
     "accuracy": 0.75,
     "available": false,
+    "tier": 56,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.7183e91078",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.7183e91077",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "8.5913e91077",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.7183e91078", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.7183e91077", "factor": 1.2},
+      {"resource": "science", "base": "8.5913e91077", "factor": 1.2}
     ]
   },
   {
@@ -2119,17 +1298,9 @@
     "description": "Medium tank with an all-round turret; armour becomes an arm of decision, not infantry support.",
     "age": 6,
     "domain": "ground",
-    "tags": [
-      "armored",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["armored","anti-armor"],
+    "canHit": ["ground","naval"],
+    "bonusVs": ["armored"],
     "hp": 117964800,
     "attack": 28835840,
     "armor": 0.75,
@@ -2137,22 +1308,11 @@
     "speed": 4,
     "accuracy": 0.75,
     "available": false,
+    "tier": 57,
     "costs": [
-      {
-        "resource": "military",
-        "base": "6.5674e97679",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "6.5674e97678",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "3.2837e97679",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "6.5674e97679", "factor": 1.2},
+      {"resource": "metalwork", "base": "6.5674e97678", "factor": 1.2},
+      {"resource": "science", "base": "3.2837e97679", "factor": 1.2}
     ]
   },
   {
@@ -2161,14 +1321,8 @@
     "description": "Piston fighter with self-sealing tanks and heavy machine guns; escorts what it fights.",
     "age": 6,
     "domain": "air",
-    "tags": [
-      "air",
-      "ranged"
-    ],
-    "canHit": [
-      "air",
-      "ground"
-    ],
+    "tags": ["air","ranged"],
+    "canHit": ["air","ground"],
     "bonusVs": [],
     "hp": 57671680,
     "attack": 18350080,
@@ -2177,22 +1331,11 @@
     "speed": 10,
     "accuracy": 0.72,
     "available": false,
+    "tier": 58,
     "costs": [
-      {
-        "resource": "military",
-        "base": "3.0165e104759",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "3.0165e104758",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "1.5082e104759",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "3.0165e104759", "factor": 1.2},
+      {"resource": "metalwork", "base": "3.0165e104758", "factor": 1.2},
+      {"resource": "science", "base": "1.5082e104759", "factor": 1.2}
     ]
   },
   {
@@ -2201,14 +1344,8 @@
     "description": "Heavy four-engine bomber. Carries a city's worth of ordnance, and needs a fighter screen.",
     "age": 6,
     "domain": "air",
-    "tags": [
-      "air",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
+    "tags": ["air","anti-armor"],
+    "canHit": ["ground","naval"],
     "bonusVs": [],
     "hp": 91750400,
     "attack": 39321600,
@@ -2217,22 +1354,11 @@
     "speed": 6,
     "accuracy": 0.6,
     "available": false,
+    "tier": 59,
     "costs": [
-      {
-        "resource": "military",
-        "base": "5.4569e112352",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "5.4569e112351",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "2.7285e112352",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "5.4569e112352", "factor": 1.2},
+      {"resource": "metalwork", "base": "5.4569e112351", "factor": 1.2},
+      {"resource": "science", "base": "2.7285e112352", "factor": 1.2}
     ]
   },
   {
@@ -2241,15 +1367,8 @@
     "description": "Steel hull, armour belt and 16-inch rifles. A fleet is built around it.",
     "age": 6,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "armored"
-    ],
-    "canHit": [
-      "naval",
-      "ground",
-      "air"
-    ],
+    "tags": ["naval","armored"],
+    "canHit": ["naval","ground","air"],
     "bonusVs": [],
     "hp": 314572800,
     "attack": 47185920,
@@ -2258,27 +1377,12 @@
     "speed": 3,
     "accuracy": 0.65,
     "available": false,
+    "tier": 60,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.3900e120496",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.3900e120495",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "2.7800e120495",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "6.9501e120495",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.3900e120496", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.3900e120495", "factor": 1.2},
+      {"resource": "wood", "base": "2.7800e120495", "factor": 1.2},
+      {"resource": "science", "base": "6.9501e120495", "factor": 1.2}
     ]
   },
   {
@@ -2287,13 +1391,8 @@
     "description": "A flight deck on a hull. Its punch is the aircraft it carries, not its guns.",
     "age": 6,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "armored"
-    ],
-    "canHit": [
-      "air"
-    ],
+    "tags": ["naval","armored"],
+    "canHit": ["air"],
     "bonusVs": [],
     "hp": 262144000,
     "attack": 7864320,
@@ -2302,27 +1401,12 @@
     "speed": 4,
     "accuracy": 0.5,
     "available": false,
+    "tier": 61,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.3227e129229",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.3227e129228",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "2.6454e129228",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "6.6134e129228",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.3227e129229", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.3227e129228", "factor": 1.2},
+      {"resource": "wood", "base": "2.6454e129228", "factor": 1.2},
+      {"resource": "science", "base": "6.6134e129228", "factor": 1.2}
     ]
   },
   {
@@ -2331,13 +1415,8 @@
     "description": "Assault rifle, body armour and a radio: one soldier who is also a sensor.",
     "age": 6,
     "domain": "ground",
-    "tags": [
-      "infantry"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["infantry"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 31457280,
     "attack": 12582912,
@@ -2346,22 +1425,11 @@
     "speed": 6,
     "accuracy": 0.85,
     "available": false,
+    "tier": 62,
     "costs": [
-      {
-        "resource": "military",
-        "base": "7.2882e138595",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "7.2882e138594",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "3.6441e138595",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "7.2882e138595", "factor": 1.2},
+      {"resource": "metalwork", "base": "7.2882e138594", "factor": 1.2},
+      {"resource": "science", "base": "3.6441e138595", "factor": 1.2}
     ]
   },
   {
@@ -2370,17 +1438,9 @@
     "description": "Composite-armour main battle tank with a stabilised gun that hits on the move.",
     "age": 6,
     "domain": "ground",
-    "tags": [
-      "armored",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
-    "bonusVs": [
-      "armored"
-    ],
+    "tags": ["armored","anti-armor"],
+    "canHit": ["ground","naval"],
+    "bonusVs": ["armored"],
     "hp": 183500800,
     "attack": 41943040,
     "armor": 0.82,
@@ -2388,22 +1448,11 @@
     "speed": 5,
     "accuracy": 0.85,
     "available": false,
+    "tier": 63,
     "costs": [
-      {
-        "resource": "military",
-        "base": "6.3561e148641",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "6.3561e148640",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "3.1780e148641",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "6.3561e148641", "factor": 1.2},
+      {"resource": "metalwork", "base": "6.3561e148640", "factor": 1.2},
+      {"resource": "science", "base": "3.1780e148641", "factor": 1.2}
     ]
   },
   {
@@ -2412,15 +1461,8 @@
     "description": "Supersonic multirole jet with radar-guided missiles. Owns the air outright.",
     "age": 6,
     "domain": "air",
-    "tags": [
-      "air",
-      "anti-armor"
-    ],
-    "canHit": [
-      "air",
-      "ground",
-      "naval"
-    ],
+    "tags": ["air","anti-armor"],
+    "canHit": ["air","ground","naval"],
     "bonusVs": [],
     "hp": 91750400,
     "attack": 28835840,
@@ -2429,27 +1471,12 @@
     "speed": 10,
     "accuracy": 0.88,
     "available": false,
+    "tier": 64,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.9888e159415",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.9888e159414",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "9.9442e159414",
-        "factor": 1.2
-      },
-      {
-        "resource": "gold",
-        "base": "4.9721e159414",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.9888e159415", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.9888e159414", "factor": 1.2},
+      {"resource": "science", "base": "9.9442e159414", "factor": 1.2},
+      {"resource": "gold", "base": "4.9721e159414", "factor": 1.2}
     ]
   },
   {
@@ -2458,15 +1485,8 @@
     "description": "Guided-missile destroyer: air defence, anti-submarine work and precision strikes in one hull.",
     "age": 6,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "anti-armor"
-    ],
-    "canHit": [
-      "naval",
-      "air",
-      "ground"
-    ],
+    "tags": ["naval","anti-armor"],
+    "canHit": ["naval","air","ground"],
     "bonusVs": [],
     "hp": 288358400,
     "attack": 36700160,
@@ -2475,32 +1495,13 @@
     "speed": 7,
     "accuracy": 0.82,
     "available": false,
+    "tier": 65,
     "costs": [
-      {
-        "resource": "military",
-        "base": "8.3164e170969",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "8.3164e170968",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "1.6633e170969",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "4.1582e170969",
-        "factor": 1.2
-      },
-      {
-        "resource": "gold",
-        "base": "2.0791e170969",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "8.3164e170969", "factor": 1.2},
+      {"resource": "metalwork", "base": "8.3164e170968", "factor": 1.2},
+      {"resource": "wood", "base": "1.6633e170969", "factor": 1.2},
+      {"resource": "science", "base": "4.1582e170969", "factor": 1.2},
+      {"resource": "gold", "base": "2.0791e170969", "factor": 1.2}
     ]
   },
   {
@@ -2509,15 +1510,8 @@
     "description": "Armoured cavalry with thermal sights: scouts, screens and flank guards for the tank force.",
     "age": 6,
     "domain": "ground",
-    "tags": [
-      "armored",
-      "ranged"
-    ],
-    "canHit": [
-      "ground",
-      "air",
-      "naval"
-    ],
+    "tags": ["armored","ranged"],
+    "canHit": ["ground","air","naval"],
     "bonusVs": [],
     "hp": 104857600,
     "attack": 18350080,
@@ -2526,22 +1520,11 @@
     "speed": 9,
     "accuracy": 0.85,
     "available": false,
+    "tier": 66,
     "costs": [
-      {
-        "resource": "military",
-        "base": "4.9707e183361",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "4.9707e183360",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "2.4853e183361",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "4.9707e183361", "factor": 1.2},
+      {"resource": "metalwork", "base": "4.9707e183360", "factor": 1.2},
+      {"resource": "science", "base": "2.4853e183361", "factor": 1.2}
     ]
   },
   {
@@ -2550,13 +1533,8 @@
     "description": "Unmanned aircraft loitering overhead, finding targets and striking them from above.",
     "age": 6,
     "domain": "air",
-    "tags": [
-      "air",
-      "ranged"
-    ],
-    "canHit": [
-      "ground"
-    ],
+    "tags": ["air","ranged"],
+    "canHit": ["ground"],
     "bonusVs": [],
     "hp": 31457280,
     "attack": 23592960,
@@ -2565,27 +1543,12 @@
     "speed": 10,
     "accuracy": 0.92,
     "available": false,
+    "tier": 67,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.0196e196652",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.0196e196651",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "5.0978e196651",
-        "factor": 1.2
-      },
-      {
-        "resource": "gold",
-        "base": "2.5489e196651",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.0196e196652", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.0196e196651", "factor": 1.2},
+      {"resource": "science", "base": "5.0978e196651", "factor": 1.2},
+      {"resource": "gold", "base": "2.5489e196651", "factor": 1.2}
     ]
   },
   {
@@ -2594,15 +1557,8 @@
     "description": "Rotary-wing gunship that hunts armour from behind a treeline.",
     "age": 6,
     "domain": "air",
-    "tags": [
-      "air",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval",
-      "air"
-    ],
+    "tags": ["air","anti-armor"],
+    "canHit": ["ground","naval","air"],
     "bonusVs": [],
     "hp": 78643200,
     "attack": 31457280,
@@ -2611,22 +1567,11 @@
     "speed": 9,
     "accuracy": 0.85,
     "available": false,
+    "tier": 68,
     "costs": [
-      {
-        "resource": "military",
-        "base": "4.3621e210905",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "4.3621e210904",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "2.1810e210905",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "4.3621e210905", "factor": 1.2},
+      {"resource": "metalwork", "base": "4.3621e210904", "factor": 1.2},
+      {"resource": "science", "base": "2.1810e210905", "factor": 1.2}
     ]
   },
   {
@@ -2635,13 +1580,8 @@
     "description": "Multiple-launch rocket system. One salvo covers a grid square, and then it moves.",
     "age": 6,
     "domain": "ground",
-    "tags": [
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
+    "tags": ["anti-armor"],
+    "canHit": ["ground","naval"],
     "bonusVs": [],
     "hp": 65536000,
     "attack": 49807360,
@@ -2650,22 +1590,11 @@
     "speed": 3,
     "accuracy": 0.75,
     "available": false,
+    "tier": 69,
     "costs": [
-      {
-        "resource": "military",
-        "base": "2.9243e226192",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "2.9243e226191",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "1.4621e226192",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "2.9243e226192", "factor": 1.2},
+      {"resource": "metalwork", "base": "2.9243e226191", "factor": 1.2},
+      {"resource": "science", "base": "1.4621e226192", "factor": 1.2}
     ]
   },
   {
@@ -2674,13 +1603,8 @@
     "description": "Nuclear attack submarine. Stays under for months and sinks what it is sent for.",
     "age": 6,
     "domain": "naval",
-    "tags": [
-      "naval"
-    ],
-    "canHit": [
-      "naval",
-      "ground"
-    ],
+    "tags": ["naval"],
+    "canHit": ["naval","ground"],
     "bonusVs": [],
     "hp": 235929600,
     "attack": 41943040,
@@ -2689,32 +1613,13 @@
     "speed": 6,
     "accuracy": 0.85,
     "available": false,
+    "tier": 70,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.1372e242587",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.1372e242586",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "2.2745e242586",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "5.6862e242586",
-        "factor": 1.2
-      },
-      {
-        "resource": "gold",
-        "base": "2.8431e242586",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.1372e242587", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.1372e242586", "factor": 1.2},
+      {"resource": "wood", "base": "2.2745e242586", "factor": 1.2},
+      {"resource": "science", "base": "5.6862e242586", "factor": 1.2},
+      {"resource": "gold", "base": "2.8431e242586", "factor": 1.2}
     ]
   },
   {
@@ -2723,13 +1628,8 @@
     "description": "Nuclear-powered carrier: an airbase that sails, with the escorts to survive it.",
     "age": 6,
     "domain": "naval",
-    "tags": [
-      "naval",
-      "armored"
-    ],
-    "canHit": [
-      "air"
-    ],
+    "tags": ["naval","armored"],
+    "canHit": ["air"],
     "bonusVs": [],
     "hp": 471859200,
     "attack": 13107200,
@@ -2738,27 +1638,12 @@
     "speed": 4,
     "accuracy": 0.6,
     "available": false,
+    "tier": 71,
     "costs": [
-      {
-        "resource": "military",
-        "base": "4.1638e260169",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "4.1638e260168",
-        "factor": 1.2
-      },
-      {
-        "resource": "wood",
-        "base": "8.3277e260168",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "2.0819e260169",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "4.1638e260169", "factor": 1.2},
+      {"resource": "metalwork", "base": "4.1638e260168", "factor": 1.2},
+      {"resource": "wood", "base": "8.3277e260168", "factor": 1.2},
+      {"resource": "science", "base": "2.0819e260169", "factor": 1.2}
     ]
   },
   {
@@ -2767,13 +1652,8 @@
     "description": "Small teams behind the lines. Trains, bridges and commanders disappear.",
     "age": 6,
     "domain": "ground",
-    "tags": [
-      "infantry"
-    ],
-    "canHit": [
-      "ground",
-      "air"
-    ],
+    "tags": ["infantry"],
+    "canHit": ["ground","air"],
     "bonusVs": [],
     "hp": 28835840,
     "attack": 17039360,
@@ -2782,22 +1662,11 @@
     "speed": 8,
     "accuracy": 0.9,
     "available": false,
+    "tier": 72,
     "costs": [
-      {
-        "resource": "military",
-        "base": "1.3373e279027",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "1.3373e279026",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "6.6865e279026",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "1.3373e279027", "factor": 1.2},
+      {"resource": "metalwork", "base": "1.3373e279026", "factor": 1.2},
+      {"resource": "science", "base": "6.6865e279026", "factor": 1.2}
     ]
   },
   {
@@ -2806,14 +1675,8 @@
     "description": "Radar-absorbent flying wing. Arrives before anyone knows it is over the border.",
     "age": 6,
     "domain": "air",
-    "tags": [
-      "air",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
+    "tags": ["air","anti-armor"],
+    "canHit": ["ground","naval"],
     "bonusVs": [],
     "hp": 104857600,
     "attack": 57671680,
@@ -2822,27 +1685,12 @@
     "speed": 8,
     "accuracy": 0.8,
     "available": false,
+    "tier": 73,
     "costs": [
-      {
-        "resource": "military",
-        "base": "6.6462e299251",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "6.6462e299250",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "3.3231e299251",
-        "factor": 1.2
-      },
-      {
-        "resource": "gold",
-        "base": "1.6616e299251",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "6.6462e299251", "factor": 1.2},
+      {"resource": "metalwork", "base": "6.6462e299250", "factor": 1.2},
+      {"resource": "science", "base": "3.3231e299251", "factor": 1.2},
+      {"resource": "gold", "base": "1.6616e299251", "factor": 1.2}
     ]
   },
   {
@@ -2851,9 +1699,7 @@
     "description": "Military satellite: it watches, listens and directs. Nothing can reach it at all.",
     "age": 6,
     "domain": "air",
-    "tags": [
-      "air"
-    ],
+    "tags": ["air"],
     "canHit": [],
     "bonusVs": [],
     "hp": 26214400,
@@ -2863,27 +1709,12 @@
     "speed": 0,
     "accuracy": 1,
     "available": false,
+    "tier": 74,
     "costs": [
-      {
-        "resource": "military",
-        "base": "7.6231e320940",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "7.6231e320939",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "3.8115e320940",
-        "factor": 1.2
-      },
-      {
-        "resource": "gold",
-        "base": "1.9058e320940",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "7.6231e320940", "factor": 1.2},
+      {"resource": "metalwork", "base": "7.6231e320939", "factor": 1.2},
+      {"resource": "science", "base": "3.8115e320940", "factor": 1.2},
+      {"resource": "gold", "base": "1.9058e320940", "factor": 1.2}
     ]
   },
   {
@@ -2892,14 +1723,8 @@
     "description": "Orbital beam platform. Reaches anything on the far side of the planet.",
     "age": 6,
     "domain": "air",
-    "tags": [
-      "air",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "naval"
-    ],
+    "tags": ["air","anti-armor"],
+    "canHit": ["ground","naval"],
     "bonusVs": [],
     "hp": 131072000,
     "attack": 78643200,
@@ -2908,27 +1733,12 @@
     "speed": 0,
     "accuracy": 0.95,
     "available": false,
+    "tier": 75,
     "costs": [
-      {
-        "resource": "military",
-        "base": "2.3388e344204",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "2.3388e344203",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "1.1694e344204",
-        "factor": 1.2
-      },
-      {
-        "resource": "gold",
-        "base": "5.8470e344203",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "2.3388e344204", "factor": 1.2},
+      {"resource": "metalwork", "base": "2.3388e344203", "factor": 1.2},
+      {"resource": "science", "base": "1.1694e344204", "factor": 1.2},
+      {"resource": "gold", "base": "5.8470e344203", "factor": 1.2}
     ]
   },
   {
@@ -2937,15 +1747,8 @@
     "description": "One pilot in layered armour carrying a cannon. Walks through whatever it is aimed at.",
     "age": 6,
     "domain": "ground",
-    "tags": [
-      "armored",
-      "anti-armor"
-    ],
-    "canHit": [
-      "ground",
-      "air",
-      "naval"
-    ],
+    "tags": ["armored","anti-armor"],
+    "canHit": ["ground","air","naval"],
     "bonusVs": [],
     "hp": 209715200,
     "attack": 47185920,
@@ -2954,27 +1757,12 @@
     "speed": 6,
     "accuracy": 0.9,
     "available": false,
+    "tier": 76,
     "costs": [
-      {
-        "resource": "military",
-        "base": "3.4972e369152",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "3.4972e369151",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "1.7486e369152",
-        "factor": 1.2
-      },
-      {
-        "resource": "gold",
-        "base": "8.7430e369151",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "3.4972e369152", "factor": 1.2},
+      {"resource": "metalwork", "base": "3.4972e369151", "factor": 1.2},
+      {"resource": "science", "base": "1.7486e369152", "factor": 1.2},
+      {"resource": "gold", "base": "8.7430e369151", "factor": 1.2}
     ]
   },
   {
@@ -2983,15 +1771,8 @@
     "description": "A trooper that flies and fights in vacuum, carrying a division's firepower in one suit.",
     "age": 6,
     "domain": "air",
-    "tags": [
-      "armored",
-      "infantry"
-    ],
-    "canHit": [
-      "ground",
-      "air",
-      "naval"
-    ],
+    "tags": ["armored","infantry"],
+    "canHit": ["ground","air","naval"],
     "bonusVs": [],
     "hp": 262144000,
     "attack": 65536000,
@@ -3000,27 +1781,12 @@
     "speed": 10,
     "accuracy": 0.95,
     "available": false,
+    "tier": 77,
     "costs": [
-      {
-        "resource": "military",
-        "base": "2.2939e395909",
-        "factor": 1.2
-      },
-      {
-        "resource": "metalwork",
-        "base": "2.2939e395908",
-        "factor": 1.2
-      },
-      {
-        "resource": "science",
-        "base": "1.1469e395909",
-        "factor": 1.2
-      },
-      {
-        "resource": "gold",
-        "base": "5.7347e395908",
-        "factor": 1.2
-      }
+      {"resource": "military", "base": "2.2939e395909", "factor": 1.2},
+      {"resource": "metalwork", "base": "2.2939e395908", "factor": 1.2},
+      {"resource": "science", "base": "1.1469e395909", "factor": 1.2},
+      {"resource": "gold", "base": "5.7347e395908", "factor": 1.2}
     ]
   }
 ]
