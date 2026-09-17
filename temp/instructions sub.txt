@@ -1,0 +1,29 @@
+note :
+ 100 people 
+ prod
+ food : 82A
+ wood 6.7A
+ stone 358
+ 
+
+
+ sub instructions:
+ 
+ 
+ 
+ 
+ 
+we ahve lost  military as base cost for ealy unit: m: military, f :food, w ;wood, s:stone, M: metalworks
+warrior base : m : 200, f : 10k
+slinger base : m : 500, s : 20k
+archer_prehist base : m:2k w:100k 
+canoe base base: m:50k w:10M
+spearman_bronze base : m : 1M M:10k
+
+need to rescale units until age 2 (legionary) ( miliratyu base around  x10 each time)
+( you can tech a look at temp/tech tree-v1-effects.json for the order of unlock ( effects are still not good but the global layout is there) 
+
+also  
+barraks scaling : base 10K wood, 1k stone, 5k food
+
+

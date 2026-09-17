@@ -201,17 +201,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": 420,
+        "base": 10000,
         "factor": 1.22
       },
       {
         "resource": "stone",
-        "base": 260,
+        "base": 1000,
         "factor": 1.18
       },
       {
         "resource": "food",
-        "base": 100,
+        "base": 5000,
         "factor": 1.1
       }
     ],
