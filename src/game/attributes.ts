@@ -38,6 +38,7 @@ export type DerivedAttributeKey =
   | "clickPower"
   | "autoClickRate"
   | "buildingPower"
+  | "buildingCostMultiplier"
   | `${BuildingKey}Power`;
 
 /** Every value-side key a bonus destination may name; buyable ids are separate. */
@@ -269,11 +270,11 @@ export const emptyResourceFactors = (): ResourceFactorMap => ({
   universityCapacity: { additional: [], multiplicative: [], drain: [] },
 });
 
-export const computeResourceRate = ({
+export const summarizeResourceFactors = ({
   additional,
   multiplicative,
   drain,
-}: ResourceFactors): ExpNumber => {
+}: ResourceFactors) => {
   const additionalTotal = additional.reduce(
     (total, [, value]) => total.add(value),
     ExpNumber.ZERO,
@@ -287,5 +288,13 @@ export const computeResourceRate = ({
     ExpNumber.ZERO,
   );
 
-  return additionalTotal.mul(multiplier).sub(drainTotal);
+  return {
+    additional: additionalTotal,
+    multiplier,
+    drain: drainTotal,
+    result: additionalTotal.mul(multiplier).sub(drainTotal),
+  };
 };
+
+export const computeResourceRate = (factors: ResourceFactors): ExpNumber =>
+  summarizeResourceFactors(factors).result;

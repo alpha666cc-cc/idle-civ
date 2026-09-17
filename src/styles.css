@@ -14,6 +14,12 @@
   --accent: #a9c74a;
   --accent-soft: #d6dfac;
   --warm: #d8a24c;
+  --success-ink: #285b24;
+  --success-paper: #e3ecd2;
+  --success-line: #648345;
+  --danger-ink: #8a2727;
+  --danger-paper: #f8e5e1;
+  --danger-line: #b96c62;
 }
 
 * {
@@ -34,25 +40,33 @@ button:focus-visible {
 .app-shell {
   display: grid;
   grid-template-columns: 268px minmax(440px, 1fr) 342px;
-  min-height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
   background: var(--ink);
 }
 .sidebar {
   display: flex;
   flex-direction: column;
-  padding: 29px 22px 19px;
+  min-height: 0;
+  max-height: 100dvh;
+  overflow-y: auto;
+  padding: 22px 22px 16px;
   background: #252d29;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+.sidebar > * {
+  flex-shrink: 0;
 }
 .brand-lockup {
   display: flex;
   align-items: center;
-  gap: 11px;
-  margin-bottom: 29px;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 .brand-mark {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
   color: var(--ink);
@@ -78,17 +92,20 @@ button:focus-visible {
   letter-spacing: -0.01em;
 }
 .era-card {
-  padding: 15px 15px 14px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 10px 12px 11px;
   background: #303b34;
   border: 1px solid rgba(213, 223, 164, 0.12);
   border-radius: 6px;
 }
 .era-label {
   display: block;
-  margin-bottom: 7px;
   color: #99a79c;
   font:
-    10px "DM Mono",
+    9px "DM Mono",
     monospace;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -97,13 +114,14 @@ button:focus-visible {
   display: block;
   color: #e4ebcf;
   font:
-    600 17px "Playfair Display",
+    600 15px "Playfair Display",
     serif;
 }
 .era-progress {
+  grid-column: 1 / -1;
   display: block;
   height: 4px;
-  margin: 14px 0 9px;
+  margin: 6px 0 5px;
   background: #1e2823;
   border-radius: 4px;
   overflow: hidden;
@@ -115,35 +133,37 @@ button:focus-visible {
   background: var(--accent);
 }
 .era-meta {
+  grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
   color: #849086;
   font:
-    10px "DM Mono",
+    9px "DM Mono",
     monospace;
 }
 .tab-list {
-  margin-top: 30px;
+  margin-top: 16px;
 }
 .tab-list .nav-caption {
   display: block;
-  margin: 0 12px 10px;
+  margin: 0 12px 4px;
 }
 .tab-button {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  height: 41px;
-  padding: 0 12px;
+  height: 29px;
+  margin-bottom: 2px;
+  padding: 0 10px;
   border: 0;
   color: #8f9a90;
   background: transparent;
   text-align: left;
   cursor: pointer;
   border-radius: 5px;
-  font-size: 12px;
+  font-size: 11.5px;
   transition:
     color 0.2s,
     background 0.2s;
@@ -156,19 +176,27 @@ button:focus-visible {
   color: #ebefda;
   background: #36433a;
 }
+.tab-notification {
+  flex: 0 0 9px;
+  height: 9px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--ink-soft);
+}
 .tab-button.active svg {
   color: var(--accent);
 }
 .resource-panel {
-  margin-top: 27px;
-  padding-top: 21px;
+  margin-top: 15px;
+  padding-top: 12px;
   border-top: 1px solid var(--line);
 }
 .section-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0 5px 13px 12px;
+  margin: 0 4px 6px 12px;
 }
 .icon-button {
   display: grid;
@@ -181,13 +209,13 @@ button:focus-visible {
 }
 .resource-list {
   display: grid;
-  gap: 5px;
+  gap: 2px;
 }
 .resource-row {
   display: flex;
   align-items: center;
-  min-height: 42px;
-  padding: 0 9px;
+  min-height: 30px;
+  padding: 0 8px;
   border-radius: 5px;
 }
 .resource-row:hover {
@@ -214,10 +242,10 @@ button:focus-visible {
   flex: 0 0 auto;
 }
 .resource-icon {
-  width: 27px;
-  height: 27px;
-  margin-right: 10px;
-  border-radius: 5px;
+  width: 22px;
+  height: 22px;
+  margin-right: 7px;
+  border-radius: 4px;
 }
 .resource-icon.teal,
 .building-icon.teal {
@@ -251,18 +279,50 @@ button:focus-visible {
 .resource-copy {
   display: flex;
   flex: 1;
-  flex-direction: column;
-  gap: 2px;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
 }
 .resource-copy span {
+  flex: 0 0 auto;
   color: #9da69c;
   font-size: 10px;
+  white-space: nowrap;
 }
 .resource-copy strong {
+  flex: 0 0 auto;
   color: #e9eadf;
   font:
-    500 13px "DM Mono",
+    500 11.5px "DM Mono",
     monospace;
+  white-space: nowrap;
+}
+.resource-copy small {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Rate readout: DM Mono plus a colour cue, so growth vs. drain is readable
+   at a glance in the narrow sidebar. */
+.resource-rate {
+  font:
+    500 10px "DM Mono",
+    monospace;
+  letter-spacing: -0.01em;
+}
+.resource-rate.positive {
+  color: #a9c76e;
+}
+.resource-rate.negative {
+  color: #e09a72;
+}
+.resource-rate.flat {
+  color: #939f95;
+}
+.resource-note {
+  color: #828d84;
+  font-size: 9px;
 }
 .worker-controls {
   display: flex;
@@ -310,7 +370,7 @@ button:focus-visible {
   align-items: center;
   gap: 7px;
   margin-top: auto;
-  padding: 16px 8px 0;
+  padding: 10px 8px 0;
   color: #738077;
   font:
     9px "DM Mono",
@@ -331,13 +391,16 @@ button:focus-visible {
   box-shadow: 0 0 0 3px rgba(145, 182, 75, 0.12);
 }
 .world-panel {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
   background: #dfe2d6;
   color: var(--ink);
 }
 .topbar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -366,6 +429,9 @@ button:focus-visible {
   font-weight: 500;
 }
 .world-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   padding: 40px 35px 35px;
 }
 .production-workbench {
@@ -660,10 +726,11 @@ button:focus-visible {
 }
 .notice-bar {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 9px;
   min-height: 51px;
-  margin-top: 27px;
+  margin-top: 0;
   padding: 0 14px;
   color: #637268;
   background: #d4d9cc;
@@ -924,6 +991,11 @@ button:focus-visible {
   line-height: 1.45;
 }
 .buildings-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100dvh;
+  overflow: hidden;
   padding: 38px 22px 24px;
   background: #f0f0e8;
   color: var(--ink);
@@ -931,6 +1003,7 @@ button:focus-visible {
 }
 .buildings-header {
   display: flex;
+  flex-shrink: 0;
   align-items: end;
   justify-content: space-between;
   margin-bottom: 17px;
@@ -953,6 +1026,95 @@ button:focus-visible {
   display: grid;
   grid-template-columns: 1fr;
   gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 4px;
+}
+.building-actions {
+  display: flex;
+  min-width: 0;
+  gap: 4px;
+}
+.building-actions .building-card {
+  flex: 1;
+  min-width: 0;
+}
+.building-pedia-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  padding: 4px;
+  border: 1px solid var(--paper-deep);
+  color: var(--ink-soft);
+  background: var(--paper);
+  cursor: pointer;
+}
+.building-pedia-button:hover {
+  background: var(--accent-soft);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.upgrade-buy.affordable {
+  color: var(--success-ink);
+  background: var(--success-paper);
+  border-color: var(--success-line);
+}
+.upgrade-buy.unaffordable {
+  color: var(--danger-ink);
+  background: var(--danger-paper);
+  border-color: var(--danger-line);
+}
+.achievement-notifications {
+  position: fixed;
+  z-index: 18;
+  right: 16px;
+  bottom: 90px;
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(440px, 60dvh);
+  overflow: auto;
+  color: var(--ink);
+  font-size: 12px;
+}
+.achievement-notifications:has(li) {
+  padding: 16px;
+  border: 2px solid var(--accent);
+  background: var(--paper);
+  box-shadow: 0 8px 24px var(--ink);
+}
+.achievement-notifications strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.achievement-notifications ul {
+  padding-left: 18px;
+  margin-bottom: 0;
+}
+.achievement-notifications li + li {
+  margin-top: 12px;
+}
+.achievement-notifications p {
+  margin: 5px 0;
+}
+.gamepedia-recap {
+  padding: 10px;
+  border: 1px solid var(--paper-deep);
+  background: var(--paper);
+  font: 11px/1.6 "DM Mono", monospace;
+  overflow-wrap: anywhere;
+}
+.gamepedia-recap p {
+  margin: 4px 0;
 }
 .building-card {
   position: relative;
@@ -1069,6 +1231,18 @@ button:focus-visible {
     9px "DM Mono",
     monospace;
   white-space: nowrap;
+}
+.building-count-inline.maxed {
+  color: #c04226;
+  font-weight: 700;
+}
+.building-actions.at-capacity .building-card {
+  border-color: #e0b5a0;
+  background: #fdf4ef;
+}
+.building-actions.at-capacity .building-card:hover {
+  border-color: #c98a6c;
+  background: #fdf4ef;
 }
 .building-info em {
   color: #879b49;
@@ -1514,6 +1688,19 @@ button:focus-visible {
 @media (max-width: 860px) {
   .app-shell {
     grid-template-columns: 210px 1fr;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .sidebar,
+  .world-panel,
+  .buildings-panel {
+    max-height: none;
+    overflow: visible;
+  }
+  .world-content,
+  .building-grid {
+    overflow: visible;
   }
   .buildings-panel {
     grid-column: 1 / -1;
@@ -1530,6 +1717,19 @@ button:focus-visible {
 @media (max-width: 640px) {
   .app-shell {
     display: block;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .sidebar,
+  .world-panel,
+  .buildings-panel {
+    max-height: none;
+    overflow: visible;
+  }
+  .world-content,
+  .building-grid {
+    overflow: visible;
   }
   .sidebar {
     padding: 20px 16px 15px;
@@ -1546,9 +1746,6 @@ button:focus-visible {
   }
   .resource-panel {
     margin-top: 16px;
-  }
-  .resource-list {
-    grid-template-columns: 1fr 1fr;
   }
   .resource-row {
     padding: 0 5px;

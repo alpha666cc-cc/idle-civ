@@ -149,12 +149,14 @@ loop beyond that is deferred by decision.
 | Number formats | 🟢 | scientific / engineering / named / compact; only persisted preference (`localStorage`, try/catch-wrapped) |
 | Saves | 🔵 | **None.** Everything resets on reload; roadmap Milestone 3: versioned JSON primary, XML/Base64 interchanges, migrations; offline gains will use an efficiency factor `E_off` = 25–50% of active production, capped at 12 h |
 | Statistics | 🟡 | Stats tab, tracked counters (clicks, play time, buildings built, fastest records) and the `stat` Gamepedia category (click power, auto-click rate as derived attributes) are live; Milestone 5's command-style actions → result events remain 🔵 |
-| Achievements | 🟢 | 83 concrete records (12 milestone + building-power chains 4×9, hoarder chains 4×7, Master Builder 7) with `family`/`tier` data, plus open-ended hoarder tiers every e³ past 1e9 (materialized on demand); cumulative family cards with locked/partial/complete states; age-transition and unit chains still pending |
+| Achievements | 🟢 | 72 concrete records (17 other milestones + building-power chains 4×9, hoarder chains 4×3, Master Builder 7) with `family`/`tier` data, plus open-ended hoarder tiers every e³ past 1e9 (materialized on demand); cumulative family cards with locked/partial/complete states; age-transition and unit chains still pending |
 | Ages / era card | 🔵 | Sidebar era card is a hardcoded mock ("Neolithic Dawn", "Year 12", "68% to Bronze Age") — do not build on it |
 | Battle system | 🔵 | Milestone 8 — campaign prototype (`temp/campaign_v2.json`, not compiled/wired): **23 encounters** (2 regular + 1 age-end boss per age, 5 in Modern/Space) over a **79-unit roster** (`temp/unit-v2-currated.json`); unit availability comes from the research tree/battle rewards, not per-encounter lists; wolf first; victories apply data-driven rewards (caps, upgrades, unlocks) |
 | Research tree | 🔵 | Milestone 9 — `era` field referencing age ids |
 | Game-length simulation | 🔵 | Milestone 10 — headless engine run at accelerated speed reporting time-to-age/pacing; needs Vitest first |
 | Prestige / interstellar loop | 🔵 | Deferred by decision until the first loop (10B + colony ship) is done; permanent across loops: achievements, prestige bonuses (undefined), `seen` |
+
+Master Builder rewards target the derived `buildingCostMultiplier` stat (base ×1), shared by all buildings. Its seven milestones reduce base costs cumulatively to ÷2 through ÷8, before growth and other discounts; upgrade prices are unaffected. The stat is visible in Stats and linked from building cost breakdowns in Gamepedia.
 
 ## 7. Remaining scope (roadmap order)
 
@@ -196,7 +198,7 @@ loop beyond that is deferred by decision.
 | Ages | 0 | 7 |
 | Units / encounters | 0 | 79-unit roster + 23 encounters (7 age-end bosses) |
 | Research | 0 | 1 tree across 7 eras |
-| Achievements | 83 concrete + open-ended hoarder tiers | ages + unit chains |
+| Achievements | 72 concrete + open-ended hoarder tiers | ages + unit chains |
 | Saves | 0 | versioned JSON + 2 interchange codecs + offline |
 | Screens | 1 (tabs) | 1 + stats tab + modal |
 | Code | ~4,500 lines src | roadmap recommends a `src/game/data/` split first |

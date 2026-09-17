@@ -96,7 +96,9 @@ const formatFactorValue = (
 ): string => {
   const text = formatNumber(value, format);
   const positive = typeof value === "number" ? value > 0 : value.sign > 0;
-  return tab === "multiplicative" ? `×${text}` : positive ? `+${text}` : text;
+  if (tab === "multiplicative") return `×${text}`;
+  if (tab === "drain") return positive ? `−${text}` : text;
+  return positive ? `+${text}` : text;
 };
 
 const factorSourceLabel = (source: ResourceFactor[0]): string =>
@@ -149,6 +151,7 @@ const bonusValueText = (bonus: Bonus, format: NumberFormat): string => {
         format,
       )}%`;
     case "costReductionFactor":
+      return `−${formatNumber(bonus.value.mul(ExpNumber.fromNumber(100)), format)} percentage points`;
     case "costReductionFlat":
       return `−${formatNumber(bonus.value, format)}`;
     case "attributeFlat":
@@ -268,14 +271,12 @@ export default function GamepediaModal({
 
   const renderBuildingDetail = (entry: GamepediaEntry) => {
     const building = entry.object as BuildingDefinition;
-    const count = gameState.builtBuildings.filter(
-      (key) => key === building.key,
-    ).length;
+    const count = gameState.getBuildingCount(building.key);
     const costs = gameState.getBuildingCost(building.key, count);
-    const effects = building.effects;
-    const costFactors = new Map(
-      building.costs.map((cost) => [cost.resource, cost.factor]),
-    );
+    const effects = gameState.getBuildingEffects(building.key);
+    const totalEffects = gameState.getBuildingEffects(building.key, count);
+    const parameters = gameState.getBuildingCostParameters(building.key);
+    const { sources, reductions, globalMultiplier } = gameState.getBuildingCostModifiers(building.key);
 
     return (
       <div className="gamepedia-detail">
@@ -285,14 +286,14 @@ export default function GamepediaModal({
         <p className="gamepedia-category">Price</p>
         <div className="gamepedia-cost-list">
           {costs.map(({ resource, base }) => {
-            const factor = costFactors.get(resource) ?? 1;
+            const factor = parameters.find(({ cost }) => cost.resource === resource)?.unitFactor;
             return (
               <div className="gamepedia-cost-row" key={resource}>
                 <div className="gamepedia-cost-copy">
                   {renderReference(resource)}
-                  {factor !== 1 && (
+                  {factor && (
                     <span className="gamepedia-cost-meta">
-                      ×{factor} each built
+                      ×{formatAmount(factor)} each built (effective)
                     </span>
                   )}
                 </div>
@@ -304,8 +305,48 @@ export default function GamepediaModal({
           })}
         </div>
 
+        <p className="gamepedia-category">Cost reductions</p>
+        <div className="gamepedia-recap">
+          <p>Per building: base → growth → percentage → flat. Costs floor at 0; growth floors at 1.</p>
+          <p>Base remaining: {formatAmount(reductions.base.mul(ExpNumber.fromNumber(100)))}%</p>
+          <p>Growth reduction: {formatAmount(reductions.factor.mul(ExpNumber.fromNumber(100)))} percentage points</p>
+          <p>Cost remaining after percentage reductions: {formatAmount(reductions.percent.mul(ExpNumber.fromNumber(100)))}%</p>
+          <p>Flat reduction per cost resource: {formatAmount(reductions.flat)}</p>
+          {parameters.map(({ cost, unitBase, unitFactor }) => (
+            <div key={cost.resource}>
+              {renderReference(cost.resource)}
+              <p>Base: {formatAmount(cost.base)} → {formatAmount(unitBase)}</p>
+              <p>Growth: ×{formatAmount(cost.factor)} → ×{formatAmount(unitFactor)}</p>
+            </div>
+          ))}
+          <p>{renderReference("buildingCostMultiplier")}: ×{formatNumber(globalMultiplier, numberFormat)}</p>
+          {sources.length === 0 && globalMultiplier.eq(ExpNumber.ONE) && <p>No active cost reductions.</p>}
+          {sources.map(([source, bonus], index) => (
+            <p key={`${source}-${index}`}>
+              {renderReference(source)} — {bonusEffectLabel(bonus)}: {bonusValueText(bonus, numberFormat)}
+            </p>
+          ))}
+        </div>
+
         <p className="gamepedia-category">Effects</p>
+        <p className="gamepedia-recap">
+          {renderReference(`${building.key}Power`)}: ×{formatAmount(gameState.getAttributeValue(`${building.key}Power`))}.
+          Production and multiplier effects below include power; drains and capacity grants do not scale.
+        </p>
         <div className="gamepedia-effect-list">
+          {effects.resourceProduction && (
+            <div className="gamepedia-effect-row">
+              <div className="gamepedia-effect-copy">
+                {renderReference(effects.resourceProduction.resource)}
+                <span className="gamepedia-effect-meta">
+                  +{formatAmount(effects.resourceProduction.amount)}/s per building
+                </span>
+              </div>
+              <strong className="gamepedia-effect-total">
+                +{formatAmount(totalEffects.resourceProduction!.amount)}/s now
+              </strong>
+            </div>
+          )}
           {effects.resourceMultiplier ? (
             <div className="gamepedia-effect-row" key="multiplier">
               <div className="gamepedia-effect-copy">
@@ -322,7 +363,7 @@ export default function GamepediaModal({
               <strong className="gamepedia-effect-total">
                 ×
                 {formatNumber(
-                  effects.resourceMultiplier.factor.pow(count),
+                  totalEffects.resourceMultiplier!.factor,
                   numberFormat,
                 )}{" "}
                 now
@@ -334,14 +375,12 @@ export default function GamepediaModal({
               <div className="gamepedia-effect-copy">
                 {renderReference(effects.resourceDrain.resource)}
                 <span className="gamepedia-effect-meta">
-                  {formatAmount(effects.resourceDrain.amount)}/sec per building
+                  {formatAmount(effects.resourceDrain.amount)}/s per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
-                {formatAmount(
-                  effects.resourceDrain.amount.mul(ExpNumber.fromNumber(count)),
-                )}
-                /sec now
+                {formatAmount(totalEffects.resourceDrain!.amount)}
+                /s now
               </strong>
             </div>
           ) : null}
@@ -357,11 +396,7 @@ export default function GamepediaModal({
               </div>
               <strong className="gamepedia-effect-total">
                 +
-                {formatAmount(
-                  effects.capacityProvided.perBuilding.mul(
-                    ExpNumber.fromNumber(count),
-                  ),
-                )}{" "}
+                {formatAmount(totalEffects.capacityProvided!.perBuilding)}{" "}
                 now
               </strong>
             </div>
@@ -387,6 +422,25 @@ export default function GamepediaModal({
       </div>
     );
   };
+  const renderModifierRecap = (key: string, derived = false) => {
+    const summary = gameState.getModifierSummary(key);
+    const unit = derived ? "" : "/s";
+    return (
+      <div className="gamepedia-recap">
+        {derived && <p>Base: {formatAmount(summary.base)}</p>}
+        <p>Additions (sum): {formatAmount(summary.additional)}{unit}</p>
+        <p>Multipliers (product): ×{formatAmount(summary.multiplier)}</p>
+        <p>Drains (sum): {formatAmount(summary.drain)}{unit}</p>
+        <p>
+          {derived && `(${formatAmount(summary.base)} + `}
+          {formatAmount(summary.additional)}{derived && ")"}
+          {" × "}{formatAmount(summary.multiplier)} − {formatAmount(summary.drain)}
+          {" = "}<strong>{formatAmount(summary.result)}{unit}</strong>
+        </p>
+      </div>
+    );
+  };
+
   const renderResourceDetail = (entry: GamepediaEntry) => {
     const key = entry.object.id as ResourceKey;
     const resources = gameState.resources as Record<string, ExpNumber>;
@@ -394,16 +448,11 @@ export default function GamepediaModal({
     const factors = gameState.getFactors(key);
     const factorTabs: FactorTab[] = ["additional", "multiplicative", "drain"];
     const isPopulation = key === "population";
-    const workerProduction = isPopulation
-      ? undefined
-      : gameState.getWorkerProduction(key as ProductionResourceKey);
-    const multiplierProduct = factors.multiplicative.reduce(
-      (product, [, value]) => product.mul(value),
-      ExpNumber.ONE,
-    );
-    const hasWorkers =
-      workerProduction !== undefined &&
-      productionDefinitions.some(({ key: resourceKey }) => resourceKey === key);
+    const hasWorkers = productionDefinitions.some(({ key: resourceKey }) => resourceKey === key);
+    const workerProduction = hasWorkers
+      ? gameState.getWorkerProduction(key as ProductionResourceKey)
+      : undefined;
+    const multiplierProduct = gameState.getModifierSummary(key).multiplier;
 
     return (
       <div className="gamepedia-detail">
@@ -440,7 +489,7 @@ export default function GamepediaModal({
                 <span>Rate</span>
                 <strong>
                   {rate.sign > 0 ? "+" : ""}
-                  {formatAmount(rate)}/sec
+                  {formatAmount(rate)}/s
                 </strong>
               </div>
             </div>
@@ -459,13 +508,13 @@ export default function GamepediaModal({
                   <div className="gamepedia-stat">
                     <span>Base</span>
                     <strong>
-                      {formatAmount(workerProduction.workerProduction)}/sec
+                      {formatAmount(workerProduction.workerProduction)}/s
                     </strong>
                   </div>
                   <div className="gamepedia-stat">
                     <span>Auto</span>
                     <strong>
-                      +{formatAmount(workerProduction.autoClickProduction)}/sec
+                      +{formatAmount(workerProduction.autoClickProduction)}/s
                     </strong>
                   </div>
                 </>
@@ -483,6 +532,7 @@ export default function GamepediaModal({
             </div>
 
             <p className="gamepedia-category">Modifiers</p>
+            {renderModifierRecap(key)}
             {factorTabs.map((tab) => {
               const group = factors[tab];
               if (group.length === 0) return null;
@@ -615,7 +665,7 @@ export default function GamepediaModal({
       <div className="gamepedia-detail">
         {renderDetailHeader(entry)}
         <p className="gamepedia-detail-description">
-          {entry.object.description}
+          {entry.object.description.replaceAll("/sec", "/s")}
         </p>
 
         <p className="gamepedia-category">Record</p>
@@ -668,13 +718,17 @@ export default function GamepediaModal({
         <div className="gamepedia-stats">
           <div className="gamepedia-stat">
             <span>Value</span>
-            <strong>{formatAmount(gameState.getAttributeValue(statKey))}</strong>
+            <strong>
+              {statKey === "buildingCostMultiplier" && "×"}
+              {formatNumber(gameState.getAttributeValue(statKey), numberFormat)}
+            </strong>
           </div>
         </div>
 
         {factors && (
           <>
             <p className="gamepedia-category">Composition</p>
+            {renderModifierRecap(statKey, true)}
             <div className="gamepedia-effect-list">
               <div className="gamepedia-effect-row" key="base">
                 <div className="gamepedia-effect-copy">

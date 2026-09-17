@@ -10,6 +10,11 @@
     "description": "Automated production clicks generated every second. Dev Tools set the current rate; bonuses are planned to feed it once upgrades target this stat."
   },
   {
+    "key": "buildingCostMultiplier",
+    "label": "Building cost multiplier",
+    "description": "Multiplies every building's base cost before growth and other discounts. Starts at ×1; lower is cheaper. Master Builder milestones reduce it cumulatively to ÷2, ÷3, through ÷8. Does not affect upgrade prices."
+  },
+  {
     "key": "buildingPower",
     "label": "Building power",
     "description": "Global multiplier on every building's power. Endgame bonuses raise it for all buildings at once."

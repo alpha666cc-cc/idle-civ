@@ -1,5 +1,6 @@
 import {
   computeResourceRate,
+  summarizeResourceFactors,
   derivedAttributeDefinitions,
   emptyResourceAmounts,
   emptyResourceFactors,
@@ -22,6 +23,7 @@ import { WorkerProduction } from "./workerProduction";
 import {
   buildingDefinitions,
   type BuildingCost,
+  type BuildingEffects,
   type BuildingKey,
 } from "./buildings";
 import {
@@ -101,6 +103,7 @@ const compoundStatValue = (
 
 for (const key of [
   "buildingPower",
+  "buildingCostMultiplier",
   ...buildingDefinitions.map(({ key }) => `${key}Power`),
 ]) {
   derivedAttributeComputations[key] = {
@@ -428,34 +431,19 @@ export class CivilizationState {
     for (const building of buildingDefinitions) {
       const count = this.buildingCount(building.key);
       if (count === 0) continue;
-      const power = this.buildingPower(building.key);
       const { resourceMultiplier, resourceDrain, resourceProduction } =
-        building.effects;
+        this.getBuildingEffects(building.key, count);
       if (resourceMultiplier?.resource === resourceKey) {
-        // Building power scales each effect's magnitude (§13.2): multiplier
-        // effects scale their excess over 1 (×1.1 at power 2 → ×1.2), flats
-        // scale in full. Drains and build-time capacity grants do not scale.
-        const effectiveFactor = ExpNumber.ONE.add(
-          resourceMultiplier.factor.sub(ExpNumber.ONE).mul(power),
-        );
         buildingFactors.multiplicative.push([
           building.key,
-          effectiveFactor.pow(ExpNumber.fromNumber(count)),
+          resourceMultiplier.factor,
         ]);
       }
       if (resourceDrain?.resource === resourceKey) {
-        buildingFactors.drain.push([
-          building.key,
-          resourceDrain.amount.mul(ExpNumber.fromNumber(count)),
-        ]);
+        buildingFactors.drain.push([building.key, resourceDrain.amount]);
       }
       if (resourceProduction?.resource === resourceKey) {
-        buildingFactors.additional.push([
-          building.key,
-          resourceProduction.amount
-            .mul(power)
-            .mul(ExpNumber.fromNumber(count)),
-        ]);
+        buildingFactors.additional.push([building.key, resourceProduction.amount]);
       }
     }
 
@@ -635,31 +623,88 @@ export class CivilizationState {
     return max;
   }
 
+  /** Shared production/stat recap; the base remains distinct from bonus additions. */
+  getModifierSummary(key: string) {
+    const derived = this.getDerivedAttributeFactors(key);
+    const factors = derived
+      ? { additional: derived.additional, multiplicative: derived.multiplicative, drain: [] }
+      : this.getFactors(key as ResourceKey);
+    const totals = summarizeResourceFactors(factors);
+    const base = derived?.base ?? ExpNumber.ZERO;
+    return {
+      ...totals,
+      base,
+      result: base.add(totals.additional).mul(totals.multiplier).sub(totals.drain),
+    };
+  }
+
+  /** Effective effects for one or more buildings, shared by simulation and Pedia. */
+  getBuildingEffects(buildingKey: BuildingKey, count = 1): BuildingEffects {
+    const effects = buildingDefinitions.find(({ key }) => key === buildingKey)?.effects;
+    if (!effects) return {};
+    const power = this.buildingPower(buildingKey);
+    const quantity = ExpNumber.fromNumber(count);
+    return {
+      resourceMultiplier: effects.resourceMultiplier && {
+        ...effects.resourceMultiplier,
+        factor: ExpNumber.ONE.add(
+          effects.resourceMultiplier.factor.sub(ExpNumber.ONE).mul(power),
+        ).pow(quantity),
+      },
+      resourceProduction: effects.resourceProduction && {
+        ...effects.resourceProduction,
+        amount: effects.resourceProduction.amount.mul(power).mul(quantity),
+      },
+      resourceDrain: effects.resourceDrain && {
+        ...effects.resourceDrain,
+        amount: effects.resourceDrain.amount.mul(quantity),
+      },
+      capacityProvided: effects.capacityProvided && {
+        ...effects.capacityProvided,
+        perBuilding: effects.capacityProvided.perBuilding.mul(quantity),
+      },
+    };
+  }
+
+  getBuildingCostModifiers(buildingKey: string) {
+    const sources = this.activeBonuses().filter(([, bonus]) =>
+      bonus.destination === buildingKey && bonus.type.startsWith("costReduction"),
+    );
+    const reductions = collectCostReductions(sources.map(([, bonus]) => bonus));
+    const globalMultiplier = ExpNumber.max(
+      ExpNumber.ZERO, this.getAttributeValue("buildingCostMultiplier"),
+    );
+    return {
+      sources,
+      globalMultiplier,
+      reductions: { ...reductions, base: reductions.base.mul(globalMultiplier) },
+    };
+  }
+
+  getBuildingCostParameters(buildingKey: string) {
+    const building = buildingDefinitions.find(({ key }) => key === buildingKey);
+    if (!building) return [];
+    const costs = this.buildingCostOverrides[building.key] ?? building.costs;
+    const { reductions } = this.getBuildingCostModifiers(buildingKey);
+    return costs.map((cost) => ({
+      cost,
+      unitBase: ExpNumber.max(ExpNumber.ZERO, cost.base.mul(reductions.base)),
+      unitFactor: ExpNumber.max(
+        ExpNumber.ONE, ExpNumber.fromNumber(cost.factor).sub(reductions.factor),
+      ),
+      reductions,
+    }));
+  }
+
   getBuildingCost(
     buildingKey: string,
     buildingsAlreadyBuilt: number,
     count: number = 1,
   ): BuildingCost[] {
-    const building = buildingDefinitions.find(({ key }) => key === buildingKey);
-    if (!building) return [];
-    const costs = this.buildingCostOverrides[building.key] ?? building.costs;
-    const reductions = collectCostReductions(
-      this.activeBonuses()
-        .filter(([, bonus]) => bonus.destination === building.key)
-        .map(([, bonus]) => bonus),
-    );
-    return costs.map((cost) => {
-      // Per-unit cost-reduction pipeline (§13.1): base → factor → percent → flat.
-      // Costs clamp at 0; the growth factor clamps at 1 (below 1, later buildings
-      // would cost less than earlier ones).
-      const unitBase = ExpNumber.max(
-        ExpNumber.ZERO,
-        ExpNumber.from(cost.base).mul(reductions.base),
-      );
-      const unitFactor = ExpNumber.max(
-        ExpNumber.ONE,
-        ExpNumber.fromNumber(cost.factor).sub(reductions.factor),
-      );
+    return this.getBuildingCostParameters(buildingKey).map(({
+      cost, unitBase, unitFactor, reductions,
+    }) => {
+      // Per-unit pipeline: base → factor → percent → flat, clamped at zero.
       const firstGross = unitBase
         .mul(unitFactor.pow(buildingsAlreadyBuilt))
         .mul(reductions.percent);

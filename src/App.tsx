@@ -228,12 +228,24 @@ function App() {
   const [gamepediaFocusId, setGamepediaFocusId] = useState<string | null>(null);
   const [autoBuyBuildings, setAutoBuyBuildings] = useState(false);
   const [autoAssignWorkers, setAutoAssignWorkers] = useState(false);
+  const [dismissedAchievements, setDismissedAchievements] = useState<string[]>([]);
+  const pendingAchievements = gameState.earnedAchievements
+    .filter((id) => !dismissedAchievements.includes(id))
+    .map(findAchievementDefinition)
+    .filter((entry): entry is AchievementDefinition => entry !== undefined);
 
   const fmt = (n: ExpNumber | number) => formatNumber(n, numberFormat);
-  const fmtSummary = (n: ExpNumber | number): string => {
-    const value = n instanceof ExpNumber ? n : ExpNumber.fromNumber(n);
-    if (!Number.isFinite(value.toNumber())) return fmt(value);
-    return String(Math.round(value.toNumber()));
+  const fmtSummary = (n: ExpNumber | number): string => fmt(n);
+  const formatResourceRate = (key: ResourceKey): string => {
+    const rate = gameState.computeResourceRate(key);
+    return `${rate.sign > 0 ? "+" : ""}${fmt(rate)}/s`;
+  };
+  /** Presentation tone for a rate readout: growing, draining or idle. */
+  const resourceRateTone = (key: ResourceKey): string => {
+    const { sign } = gameState.computeResourceRate(key);
+    if (sign > 0) return "positive";
+    if (sign < 0) return "negative";
+    return "flat";
   };
 
   const {
@@ -393,6 +405,9 @@ function App() {
       gameState.isUpgradeUnlocked(upgrade.key) &&
       !gameState.isUpgradeBought(upgrade.key),
   );
+  const hasAffordableUpgrade = unlockedUpgrades.some((upgrade) =>
+    gameState.hasResourcesForUpgrade(upgrade.key),
+  );
   const earnedAchievementCount = gameState.earnedAchievements.length;
   const builtByKeyRows = buildingDefinitions.flatMap((building) => {
     const count = statistics.buildingsBuiltByKey[building.key];
@@ -449,6 +464,10 @@ function App() {
       ? (definition.name ?? definition.label ?? definition.id)
       : String(bonus.destination);
     if (bonus.type === "attributeMultiplier") {
+      if (bonus.destination === "buildingCostMultiplier" &&
+          bonus.value.gt(ExpNumber.ZERO) && bonus.value.lte(ExpNumber.ONE)) {
+        return `Building base costs: ÷${fmt(ExpNumber.ONE.div(bonus.value))}`;
+      }
       return `${target} ×${fmt(bonus.value)}`;
     }
     if (bonus.type === "costReductionBase") {
@@ -459,7 +478,7 @@ function App() {
     if (bonus.type.startsWith("costReduction")) {
       return `${target} −${fmt(bonus.value)}`;
     }
-    return `${target} +${fmt(bonus.value)}`;
+    return `${target} +${fmt(bonus.value)}${entry?.category === "resource" ? "/s" : ""}`;
   };
 
   const describeRewardList = (bonuses: Bonus[]): string => {
@@ -533,12 +552,23 @@ function App() {
           <span className="nav-caption">Civilization</span>
           {visibleTabs.map(({ label, icon: Icon }) => (
             <button
+              type="button"
               className={`tab-button ${activeTab === label ? "active" : ""}`}
               key={label}
               onClick={() => setActiveTab(label)}
             >
               <Icon size={17} strokeWidth={1.8} />
               <span>{label}</span>
+              {label === "Upgrades" && hasAffordableUpgrade && (
+                <span
+                  className="tab-notification"
+                  title="Upgrade available to buy"
+                >
+                  <span className="visually-hidden">
+                    Upgrade available to buy
+                  </span>
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -568,8 +598,16 @@ function App() {
                       ? `${fmtSummary(availableWorkers)}/${fmtSummary(population)}`
                       : fmtSummary(resourceAmounts[key])}
                   </strong>
-                  {key === "population" && (
-                    <small>capacity {fmtSummary(maximumPopulation)}</small>
+                  {key === "population" ? (
+                    <small className="resource-note">
+                      capacity {fmtSummary(maximumPopulation)}
+                    </small>
+                  ) : (
+                    <small
+                      className={`resource-rate ${resourceRateTone(key)}`}
+                    >
+                      {formatResourceRate(key)}
+                    </small>
                   )}
                 </div>
               </button>
@@ -752,10 +790,14 @@ function App() {
                       </div>
                       <button
                         type="button"
-                        className="upgrade-buy"
+                        className={`upgrade-buy ${
+                          gameState.hasResourcesForUpgrade(upgrade.key)
+                            ? "affordable" : "unaffordable"
+                        }`}
                         onClick={() => buyUpgrade(upgrade)}
                       >
-                        Adopt upgrade
+                        {gameState.hasResourcesForUpgrade(upgrade.key)
+                          ? "Adopt upgrade" : "Not enough resources"}
                       </button>
                     </div>
                   ))}
@@ -813,11 +855,18 @@ function App() {
                       </span>
                       <span className="achievement-copy">
                         <strong>{focus.name}</strong>
-                        <small>{focus.description}</small>
+                        <small>{focus.description.replaceAll("/sec", "/s")}</small>
                         {!complete && goal && progress && (
                           <small className="achievement-goal">
                             {fmt(progress)} / {fmt(goal.threshold)} — next:{" "}
-                            {describeRewardList(goal.bonuses)}
+                            {describeRewardList([
+                              ...earnedTiers.flatMap((tier) => tier.bonuses)
+                                .filter((bonus) => bonus.destination === "buildingCostMultiplier"),
+                              ...goal.bonuses,
+                            ])}
+                            {goal.bonuses.some((bonus) =>
+                              bonus.destination === "buildingCostMultiplier",
+                            ) && " (total)"}
                           </small>
                         )}
                         {earnedTiers.length > 0 && (
@@ -909,6 +958,7 @@ function App() {
                   >
                     <span>{attribute.label}</span>
                     <strong>
+                      {attribute.key === "buildingCostMultiplier" && "×"}
                       {fmt(gameState.getAttributeValue(attribute.key))}
                     </strong>
                   </button>
@@ -1035,10 +1085,10 @@ function App() {
             </section>
           )}
 
-          <div className="notice-bar">
-            <Sparkles size={16} />
-            <span>{notice}</span>
-          </div>
+        </div>
+        <div className="notice-bar">
+          <Sparkles size={16} />
+          <span>{notice}</span>
         </div>
       </section>
 
@@ -1055,12 +1105,19 @@ function App() {
             const buildingCount = gameState.builtBuildings.filter(
               (builtKey) => builtKey === building.key,
             ).length;
+            const atCapacity =
+              gameState.isBuildingAvailable(building.key) &&
+              gameState.isBuildingAtCapacity(building.key);
             return (
+              <div
+                className={`building-actions ${atCapacity ? "at-capacity" : ""}`}
+                key={building.key}
+              >
               <button
+                type="button"
                 className={`building-card ${
                   !gameState.isBuildingAvailable(building.key) ? "locked" : ""
                 }`}
-                key={building.name}
                 onClick={() => buyBuilding(building)}
               >
                 <span className={`building-icon ${building.tone}`}>
@@ -1070,7 +1127,14 @@ function App() {
                   <span className="building-title-row">
                     <strong>{building.name}</strong>
                     <small>{building.description}</small>
-                    <span className="building-count-inline">
+                    <span
+                      className={`building-count-inline ${
+                        atCapacity ? "maxed" : ""
+                      }`}
+                      title={
+                        atCapacity ? "Maximum capacity reached" : undefined
+                      }
+                    >
                       {buildingCount}/
                       {fmt(gameState.getBuildingMax(building.key))}
                     </span>
@@ -1090,6 +1154,18 @@ function App() {
                   </em>
                 </span>
               </button>
+              {gamepedia.get(building.key)?.object.seen && (
+                <button
+                  type="button"
+                  className="building-pedia-button"
+                  onClick={() => openGamepediaAt(building.key)}
+                  aria-label={`Open ${building.name} in Gamepedia`}
+                  title={`Open ${building.name} in Gamepedia`}
+                >
+                  <BookOpen size={16} strokeWidth={1.8} />
+                </button>
+              )}
+              </div>
             );
           })}
         </div>
@@ -1171,8 +1247,54 @@ function App() {
         </button>
       </div>
 
+      <section className="achievement-notifications" aria-label="Achievement notifications">
+        <div role="status" aria-live="polite" aria-atomic="true">
+          {pendingAchievements.length > 0 && (
+            <strong>
+              <Trophy size={18} strokeWidth={1.8} />{" "}
+              Achievements earned: {fmt(pendingAchievements.length)}
+              <span className="visually-hidden">
+                {pendingAchievements.map(({ name, description }) =>
+                  `${name}: ${description.replaceAll("/sec", "/s")}`,
+                ).join(". ")}
+              </span>
+            </strong>
+          )}
+        </div>
+        {pendingAchievements.length > 0 && (
+          <>
+            <button
+              type="button"
+              className="notice-link"
+              onClick={() => setDismissedAchievements((current) => [
+                ...current, ...pendingAchievements.map(({ key }) => key),
+              ])}
+            >
+              Dismiss notifications
+            </button>
+            <ul>
+              {pendingAchievements.map((achievement) => (
+                <li key={achievement.key}>
+                  <button
+                    type="button"
+                    className="notice-link"
+                    onClick={() => openGamepediaAt(achievement.key)}
+                    aria-label={`Open ${achievement.name} in Gamepedia`}
+                  >
+                    {achievement.name} &rarr;
+                  </button>
+                  <p>{achievement.description.replaceAll("/sec", "/s")}</p>
+                  <p>Reward: {describeRewardList(achievement.bonuses) || "Achievement recorded"}</p>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+
       {gamepediaOpen && (
         <GamepediaModal
+          key={gamepediaFocusId ?? "index"}
           gameState={gameState}
           numberFormat={numberFormat}
           focusId={gamepediaFocusId}

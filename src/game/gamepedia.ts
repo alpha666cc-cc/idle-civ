@@ -166,6 +166,7 @@ for (const attribute of attributeDefinitions) {
 for (const building of buildingDefinitions) {
   const relatedIds = [
     ...building.costs.map(({ resource }) => resource),
+    "buildingCostMultiplier",
     ...(building.effects.resourceMultiplier
       ? [building.effects.resourceMultiplier.resource]
       : []),
