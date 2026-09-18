@@ -233,6 +233,7 @@ export class CivilizationState {
   /** Dev-tools free flags: skip affordability + cost deduction, keep capacity gates. */
   readonly freeBuildings: boolean;
   readonly freeUnits: boolean;
+  readonly freeUpgrades: boolean;
 
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
@@ -250,6 +251,7 @@ export class CivilizationState {
     devProductionMultiplier: ExpNumber = ExpNumber.ONE,
     freeBuildings = false,
     freeUnits = false,
+    freeUpgrades = false,
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -266,6 +268,7 @@ export class CivilizationState {
     this.devProductionMultiplier = devProductionMultiplier;
     this.freeBuildings = freeBuildings;
     this.freeUnits = freeUnits;
+    this.freeUpgrades = freeUpgrades;
 
     const houses = this.buildingCount("house");
     const townHalls = this.buildingCount("town-hall");
@@ -470,7 +473,8 @@ export class CivilizationState {
       !this.isUpgradeUnlocked(upgradeId)
     )
       return "locked";
-    if (!this.hasResourcesForUpgrade(upgradeId)) return "resources";
+    if (!this.freeUpgrades && !this.hasResourcesForUpgrade(upgradeId))
+      return "resources";
     return null;
   }
 
@@ -483,8 +487,10 @@ export class CivilizationState {
     const upgrade = upgradeDefinitions.find(({ key }) => key === upgradeId);
     if (!upgrade) return this;
     const resources = { ...this.resources };
-    for (const { resource, base } of upgrade.costs) {
-      resources[resource] = resources[resource].sub(base);
+    if (!this.freeUpgrades) {
+      for (const { resource, base } of upgrade.costs) {
+        resources[resource] = resources[resource].sub(base);
+      }
     }
     return this.withState(
       resources,
@@ -1871,6 +1877,7 @@ export class CivilizationState {
     devProductionMultiplier = this.devProductionMultiplier,
     freeBuildings = this.freeBuildings,
     freeUnits = this.freeUnits,
+    freeUpgrades = this.freeUpgrades,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -1888,6 +1895,7 @@ export class CivilizationState {
       devProductionMultiplier,
       freeBuildings,
       freeUnits,
+      freeUpgrades,
     );
   }
 
@@ -1948,6 +1956,27 @@ export class CivilizationState {
       this.unitCounts,
       this.devProductionMultiplier,
       this.freeBuildings,
+      free,
+    );
+  }
+
+  /** Dev-tools: free upgrades (skip affordability + deduction, keep unlock gates). */
+  setFreeUpgrades(free: boolean): CivilizationState {
+    if (free === this.freeUpgrades) return this;
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
       free,
     );
   }

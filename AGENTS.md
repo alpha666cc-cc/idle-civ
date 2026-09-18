@@ -726,7 +726,7 @@ with a roadmap entry already assigned.
   win-next-battle). If they should be gated for release, that is a product decision — flag
   it rather than silently hiding them. Notes on the dev-only paths: `advanceTime()` applies
   `rate × seconds` in one step (valid because no rate depends on a resource amount),
-  `freeBuildings`/`freeUnits` skip affordability and deduction but keep capacity gates and
+  `freeBuildings`/`freeUnits`/`freeUpgrades` skip affordability and deduction but keep capacity/unlock gates and
   keep the state-aware cost display intact, and the numeric fields
   (`components/DevNumberField.tsx`) commit on Enter/blur via `parseFlexibleNumber`
   (plain, scientific and `K/M/B`-style suffixed input). **Hazard, reproduced in headless

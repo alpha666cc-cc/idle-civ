@@ -236,6 +236,7 @@ function App() {
   const [autoBuyBuildings, setAutoBuyBuildings] = useState(false);
   const [autoAssignWorkers, setAutoAssignWorkers] = useState(false);
   const [dismissedAchievements, setDismissedAchievements] = useState<string[]>([]);
+  const [paused, setPaused] = useState(false);
   const tickMsRef = useRef(0);
   const [lastTickMs, setLastTickMs] = useState(0);
   const pendingAchievements = gameState.earnedAchievements
@@ -267,6 +268,7 @@ function App() {
   } = gameState;
 
   useEffect(() => {
+    if (paused) return;
     const timer = window.setInterval(() => {
       setGameState((current) => {
         const start = performance.now();
@@ -278,7 +280,7 @@ function App() {
       });
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [autoBuyBuildings, autoAssignWorkers]);
+  }, [paused, autoBuyBuildings, autoAssignWorkers]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -847,16 +849,29 @@ function App() {
                     >
                       +1d
                     </button>
+                    <button
+                      type="button"
+                      className={`dev-tools-toggle ${paused ? "on" : ""}`}
+                      aria-pressed={paused}
+                      onClick={() => setPaused((current) => !current)}
+                    >
+                      <span>{paused ? "Resume" : "Pause"}</span>
+                      <strong>{paused ? "ON" : "OFF"}</strong>
+                    </button>
+                  </div>
+                  <div className="dev-tools-control">
+                    <span>Last tick compute</span>
+                    <strong>{lastTickMs.toFixed(2)} ms</strong>
                   </div>
                 </div>
               </section>
               <section className="dev-tools-panel" aria-label="Free purchases">
                 <div className="dev-tools-heading">
                   <p className="eyebrow">Free purchases</p>
-                  <h3>Build for free</h3>
+                  <h3>Build &amp; adopt for free</h3>
                   <p className="dev-tools-copy">
-                    Skip cost checks and deduction; capacity gates and the next
-                    cost stay unchanged.
+                    Skip cost checks and deduction for buildings, units and
+                    upgrades; capacity and unlock gates stay unchanged.
                   </p>
                 </div>
                 <div className="dev-tools-controls">
@@ -885,6 +900,19 @@ function App() {
                   >
                     <span>Free units</span>
                     <strong>{gameState.freeUnits ? "ON" : "OFF"}</strong>
+                  </button>
+                  <button
+                    type="button"
+                    className={`dev-tools-toggle ${gameState.freeUpgrades ? "on" : ""}`}
+                    aria-pressed={gameState.freeUpgrades}
+                    onClick={() =>
+                      setGameState((current) =>
+                        current.setFreeUpgrades(!current.freeUpgrades),
+                      )
+                    }
+                  >
+                    <span>Free upgrades</span>
+                    <strong>{gameState.freeUpgrades ? "ON" : "OFF"}</strong>
                   </button>
                 </div>
               </section>
