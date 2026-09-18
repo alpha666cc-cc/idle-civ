@@ -10,7 +10,7 @@
     "enemyArmy": [
       {
         "unitId": "wolf",
-        "count": 3,
+        "count": 15,
         "label": "15 wolves"
       }
     ],
@@ -24,11 +24,50 @@
       {
         "type": "attributeMultiplier",
         "destination": "town-hallCapacity",
-        "value": 10
+        "value": 2
+      }
+    ],
+    "unlocks": ["slinger"]
+  },
+  {
+    "key": "age0_2_wolf_pack",
+    "name": "Wolf Pack",
+    "description": "A large Wolf Pack prevent the village from expending and found new settlements. The villagees fight the animals in the forest.",
+    "age": 0,
+    "year": -8000,
+    "isBoss": false,
+    "historical": "player 20 · enemy 15",
+    "enemyArmy": [
+      {
+        "unitId": "wolf",
+        "count": 100,
+        "label": "100 wolves"
+      },
+      {
+        "unitId": "bear",
+        "count": 5,
+        "label": "5 bears"
+      }
+    ],
+    "enemyBoosts": [],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 1.5
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "town-hallCapacity",
+        "value": 5
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "farmPower",
+        "value": 4
       }
     ],
     "unlocks": [
-      "slinger",
       "archer_prehist",
       "canoe",
       "spearman_bronze",
@@ -40,7 +79,7 @@
     ]
   },
   {
-    "key": "age0_2_bronze_raid",
+    "key": "age0_3_bronze_raid",
     "name": "Bronze Raid",
     "description": "Bronze-armed raiders fall on the herds at the edge of the settlement. Whoever holds the field keeps the metal.",
     "age": 0,
@@ -50,7 +89,7 @@
     "enemyArmy": [
       {
         "unitId": "axeman_bronze",
-        "count": 2,
+        "count": 150,
         "label": "150 axemen"
       }
     ],
@@ -59,7 +98,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "military",
-        "value": 1.05
+        "value": 2
       }
     ],
     "unlocks": []
@@ -75,12 +114,12 @@
     "enemyArmy": [
       {
         "unitId": "spearman_bronze",
-        "count": 3,
+        "count": 30000,
         "label": "30k Trojans"
       },
       {
         "unitId": "bowman_bronze",
-        "count": 2,
+        "count": 10000,
         "label": "10k defenders"
       }
     ],
@@ -89,17 +128,17 @@
       {
         "type": "attributeMultiplier",
         "destination": "military",
-        "value": 1.1
+        "value": 4
       },
       {
         "type": "attributeMultiplier",
         "destination": "unitAll.hp",
-        "value": 1.05
+        "value": 1.2
       },
       {
         "type": "attributeMultiplier",
         "destination": "unitAll.attack",
-        "value": 1.05
+        "value": 1.2
       }
     ],
     "unlocks": [

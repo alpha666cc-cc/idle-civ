@@ -16,7 +16,14 @@
     "key": "wolf-slayer",
     "name": "Wolf Slayer",
     "description": "Win the first battle and drive the wolves from the fields.",
-    "requirement": { "type": "encounter", "encounterId": "age0_1_first_fire" }
+    "requirement": { "type": "encounter", "encounterId": "age0_1_first_fire" },
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "food",
+        "value": 10
+      }
+    ]
   },
   {
     "key": "hall-of-halls",
@@ -86,7 +93,7 @@
   {
     "key": "farm-power-1",
     "name": "Farm Power I",
-    "description": "Own 10 farms. Reward: Farm power ×1.2.",
+    "description": "Own 10 farms. Reward: Farm power +20%",
     "requirement": {
       "type": "building-count",
       "building": "farm",
@@ -225,7 +232,7 @@
   {
     "key": "lumber-yard-power-1",
     "name": "Lumber Yard Power I",
-    "description": "Own 10 lumber yards. Reward: Lumber Yard power ×1.2.",
+    "description": "Own 10 lumber yards. Reward: Lumber Yard power +20%",
     "requirement": {
       "type": "building-count",
       "building": "lumber-yard",
@@ -396,7 +403,7 @@
   {
     "key": "quarry-power-1",
     "name": "Quarry Power I",
-    "description": "Own 10 quarries. Reward: Quarry power ×1.2.",
+    "description": "Own 10 quarries. Reward: Quarry power +20%.",
     "requirement": {
       "type": "building-count",
       "building": "quarry",
@@ -567,7 +574,7 @@
   {
     "key": "gold-mine-power-1",
     "name": "Gold Mine Power I",
-    "description": "Own 10 gold mines. Reward: Gold Mine power ×1.2.",
+    "description": "Own 10 gold mines. Reward: Gold Mine power +20%.",
     "requirement": {
       "type": "building-count",
       "building": "gold-mine",
@@ -576,7 +583,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "goldMinePower",
+        "destination": "gold-minePower",
         "value": 1.2
       }
     ],
@@ -595,7 +602,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "goldMinePower",
+        "destination": "gold-minePower",
         "value": 3
       }
     ],
@@ -614,7 +621,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "goldMinePower",
+        "destination": "gold-minePower",
         "value": 4
       }
     ],
@@ -633,7 +640,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "goldMinePower",
+        "destination": "gold-minePower",
         "value": 5
       }
     ],
@@ -652,7 +659,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "goldMinePower",
+        "destination": "gold-minePower",
         "value": 6
       }
     ],
@@ -671,7 +678,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "goldMinePower",
+        "destination": "gold-minePower",
         "value": 7
       }
     ],
@@ -690,7 +697,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "goldMinePower",
+        "destination": "gold-minePower",
         "value": 8
       }
     ],
@@ -709,7 +716,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "goldMinePower",
+        "destination": "gold-minePower",
         "value": 9
       }
     ],
@@ -728,7 +735,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "goldMinePower",
+        "destination": "gold-minePower",
         "value": 10
       }
     ],
