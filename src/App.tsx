@@ -556,12 +556,12 @@ function App() {
           </div>
         </div>
 
-        <div className="era-card">
+        <div className={`era-card ${canEnterCurrentAge ? "available" : ""}`}>
           <span className="era-label">Current Age</span>
           {currentAge ? (
             <>
               <strong
-                className={`era-age-name ${canEnterCurrentAge ? "clickable" : ""}`}
+                className={`era-age-name ${canEnterCurrentAge ? "available" : ""}`}
                 onClick={() => {
                   if (canEnterCurrentAge) {
                     setGameState((s) => s.enterAge(currentAge.key));
@@ -599,9 +599,9 @@ function App() {
                 <span>
                   {canEnterCurrentAge
                     ? "Click to advance"
-                    : battleProgress[0] < battleProgress[1]
-                      ? `${battleProgress[1] - battleProgress[0]} more battles`
-                      : `${buildingProgress[1] - buildingProgress[0]} more buildings`}
+                    : buildingProgress[0] < buildingProgress[1]
+                      ? `${buildingProgress[1] - buildingProgress[0]} more buildings`
+                      : ""}
                 </span>
               </span>
             </>

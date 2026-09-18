@@ -100,7 +100,14 @@ button:focus-visible {
   background: #303b34;
   border: 1px solid rgba(213, 223, 164, 0.12);
   border-radius: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
+
+.era-card.available {
+  border-color: #6f9c4a;
+  box-shadow: 0 0 0 1px #6f9c4a inset, 0 0 0 2px rgba(111, 156, 74, 0.25);
+}
+
 .era-label {
   display: block;
   color: #99a79c;
@@ -142,15 +149,15 @@ button:focus-visible {
   cursor: default;
 }
 
-.era-age-name.clickable {
+.era-age-name.available {
   cursor: pointer;
   text-decoration: underline;
-  text-decoration-color: rgba(213, 223, 164, 0.4);
+  text-decoration-color: rgba(111, 156, 74, 0.7);
   text-underline-offset: 3px;
 }
 
-.era-age-name.clickable:hover {
-  text-decoration-color: var(--accent);
+.era-age-name.available:hover {
+  text-decoration-color: #8fbc5a;
 }
 
 .era-progress-bars {

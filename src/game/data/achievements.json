@@ -3,7 +3,14 @@
     "key": "growing-hamlet",
     "name": "Growing Hamlet",
     "description": "Reach a population of 25 citizens.",
-    "requirement": { "type": "population", "amount": 25 }
+    "requirement": { "type": "population", "amount": 25 },
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "food",
+        "value": 2
+      }
+    ]
   },
   {
     "key": "wolf-slayer",

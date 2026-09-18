@@ -196,6 +196,13 @@ Every value a bonus destination can name is an **attribute** (§13.2), registere
 - `"derived"` — `DerivedAttributeKey` (`clickPower`, `autoClickRate`): computed stats,
   never stored (§13.2 decision 2).
 
+- **JSON numeric rule (AGENTS.md §4.3 addition):** when you write JSON data files that
+  hold numbers later read by `ExpNumber`, use **scientific notation** for any numeric
+  literal `> 1,000,000` (e.g. `"4.173e3"`, `"3.4013865e7"`, `"4.081946632061209e+43"`).
+  This keeps JSON source readable and avoids precision drift versus the `ExpNumber` /
+  `ExpNumber.from()` path. Player-facing formatting still goes through `formatNumber()`
+  (§4.7); this rule applies to data authored in JSON only.
+
 Supporting shapes: `ResourceAmounts` (`Record<ResourceKey, ExpNumber>`),
 `ResourceFactor = readonly [AttributeDefinition | string, ExpNumber]`,
 `ResourceFactors = { additional, multiplicative, drain }`, and `ResourceFactorMap`.
