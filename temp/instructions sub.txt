@@ -11,8 +11,7 @@ note :
  
  
 
+icons for units doe not work: 
+Attributon.md reference pages that ends with .svg but thos page does not exists , only the hml exists ( with a bunch of stuff)
+the html page has a download buuton
 
-
-
-update roadmap and game scope
-a little change, remove "x more battles", when the condition are met, highlight the current age widget ( surrond by green), the user must click on it to change age

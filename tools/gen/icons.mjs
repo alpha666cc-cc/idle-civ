@@ -205,6 +205,10 @@ async function download(entryPath, outFile) {
   const response = await fetch(rawBase + entryPath);
   if (!response.ok) throw new Error(`${response.status} for ${entryPath}`);
   let svg = await response.text();
+  // Raw repo files are the black-background variant: an opaque full-canvas
+  // rect behind the glyph. Drop it — a full canvas makes the CSS alpha mask
+  // in `.unit-icon-svg` cover the whole chip (solid block, no glyph).
+  svg = svg.replace('<path d="M0 0h512v512H0z"/>', "");
   svg = svg.replace(/fill="#fff"|fill="white"/g, 'fill="currentColor"');
   fs.writeFileSync(outFile, svg, "utf8");
 }
@@ -230,7 +234,7 @@ for (const [unitId, entryPath] of chosen) {
     await download(entryPath, path.join(outDir, `${unitId}.svg`));
     ok += 1;
     attribution.push(
-      `| \`${unitId}\` | ${name.replace(/\.svg$/, "")} | ${author} | https://game-icons.net/1x1/${author}/${name} |`,
+      `| \`${unitId}\` | ${name.replace(/\.svg$/, "")} | ${author} | https://game-icons.net/1x1/${author}/${name.replace(/\.svg$/, "")}.html |`,
     );
   } catch (error) {
     console.warn(`FAIL  ${unitId}: ${error.message}`);

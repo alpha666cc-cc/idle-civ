@@ -1279,7 +1279,8 @@ button:focus-visible {
   color: #4f837d;
   background: #d2e3e0;
 }
-.building-icon.green {
+.building-icon.green,
+.unit-icon.green {
   color: #617b3c;
   background: #d1dfb7;
 }
@@ -1291,23 +1292,28 @@ button:focus-visible {
   color: #5c706e;
   background: #d0dcda;
 }
-.building-icon.amber {
+.building-icon.amber,
+.unit-icon.amber {
   color: #9e682c;
   background: #ecd1a5;
 }
-.building-icon.red {
+.building-icon.red,
+.unit-icon.red {
   color: #d28a68;
   background: #f1dfd2;
 }
-.building-icon.violet {
+.building-icon.violet,
+.unit-icon.violet {
   color: #7d6fa8;
   background: #e2ddf0;
 }
-.building-icon.orange {
+.building-icon.orange,
+.unit-icon.orange {
   color: #c98546;
   background: #f0e0ca;
 }
-.building-icon.blue {
+.building-icon.blue,
+.unit-icon.blue {
   color: #7797ad;
   background: #dae5e8;
 }

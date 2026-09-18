@@ -447,8 +447,9 @@ when a non-production key is used) silently yields `ExpNumber.ZERO` rather than 
 - Fonts are `@import`ed from Google Fonts (Manrope, DM Mono, Playfair Display) — expect
   degraded styling offline.
 - "Tone" classes drive color: `teal`, `gold`, `green`, `slate`, `amber`, `violet`,
-  `red`, `orange`, `blue`, `pink`, `locked`. They are shared between `.resource-icon.*`
-  and `.building-icon.*`, so adding a tone means adding both selector groups.
+  `red`, `orange`, `blue`, `pink`, `locked`. They are shared between `.resource-icon.*`,
+  `.building-icon.*` and (light palette) `.unit-icon.*`, so adding a tone means adding
+  every selector group.
 - Class names are flat, lowercase, hyphenated and named after their block
   (`.gamepedia-detail-header`, `.factor-row`, `.multiplier-button`).
 
