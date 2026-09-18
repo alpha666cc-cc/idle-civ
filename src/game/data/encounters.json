@@ -10,8 +10,8 @@
     "enemyArmy": [
       {
         "unitId": "wolf",
-        "count": 15,
-        "label": "15 wolves"
+        "count": 6,
+        "label": "6 wolves"
       }
     ],
     "enemyBoosts": [],
@@ -24,6 +24,11 @@
       {
         "type": "attributeMultiplier",
         "destination": "town-hallCapacity",
+        "value": 2
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "barracksCapacity",
         "value": 2
       }
     ],
