@@ -721,9 +721,22 @@ with a roadmap entry already assigned.
   Efficiency Factor `E_off` of 25–50% of active production, capped at 12 hours).
 - **`styles.css` is one 1356-line global file** with no scoping — reuse class names
   carefully and remove dead rules when superseding them.
-- **Dev Tools are player-visible** in the shipped UI (auto-clicker, auto-buy,
-  auto-assign). If they should be gated for release, that is a product decision — flag it
-  rather than silently hiding them.
+- **Dev Tools are player-visible** in the shipped UI (auto-clicker, dev production
+  multiplier, auto-buy, auto-assign, `+1m/+1h/+1d` skips, free-buildings/free-units,
+  win-next-battle). If they should be gated for release, that is a product decision — flag
+  it rather than silently hiding them. Notes on the dev-only paths: `advanceTime()` applies
+  `rate × seconds` in one step (valid because no rate depends on a resource amount),
+  `freeBuildings`/`freeUnits` skip affordability and deduction but keep capacity gates and
+  keep the state-aware cost display intact, and the numeric fields
+  (`components/DevNumberField.tsx`) commit on Enter/blur via `parseFlexibleNumber`
+  (plain, scientific and `K/M/B`-style suffixed input). **Hazard, reproduced in headless
+  Chrome:** never read `event.target.checked` from a control in the shell — `countUiClick`
+  on `<main>` runs in the **capture** phase, so its `setGameState()` commit re-renders the
+  tree and React writes the controlled `checked` value back onto the node *before* the
+  `change` handler runs. `change saw checked=false` therefore made every
+  "turn this on" click read `false` (the original auto-buy checkbox bug). Dev toggles are
+  now `aria-pressed` buttons whose handlers **invert React state**
+  (`setFreeBuildings(!current.freeBuildings)`), never a DOM value.
 
 ---
 

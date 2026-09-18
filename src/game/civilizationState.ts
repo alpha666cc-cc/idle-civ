@@ -1812,26 +1812,40 @@ export class CivilizationState {
   }
 
   /**
-   * Dev-tools: advance the simulation by whole seconds without real waiting.
-   * Each simulated second runs the exact `tick()` path (production, auto
-   * clicks, play-time, achievements) in manageable chunks so 1m/1h/1d stays
-   * responsive; no auto-buy/auto-assign is applied here (the live loop owns it).
+   * Dev-tools: advance the simulation by whole seconds in one step. Every
+   * production rate is constant across the window — nothing in the model feeds
+   * resource amounts back into the rates — so the skip is one multiply per
+   * producer resource instead of a per-second loop. Auto clicks are already
+   * part of the rate; auto-buy and auto-assign stay with the live loop.
    */
   advanceTime(seconds: number): CivilizationState {
     const wholeSeconds = Math.floor(seconds);
     if (!Number.isFinite(wholeSeconds) || wholeSeconds <= 0) return this;
-    const total = Math.min(wholeSeconds, 86_400);
-    const runTicks = (
-      start: CivilizationState,
-      count: number,
-    ): CivilizationState => {
-      let current = start;
-      for (let i = 0; i < count; i++) {
-        current = current.tick();
-      }
-      return current;
+    const elapsed = Math.min(wholeSeconds, 86_400);
+    const elapsedFactor = ExpNumber.fromNumber(elapsed);
+    const resources = { ...this.resources };
+    for (const resourceKey of producerResourceKeys) {
+      resources[resourceKey] = applyRate(
+        resources[resourceKey],
+        this.computeResourceRate(resourceKey).mul(elapsedFactor),
+      );
+    }
+    const statistics: Statistics = {
+      ...this.statistics,
+      playTimeMs: this.statistics.playTimeMs + elapsed * tickMilliseconds,
+      runTimeMs: this.statistics.runTimeMs + elapsed * tickMilliseconds,
     };
-    return runTicks(this, total);
+    return this.withState(
+      resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      statistics,
+    ).checkAchievements();
   }
 
   enterAge(ageId: string): CivilizationState {

@@ -127,16 +127,15 @@ export function parseFlexibleNumber(input: string): ExpNumber | null {
     // Fall through to the suffixed form below.
   }
   const match = text.match(
-    /^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)([A-Za-z]+)$/,
+    /^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)?([A-Za-z]+)$/,
   );
   if (!match) return null;
   const [, numericPart, suffix] = match;
-  let base: ExpNumber;
-  try {
-    base = ExpNumber.fromScientific(numericPart);
-  } catch {
-    return null;
-  }
+  // A lone e/E is a malformed scientific literal in either position, never a
+  // compact tier ("1e" and "e" both mean the user is still typing an exponent).
+  if (/^e$/i.test(suffix)) return null;
+  const base = numericPart === undefined ? ExpNumber.ONE : parseBase(numericPart);
+  if (base === null) return null;
   const namedIndex = NAMED_SUFFIXES.findIndex(
     (named) => named.length > 0 && named.toLowerCase() === suffix.toLowerCase(),
   );
@@ -156,6 +155,15 @@ export function parseFlexibleNumber(input: string): ExpNumber | null {
     }
   }
   return null;
+}
+
+/** Parses the numeric half of a suffixed literal; null when malformed. */
+function parseBase(numericPart: string): ExpNumber | null {
+  try {
+    return ExpNumber.fromScientific(numericPart);
+  } catch {
+    return null;
+  }
 }
 
 /**

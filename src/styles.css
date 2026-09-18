@@ -500,14 +500,20 @@ button:focus-visible {
   border: 1px solid rgba(67, 86, 68, 0.12);
 }
 .dev-tools-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  margin: 0 0 27px;
+  margin: 0 0 20px;
   padding: 18px;
   background: rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(67, 86, 68, 0.12);
+}
+.dev-tools-heading {
+  min-width: 0;
+}
+.dev-tools-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  align-items: center;
+  gap: 12px 18px;
+  margin-top: 14px;
 }
 .dev-tools-panel h3 {
   margin: 6px 0 5px;
@@ -523,13 +529,16 @@ button:focus-visible {
 }
 .dev-tools-control {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
   color: #68786d;
   font:
     10px "DM Mono",
     monospace;
-  white-space: nowrap;
+}
+.dev-tools-controls > * {
+  min-width: 0;
 }
 .dev-tools-control input[type="text"] {
   width: 110px;
@@ -560,11 +569,37 @@ button:focus-visible {
   border-color: #8ea94e;
   background: #e5efd8;
 }
-.dev-tools-control input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: #4f713c;
+.dev-tools-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid #c4d0bd;
+  border-radius: 4px;
+  color: #55654f;
+  background: #edf1e8;
+  font:
+    10px "DM Mono",
+    monospace;
+  text-align: left;
   cursor: pointer;
+  transition:
+    border-color 0.16s,
+    background 0.16s,
+    color 0.16s;
+}
+.dev-tools-toggle:hover {
+  border-color: #8ea94e;
+}
+.dev-tools-toggle.on {
+  border-color: #6f8a3a;
+  color: #2f3b25;
+  background: #dbe8c6;
+}
+.dev-tools-toggle strong {
+  font-weight: 700;
+  letter-spacing: 0.06em;
 }
 .settings-panel {
   padding: 22px 24px;
