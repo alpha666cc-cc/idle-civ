@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import {
   ArrowUpRight,
   BookOpen,
@@ -236,6 +236,8 @@ function App() {
   const [autoBuyBuildings, setAutoBuyBuildings] = useState(false);
   const [autoAssignWorkers, setAutoAssignWorkers] = useState(false);
   const [dismissedAchievements, setDismissedAchievements] = useState<string[]>([]);
+  const tickMsRef = useRef(0);
+  const [lastTickMs, setLastTickMs] = useState(0);
   const pendingAchievements = gameState.earnedAchievements
     .filter((id) => !dismissedAchievements.includes(id))
     .map(findAchievementDefinition)
@@ -267,14 +269,23 @@ function App() {
   useEffect(() => {
     const timer = window.setInterval(() => {
       setGameState((current) => {
+        const start = performance.now();
         let next = current.tick();
         if (autoBuyBuildings) next = next.autoBuyBuildings();
         if (autoAssignWorkers) next = next.autoAssignWorkers();
+        tickMsRef.current = performance.now() - start;
         return next;
       });
     }, 1000);
     return () => window.clearInterval(timer);
   }, [autoBuyBuildings, autoAssignWorkers]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setLastTickMs(tickMsRef.current);
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // Reveal upgrades, units and battles in the Gamepedia the moment their
   // unlock condition fires.
@@ -717,6 +728,10 @@ function App() {
                   </p>
                 </div>
                 <div className="dev-tools-controls">
+                  <div className="dev-tools-control">
+                    <span>Last tick compute</span>
+                    <strong>{lastTickMs.toFixed(2)} ms</strong>
+                  </div>
                   <DevNumberField
                     label="Clicks / second"
                     value={String(gameState.autoClicksPerSecond)}

@@ -275,7 +275,7 @@ Getters: `population` (= `resources.population`), `maximumPopulation` /
 | `tick()` | Applies `computeResourceRate()` to each **production** resource (clamped at 0), advances both play-time counters by one second, records any age whose population threshold was just met (`recordReachedAges()`), then `checkAchievements()` |
 | `gather(key)` | Adds `computeClickGain(key)` = `clickPower × productionPerWorker × Π multipliers` (drains excluded) and counts one production click |
 | `assignWorker` / `unassignWorker` | Clamped by available workers / current count |
-| `autoAssignWorkers(count = 10)` | Keeps food ≈ 10× the other resources while equalising the others |
+| `autoAssignWorkers(count = Infinity)` | Assigns all idle workers (or up to `count`); keeps food ≈ 10× the other resources while equalising the others |
 | `build(key, count)` | No-op unless `canBuild()`; subtracts cost, applies special resource deltas, appends ids, adds to the cumulative building counters |
 | `autoBuyBuildings()` | One pass in definition order, buying `getMaxAffordableBuildings()` each |
 | `upgradeBuildingLimit(key, slots)` | Raises `` `${key}Capacity` `` |

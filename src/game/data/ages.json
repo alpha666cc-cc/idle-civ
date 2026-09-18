@@ -3,7 +3,7 @@
     "key": "age-0",
     "name": "Ancient",
     "description": "The first settlements rise from scattered families into a village. Fire, bronze, and the first walls.",
-    "populationThreshold": 1,
+    "populationThreshold": 0,
     "unlocks": []
   },
   {

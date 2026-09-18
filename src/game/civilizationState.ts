@@ -364,11 +364,11 @@ export class CivilizationState {
   }
 
   /**
-   * Assign up to `count` idle workers.
+   * Assign all idle workers (or up to `count` when given).
    * Food workers are maintained at roughly 10 times each other resource,
    * starting with food, while equalizing the other resources among themselves.
    */
-  autoAssignWorkers(count = 10): CivilizationState {
+  autoAssignWorkers(count = Infinity): CivilizationState {
     const others = (
       Object.keys(this.workers) as ProductionResourceKey[]
     ).filter((key) => key !== "food");
@@ -1426,10 +1426,27 @@ export class CivilizationState {
     return stacks;
   }
 
-  /** The next battle the campaign offers: the first not-yet-won encounter. */
+  /** The next battle the campaign offers: the first not-yet-won encounter in the
+   *  current age only. Battles outside the current age are never offered. */
   getNextBattle(): EncounterDefinition | undefined {
+    const currentAge = this.getCurrentAge();
+    if (!currentAge) return undefined;
+    const currentAgeIndex = ageDefinitions.findIndex(
+      (a) => a.key === currentAge.key,
+    );
     return encounterDefinitions.find(
-      (encounter) => !this.defeatedEncounters.includes(encounter.key),
+      (encounter) =>
+        encounter.age === currentAgeIndex &&
+        !this.defeatedEncounters.includes(encounter.key),
+    );
+  }
+
+  /** Whether more battles exist but are locked behind entering the next age. */
+  hasLockedBattles(): boolean {
+    return encounterDefinitions.some(
+      (encounter) =>
+        !this.defeatedEncounters.includes(encounter.key) &&
+        !this.isAgeUnlocked(`age-${encounter.age}`),
     );
   }
 
@@ -1441,6 +1458,13 @@ export class CivilizationState {
   simulateEncounter(encounterId: string): BattleSimulation | undefined {
     const encounter = findEncounterDefinition(encounterId);
     if (!encounter) return undefined;
+    // Battles outside the current age cannot be fought.
+    const currentAge = this.getCurrentAge();
+    if (!currentAge) return undefined;
+    const currentAgeIndex = ageDefinitions.findIndex(
+      (a) => a.key === currentAge.key,
+    );
+    if (encounter.age !== currentAgeIndex) return undefined;
     const player = this.getArmyStacks();
     const enemy = this.getEnemyStacks(encounterId);
     if (player.length === 0 || enemy.length === 0) return undefined;
@@ -1459,6 +1483,15 @@ export class CivilizationState {
     simulation?: BattleSimulation,
   ): CivilizationState {
     if (this.defeatedEncounters.includes(encounterId)) return this;
+    const encounter = findEncounterDefinition(encounterId);
+    if (!encounter) return this;
+    // Battles outside the current age cannot be fought.
+    const currentAge = this.getCurrentAge();
+    if (!currentAge) return this;
+    const currentAgeIndex = ageDefinitions.findIndex(
+      (a) => a.key === currentAge.key,
+    );
+    if (encounter.age !== currentAgeIndex) return this;
     const result = simulation ?? this.simulateEncounter(encounterId);
     if (!result || result.outcome !== "player") return this;
     return this.defeatEncounter(encounterId);
@@ -1923,14 +1956,23 @@ export class CivilizationState {
     );
   }
 
-  /** The current age, based on population thresholds (highest threshold ≤ population). */
+  /** The current age, based on population thresholds (highest threshold ≤ population).
+   *  Capped at the first unentered age so population can never skip an unfinished
+   *  age: the current age only advances past an age once it has been entered. */
   getCurrentAge(): AgeDefinition | undefined {
+    let popIndex = -1;
     const pop = this.population.toNumber();
-    let current: AgeDefinition | undefined;
-    for (const age of ageDefinitions) {
-      if (pop >= age.populationThreshold) current = age;
+    for (let i = 0; i < ageDefinitions.length; i++) {
+      if (pop >= ageDefinitions[i].populationThreshold) popIndex = i;
     }
-    return current;
+    // Below the first threshold the village is still in the first age.
+    if (popIndex < 0) popIndex = 0;
+    const firstUnentered = ageDefinitions.findIndex(
+      (a) => !this.enteredAges.includes(a.key),
+    );
+    // Every age entered: the pop-based age is current.
+    if (firstUnentered < 0) return ageDefinitions[popIndex];
+    return ageDefinitions[Math.min(popIndex, firstUnentered)];
   }
 
   /** Battle progress in the current age: [wonCount, totalCount]. */
