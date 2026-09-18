@@ -63,7 +63,12 @@ import {
   type Statistics,
 } from "./statistics";
 import { upgradeDefinitions } from "./upgrades";
-import { collectCostReductions, type Bonus, type CostReductions } from "./bonus";
+import {
+  collectCostReductions,
+  type Bonus,
+  type CostReductions,
+} from "./bonus";
+import { ageDefinitions, findAgeDefinition, type AgeDefinition } from "./ages";
 
 /** One cost entry rewritten by the §13.1 per-unit reduction order. */
 type CostParameters = {
@@ -173,10 +178,14 @@ const compoundStatValue = (
 for (const key of [
   "buildingPower",
   "buildingCostMultiplier",
+  "wastedResources",
   ...buildingDefinitions.map(({ key }) => `${key}Power`),
 ]) {
   derivedAttributeComputations[key] = {
-    value: (state) => compoundStatValue(state, key),
+    value:
+      key === "wastedResources"
+        ? (state) => state.statistics.wastedResources
+        : (state) => compoundStatValue(state, key),
     base: () => ExpNumber.ONE,
   };
 }
@@ -516,7 +525,10 @@ export class CivilizationState {
         buildingFactors.drain.push([building.key, resourceDrain.amount]);
       }
       if (resourceProduction?.resource === resourceKey) {
-        buildingFactors.additional.push([building.key, resourceProduction.amount]);
+        buildingFactors.additional.push([
+          building.key,
+          resourceProduction.amount,
+        ]);
       }
     }
 
@@ -700,20 +712,29 @@ export class CivilizationState {
   getModifierSummary(key: string) {
     const derived = this.getDerivedAttributeFactors(key);
     const factors = derived
-      ? { additional: derived.additional, multiplicative: derived.multiplicative, drain: [] }
+      ? {
+          additional: derived.additional,
+          multiplicative: derived.multiplicative,
+          drain: [],
+        }
       : this.getFactors(key as ResourceKey);
     const totals = summarizeResourceFactors(factors);
     const base = derived?.base ?? ExpNumber.ZERO;
     return {
       ...totals,
       base,
-      result: base.add(totals.additional).mul(totals.multiplier).sub(totals.drain),
+      result: base
+        .add(totals.additional)
+        .mul(totals.multiplier)
+        .sub(totals.drain),
     };
   }
 
   /** Effective effects for one or more buildings, shared by simulation and Pedia. */
   getBuildingEffects(buildingKey: BuildingKey, count = 1): BuildingEffects {
-    const effects = buildingDefinitions.find(({ key }) => key === buildingKey)?.effects;
+    const effects = buildingDefinitions.find(
+      ({ key }) => key === buildingKey,
+    )?.effects;
     if (!effects) return {};
     const power = this.buildingPower(buildingKey);
     const quantity = ExpNumber.fromNumber(count);
@@ -761,7 +782,10 @@ export class CivilizationState {
     return {
       sources,
       globalMultiplier,
-      reductions: { ...reductions, base: reductions.base.mul(globalMultiplier) },
+      reductions: {
+        ...reductions,
+        base: reductions.base.mul(globalMultiplier),
+      },
     };
   }
 
@@ -847,7 +871,10 @@ export class CivilizationState {
       accuracy: { flat: ExpNumber.ZERO, multiplier: ExpNumber.ONE },
     };
     for (const [, bonus] of sources) {
-      if (bonus.type !== "attributeFlat" && bonus.type !== "attributeMultiplier")
+      if (
+        bonus.type !== "attributeFlat" &&
+        bonus.type !== "attributeMultiplier"
+      )
         continue;
       const target = parseUnitStatTarget(bonus.destination);
       if (!target || !unitMatchesStatTarget(unit, target)) continue;
@@ -1251,17 +1278,6 @@ export class CivilizationState {
     return this.earnedAchievements.includes(achievementId);
   }
 
-  /** Highest age reached: a boss victory moves the civilization into the next. */
-  getCurrentAge(): number {
-    let age = 0;
-    for (const key of this.defeatedEncounters) {
-      const encounter = findEncounterDefinition(key);
-      if (!encounter) continue;
-      age = Math.max(age, encounter.isBoss ? encounter.age + 1 : encounter.age);
-    }
-    return age;
-  }
-
   /** Can the player buy this unit: base-available, or unlocked by a won battle. */
   isUnitAvailable(unitId: string): boolean {
     const unit = findUnitDefinition(unitId);
@@ -1277,18 +1293,22 @@ export class CivilizationState {
   /** The Army tab's buyable roster: current + previous age, unlocked only. */
   getRosterUnits(): UnitDefinition[] {
     const currentAge = this.getCurrentAge();
+    if (!currentAge) return [];
+    const currentAgeIndex = ageDefinitions.findIndex(
+      (a) => a.key === currentAge.key,
+    );
     return unitDefinitions.filter(
       (unit) =>
         isBuyableUnit(unit) &&
         this.isUnitAvailable(unit.key) &&
-        unit.age >= currentAge - 1 &&
-        unit.age <= currentAge,
+        unit.age >= currentAgeIndex - 1 &&
+        unit.age <= currentAgeIndex,
     );
   }
 
   hasResourcesForUnit(unitId: string, count: number = 1): boolean {
-    return this.getUnitCost(unitId, count).every(
-      ({ resource, base }) => this.resources[resource].gte(base),
+    return this.getUnitCost(unitId, count).every(({ resource, base }) =>
+      this.resources[resource].gte(base),
     );
   }
 
@@ -1424,11 +1444,6 @@ export class CivilizationState {
     return { ...times, [id]: this.statistics.runTimeMs };
   }
 
-  /** Play time (ms) of the fastest recorded run that entered this age, if any. */
-  getFastestAgeTime(ageId: string): number | undefined {
-    return this.statistics.fastestAgeMs[ageId];
-  }
-
   /** Play time (ms) of the fastest recorded run that won this encounter, if any. */
   getFastestBattleTime(encounterId: string): number | undefined {
     return this.statistics.fastestBattleMs[encounterId];
@@ -1521,13 +1536,17 @@ export class CivilizationState {
       if (held.lte(ExpNumber.ZERO)) continue;
       const heldExponent = Math.floor(held.log10());
       let exponent = nextHoarderExponent(chain, this.earnedAchievements);
-      const endExponent = chain.startExponent + Math.floor(
-        (heldExponent - chain.startExponent) / chain.exponentStep,
-      ) * chain.exponentStep;
-      if (!Number.isSafeInteger(endExponent) || exponent > endExponent) continue;
+      const endExponent =
+        chain.startExponent +
+        Math.floor((heldExponent - chain.startExponent) / chain.exponentStep) *
+          chain.exponentStep;
+      if (!Number.isSafeInteger(endExponent) || exponent > endExponent)
+        continue;
       const count = (endExponent - exponent) / chain.exponentStep + 1;
       if (count > 1000) {
-        newlyEarned.push(`${chain.family}-e${exponent}-through-e${endExponent}`);
+        newlyEarned.push(
+          `${chain.family}-e${exponent}-through-e${endExponent}`,
+        );
         continue;
       }
       for (; exponent <= endExponent; exponent += chain.exponentStep) {
@@ -1691,8 +1710,40 @@ export class CivilizationState {
 
   enterAge(ageId: string): CivilizationState {
     if (this.enteredAges.includes(ageId)) return this;
+    const age = findAgeDefinition(ageId);
+    if (!age) return this;
+
+    // Retire units from N-2 age (units from two ages ago)
+    const currentAgeIndex = ageDefinitions.findIndex((a) => a.key === ageId);
+    const retireAgeIndex = currentAgeIndex - 2;
+    let wasted = ExpNumber.ZERO;
+    const newUnitCounts = { ...this.unitCounts };
+
+    if (retireAgeIndex >= 0) {
+      for (const [unitId, count] of Object.entries(this.unitCounts)) {
+        const unitDef = findUnitDefinition(unitId);
+        if (unitDef && unitDef.age === retireAgeIndex) {
+          // Compute the cost of these units (what was "wasted")
+          const unitCost = this.getUnitCost(unitId, 0);
+          const totalCost = unitCost.reduce<ExpNumber>(
+            (total, { base }) => total.add(base.mul(count)),
+            ExpNumber.ZERO,
+          );
+          wasted = wasted.add(totalCost);
+          delete newUnitCounts[unitId];
+        }
+      }
+    }
+
+    // Multiply town hall capacity by 10
+    const resources = { ...this.resources };
+    const townHallCapacity = resources["town-hallCapacity"];
+    resources["town-hallCapacity"] = townHallCapacity.mul(
+      ExpNumber.fromNumber(10),
+    );
+
     return this.withState(
-      this.resources,
+      resources,
       this.buildingCostOverrides,
       this.builtBuildings,
       this.autoClicksPerSecond,
@@ -1703,7 +1754,80 @@ export class CivilizationState {
       {
         ...this.statistics,
         fastestAgeMs: this.recordFastest(this.statistics.fastestAgeMs, ageId),
+        wastedResources: this.statistics.wastedResources.add(wasted),
       },
+      newUnitCounts,
     );
+  }
+
+  /** The current age, based on population thresholds (highest threshold ≤ population). */
+  getCurrentAge(): AgeDefinition | undefined {
+    const pop = this.population.toNumber();
+    let current: AgeDefinition | undefined;
+    for (const age of ageDefinitions) {
+      if (pop >= age.populationThreshold) current = age;
+    }
+    return current;
+  }
+
+  /** Battle progress in the current age: [wonCount, totalCount]. */
+  getAgeBattleProgress(): [number, number] {
+    const age = this.getCurrentAge();
+    if (!age) return [0, 0];
+    const ageIndex = parseInt(age.key.slice(-1), 10);
+    const totalBattles = encounterDefinitions.filter(
+      (e) => e.age === ageIndex,
+    ).length;
+    const wonBattles = encounterDefinitions.filter(
+      (e) => e.age === ageIndex && this.defeatedEncounters.includes(e.key),
+    ).length;
+    return [wonBattles, totalBattles];
+  }
+
+  /** Building progress in the current age: [buildings, target].
+   *  Target is 125% of maximum population. */
+  getAgeBuildingProgress(): [number, number] {
+    const age = this.getCurrentAge();
+    if (!age) return [0, 0];
+    const buildings = this.builtBuildings.length;
+    const maxPop = this.maximumPopulation.toNumber();
+    const target = Math.ceil(maxPop * 1.25);
+    return [buildings, target];
+  }
+
+  /** Whether the player can enter the given age (battles done + buildings ≥ 125% pop max). */
+  canEnterAge(ageId: string): boolean {
+    const age = findAgeDefinition(ageId);
+    if (!age) return false;
+    if (this.enteredAges.includes(ageId)) return false;
+
+    // Check battles: all battles in this age must be won
+    const ageIndex = parseInt(age.key.slice(-1), 10);
+    const ageBattles = encounterDefinitions.filter((e) => e.age === ageIndex);
+    const allBattlesWon = ageBattles.every((b) =>
+      this.defeatedEncounters.includes(b.key),
+    );
+    if (!allBattlesWon) return false;
+
+    // Check buildings: total buildings ≥ 125% of max population
+    const maxPop = this.maximumPopulation.toNumber();
+    const target = Math.ceil(maxPop * 1.25);
+    if (this.builtBuildings.length < target) return false;
+
+    return true;
+  }
+
+  /** Whether the given age is currently "unlocked" (winnable) — all prior ages entered. */
+  isAgeUnlocked(ageId: string): boolean {
+    const ageIndex = parseInt(ageId.slice(-1), 10);
+    // Age 0 is always unlocked
+    if (ageIndex === 0) return true;
+    // Check that the previous age has been entered
+    const prevAgeId = `age-${ageIndex - 1}`;
+    return this.enteredAges.includes(prevAgeId);
+  }
+
+  getFastestAgeTime(ageId: string): number | undefined {
+    return this.statistics.fastestAgeMs[ageId];
   }
 }

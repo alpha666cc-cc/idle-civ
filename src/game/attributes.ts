@@ -39,6 +39,7 @@ export type DerivedAttributeKey =
   | "autoClickRate"
   | "buildingPower"
   | "buildingCostMultiplier"
+  | "wastedResources"
   | `${BuildingKey}Power`;
 
 /** Every value-side key a bonus destination may name; buyable ids are separate. */
@@ -171,6 +172,16 @@ export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
 
 /** Every attribute definition, in Gamepedia registration order. */
 derivedAttributeDefinitions.push(...buildingPowerAttributeDefinitions);
+
+/** Wasted resources: accumulated resource cost of retired units (§Age system). */
+export const wastedResourcesDefinition = new AttributeDefinition(
+  "wastedResources",
+  "Wasted Resources",
+  "derived",
+  "Resources spent on units that were retired at an age boundary.",
+);
+
+derivedAttributeDefinitions.push(wastedResourcesDefinition);
 
 export const attributeDefinitions: AttributeDefinition[] = [
   ...productionDefinitions,

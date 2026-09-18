@@ -132,6 +132,58 @@ button:focus-visible {
   height: 100%;
   background: var(--accent);
 }
+
+.era-age-name {
+  display: block;
+  color: #e4ebcf;
+  font:
+    600 15px "Playfair Display",
+    serif;
+  cursor: default;
+}
+
+.era-age-name.clickable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(213, 223, 164, 0.4);
+  text-underline-offset: 3px;
+}
+
+.era-age-name.clickable:hover {
+  text-decoration-color: var(--accent);
+}
+
+.era-progress-bars {
+  display: flex;
+  gap: 4px;
+  margin: 6px 0 5px;
+}
+
+.era-progress-battles {
+  flex: 1;
+  height: 4px;
+  background: #3d1a1a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.era-progress-buildings {
+  flex: 1;
+  height: 4px;
+  background: #3d2e1a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.era-progress-battles i {
+  height: 100%;
+  background: #c44;
+}
+
+.era-progress-buildings i {
+  height: 100%;
+  background: #ca4;
+}
 .era-meta {
   grid-column: 1 / -1;
   display: flex;

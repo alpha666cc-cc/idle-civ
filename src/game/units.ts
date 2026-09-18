@@ -138,11 +138,11 @@ const toUnitDefinition = (data: UnitData): UnitDefinition =>
     data.canHit,
     data.bonusVs ?? [],
     data.available,
-    data.costs.map(({ resource, base, factor }) => ({
+    data.costs?.map(({ resource, base, factor }) => ({
       resource,
       base: ExpNumber.from(base),
       factor,
-    })),
+    })) ?? [],
     {
       hp: ExpNumber.fromNumber(data.hp),
       attack: ExpNumber.fromNumber(data.attack),

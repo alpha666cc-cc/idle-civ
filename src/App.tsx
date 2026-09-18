@@ -537,6 +537,13 @@ function App() {
     setNotice(`${upgrade.name} adopted. Your civilization advances.`);
   };
 
+  // Age system
+  const currentAge = gameState.getCurrentAge();
+  const canEnterCurrentAge =
+    currentAge && gameState.canEnterAge(currentAge.key);
+  const battleProgress = gameState.getAgeBattleProgress();
+  const buildingProgress = gameState.getAgeBuildingProgress();
+
   return (
     <main className="app-shell" onClickCapture={countUiClick}>
       <aside className="sidebar">
@@ -550,15 +557,57 @@ function App() {
         </div>
 
         <div className="era-card">
-          <span className="era-label">Current era</span>
-          <strong>Neolithic Dawn</strong>
-          <span className="era-progress">
-            <i />
-          </span>
-          <span className="era-meta">
-            <span>Year 12</span>
-            <span>68% to Bronze Age</span>
-          </span>
+          <span className="era-label">Current Age</span>
+          {currentAge ? (
+            <>
+              <strong
+                className={`era-age-name ${canEnterCurrentAge ? "clickable" : ""}`}
+                onClick={() => {
+                  if (canEnterCurrentAge) {
+                    setGameState((s) => s.enterAge(currentAge.key));
+                  }
+                }}
+                title={
+                  canEnterCurrentAge
+                    ? "Click to enter next age"
+                    : "Complete battles and build enough to advance"
+                }
+              >
+                {currentAge.name}
+              </strong>
+              <div className="era-progress-bars">
+                <div className="era-progress era-progress-battles" title="Battle progress">
+                  <i
+                    style={{
+                      width: `${(battleProgress[0] / Math.max(1, battleProgress[1])) * 100}%`,
+                    }}
+                  />
+                </div>
+                <div className="era-progress era-progress-buildings" title="Building progress">
+                  <i
+                    style={{
+                      width: `${(buildingProgress[0] / Math.max(1, buildingProgress[1])) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+              <span className="era-meta">
+                <span>
+                  {battleProgress[0]}/{battleProgress[1]} battles ·
+                  {buildingProgress[0]}/{buildingProgress[1]} buildings
+                </span>
+                <span>
+                  {canEnterCurrentAge
+                    ? "Click to advance"
+                    : battleProgress[0] < battleProgress[1]
+                      ? `${battleProgress[1] - battleProgress[0]} more battles`
+                      : `${buildingProgress[1] - buildingProgress[0]} more buildings`}
+                </span>
+              </span>
+            </>
+          ) : (
+            <strong className="era-age-name">Ancient</strong>
+          )}
         </div>
 
         <nav className="tab-list" aria-label="Main game sections">

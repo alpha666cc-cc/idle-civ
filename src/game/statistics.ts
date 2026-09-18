@@ -24,6 +24,8 @@ export type Statistics = {
   readonly fastestAgeMs: Record<string, number>;
   /** Fastest run time (ms) at which each encounter was won, by encounter id. */
   readonly fastestBattleMs: Record<string, number>;
+  /** Accumulated resource cost of retired units (1 point per resource unit lost). */
+  readonly wastedResources: ExpNumber;
 };
 
 /** One tick is one second: the loop is a 1-second interval with no delta time. */
@@ -38,4 +40,5 @@ export const emptyStatistics = (): Statistics => ({
   runTimeMs: 0,
   fastestAgeMs: {},
   fastestBattleMs: {},
+  wastedResources: ExpNumber.ZERO,
 });
