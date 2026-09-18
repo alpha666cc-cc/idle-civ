@@ -68,9 +68,15 @@ save system :
 
 autosave input in seconds in settings (' default 10')
 add  import/export/save button in settings (save does save internally same as autosave)
-add 3 radio to save : base64 ( save in json encode to base 64 and put in clipboard), json (open savediledialog ( or modern equivalent) select a file in json ), xml ( same as json but in xml)
+add 3 radio to save : base64 ( save in json encode to base 64 and put in clipboard), json (open saveFiledialog ( or modern equivalent) select a file in json ), xml ( same as json but in xml)
+if base64 is selected import try to read from clipboard, if it fails, open a OpenFileDialog ... parse rthe fiel selected)
+
 add a button in dev tools to reset to start.
 add unit tests to always garanty save is not corrupted by update.
+
+on import or relaunch , display a panel that display offline gain.( base: 25% of equivalent of time rprodution during the lapse)
+add an import button in dev tools that does not take into account offline gain
+
 
 
 
@@ -88,7 +94,7 @@ if I have 500 trade pwoer, I can trade 500 gold to equivalent)
 implement science ( user action beofre, review tech tree.json)
 create real techtree.json and replace human readble effects by engine effects 
 -> cost_reduction small is /2, medium /100 , big :  -0.01 scaling
--> production_multiplier small is +10%, medium *2, big *100
+-> production_multiplier small is *2, medium *10, big *100 ( double for food)
 ->
 for now no harcoded cost , first science is 1K research, multiplied by 10 for each next research ( we will see later on if it works)
 

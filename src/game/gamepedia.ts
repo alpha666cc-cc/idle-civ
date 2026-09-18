@@ -1,6 +1,8 @@
 import { buildingDefinitions, type BuildingDefinition } from "./buildings";
 import {
   achievementDefinitions,
+  aggregateHoarderDefinition,
+  chainFamilyForId,
   type AchievementDefinition,
 } from "./achievements";
 import { encounterDefinitions } from "./encounters";
@@ -95,6 +97,31 @@ export class Gamepedia {
    * import time, so the late entry patches its reverse links itself.
    */
   ensureAchievementEntry(definition: AchievementDefinition): void {
+    // Open-ended hoarder tiers aggregate into one `<family>-total` record per
+    // chain family instead of one entry per exponent tier (§13.4): earned tier
+    // ids resolve to the aggregate, keeping the achievement category readable.
+    const family = chainFamilyForId(definition.id);
+    if (family) {
+      const aggregate = aggregateHoarderDefinition(family);
+      if (aggregate) {
+        if (!this.entries.has(aggregate.id)) {
+          aggregate.seen = true;
+          const relatedIds = [...new Set(achievementRelatedIds(aggregate))];
+          this.register({
+            object: aggregate,
+            category: "achievement",
+            relatedIds,
+          });
+          for (const relatedId of relatedIds) {
+            const related = this.entries.get(relatedId);
+            if (related && !related.relatedIds.includes(aggregate.id)) {
+              related.relatedIds.push(aggregate.id);
+            }
+          }
+        }
+        return;
+      }
+    }
     if (this.entries.has(definition.id)) return;
     const relatedIds = [...new Set(achievementRelatedIds(definition))];
     this.register({

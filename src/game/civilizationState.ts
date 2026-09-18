@@ -28,6 +28,7 @@ import {
 } from "./buildings";
 import {
   achievementDefinitions,
+  chainFamilyForId,
   findAchievementDefinition,
   materializeOpenEndedTier,
   nextHoarderExponent,
@@ -82,6 +83,23 @@ type BuildingCostOverrides = Partial<Record<BuildingKey, BuildingCost[]>>;
 
 /** Units have no capacity limit (§13.3), so the MAX probe stops here. */
 const maximumUnitPurchase = 1_000_000;
+
+/**
+ * Identity-keyed recompute caches. Every state array is replaced immutably and
+ * never mutated, so array identity is a free "did anything change" test: a tick
+ * that changes nothing reuses the cached values, and the one call after a real
+ * change (a build, purchase, victory or earn) rebuilds once. This keeps tick
+ * cost independent of building count and earned-achievement count.
+ */
+const buildingCountCaches = new WeakMap<readonly string[], Map<string, number>>();
+const earnedAchievementSets = new WeakMap<readonly string[], Set<string>>();
+
+/** Cached activeBonuses(), keyed on the identity triple of the source lists. */
+type ActiveBonusList = [sourceId: string, bonus: Bonus][];
+const activeBonusCaches = new WeakMap<
+  readonly string[],
+  WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>
+>();
 
 /**
  * The largest N for which `canAffordCount(N)` holds, given per-unit costs that
@@ -1233,7 +1251,17 @@ export class CivilizationState {
   }
 
   private buildingCount(buildingKey: string): number {
-    return this.builtBuildings.filter((key) => key === buildingKey).length;
+    // O(1) per call: the per-key map rebuilds once per builtBuildings identity
+    // (i.e. once per actual construction), never per tick or per query.
+    let counts = buildingCountCaches.get(this.builtBuildings);
+    if (!counts) {
+      counts = new Map<string, number>();
+      for (const key of this.builtBuildings) {
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      buildingCountCaches.set(this.builtBuildings, counts);
+    }
+    return counts.get(buildingKey) ?? 0;
   }
 
   /** Bonuses from bought upgrades, paired with the upgrade id as the factor source. */
@@ -1261,26 +1289,76 @@ export class CivilizationState {
    * Bonuses from earned achievements, paired with the achievement id as the source.
    * Achievements never carry unlock lists, but their *rewards* are ordinary bonuses
    * (§13.1/§13.4), derived from the earned id list rather than stored as values.
+   * Open-ended hoarder tiers collapse into one summed `attributeFlat` per chain —
+   * additive stacking (§13.7 decision 1) makes the math identical — under the
+   * source id `<family>-total`, so the factor list stays one row per chain and
+   * links the aggregate Gamepedia entry.
    */
   private earnedAchievementBonuses(): [achievementId: string, bonus: Bonus][] {
-    return this.earnedAchievements.flatMap((achievementId) =>
-      (findAchievementDefinition(achievementId)?.bonuses ?? []).map(
-        (bonus) =>
-          [achievementId, bonus] as [achievementId: string, bonus: Bonus],
-      ),
-    );
+    const results: [achievementId: string, bonus: Bonus][] = [];
+    for (const achievementId of this.earnedAchievements) {
+      if (chainFamilyForId(achievementId)) continue;
+      const definition = findAchievementDefinition(achievementId);
+      for (const bonus of definition?.bonuses ?? []) {
+        results.push([achievementId, bonus]);
+      }
+    }
+    for (const chain of openEndedHoarderChains) {
+      const prefix = `${chain.family}-e`;
+      let total = ExpNumber.ZERO;
+      let earned = false;
+      for (const achievementId of this.earnedAchievements) {
+        if (!achievementId.startsWith(prefix)) continue;
+        earned = true;
+        for (const bonus of findAchievementDefinition(achievementId)?.bonuses ??
+          []) {
+          if (
+            bonus.type === "attributeFlat" &&
+            bonus.destination === chain.resource
+          ) {
+            total = total.add(bonus.value);
+          }
+        }
+      }
+      if (earned && !total.isZero) {
+        results.push([
+          `${chain.family}-total`,
+          { type: "attributeFlat", destination: chain.resource, value: total },
+        ]);
+      }
+    }
+    return results;
   }
 
   /**
    * Every bonus currently in force, paired with its source id. One seam for all
    * bonus sources keeps capacities, costs and stats on the same application path.
+   * Cached on the identity of the three source id lists: rebuilt once per real
+   * change, reused by every query in between (see the module cache note).
    */
   private activeBonuses(): [sourceId: string, bonus: Bonus][] {
-    return [
+    let byEncounters = activeBonusCaches.get(this.boughtUpgrades);
+    if (!byEncounters) {
+      byEncounters = new WeakMap<
+        readonly string[],
+        WeakMap<readonly string[], ActiveBonusList>
+      >();
+      activeBonusCaches.set(this.boughtUpgrades, byEncounters);
+    }
+    let byAchievements = byEncounters.get(this.defeatedEncounters);
+    if (!byAchievements) {
+      byAchievements = new WeakMap<readonly string[], ActiveBonusList>();
+      byEncounters.set(this.defeatedEncounters, byAchievements);
+    }
+    const cached = byAchievements.get(this.earnedAchievements);
+    if (cached) return cached;
+    const computed = [
       ...this.boughtUpgradeBonuses(),
       ...this.defeatedEncounterBonuses(),
       ...this.earnedAchievementBonuses(),
     ];
+    byAchievements.set(this.earnedAchievements, computed);
+    return computed;
   }
 
   defeatEncounter(encounterId: string): CivilizationState {
@@ -1305,7 +1383,17 @@ export class CivilizationState {
   }
 
   isAchievementEarned(achievementId: string): boolean {
-    return this.earnedAchievements.includes(achievementId);
+    return this.earnedAchievementSet().has(achievementId);
+  }
+
+  /** O(1) membership via a Set cached on the earned id list's identity. */
+  private earnedAchievementSet(): Set<string> {
+    let set = earnedAchievementSets.get(this.earnedAchievements);
+    if (!set) {
+      set = new Set(this.earnedAchievements);
+      earnedAchievementSets.set(this.earnedAchievements, set);
+    }
+    return set;
   }
 
   /** Can the player buy this unit: base-available, or unlocked by a won battle. */
@@ -1580,12 +1668,11 @@ export class CivilizationState {
   getNextAchievementGoal(
     family: string,
   ): { name: string; threshold: ExpNumber; bonuses: Bonus[] } | undefined {
+    const earned = this.earnedAchievementSet();
     const concrete = achievementDefinitions
       .filter(({ family: achievementFamily }) => achievementFamily === family)
       .sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0));
-    const nextTier = concrete.find(
-      ({ key }) => !this.earnedAchievements.includes(key),
-    );
+    const nextTier = concrete.find(({ key }) => !earned.has(key));
     if (nextTier) {
       return {
         name: nextTier.name,
@@ -1669,12 +1756,12 @@ export class CivilizationState {
    * re-balancing stay safe (roadmap Milestone 6). Returns `this` when nothing is new.
    */
   checkAchievements(): CivilizationState {
+    const earned = this.earnedAchievementSet();
     const newlyEarned = [
       ...achievementDefinitions
         .filter(
           ({ key, requirement }) =>
-            !this.earnedAchievements.includes(key) &&
-            this.meetsRequirement(requirement),
+            !earned.has(key) && this.meetsRequirement(requirement),
         )
         .map(({ key }) => key),
       ...this.openEndedChainEarnings(),

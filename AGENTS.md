@@ -1053,7 +1053,10 @@ Two pieces of state-management guidance:
   their authored data forever — tiers materialize on demand from the
   `openEndedHoarderChains` specs with deterministic `<family>-e<exponent>` ids, earn in
   `checkAchievements()`, resolve bonuses through `findAchievementDefinition()`, and
-  register in the Gamepedia lazily via `ensureAchievementEntry()`. Never author them as
+  register in the Gamepedia lazily via `ensureAchievementEntry()`. Tier bonuses aggregate
+  into one summed `<family>-total` source in `activeBonuses()` (additive flats, identical
+  math) and the pedia registers one aggregate record per family, not one per tier. Never
+  author them as
   finite JSON; never reset `seen` for them.
 
 > Resolved: **a buyable's bonus never unlocks an upgrade.** There is no `grantUpgrade`

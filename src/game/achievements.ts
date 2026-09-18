@@ -182,6 +182,47 @@ const chainForId = (
   return undefined;
 };
 
+/** The open-ended chain family an id belongs to, or undefined for anything else. */
+export const chainFamilyForId = (id: string): string | undefined =>
+  openEndedHoarderChains.find(({ family }) => id.startsWith(`${family}-e`))
+    ?.family;
+
+const aggregateDefinitions = new Map<string, AchievementDefinition>();
+
+/**
+ * One aggregate record per open-ended chain family (`<family>-total`): the
+ * Gamepedia registers this instead of one entry per exponent tier, and the
+ * summed chain reward reaches the player as a single factor row on the
+ * resource page (the engine sums the earned tiers at read time).
+ */
+export const aggregateHoarderDefinition = (
+  family: string,
+): AchievementDefinition | undefined => {
+  const cached = aggregateDefinitions.get(family);
+  if (cached) return cached;
+  const chain = openEndedHoarderChains.find(
+    ({ family: chainFamily }) => chainFamily === family,
+  );
+  if (!chain) return undefined;
+  const resourceLabel =
+    findAttributeDefinition(chain.resource)?.label ?? chain.resource;
+  const definition = new AchievementDefinition(
+    `${family}-total`,
+    `${chain.label} — total`,
+    `Open-ended hoarder chain: each further 1e${chain.exponentStep} milestone in held ${resourceLabel.toLowerCase()} earns another tier. The summed reward applies as one production bonus, listed on the ${resourceLabel.toLowerCase()} page.`,
+    {
+      type: "resource",
+      resource: chain.resource,
+      amount: ExpNumber.fromLog10(chain.startExponent),
+    },
+    [],
+    chain.family,
+    chain.startExponent,
+  );
+  aggregateDefinitions.set(family, definition);
+  return definition;
+};
+
 const materializedTiers = new Map<string, AchievementDefinition>();
 
 /** Builds the synthetic achievement tier for an open-ended chain milestone. */

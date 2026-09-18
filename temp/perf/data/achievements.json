@@ -1,0 +1,980 @@
+[
+    {
+        "key": "growing-hamlet",
+        "name": "Growing Hamlet",
+        "description": "Reach a population of 25 citizens.",
+        "requirement": { "type": "population", "amount": 25 },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "food",
+                "value": 2
+            }
+        ]
+    },
+    {
+        "key": "wolf-slayer",
+        "name": "Wolf Slayer",
+        "description": "Win the first battle and drive the wolves from the fields.",
+        "requirement": { "type": "encounter", "encounterId": "age0_1_first_fire" },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "food",
+                "value": 10
+            }
+        ]
+    },
+    {
+        "key": "hall-of-halls",
+        "name": "Hall of Halls",
+        "description": "Build 10 town halls to raise a true capital.",
+        "requirement": {
+            "type": "building-count",
+            "building": "town-hall",
+            "count": 10
+        }
+    },
+    {
+        "key": "click-100",
+        "family": "clicks",
+        "tier": 1,
+        "name": "Hundred Hands",
+        "description": "Make 100 production clicks. Reward: +1 click power.",
+        "requirement": { "type": "clicks", "amount": 100 },
+        "bonuses": [
+            { "type": "attributeFlat", "destination": "clickPower", "value": 1 }
+        ]
+    },
+    {
+        "key": "click-1000",
+        "family": "clicks",
+        "tier": 2,
+        "name": "A Thousand Hands",
+        "description": "Make 1,000 production clicks. Reward: +2 click power.",
+        "requirement": { "type": "clicks", "amount": 1000 },
+        "bonuses": [
+            { "type": "attributeFlat", "destination": "clickPower", "value": 2 }
+        ]
+    },
+    {
+        "key": "click-10000",
+        "family": "clicks",
+        "tier": 3,
+        "name": "Ten Thousand Hands",
+        "description": "Make 10,000 production clicks. Reward: +5 click power.",
+        "requirement": { "type": "clicks", "amount": 10000 },
+        "bonuses": [
+            { "type": "attributeFlat", "destination": "clickPower", "value": 5 }
+        ]
+    },
+    {
+        "key": "click-100000",
+        "family": "clicks",
+        "tier": 4,
+        "name": "Hundred Thousand Hands",
+        "description": "Make 100,000 production clicks. Reward: +20 click power.",
+        "requirement": { "type": "clicks", "amount": 100000 },
+        "bonuses": [
+            { "type": "attributeFlat", "destination": "clickPower", "value": 20 }
+        ]
+    },
+    {
+        "key": "click-1000000",
+        "family": "clicks",
+        "tier": 5,
+        "name": "A Million Hands",
+        "description": "Make 1,000,000 production clicks. Reward: +100 click power.",
+        "requirement": { "type": "clicks", "amount": 1000000 },
+        "bonuses": [
+            { "type": "attributeFlat", "destination": "clickPower", "value": 100 }
+        ]
+    },
+    {
+        "key": "farm-power-1",
+        "name": "Farm Power I",
+        "description": "Own 10 farms. Reward: Farm power +20%",
+        "requirement": {
+            "type": "building-count",
+            "building": "farm",
+            "count": 10
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "farmPower",
+                "value": 1.2
+            }
+        ],
+        "family": "farm-power",
+        "tier": 1
+    },
+    {
+        "key": "farm-power-2",
+        "name": "Farm Power II",
+        "description": "Own 100 farms. Reward: Farm power ×3.",
+        "requirement": {
+            "type": "building-count",
+            "building": "farm",
+            "count": 100
+        },
+        "bonuses": [
+            { "type": "attributeMultiplier", "destination": "farmPower", "value": 3 }
+        ],
+        "family": "farm-power",
+        "tier": 2
+    },
+    {
+        "key": "farm-power-3",
+        "name": "Farm Power III",
+        "description": "Own 1,000 farms. Reward: Farm power ×4.",
+        "requirement": {
+            "type": "building-count",
+            "building": "farm",
+            "count": 1000
+        },
+        "bonuses": [
+            { "type": "attributeMultiplier", "destination": "farmPower", "value": 4 }
+        ],
+        "family": "farm-power",
+        "tier": 3
+    },
+    {
+        "key": "farm-power-4",
+        "name": "Farm Power IV",
+        "description": "Own 10,000 farms. Reward: Farm power ×5.",
+        "requirement": {
+            "type": "building-count",
+            "building": "farm",
+            "count": 10000
+        },
+        "bonuses": [
+            { "type": "attributeMultiplier", "destination": "farmPower", "value": 5 }
+        ],
+        "family": "farm-power",
+        "tier": 4
+    },
+    {
+        "key": "farm-power-5",
+        "name": "Farm Power V",
+        "description": "Own 100,000 farms. Reward: Farm power ×6.",
+        "requirement": {
+            "type": "building-count",
+            "building": "farm",
+            "count": 100000
+        },
+        "bonuses": [
+            { "type": "attributeMultiplier", "destination": "farmPower", "value": 6 }
+        ],
+        "family": "farm-power",
+        "tier": 5
+    },
+    {
+        "key": "farm-power-6",
+        "name": "Farm Power VI",
+        "description": "Own 1,000,000 farms. Reward: Farm power ×7.",
+        "requirement": {
+            "type": "building-count",
+            "building": "farm",
+            "count": 1000000
+        },
+        "bonuses": [
+            { "type": "attributeMultiplier", "destination": "farmPower", "value": 7 }
+        ],
+        "family": "farm-power",
+        "tier": 6
+    },
+    {
+        "key": "farm-power-7",
+        "name": "Farm Power VII",
+        "description": "Own 10,000,000 farms. Reward: Farm power ×8.",
+        "requirement": {
+            "type": "building-count",
+            "building": "farm",
+            "count": 10000000
+        },
+        "bonuses": [
+            { "type": "attributeMultiplier", "destination": "farmPower", "value": 8 }
+        ],
+        "family": "farm-power",
+        "tier": 7
+    },
+    {
+        "key": "farm-power-8",
+        "name": "Farm Power VIII",
+        "description": "Own 100,000,000 farms. Reward: Farm power ×9.",
+        "requirement": {
+            "type": "building-count",
+            "building": "farm",
+            "count": 100000000
+        },
+        "bonuses": [
+            { "type": "attributeMultiplier", "destination": "farmPower", "value": 9 }
+        ],
+        "family": "farm-power",
+        "tier": 8
+    },
+    {
+        "key": "farm-power-9",
+        "name": "Farm Power IX",
+        "description": "Own 1,000,000,000 farms. Reward: Farm power ×10.",
+        "requirement": {
+            "type": "building-count",
+            "building": "farm",
+            "count": 1000000000
+        },
+        "bonuses": [
+            { "type": "attributeMultiplier", "destination": "farmPower", "value": 10 }
+        ],
+        "family": "farm-power",
+        "tier": 9
+    },
+    {
+        "key": "lumber-yard-power-1",
+        "name": "Lumber Yard Power I",
+        "description": "Own 10 lumber yards. Reward: Lumber Yard power +20%",
+        "requirement": {
+            "type": "building-count",
+            "building": "lumber-yard",
+            "count": 10
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "lumber-yardPower",
+                "value": 1.2
+            }
+        ],
+        "family": "lumber-yard-power",
+        "tier": 1
+    },
+    {
+        "key": "lumber-yard-power-2",
+        "name": "Lumber Yard Power II",
+        "description": "Own 100 lumber yards. Reward: Lumber Yard power ×3.",
+        "requirement": {
+            "type": "building-count",
+            "building": "lumber-yard",
+            "count": 100
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "lumber-yardPower",
+                "value": 3
+            }
+        ],
+        "family": "lumber-yard-power",
+        "tier": 2
+    },
+    {
+        "key": "lumber-yard-power-3",
+        "name": "Lumber Yard Power III",
+        "description": "Own 1,000 lumber yards. Reward: Lumber Yard power ×4.",
+        "requirement": {
+            "type": "building-count",
+            "building": "lumber-yard",
+            "count": 1000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "lumber-yardPower",
+                "value": 4
+            }
+        ],
+        "family": "lumber-yard-power",
+        "tier": 3
+    },
+    {
+        "key": "lumber-yard-power-4",
+        "name": "Lumber Yard Power IV",
+        "description": "Own 10,000 lumber yards. Reward: Lumber Yard power ×5.",
+        "requirement": {
+            "type": "building-count",
+            "building": "lumber-yard",
+            "count": 10000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "lumber-yardPower",
+                "value": 5
+            }
+        ],
+        "family": "lumber-yard-power",
+        "tier": 4
+    },
+    {
+        "key": "lumber-yard-power-5",
+        "name": "Lumber Yard Power V",
+        "description": "Own 100,000 lumber yards. Reward: Lumber Yard power ×6.",
+        "requirement": {
+            "type": "building-count",
+            "building": "lumber-yard",
+            "count": 100000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "lumber-yardPower",
+                "value": 6
+            }
+        ],
+        "family": "lumber-yard-power",
+        "tier": 5
+    },
+    {
+        "key": "lumber-yard-power-6",
+        "name": "Lumber Yard Power VI",
+        "description": "Own 1,000,000 lumber yards. Reward: Lumber Yard power ×7.",
+        "requirement": {
+            "type": "building-count",
+            "building": "lumber-yard",
+            "count": 1000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "lumber-yardPower",
+                "value": 7
+            }
+        ],
+        "family": "lumber-yard-power",
+        "tier": 6
+    },
+    {
+        "key": "lumber-yard-power-7",
+        "name": "Lumber Yard Power VII",
+        "description": "Own 10,000,000 lumber yards. Reward: Lumber Yard power ×8.",
+        "requirement": {
+            "type": "building-count",
+            "building": "lumber-yard",
+            "count": 10000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "lumber-yardPower",
+                "value": 8
+            }
+        ],
+        "family": "lumber-yard-power",
+        "tier": 7
+    },
+    {
+        "key": "lumber-yard-power-8",
+        "name": "Lumber Yard Power VIII",
+        "description": "Own 100,000,000 lumber yards. Reward: Lumber Yard power ×9.",
+        "requirement": {
+            "type": "building-count",
+            "building": "lumber-yard",
+            "count": 100000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "lumber-yardPower",
+                "value": 9
+            }
+        ],
+        "family": "lumber-yard-power",
+        "tier": 8
+    },
+    {
+        "key": "lumber-yard-power-9",
+        "name": "Lumber Yard Power IX",
+        "description": "Own 1,000,000,000 lumber yards. Reward: Lumber Yard power ×10.",
+        "requirement": {
+            "type": "building-count",
+            "building": "lumber-yard",
+            "count": 1000000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "lumber-yardPower",
+                "value": 10
+            }
+        ],
+        "family": "lumber-yard-power",
+        "tier": 9
+    },
+    {
+        "key": "quarry-power-1",
+        "name": "Quarry Power I",
+        "description": "Own 10 quarries. Reward: Quarry power +20%.",
+        "requirement": {
+            "type": "building-count",
+            "building": "quarry",
+            "count": 10
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "quarryPower",
+                "value": 1.2
+            }
+        ],
+        "family": "quarry-power",
+        "tier": 1
+    },
+    {
+        "key": "quarry-power-2",
+        "name": "Quarry Power II",
+        "description": "Own 100 quarries. Reward: Quarry power ×3.",
+        "requirement": {
+            "type": "building-count",
+            "building": "quarry",
+            "count": 100
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "quarryPower",
+                "value": 3
+            }
+        ],
+        "family": "quarry-power",
+        "tier": 2
+    },
+    {
+        "key": "quarry-power-3",
+        "name": "Quarry Power III",
+        "description": "Own 1,000 quarries. Reward: Quarry power ×4.",
+        "requirement": {
+            "type": "building-count",
+            "building": "quarry",
+            "count": 1000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "quarryPower",
+                "value": 4
+            }
+        ],
+        "family": "quarry-power",
+        "tier": 3
+    },
+    {
+        "key": "quarry-power-4",
+        "name": "Quarry Power IV",
+        "description": "Own 10,000 quarries. Reward: Quarry power ×5.",
+        "requirement": {
+            "type": "building-count",
+            "building": "quarry",
+            "count": 10000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "quarryPower",
+                "value": 5
+            }
+        ],
+        "family": "quarry-power",
+        "tier": 4
+    },
+    {
+        "key": "quarry-power-5",
+        "name": "Quarry Power V",
+        "description": "Own 100,000 quarries. Reward: Quarry power ×6.",
+        "requirement": {
+            "type": "building-count",
+            "building": "quarry",
+            "count": 100000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "quarryPower",
+                "value": 6
+            }
+        ],
+        "family": "quarry-power",
+        "tier": 5
+    },
+    {
+        "key": "quarry-power-6",
+        "name": "Quarry Power VI",
+        "description": "Own 1,000,000 quarries. Reward: Quarry power ×7.",
+        "requirement": {
+            "type": "building-count",
+            "building": "quarry",
+            "count": 1000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "quarryPower",
+                "value": 7
+            }
+        ],
+        "family": "quarry-power",
+        "tier": 6
+    },
+    {
+        "key": "quarry-power-7",
+        "name": "Quarry Power VII",
+        "description": "Own 10,000,000 quarries. Reward: Quarry power ×8.",
+        "requirement": {
+            "type": "building-count",
+            "building": "quarry",
+            "count": 10000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "quarryPower",
+                "value": 8
+            }
+        ],
+        "family": "quarry-power",
+        "tier": 7
+    },
+    {
+        "key": "quarry-power-8",
+        "name": "Quarry Power VIII",
+        "description": "Own 100,000,000 quarries. Reward: Quarry power ×9.",
+        "requirement": {
+            "type": "building-count",
+            "building": "quarry",
+            "count": 100000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "quarryPower",
+                "value": 9
+            }
+        ],
+        "family": "quarry-power",
+        "tier": 8
+    },
+    {
+        "key": "quarry-power-9",
+        "name": "Quarry Power IX",
+        "description": "Own 1,000,000,000 quarries. Reward: Quarry power ×10.",
+        "requirement": {
+            "type": "building-count",
+            "building": "quarry",
+            "count": 1000000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "quarryPower",
+                "value": 10
+            }
+        ],
+        "family": "quarry-power",
+        "tier": 9
+    },
+    {
+        "key": "gold-mine-power-1",
+        "name": "Gold Mine Power I",
+        "description": "Own 10 gold mines. Reward: Gold Mine power +20%.",
+        "requirement": {
+            "type": "building-count",
+            "building": "gold-mine",
+            "count": 10
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "gold-minePower",
+                "value": 1.2
+            }
+        ],
+        "family": "gold-mine-power",
+        "tier": 1
+    },
+    {
+        "key": "gold-mine-power-2",
+        "name": "Gold Mine Power II",
+        "description": "Own 100 gold mines. Reward: Gold Mine power ×3.",
+        "requirement": {
+            "type": "building-count",
+            "building": "gold-mine",
+            "count": 100
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "gold-minePower",
+                "value": 3
+            }
+        ],
+        "family": "gold-mine-power",
+        "tier": 2
+    },
+    {
+        "key": "gold-mine-power-3",
+        "name": "Gold Mine Power III",
+        "description": "Own 1,000 gold mines. Reward: Gold Mine power ×4.",
+        "requirement": {
+            "type": "building-count",
+            "building": "gold-mine",
+            "count": 1000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "gold-minePower",
+                "value": 4
+            }
+        ],
+        "family": "gold-mine-power",
+        "tier": 3
+    },
+    {
+        "key": "gold-mine-power-4",
+        "name": "Gold Mine Power IV",
+        "description": "Own 10,000 gold mines. Reward: Gold Mine power ×5.",
+        "requirement": {
+            "type": "building-count",
+            "building": "gold-mine",
+            "count": 10000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "gold-minePower",
+                "value": 5
+            }
+        ],
+        "family": "gold-mine-power",
+        "tier": 4
+    },
+    {
+        "key": "gold-mine-power-5",
+        "name": "Gold Mine Power V",
+        "description": "Own 100,000 gold mines. Reward: Gold Mine power ×6.",
+        "requirement": {
+            "type": "building-count",
+            "building": "gold-mine",
+            "count": 100000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "gold-minePower",
+                "value": 6
+            }
+        ],
+        "family": "gold-mine-power",
+        "tier": 5
+    },
+    {
+        "key": "gold-mine-power-6",
+        "name": "Gold Mine Power VI",
+        "description": "Own 1,000,000 gold mines. Reward: Gold Mine power ×7.",
+        "requirement": {
+            "type": "building-count",
+            "building": "gold-mine",
+            "count": 1000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "gold-minePower",
+                "value": 7
+            }
+        ],
+        "family": "gold-mine-power",
+        "tier": 6
+    },
+    {
+        "key": "gold-mine-power-7",
+        "name": "Gold Mine Power VII",
+        "description": "Own 10,000,000 gold mines. Reward: Gold Mine power ×8.",
+        "requirement": {
+            "type": "building-count",
+            "building": "gold-mine",
+            "count": 10000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "gold-minePower",
+                "value": 8
+            }
+        ],
+        "family": "gold-mine-power",
+        "tier": 7
+    },
+    {
+        "key": "gold-mine-power-8",
+        "name": "Gold Mine Power VIII",
+        "description": "Own 100,000,000 gold mines. Reward: Gold Mine power ×9.",
+        "requirement": {
+            "type": "building-count",
+            "building": "gold-mine",
+            "count": 100000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "gold-minePower",
+                "value": 9
+            }
+        ],
+        "family": "gold-mine-power",
+        "tier": 8
+    },
+    {
+        "key": "gold-mine-power-9",
+        "name": "Gold Mine Power IX",
+        "description": "Own 1,000,000,000 gold mines. Reward: Gold Mine power ×10.",
+        "requirement": {
+            "type": "building-count",
+            "building": "gold-mine",
+            "count": 1000000000
+        },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "gold-minePower",
+                "value": 10
+            }
+        ],
+        "family": "gold-mine-power",
+        "tier": 9
+    },
+    {
+        "key": "food-hoarder-1",
+        "name": "Food Hoarder I",
+        "description": "Hold 100 food. Reward: +2 food/sec.",
+        "requirement": { "type": "resource", "resource": "food", "amount": 100 },
+        "bonuses": [{ "type": "attributeFlat", "destination": "food", "value": 2 }],
+        "family": "food-hoarder",
+        "tier": 1
+    },
+    {
+        "key": "food-hoarder-2",
+        "name": "Food Hoarder II",
+        "description": "Hold 1,000 food. Reward: +3 food/sec.",
+        "requirement": { "type": "resource", "resource": "food", "amount": 1000 },
+        "bonuses": [{ "type": "attributeFlat", "destination": "food", "value": 3 }],
+        "family": "food-hoarder",
+        "tier": 2
+    },
+    {
+        "key": "food-hoarder-5",
+        "name": "Food Hoarder III",
+        "description": "Hold 1,000,000 food. Reward: +6 food/sec.",
+        "requirement": {
+            "type": "resource",
+            "resource": "food",
+            "amount": 1000000
+        },
+        "bonuses": [{ "type": "attributeFlat", "destination": "food", "value": 6 }],
+        "family": "food-hoarder",
+        "tier": 3
+    },
+    {
+        "key": "wood-hoarder-1",
+        "name": "Wood Hoarder I",
+        "description": "Hold 100 wood. Reward: +2 wood/sec.",
+        "requirement": { "type": "resource", "resource": "wood", "amount": 100 },
+        "bonuses": [{ "type": "attributeFlat", "destination": "wood", "value": 2 }],
+        "family": "wood-hoarder",
+        "tier": 1
+    },
+    {
+        "key": "wood-hoarder-2",
+        "name": "Wood Hoarder II",
+        "description": "Hold 1,000 wood. Reward: +3 wood/sec.",
+        "requirement": { "type": "resource", "resource": "wood", "amount": 1000 },
+        "bonuses": [{ "type": "attributeFlat", "destination": "wood", "value": 3 }],
+        "family": "wood-hoarder",
+        "tier": 2
+    },
+    {
+        "key": "wood-hoarder-5",
+        "name": "Wood Hoarder III",
+        "description": "Hold 1,000,000 wood. Reward: +6 wood/sec.",
+        "requirement": {
+            "type": "resource",
+            "resource": "wood",
+            "amount": 1000000
+        },
+        "bonuses": [{ "type": "attributeFlat", "destination": "wood", "value": 6 }],
+        "family": "wood-hoarder",
+        "tier": 3
+    },
+    {
+        "key": "stone-hoarder-1",
+        "name": "Stone Hoarder I",
+        "description": "Hold 100 stone. Reward: +2 stone/sec.",
+        "requirement": { "type": "resource", "resource": "stone", "amount": 100 },
+        "bonuses": [
+            { "type": "attributeFlat", "destination": "stone", "value": 2 }
+        ],
+        "family": "stone-hoarder",
+        "tier": 1
+    },
+    {
+        "key": "stone-hoarder-2",
+        "name": "Stone Hoarder II",
+        "description": "Hold 1,000 stone. Reward: +3 stone/sec.",
+        "requirement": { "type": "resource", "resource": "stone", "amount": 1000 },
+        "bonuses": [
+            { "type": "attributeFlat", "destination": "stone", "value": 3 }
+        ],
+        "family": "stone-hoarder",
+        "tier": 2
+    },
+    {
+        "key": "stone-hoarder-5",
+        "name": "Stone Hoarder III",
+        "description": "Hold 1,000,000 stone. Reward: +6 stone/sec.",
+        "requirement": {
+            "type": "resource",
+            "resource": "stone",
+            "amount": 1000000
+        },
+        "bonuses": [
+            { "type": "attributeFlat", "destination": "stone", "value": 6 }
+        ],
+        "family": "stone-hoarder",
+        "tier": 3
+    },
+    {
+        "key": "gold-hoarder-1",
+        "name": "Gold Hoarder I",
+        "description": "Hold 100 gold. Reward: +2 gold/sec.",
+        "requirement": { "type": "resource", "resource": "gold", "amount": 100 },
+        "bonuses": [{ "type": "attributeFlat", "destination": "gold", "value": 2 }],
+        "family": "gold-hoarder",
+        "tier": 1
+    },
+    {
+        "key": "gold-hoarder-2",
+        "name": "Gold Hoarder II",
+        "description": "Hold 1,000 gold. Reward: +3 gold/sec.",
+        "requirement": { "type": "resource", "resource": "gold", "amount": 1000 },
+        "bonuses": [{ "type": "attributeFlat", "destination": "gold", "value": 3 }],
+        "family": "gold-hoarder",
+        "tier": 2
+    },
+    {
+        "key": "gold-hoarder-5",
+        "name": "Gold Hoarder III",
+        "description": "Hold 1,000,000 gold. Reward: +6 gold/sec.",
+        "requirement": {
+            "type": "resource",
+            "resource": "gold",
+            "amount": 1000000
+        },
+        "bonuses": [{ "type": "attributeFlat", "destination": "gold", "value": 6 }],
+        "family": "gold-hoarder",
+        "tier": 3
+    },
+    {
+        "key": "master-builder-1",
+        "name": "Master Builder I",
+        "description": "Construct 1,000 buildings in total. Building base costs: ÷2 total.",
+        "requirement": { "type": "buildings-total", "count": 1000 },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "buildingCostMultiplier",
+                "value": 0.5
+            }
+        ],
+        "family": "master-builder",
+        "tier": 1
+    },
+    {
+        "key": "master-builder-2",
+        "name": "Master Builder II",
+        "description": "Construct 10,000 buildings in total. Building base costs: ÷3 total with earlier milestones.",
+        "requirement": { "type": "buildings-total", "count": 10000 },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "buildingCostMultiplier",
+                "value": 0.6666666666666667
+            }
+        ],
+        "family": "master-builder",
+        "tier": 2
+    },
+    {
+        "key": "master-builder-3",
+        "name": "Master Builder III",
+        "description": "Construct 100,000 buildings in total. Building base costs: ÷4 total with earlier milestones.",
+        "requirement": { "type": "buildings-total", "count": 100000 },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "buildingCostMultiplier",
+                "value": 0.75
+            }
+        ],
+        "family": "master-builder",
+        "tier": 3
+    },
+    {
+        "key": "master-builder-4",
+        "name": "Master Builder IV",
+        "description": "Construct 1,000,000 buildings in total. Building base costs: ÷5 total with earlier milestones.",
+        "requirement": { "type": "buildings-total", "count": 1000000 },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "buildingCostMultiplier",
+                "value": 0.8
+            }
+        ],
+        "family": "master-builder",
+        "tier": 4
+    },
+    {
+        "key": "master-builder-5",
+        "name": "Master Builder V",
+        "description": "Construct 10,000,000 buildings in total. Building base costs: ÷6 total with earlier milestones.",
+        "requirement": { "type": "buildings-total", "count": 10000000 },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "buildingCostMultiplier",
+                "value": 0.8333333333333334
+            }
+        ],
+        "family": "master-builder",
+        "tier": 5
+    },
+    {
+        "key": "master-builder-6",
+        "name": "Master Builder VI",
+        "description": "Construct 100,000,000 buildings in total. Building base costs: ÷7 total with earlier milestones.",
+        "requirement": { "type": "buildings-total", "count": 100000000 },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "buildingCostMultiplier",
+                "value": 0.8571428571428572
+            }
+        ],
+        "family": "master-builder",
+        "tier": 6
+    },
+    {
+        "key": "master-builder-7",
+        "name": "Master Builder VII",
+        "description": "Construct 1,000,000,000 buildings in total. Building base costs: ÷8 total with earlier milestones.",
+        "requirement": { "type": "buildings-total", "count": 1000000000 },
+        "bonuses": [
+            {
+                "type": "attributeMultiplier",
+                "destination": "buildingCostMultiplier",
+                "value": 0.875
+            }
+        ],
+        "family": "master-builder",
+        "tier": 7
+    }
+]
