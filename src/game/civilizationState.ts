@@ -493,7 +493,8 @@ export class CivilizationState {
       runTimeMs: this.statistics.runTimeMs + tickMilliseconds,
     };
     // Achievements are evaluated after the tick's changes so the check always runs
-    // after a domain event has landed (roadmap Milestone 6).
+    // after a domain event has landed (roadmap Milestone 6). Age-reach times are
+    // recorded first, so a record reflects the tick the threshold was met.
     return this.withState(
       resources,
       this.buildingCostOverrides,
@@ -504,7 +505,9 @@ export class CivilizationState {
       this.enteredAges,
       this.earnedAchievements,
       statistics,
-    ).checkAchievements();
+    )
+      .recordReachedAges()
+      .checkAchievements();
   }
 
   getFactors(resourceKey: ResourceKey): ResourceFactors {
@@ -1474,6 +1477,24 @@ export class CivilizationState {
     return { ...times, [id]: this.statistics.runTimeMs };
   }
 
+  /**
+   * Records the run time at which each age's population threshold was first met.
+   * `getCurrentAge()` keys an age off population, so crossing the threshold is what
+   * "arriving" at an age means — the fastest time is the first tick that sees it.
+   * `enterAge()` records too (it is the later of the two events), and both go through
+   * the min-keeping `recordFastest()` rule, so the earliest sighting always wins.
+   */
+  private recordReachedAges(): CivilizationState {
+    let fastestAgeMs = this.statistics.fastestAgeMs;
+    for (const age of ageDefinitions) {
+      if (this.population.toNumber() < age.populationThreshold) continue;
+      if (fastestAgeMs[age.key] !== undefined) continue;
+      fastestAgeMs = { ...fastestAgeMs, [age.key]: this.statistics.runTimeMs };
+    }
+    if (fastestAgeMs === this.statistics.fastestAgeMs) return this;
+    return this.withStatistics({ ...this.statistics, fastestAgeMs });
+  }
+
   /** Play time (ms) of the fastest recorded run that won this encounter, if any. */
   getFastestBattleTime(encounterId: string): number | undefined {
     return this.statistics.fastestBattleMs[encounterId];
@@ -1845,7 +1866,9 @@ export class CivilizationState {
       this.enteredAges,
       this.earnedAchievements,
       statistics,
-    ).checkAchievements();
+    )
+      .recordReachedAges()
+      .checkAchievements();
   }
 
   enterAge(ageId: string): CivilizationState {
@@ -1925,17 +1948,24 @@ export class CivilizationState {
   }
 
   /** Building progress in the current age: [buildings, target].
-   *  Target is 125% of maximum population. */
+   *  Target is 125% of the age's pop max (the next age's population threshold). */
   getAgeBuildingProgress(): [number, number] {
     const age = this.getCurrentAge();
     if (!age) return [0, 0];
     const buildings = this.builtBuildings.length;
-    const maxPop = this.maximumPopulation.toNumber();
-    const target = Math.ceil(maxPop * 1.25);
+    const target = this.getAgeBuildingTarget(age);
     return [buildings, target];
   }
 
-  /** Whether the player can enter the given age (battles done + buildings ≥ 125% pop max). */
+  /** Building target for an age: 125% of the next age's threshold (this age's pop max). */
+  private getAgeBuildingTarget(age: AgeDefinition): number {
+    const ageIndex = ageDefinitions.findIndex((a) => a.key === age.key);
+    const next = ageIndex >= 0 ? ageDefinitions[ageIndex + 1] : undefined;
+    const base = next ? next.populationThreshold : age.populationThreshold;
+    return Math.ceil(base * 1.25);
+  }
+
+  /** Whether the player can enter the given age (battles done + buildings ≥ 125% age pop max). */
   canEnterAge(ageId: string): boolean {
     const age = findAgeDefinition(ageId);
     if (!age) return false;
@@ -1949,9 +1979,8 @@ export class CivilizationState {
     );
     if (!allBattlesWon) return false;
 
-    // Check buildings: total buildings ≥ 125% of max population
-    const maxPop = this.maximumPopulation.toNumber();
-    const target = Math.ceil(maxPop * 1.25);
+    // Check buildings: total buildings ≥ 125% of the age's pop max
+    const target = this.getAgeBuildingTarget(age);
     if (this.builtBuildings.length < target) return false;
 
     return true;

@@ -272,7 +272,7 @@ Getters: `population` (= `resources.population`), `maximumPopulation` /
 
 | Method | Behaviour |
 | --- | --- |
-| `tick()` | Applies `computeResourceRate()` to each **production** resource (clamped at 0), advances both play-time counters by one second, then `checkAchievements()` |
+| `tick()` | Applies `computeResourceRate()` to each **production** resource (clamped at 0), advances both play-time counters by one second, records any age whose population threshold was just met (`recordReachedAges()`), then `checkAchievements()` |
 | `gather(key)` | Adds `computeClickGain(key)` = `clickPower × productionPerWorker × Π multipliers` (drains excluded) and counts one production click |
 | `assignWorker` / `unassignWorker` | Clamped by available workers / current count |
 | `autoAssignWorkers(count = 10)` | Keeps food ≈ 10× the other resources while equalising the others |

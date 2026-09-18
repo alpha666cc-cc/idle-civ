@@ -20,7 +20,7 @@ export type Statistics = {
   readonly playTimeMs: number;
   /** Time played in this run in milliseconds; reset by a future prestige. */
   readonly runTimeMs: number;
-  /** Fastest run time (ms) at which each age was entered, by age id. */
+  /** Fastest run time (ms) at which each age's population threshold was met, by age id. */
   readonly fastestAgeMs: Record<string, number>;
   /** Fastest run time (ms) at which each encounter was won, by encounter id. */
   readonly fastestBattleMs: Record<string, number>;

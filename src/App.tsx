@@ -29,6 +29,7 @@ import {
   findAchievementDefinition,
   type AchievementDefinition,
 } from "./game/achievements";
+import { ageDefinitions } from "./game/ages";
 import { buildingDefinitions } from "./game/buildings";
 import type { Bonus } from "./game/bonus";
 import { CivilizationState } from "./game/civilizationState";
@@ -557,21 +558,37 @@ function App() {
           </div>
         </div>
 
-        <div className={`era-card ${canEnterCurrentAge ? "available" : ""}`}>
+        <div
+          className={`era-card ${canEnterCurrentAge ? "available" : ""}`}
+          role={canEnterCurrentAge ? "button" : undefined}
+          tabIndex={canEnterCurrentAge ? 0 : -1}
+          aria-label={
+            canEnterCurrentAge
+              ? `Advance from ${currentAge.name} to the next age`
+              : undefined
+          }
+          onClick={() => {
+            if (canEnterCurrentAge) {
+              setGameState((s) => s.enterAge(currentAge.key));
+            }
+          }}
+          onKeyDown={(event) => {
+            if (!canEnterCurrentAge) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setGameState((s) => s.enterAge(currentAge.key));
+            }
+          }}
+        >
           <span className="era-label">Current Age</span>
           {currentAge ? (
             <>
               <strong
                 className={`era-age-name ${canEnterCurrentAge ? "available" : ""}`}
-                onClick={() => {
-                  if (canEnterCurrentAge) {
-                    setGameState((s) => s.enterAge(currentAge.key));
-                  }
-                }}
                 title={
                   canEnterCurrentAge
-                    ? "Click to enter next age"
-                    : "Complete battles and build enough to advance"
+                    ? "Click to enter the next age"
+                    : "Win the age battles and build enough to advance"
                 }
               >
                 {currentAge.name}
@@ -597,13 +614,7 @@ function App() {
                   {battleProgress[0]}/{battleProgress[1]} battles ·
                   {buildingProgress[0]}/{buildingProgress[1]} buildings
                 </span>
-                <span>
-                  {canEnterCurrentAge
-                    ? "Click to advance"
-                    : buildingProgress[0] < buildingProgress[1]
-                      ? `${buildingProgress[1] - buildingProgress[0]} more buildings`
-                      : ""}
-                </span>
+                <span>{canEnterCurrentAge ? "Click to advance" : ""}</span>
               </span>
             </>
           ) : (
@@ -701,15 +712,15 @@ function App() {
                   <h3>Auto clicker</h3>
                   <p className="dev-tools-copy">
                     Generate clicks per second for every gatherable resource
-                    (population is excluded). Accepts 10, 1e6, 1.5K, 2M —
-                    applied on Enter or on blur.
+                    (population is excluded). Accepts 10, 1e6, 1.5K, 2M, 1A, 1AA
+                    — applied on Enter or on blur.
                   </p>
                 </div>
                 <div className="dev-tools-controls">
                   <DevNumberField
                     label="Clicks / second"
                     value={String(gameState.autoClicksPerSecond)}
-                    ariaLabel="Auto clicks per second (accepts 1e6, 1.5K, 2M)"
+                    ariaLabel="Auto clicks per second (accepts 1e6, 1.5K, 2M, 1A)"
                     placeholder="e.g. 10, 1e6, 2M"
                     onCommit={(parsed) => {
                       const clicks = Math.max(
@@ -726,7 +737,7 @@ function App() {
                   <DevNumberField
                     label="Production x"
                     value={gameState.devProductionMultiplier.toString()}
-                    ariaLabel="Dev production multiplier (accepts 1e6, 1.5K, 2M)"
+                    ariaLabel="Dev production multiplier (accepts 1e6, 1.5K, 2M, 1A)"
                     placeholder="e.g. 1, 10, 1e3"
                     onCommit={(parsed) => {
                       if (
@@ -769,7 +780,7 @@ function App() {
                         setGameState((current) => {
                           const next = current.getNextBattle();
                           return next
-                            ? current.resolveBattle(next.key)
+                            ? current.defeatEncounter(next.key)
                             : current;
                         })
                       }
@@ -1202,26 +1213,23 @@ function App() {
               </div>
 
               <p className="gamepedia-category">Fastest ages</p>
-              {gameState.enteredAges.length === 0 ? (
-                <p className="stat-note">
-                  Fastest times to each age appear here once ages are
-                  implemented.
-                </p>
-              ) : (
-                <div className="stat-row-list">
-                  {gameState.enteredAges.map((ageId) => {
-                    const best = gameState.getFastestAgeTime(ageId);
-                    return (
-                      <div className="stat-row" key={ageId}>
-                        <span>{ageId}</span>
-                        <strong>
-                          {best === undefined ? "\u2014" : formatDuration(best)}
-                        </strong>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <p className="stat-note">
+                Run time from the start of a game to each age's population
+                threshold.
+              </p>
+              <div className="stat-row-list">
+                {ageDefinitions.map((age) => {
+                  const best = gameState.getFastestAgeTime(age.key);
+                  return (
+                    <div className="stat-row" key={age.key}>
+                      <span>{age.name}</span>
+                      <strong>
+                        {best === undefined ? "\u2014" : formatDuration(best)}
+                      </strong>
+                    </div>
+                  );
+                })}
+              </div>
             </section>
           )}
 
