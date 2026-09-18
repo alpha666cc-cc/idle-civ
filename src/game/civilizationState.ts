@@ -210,6 +210,11 @@ export class CivilizationState {
   readonly statistics: Statistics;
   /** Units owned per unit id. Casualties never touch this (armies are restored). */
   readonly unitCounts: Record<string, ExpNumber>;
+  /** Dev-tools production multiplier (×N on every producer rate, shown as a factor). */
+  readonly devProductionMultiplier: ExpNumber;
+  /** Dev-tools free flags: skip affordability + cost deduction, keep capacity gates. */
+  readonly freeBuildings: boolean;
+  readonly freeUnits: boolean;
 
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
@@ -224,6 +229,9 @@ export class CivilizationState {
     earnedAchievements: readonly string[] = [],
     statistics: Statistics = emptyStatistics(),
     unitCounts: Record<string, ExpNumber> = {},
+    devProductionMultiplier: ExpNumber = ExpNumber.ONE,
+    freeBuildings = false,
+    freeUnits = false,
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -237,6 +245,9 @@ export class CivilizationState {
     this.earnedAchievements = earnedAchievements;
     this.statistics = statistics;
     this.unitCounts = unitCounts;
+    this.devProductionMultiplier = devProductionMultiplier;
+    this.freeBuildings = freeBuildings;
+    this.freeUnits = freeUnits;
 
     const houses = this.buildingCount("house");
     const townHalls = this.buildingCount("town-hall");
@@ -579,12 +590,24 @@ export class CivilizationState {
     };
   }
 
+  getProductionFactors(resourceKey: ResourceKey): ResourceFactors {
+    const base = this.getFactors(resourceKey);
+    if (this.devProductionMultiplier.eq(ExpNumber.ONE)) return base;
+    return {
+      ...base,
+      multiplicative: [
+        ...base.multiplicative,
+        ["dev production multiplier", this.devProductionMultiplier] as ResourceFactor,
+      ],
+    };
+  }
+
   computeResourceRate(resourceKey: ResourceKey): ExpNumber {
-    return computeResourceRate(this.getFactors(resourceKey));
+    return computeResourceRate(this.getProductionFactors(resourceKey));
   }
 
   computeClickGain(resourceKey: ResourceKey): ExpNumber {
-    const factors = this.getFactors(resourceKey);
+    const factors = this.getProductionFactors(resourceKey);
     const definition = productionDefinitions.find(
       ({ key }) => key === resourceKey,
     );
@@ -717,7 +740,7 @@ export class CivilizationState {
           multiplicative: derived.multiplicative,
           drain: [],
         }
-      : this.getFactors(key as ResourceKey);
+      : this.getProductionFactors(key as ResourceKey);
     const totals = summarizeResourceFactors(factors);
     const base = derived?.base ?? ExpNumber.ZERO;
     return {
@@ -1002,9 +1025,10 @@ export class CivilizationState {
       );
     }
 
-    // O(1) check: can we afford exactly n more buildings from currentCount onward?
-    // Uses geometric series formula for the cumulative cost of n buildings.
+    // Dev-tools free mode: capacity still gates, but every in-capacity count is
+    // affordable — the next cost stays displayed while the purchase skips payment.
     const canAffordCount = (n: number): boolean =>
+      this.freeBuildings ||
       this.getBuildingCost(building.key, currentCount, n).every(
         ({ resource, base }) => this.resources[resource].gte(base),
       );
@@ -1095,6 +1119,7 @@ export class CivilizationState {
   }
 
   hasResourcesForBuilding(buildingKey: string, count: number = 1): boolean {
+    if (this.freeBuildings) return true;
     const currentCount = this.buildingCount(buildingKey);
     return this.getBuildingCost(buildingKey, currentCount, count).every(
       ({ resource, base }) => this.resources[resource].gte(base),
@@ -1143,7 +1168,9 @@ export class CivilizationState {
     if (count <= 0) return this;
     if (!this.canBuild(buildingKey, count)) return this;
     const builtCount = this.buildingCount(buildingKey);
-    const cost = this.getBuildingCost(buildingKey, builtCount, count);
+    const cost = this.freeBuildings
+      ? []
+      : this.getBuildingCost(buildingKey, builtCount, count);
 
     const resources = { ...this.resources };
     for (const { resource, base } of cost) {
@@ -1307,6 +1334,7 @@ export class CivilizationState {
   }
 
   hasResourcesForUnit(unitId: string, count: number = 1): boolean {
+    if (this.freeUnits) return true;
     return this.getUnitCost(unitId, count).every(({ resource, base }) =>
       this.resources[resource].gte(base),
     );
@@ -1336,7 +1364,9 @@ export class CivilizationState {
 
   buyUnit(unitId: string, count: number = 1): CivilizationState {
     if (count <= 0 || !this.canBuyUnit(unitId, count)) return this;
-    const cost = this.getUnitCost(unitId, count);
+    const cost = this.freeUnits
+      ? []
+      : this.getUnitCost(unitId, count);
     const resources = { ...this.resources };
     for (const { resource, base } of cost) {
       resources[resource] = resources[resource].sub(base);
@@ -1626,6 +1656,9 @@ export class CivilizationState {
       this.earnedAchievements,
       this.statistics,
       this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
     );
   }
 
@@ -1645,6 +1678,9 @@ export class CivilizationState {
       this.earnedAchievements,
       this.statistics,
       this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
     );
   }
 
@@ -1691,6 +1727,9 @@ export class CivilizationState {
     earnedAchievements = this.earnedAchievements,
     statistics = this.statistics,
     unitCounts = this.unitCounts,
+    devProductionMultiplier = this.devProductionMultiplier,
+    freeBuildings = this.freeBuildings,
+    freeUnits = this.freeUnits,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -1705,7 +1744,94 @@ export class CivilizationState {
       earnedAchievements,
       statistics,
       unitCounts,
+      devProductionMultiplier,
+      freeBuildings,
+      freeUnits,
     );
+  }
+
+  /** Dev-tools: global production multiplier (×N on every producer rate). */
+  setDevProductionMultiplier(multiplier: ExpNumber): CivilizationState {
+    const value =
+      multiplier.isFinite && !multiplier.isNegative && !multiplier.isZero
+        ? multiplier
+        : ExpNumber.ONE;
+    if (value.eq(this.devProductionMultiplier)) return this;
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      value,
+    );
+  }
+
+  /** Dev-tools: free buildings (skip affordability + deduction, keep capacity). */
+  setFreeBuildings(free: boolean): CivilizationState {
+    if (free === this.freeBuildings) return this;
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      free,
+    );
+  }
+
+  /** Dev-tools: free units (skip affordability + deduction, keep availability). */
+  setFreeUnits(free: boolean): CivilizationState {
+    if (free === this.freeUnits) return this;
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      free,
+    );
+  }
+
+  /**
+   * Dev-tools: advance the simulation by whole seconds without real waiting.
+   * Each simulated second runs the exact `tick()` path (production, auto
+   * clicks, play-time, achievements) in manageable chunks so 1m/1h/1d stays
+   * responsive; no auto-buy/auto-assign is applied here (the live loop owns it).
+   */
+  advanceTime(seconds: number): CivilizationState {
+    const wholeSeconds = Math.floor(seconds);
+    if (!Number.isFinite(wholeSeconds) || wholeSeconds <= 0) return this;
+    const total = Math.min(wholeSeconds, 86_400);
+    const runTicks = (
+      start: CivilizationState,
+      count: number,
+    ): CivilizationState => {
+      let current = start;
+      for (let i = 0; i < count; i++) {
+        current = current.tick();
+      }
+      return current;
+    };
+    return runTicks(this, total);
   }
 
   enterAge(ageId: string): CivilizationState {

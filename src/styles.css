@@ -531,8 +531,8 @@ button:focus-visible {
     monospace;
   white-space: nowrap;
 }
-.dev-tools-control input[type="number"] {
-  width: 82px;
+.dev-tools-control input[type="text"] {
+  width: 110px;
   padding: 8px;
   border: 1px solid #c4d0bd;
   color: #3f573d;
@@ -540,6 +540,25 @@ button:focus-visible {
   font:
     12px "DM Mono",
     monospace;
+}
+.dev-tools-buttons {
+  display: flex;
+  gap: 8px;
+}
+.dev-tools-buttons button {
+  padding: 8px 14px;
+  border: 1px solid #c4d0bd;
+  border-radius: 4px;
+  color: #3f573d;
+  background: #edf1e8;
+  font:
+    12px "DM Mono",
+    monospace;
+  cursor: pointer;
+}
+.dev-tools-buttons button:hover {
+  border-color: #8ea94e;
+  background: #e5efd8;
 }
 .dev-tools-control input[type="checkbox"] {
   width: 18px;

@@ -48,12 +48,13 @@ gamepadia of battle shall have a description of the historical battle ( from wik
 opponent will probably have boosts from fake research to balance the battles in later ages
 for icons, there is a resource folder in D:\work\dev\assets\Kenney Game Assets 1 version 42 otherwise search the net
 
-
+-> icons are not good
+17-23h
 
 ages; I want the age to be clickable, you can click it when :
 - you have finished the battle for the age
 - you got approximately the max population of the age... (all buildings = 125% of pop max should be fine)
--> makes a red progress bar for battles in age ( linear) and a yellow for nb #building (linear as well)
+-> makes a red progress bar for battles in age ( linear) and a yellow for nb #building (linear as well) 
 
 on age , retired N-2 units: entering age 2 classical retires all units of age 0 (for now no compensation except a stat about wasted resources ( and probably achievement at one point) )
 wasted resources details will follow for now 1 point for each lost resources

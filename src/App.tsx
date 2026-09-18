@@ -38,6 +38,7 @@ import { encounterDefinitions } from "./game/encounters";
 import {
   formatDuration,
   formatNumber,
+  parseFlexibleNumber,
   type NumberFormat,
 } from "./game/numberFormat";
 import {
@@ -693,29 +694,56 @@ function App() {
 
         <div className="world-content">
           {activeTab === "Dev Tools" && (
-            <section className="dev-tools-panel" aria-label="Developer tools">
+            <>
+              <section className="dev-tools-panel" aria-label="Developer tools">
               <div>
                 <p className="eyebrow">Simulation controls</p>
                 <h3>Auto clicker</h3>
                 <p className="dev-tools-copy">
                   Generate clicks per second for every gatherable resource
-                  (population is excluded).
+                  (population is excluded). Accepts 10, 1e6, 1.5K, 2M.
                 </p>
               </div>
               <label className="dev-tools-control">
                 <span>Clicks / second</span>
                 <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={gameState.autoClicksPerSecond}
-                  onChange={(event) =>
+                  type="text"
+                  inputMode="text"
+                  value={String(gameState.autoClicksPerSecond)}
+                  onChange={(event) => {
+                    const parsed = parseFlexibleNumber(event.target.value);
+                    if (parsed === null) return;
+                    const clicks = Math.max(0, Math.floor(parsed.toNumber()));
+                    if (!Number.isFinite(clicks)) return;
                     setGameState((current) =>
-                      current.setAutoClicksPerSecond(
-                        Number(event.target.value),
-                      ),
+                      current.setAutoClicksPerSecond(clicks),
+                    );
+                  }}
+                  aria-label="Auto clicks per second (accepts 1e6, 1.5K, 2M)"
+                  placeholder="e.g. 10, 1e6, 2M"
+                />
+              </label>
+              <label className="dev-tools-control">
+                <span>Production x</span>
+                <input
+                  type="text"
+                  inputMode="text"
+                  value={gameState.devProductionMultiplier.toString()}
+                  onChange={(event) => {
+                    const parsed = parseFlexibleNumber(event.target.value);
+                    if (
+                      parsed === null ||
+                      parsed.isNegative ||
+                      parsed.isZero ||
+                      !parsed.isFinite
                     )
-                  }
+                      return;
+                    setGameState((current) =>
+                      current.setDevProductionMultiplier(parsed),
+                    );
+                  }}
+                  aria-label="Dev production multiplier (accepts 1e6, 1.5K, 2M)"
+                  placeholder="e.g. 1, 10, 1e3"
                 />
               </label>
               <label className="dev-tools-control">
@@ -758,6 +786,79 @@ function App() {
                 </button>
               </div>
             </section>
+            <section className="dev-tools-panel" aria-label="Time skip">
+              <div>
+                <p className="eyebrow">Time controls</p>
+                <h3>Skip ahead</h3>
+                <p className="dev-tools-copy">
+                  Advance through the exact tick path (production, auto
+                  clicks, play time, achievements).
+                </p>
+              </div>
+              <div className="dev-tools-buttons" role="group" aria-label="Skip time">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setGameState((current) => current.advanceTime(60))
+                  }
+                >
+                  +1m
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setGameState((current) => current.advanceTime(3600))
+                  }
+                >
+                  +1h
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setGameState((current) => current.advanceTime(86400))
+                  }
+                >
+                  +1d
+                </button>
+              </div>
+            </section>
+            <section className="dev-tools-panel" aria-label="Free purchases">
+              <div>
+                <p className="eyebrow">Free purchases</p>
+                <h3>Build for free</h3>
+                <p className="dev-tools-copy">
+                  Skip cost checks and deduction; capacity gates and the next
+                  cost stay unchanged.
+                </p>
+              </div>
+              <label className="dev-tools-control">
+                <span>Free buildings</span>
+                <input
+                  type="checkbox"
+                  checked={gameState.freeBuildings}
+                  onChange={(event) =>
+                    setGameState((current) =>
+                      current.setFreeBuildings(event.target.checked),
+                    )
+                  }
+                  aria-label="Free buildings (skip cost checks and deduction)"
+                />
+              </label>
+              <label className="dev-tools-control">
+                <span>Free units</span>
+                <input
+                  type="checkbox"
+                  checked={gameState.freeUnits}
+                  onChange={(event) =>
+                    setGameState((current) =>
+                      current.setFreeUnits(event.target.checked),
+                    )
+                  }
+                  aria-label="Free units (skip cost checks and deduction)"
+                />
+              </label>
+              </section>
+            </>
           )}
 
           {activeTab === "Army" && (

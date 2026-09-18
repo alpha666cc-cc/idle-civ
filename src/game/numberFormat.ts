@@ -113,6 +113,52 @@ function formatExponent(exponent: number): string {
 }
 
 /**
+ * Parses a dev-tool number accepting plain, scientific (`1.5e6`), engineering
+ * (`12.5e6`) and suffixed (`1.5K`, `2M`, `1A`) forms. Named suffixes (K/M/B/…)
+ * win over the compact A/B/… tiers when both match (so `1B` is 1e9). Returns
+ * null when unparseable.
+ */
+export function parseFlexibleNumber(input: string): ExpNumber | null {
+  const text = input.trim().replace(/[,_\s]/g, "");
+  if (text.length === 0) return null;
+  try {
+    return ExpNumber.fromScientific(text);
+  } catch {
+    // Fall through to the suffixed form below.
+  }
+  const match = text.match(
+    /^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)([A-Za-z]+)$/,
+  );
+  if (!match) return null;
+  const [, numericPart, suffix] = match;
+  let base: ExpNumber;
+  try {
+    base = ExpNumber.fromScientific(numericPart);
+  } catch {
+    return null;
+  }
+  const namedIndex = NAMED_SUFFIXES.findIndex(
+    (named) => named.length > 0 && named.toLowerCase() === suffix.toLowerCase(),
+  );
+  if (namedIndex > 0) {
+    return base.mul(ExpNumber.fromLog10(namedIndex * 3));
+  }
+  if (/^[A-Za-z]+$/.test(suffix)) {
+    const upper = suffix.toUpperCase();
+    let tier = 0;
+    for (const character of upper) {
+      const code = character.charCodeAt(0) - 64;
+      if (code < 1 || code > 26) return null;
+      tier = tier * 26 + code;
+    }
+    if (tier >= 1 && tier <= 10_000) {
+      return base.mul(ExpNumber.fromLog10(tier * 3));
+    }
+  }
+  return null;
+}
+
+/**
  * Formats an ExpNumber or a plain number. When the value fits in a double
  * the output matches the historical number-only behavior; beyond that range
  * the exponent is read straight off the ExpNumber representation, so values

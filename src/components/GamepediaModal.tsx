@@ -454,7 +454,7 @@ export default function GamepediaModal({
     const key = entry.object.id as ResourceKey;
     const resources = gameState.resources as Record<string, ExpNumber>;
     const rate = gameState.computeResourceRate(key);
-    const factors = gameState.getFactors(key);
+    const factors = gameState.getProductionFactors(key);
     const factorTabs: FactorTab[] = ["additional", "multiplicative", "drain"];
     const isPopulation = key === "population";
     const hasWorkers = productionDefinitions.some(({ key: resourceKey }) => resourceKey === key);
