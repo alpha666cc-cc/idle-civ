@@ -4,11 +4,11 @@
 > systems, and remaining scope — so an AI (or a new contributor) can estimate the project
 > without reading the codebase or the full roadmap.
 >
-> **Snapshot:** commit `fa8dd68` (branch `main`) with the Milestone 8 first slice in the
-> working tree, 2026-09-17.
+> **Snapshot:** commit `e132d70` (branch `main`), 2026-09-19 — Milestone 8 first
+> slice plus the Milestone 2 ages slice and the Milestone 3 save system.
 > **Sources of truth:** `src/game/*.ts` (live definitions) and `docs/roadmap.md`
 > (planned design). This file is a hand-authored snapshot — regenerate it after large
-> content changes.
+> content changes. See also `docs/timeline.md` for what landed when.
 >
 > **Status legend:** 🟢 live in code · 🟡 defined but gated / unreachable · 🔵 designed,
 > not implemented (roadmap).
@@ -20,9 +20,12 @@ Vite, no backend). The player gathers food/wood/stone/gold, assigns workers, buy
 building types with exponentially scaling costs, and pushes population toward the campaign
 goal of **10 billion people**, finishing with a **colony-ship launch**. A bonus/upgrade
 layer (32 enhancer tiers), unlock gates, and an in-game codex (Gamepedia) already exist.
-So do statistics, achievements, and the battle first slice (79 buyable units, 23
-deterministic campaign encounters with a playback Army tab). Ages, saves, research, and
-prestige are still on the roadmap.
+So do statistics (including online/offline time tracking), achievements, the battle first
+slice (79 buyable units, 24 deterministic campaign encounters with a playback Army tab),
+the seven-age progression (Ancient → Modern/Space, with age-driven unit retirement), and
+a full save system (JSON/XML/Base64, GUID-stable content migration, offline gains at
+25% efficiency capped at 12 h). Research, the trade economy, and prestige are still on
+the roadmap.
 Prestige is deliberately deferred until the first loop is done.
 
 ## 2. Resources (20 live, 2 planned)
@@ -47,8 +50,8 @@ at 0. Click gain = `(worker production + 1)` × multipliers (drains excluded).
 | --- | --- | --- | --- |
 | `population` | worker pool | 🟢 | Derived from built citizens; each citizen drains 1 food/s; capped by `peopleCapacity`; assignable workers = population − assigned |
 | `science` | building | 🟡 | Produced 1/s per university; university is gated at 20 town halls (unreachable today) |
-| `military` | building | 🟢 | Produced 1/s per barracks; barracks gated at 5 town halls |
-| `metalwork` | building | 🟡 | Produced 1/s per smithy; smithy gated behind the first battle (no battles yet); also an upgrade cost from enhancer tier 3 |
+| `military` | building | 🟢 | Produced 1/s per barracks; barracks gated at 5 town halls; spendable as a trade resource (production commit 2026-09-19) |
+| `metalwork` | building | 🟢 | Produced 1/s per smithy; smithy gated behind the first battle (`age0_1_first_fire`); also an upgrade cost from enhancer tier 3 |
 
 Implemented: `click power` and `automated click power` are derived **attributes**
 (`attributes.ts`, `family: "derived"`; own `stat` Gamepedia category + stats tab) — 🟢.
@@ -150,11 +153,11 @@ loop beyond that is deferred by decision.
 | UI tabs | 🟢 | Production, Upgrades, Achievements, Trade (hidden until a market exists), Settings, Stats, Dev Tools; **Army** hidden until barracks exists; **Research** hidden until university exists (both render no content yet) |
 | Gamepedia | 🟢 | Registry + relations + search + reveal; categories resource/capacity/building/upgrade/achievement populated, research/combat empty; stat/unit/battle categories planned |
 | Number formats | 🟢 | scientific / engineering / named / compact; only persisted preference (`localStorage`, try/catch-wrapped) |
-| Saves | 🔵 | **None.** Everything resets on reload; roadmap Milestone 3: versioned JSON primary, XML/Base64 interchanges, migrations; offline gains will use an efficiency factor `E_off` = 25–50% of active production, capped at 12 h |
-| Statistics | 🟡 | Stats tab, tracked counters (clicks, play time, buildings built, fastest records) and the `stat` Gamepedia category (click power, auto-click rate as derived attributes) are live; Milestone 5's command-style actions → result events remain 🔵 |
-| Achievements | 🟢 | 72 concrete records (17 other milestones + building-power chains 4×9, hoarder chains 4×3, Master Builder 7) with `family`/`tier` data, plus open-ended hoarder tiers every e³ past 1e9 (materialized on demand); cumulative family cards with locked/partial/complete states; age-transition and unit chains still pending |
-| Ages / era card | 🔵 | Sidebar era card is a hardcoded mock ("Neolithic Dawn", "Year 12", "68% to Bronze Age") — do not build on it |
-| Battle system | 🔵 | Milestone 8 — campaign prototype (`temp/campaign_v2.json`, not compiled/wired): **23 encounters** (2 regular + 1 age-end boss per age, 5 in Modern/Space) over a **79-unit roster** (`temp/unit-v2-currated.json`); unit availability comes from the research tree/battle rewards, not per-encounter lists; wolf first; victories apply data-driven rewards (caps, upgrades, unlocks) |
+| Saves | 🟢 | **Milestone 3 first slice done** — versioned `SaveData` (`SAVE_VERSION = 1`) in `src/game/saveSystem.ts`; JSON, XML and Base64 encodings of the same document; import/export in Settings (clipboard/file pickers via `components/saveFileIo.ts`); static content GUIDs (`src/game/dataIds.ts`, generated by `tools/gen/guids.mjs`) with a `referencedGuids` snapshot in every save so content renames migrate; offline gains at `E_off` = 25% capped at 12 h with an offline-gain panel on load, plus a cross-language contract test (`tools/tests/offline_gain_test.py`, `npm run test:cross-language`) over `data/offlineGainVectors.json`; autosave interval and reset-to-start in Settings/Dev Tools |
+| Statistics | 🟢 | Stats tab, tracked counters (clicks, buildings built, fastest age/battle records) and the `stat` Gamepedia category (click power, auto-click rate as derived attributes); time tracking now includes `playTimeMs`/`runTimeMs`, `onlineTimeMs`/`offlineTimeMs`, longest-offline/active streaks, and `wastedResources` (unit-retirement cost); command-style actions → result events remain 🔵 |
+| Achievements | 🟢 | 65 concrete records (17 other milestones + building-power chains 4×9, hoarder chains 4×3, Master Builder 7) with `family`/`tier` data, plus open-ended hoarder tiers every e³ past 1e9 (materialized on demand); cumulative family cards with locked/partial/complete states; age-transition and unit chains still pending |
+| Ages / era card | 🟢 | **Milestone 2 first slice done** — seven `AgeDefinition`s in `src/game/data/ages.json` (`age-0` Ancient → `age-6` Modern/Space, thresholds at powers of ten), live era card in the sidebar, transitions recorded in statistics with fastest-age records, and age-driven unit retirement (units from two ages back are retired; their cost feeds `wastedResources`). Still pending: age-driven building availability (replacing the hardcoded `available` flag) and age-owned unlock lists |
+| Battle system | 🟢 | **First slice done** — 79 units (`src/game/data/units.json`), **24 encounters** (`src/game/data/encounters.json`, 7 age bosses), deterministic stack sim (`src/game/battle.ts`), Army tab playback at 1 round/sec, victory bonuses, Gamepedia `unit`/`combat` pages, 79 vendored game-icons.net SVGs. Age-driven retirement now trims old units. Remaining: research-driven unlocks (Milestone 9), balance pass on cross-age enemy counts |
 | Research tree | 🔵 | Milestone 9 — `era` field referencing age ids |
 | Game-length simulation | 🔵 | Milestone 10 — headless engine run at accelerated speed reporting time-to-age/pacing; needs Vitest first |
 | Prestige / interstellar loop | 🔵 | Deferred by decision until the first loop (10B + colony ship) is done; permanent across loops: achievements, prestige bonuses (undefined), `seen` |
@@ -165,16 +168,16 @@ Master Builder rewards target the derived `buildingCostMultiplier` stat (base ×
 
 | Milestone | Remaining work |
 | --- | --- |
-| 1 — Data-driven definitions | Move definitions to `src/game/data/` (one file per content type); age-driven availability |
-| 2 — Ages | The 7 `AgeDefinition`s above; transition events; age-driven unlocks |
-| 3 — Saves | Versioned JSON (+ XML/Base64 codecs), migrations, **offline progress**; persist `seen`/`unlocked`/`bought` per upgrade |
+| 1 — Data-driven definitions | Definitions are JSON-backed (`src/game/data/*.json`); remaining: age-driven building availability |
+| 2 — Ages | **First slice done** — 7 ages, transitions, era card, age-driven unit retirement; remaining: age-driven unlocks and building availability |
+| 3 — Saves | **First slice done** — versioned JSON/XML/Base64, GUID migration, offline gains (25%, 12 h cap), contract tests; remaining: deeper migrations as the model evolves |
 | 4 — Action multiplier | Shared `getActionQuantity()` seam (UI multipliers already exist) |
-| 5 — Statistics | Command-style actions → result events → stats tab |
+| 5 — Statistics | Counters + time tracking done; command-style actions → result events remain |
 | 6 — Achievements | Age-transition achievements; milestone chains (building powers, hoarders, Master Builder) + cumulative family cards + open-ended hoarder tiers are done |
 | 7 — Upgrades (rest) | `attributeFlat`/`attributeDrain`/`costReductionBase`/`costReductionFlat` data; research/achievement/battle unlock sources |
-| 8 — Battles | **First slice done** — `src/game/units.ts` + `data/units.json` (79 units, per-age hp/attack scale ×8, cost factor 1.2), `src/game/battle.ts` (seeded deterministic stack/hp-pool sim, ≤ 200 rounds, stalemate outcome, `armyPower = attack × accuracy × √(hp ÷ (1 − armor))` summed over stacks), units as buyables **and** bonus receptacles (`hoplite.attack`, `tag.ranged.range`, `unitAll.hp` scopes; enemy boosts use the same channel), Army tab (unit column + enemy army + battle playback at 1 round/sec, units restored after battle), Gamepedia `unit`/`combat` pages, 79 vendored game-icons.net SVGs (CC BY 3.0, `public/units/ATTRIBUTION.md`). Remaining: unit retirement window, research-driven unlocks (Milestone 9), balance pass on cross-age enemy counts |
+| 8 — Battles | **First slice done** — `src/game/units.ts` + `data/units.json` (79 units, per-age hp/attack scale ×8, cost factor 1.2), `src/game/battle.ts` (seeded deterministic stack/hp-pool sim, ≤ 200 rounds, stalemate outcome, `armyPower = attack × accuracy × √(hp ÷ (1 − armor))` summed over stacks), units as buyables **and** bonus receptacles (`hoplite.attack`, `tag.ranged.range`, `unitAll.hp` scopes; enemy boosts use the same channel), Army tab (unit column + enemy army + battle playback at 1 round/sec, units restored after battle), Gamepedia `unit`/`combat` pages, 79 vendored game-icons.net SVGs (CC BY 3.0, `public/units/ATTRIBUTION.md`). Age-driven retirement trims units from two ages back. Remaining: research-driven unlocks (Milestone 9), balance pass on cross-age enemy counts |
 | 9 — Research | Tree keyed to ages |
-| 10 — Simulation | Headless pacing run; requires proposing Vitest first (no test runner today) |
+| 10 — Simulation | Headless pacing run; Vitest is installed (`npm test`), the runner exists but no simulation yet |
 | Deferred | Prestige mechanics, prestige bonuses, interstellar loop, colony ship |
 
 ## 8. Conventions an AI must respect
@@ -188,7 +191,7 @@ Master Builder rewards target the derived `buildingCostMultiplier` stat (base ×
 - **Cost reductions are per unit** in the fixed order `base → factor → percent → flat`; attribute bonuses stack option A (multipliers multiply, flats/drains sum).
 - **Unlocks are explicit id lists** on their source (age/research/encounter/building) — never a rule engine.
 - **First loop before prestige.**
-- Validation gate: `npm run build` (tsc + vite) and `npm run lint` (oxlint) must both pass; Node/npm are vendored in `tools/node/`. No test framework installed — propose Vitest before adding one.
+- Validation gate: `npm run build` (tsc + vite) and `npm run lint` (oxlint) must both pass; Node/npm are vendored in `tools/node/`. Tests: Vitest is installed (`npm test`, e.g. `src/game/saveSystem.test.ts`); the offline-gain contract also has a cross-language Python check (`npm run test:cross-language`).
 - Full working rules: `AGENTS.md` at the repo root.
 
 ## 9. Scope at a glance
@@ -198,10 +201,10 @@ Master Builder rewards target the derived `buildingCostMultiplier` stat (base ×
 | Buildings | 12 | ~12 + colony-ship project pieces |
 | Resources | 20 (4 production, 1 population, 3 building, 12 capacity) | + 2 stats (click power, auto-click rate) |
 | Upgrades | 32 enhancer tiers | + research-gated, achievement-gated, battle-reward upgrades |
-| Ages | 0 | 7 |
-| Units / encounters | 79 units, 23 encounters (7 age bosses) | 79-unit roster + 23 encounters (7 age-end bosses) |
+| Ages | 7 (live) | 7 |
+| Units / encounters | 79 units, 24 encounters (7 age bosses) | 79-unit roster + 24 encounters (7 age-end bosses) |
 | Research | 0 | 1 tree across 7 eras |
-| Achievements | 72 concrete + open-ended hoarder tiers | ages + unit chains |
-| Saves | 0 | versioned JSON + 2 interchange codecs + offline |
+| Achievements | 65 concrete + open-ended hoarder tiers | ages + unit chains |
+| Saves | Versioned JSON/XML/Base64 + GUID migration + offline gains | deeper migrations as the model evolves |
 | Screens | 1 (tabs) | 1 + stats tab + modal |
 | Code | ~4,500 lines src | roadmap recommends a `src/game/data/` split first |

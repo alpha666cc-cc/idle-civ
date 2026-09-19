@@ -603,11 +603,16 @@ tracked tree. `dist/` and `node_modules/` are already gitignored (`*.local` too)
 Version control: **do not** `git commit`, `push`, `reset`, `checkout`, `stash`, or delete
 files unless the user explicitly asks. Confirm `git status` is clean of *your*
 accidental additions before you finish. Never commit with `--amend` or force flags.
+**Always run git commands that may page with `--no-pager`** (e.g.
+`git --no-pager log`, `git --no-pager diff`) — a paged command hangs the
+non-interactive shell and aborts the run.
 
-Tests: none exist. If a task genuinely needs automated tests (roadmap milestones 8 and
-10 require deterministic combat and pacing tests), **propose Vitest first** and get
-agreement on the dependency and the `test` script before adding them. Do not silently
-introduce a test framework, and do not install any dependency without explaining why.
+Tests: Vitest is installed (`npm test`, e.g. `src/game/saveSystem.test.ts` and
+`src/game/dataIds.test.ts`); the offline-gain contract has a cross-language Python
+check (`npm run test:cross-language`, `tools/tests/offline_gain_test.py`). Roadmap
+milestones 8 and 10 still need deterministic combat and pacing tests — extend the
+existing Vitest setup rather than adding another framework. Do not install any new
+dependency without explaining why.
 
 ---
 
