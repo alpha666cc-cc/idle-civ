@@ -17,8 +17,8 @@ import { emptyStatistics, type Statistics } from "./statistics";
 /**
  * Save system (roadmap Milestone 3).
  *
- * The save is a versioned JSON document; XML and Base64 are interchanges over the
- * same document, never a second format. Every unbounded number is written as the
+ * The save is a versioned document with JSON and XML representations. Every
+ * unbounded number is written as the
  * `ExpNumber` scientific-notation string, so a save is readable, diffable and
  * immune to the double-overflow that would come from storing mantissas alone.
  *
@@ -32,6 +32,19 @@ export const SAVE_VERSION = 1;
 
 /** How a save travels: the same document, three encodings. */
 export type SaveFormat = "base64" | "json" | "xml";
+
+export type SavedActionMultiplier =
+  | 1
+  | 10
+  | 100
+  | 1000
+  | 10000
+  | 100000
+  | 1000000
+  | 10000000
+  | 100000000
+  | 1000000000
+  | "Max";
 
 /** One save file's identity; stable from creation through import/export. */
 export type SaveGuid = string;
@@ -65,6 +78,11 @@ export type SerializedStatistics = {
   readonly buildingsBuiltByKey: Record<string, string>;
   readonly playTimeMs: number;
   readonly runTimeMs: number;
+  readonly onlineTimeMs: number;
+  readonly offlineTimeMs: number;
+  readonly longestOfflineMs: number;
+  readonly longestActiveMs: number;
+  readonly activeStreakMs: number;
   readonly fastestAgeMs: Record<string, number>;
   readonly fastestBattleMs: Record<string, number>;
   readonly wastedResources: string;
@@ -80,7 +98,10 @@ export type SaveData = {
   readonly savedAtMs: number;
   readonly resources: Record<string, string>;
   readonly workers: Record<string, string>;
-  readonly builtBuildings: string[];
+  /** Legacy v1 field accepted while importing older array-based saves. */
+  readonly builtBuildings?: string[];
+  /** Building id -> count; order is intentionally not persisted. */
+  readonly buildingCounts: Record<string, string>;
   readonly resourceFactors: SerializedResourceFactors;
   readonly buildingCostOverrides: Record<string, SerializedBuildingCost[]>;
   readonly autoClicksPerSecond: number;
@@ -94,8 +115,17 @@ export type SaveData = {
   readonly freeBuildings: boolean;
   readonly freeUnits: boolean;
   readonly freeUpgrades: boolean;
+  readonly actionMultiplier: SavedActionMultiplier;
+  readonly largeMultiplier: number;
+  readonly dismissedAchievements: string[];
   /** Content id → static guid, for every id this save names. */
   readonly referencedGuids: Record<string, string>;
+};
+
+export type SaveUiState = {
+  readonly actionMultiplier?: SavedActionMultiplier;
+  readonly largeMultiplier?: number;
+  readonly dismissedAchievements?: readonly string[];
 };
 
 /** Raised for anything a save file cannot be trusted to contain. */
@@ -194,33 +224,155 @@ const escapeXml = (value: string): string =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
-/**
- * XML interchange: the JSON document wrapped in a CDATA payload, with the
- * identity fields mirrored as attributes so a file is identifiable without
- * parsing its payload. CDATA may not contain `]]>`, hence the split guard.
- */
-export const saveToXml = (data: SaveData): string => {
-  const payload = saveToJson(data).replaceAll("]]>", "]]]]><![CDATA[>");
-  return [
+type XmlNode = {
+  name: string;
+  attributes: Record<string, string>;
+  children: XmlNode[];
+  text: string;
+};
+
+const xmlAttribute = (value: string): string =>
+  escapeXml(value).replaceAll("'", "&apos;");
+
+const xmlValue = (value: unknown): string => {
+  if (typeof value === "string") {
+    return `<value type="string">${escapeXml(value)}</value>`;
+  }
+  if (typeof value === "number") {
+    return `<value type="number">${value}</value>`;
+  }
+  if (typeof value === "boolean") {
+    return `<value type="boolean">${value}</value>`;
+  }
+  if (Array.isArray(value)) {
+    return `<array>${value.map((item) => `<item>${xmlValue(item)}</item>`).join("")}</array>`;
+  }
+  if (isRecord(value)) {
+    return `<object>${Object.entries(value)
+      .map(
+        ([key, item]) =>
+          `<field name="${xmlAttribute(key)}">${xmlValue(item)}</field>`,
+      )
+      .join("")}</object>`;
+  }
+  return `<value type="null" />`;
+};
+
+const xmlEntity = (value: string): string =>
+  value
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&apos;", "'")
+    .replaceAll("&amp;", "&");
+
+const parseXmlAttributes = (text: string): Record<string, string> => {
+  const attributes: Record<string, string> = {};
+  const pattern = /([A-Za-z][\w-]*)\s*=\s*"([^"]*)"/g;
+  for (const match of text.matchAll(pattern)) {
+    attributes[match[1]] = xmlEntity(match[2]);
+  }
+  return attributes;
+};
+
+const parseXmlTree = (xml: string): XmlNode => {
+  const root: XmlNode = {
+    name: "root",
+    attributes: {},
+    children: [],
+    text: "",
+  };
+  const stack = [root];
+  const tokens = /<\/?[A-Za-z][^>]*>|[^<]+/g;
+  for (const token of xml.matchAll(tokens)) {
+    const part = token[0];
+    if (part.startsWith("<?") || part.startsWith("<!--")) continue;
+    if (!part.startsWith("<")) {
+      stack[stack.length - 1].text += xmlEntity(part);
+      continue;
+    }
+    if (part.startsWith("</")) {
+      if (stack.length === 1) throw new SaveFormatError("Malformed XML save.");
+      stack.pop();
+      continue;
+    }
+    const selfClosing = part.endsWith("/>");
+    const tag = part.match(/^<([A-Za-z][\w-]*)([^>]*)>$/);
+    if (!tag) throw new SaveFormatError("Malformed XML save.");
+    const node: XmlNode = {
+      name: tag[1],
+      attributes: parseXmlAttributes(tag[2]),
+      children: [],
+      text: "",
+    };
+    stack[stack.length - 1].children.push(node);
+    if (!selfClosing) stack.push(node);
+  }
+  if (stack.length !== 1 || root.children.length !== 1) {
+    throw new SaveFormatError("Malformed XML save.");
+  }
+  return root.children[0];
+};
+
+const parseXmlValue = (node: XmlNode): unknown => {
+  if (node.name === "value") {
+    if (node.attributes.type === "number") return Number(node.text);
+    if (node.attributes.type === "boolean") return node.text === "true";
+    if (node.attributes.type === "null") return null;
+    return node.text;
+  }
+  if (node.name === "array") {
+    return node.children
+      .filter((child) => child.name === "item")
+      .map((child) => parseXmlValue(child.children[0]));
+  }
+  if (node.name === "object") {
+    const object: Record<string, unknown> = {};
+    for (const field of node.children.filter(
+      (child) => child.name === "field",
+    )) {
+      if (field.children[0])
+        object[field.attributes.name] = parseXmlValue(field.children[0]);
+    }
+    return object;
+  }
+  throw new SaveFormatError("Malformed XML save value.");
+};
+
+/** Serialize a save as typed XML, without embedding JSON or CDATA. */
+export const saveToXml = (data: SaveData): string =>
+  [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<save version="${data.version}" guid="${escapeXml(data.guid)}" savedAtMs="${data.savedAtMs}">`,
-    `  <data><![CDATA[${payload}]]></data>`,
+    `<save version="${data.version}" guid="${xmlAttribute(data.guid)}" createdAtMs="${data.createdAtMs}" savedAtMs="${data.savedAtMs}">`,
+    xmlValue({
+      ...data,
+      version: undefined,
+      guid: undefined,
+      createdAtMs: undefined,
+      savedAtMs: undefined,
+    }),
     "</save>",
     "",
   ].join("\n");
-};
 
-/** Parse an XML interchange document back into `SaveData`. */
+/** Parse the typed XML interchange back into `SaveData`. */
 export const saveFromXml = (xml: string): SaveData => {
-  const match = xml.match(/<data>\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*<\/data>/);
-  if (!match) {
-    throw new SaveFormatError(
-      "That XML has no <data><![CDATA[...]]></data> save payload.",
-    );
-  }
-  return saveFromJson(match[1].replaceAll("]]]]><![CDATA[>", "]]>"));
+  const root = parseXmlTree(xml);
+  if (root.name !== "save")
+    throw new SaveFormatError("That XML has no save root.");
+  const object = root.children.find((child) => child.name === "object");
+  if (!object) throw new SaveFormatError("That XML has no save data.");
+  const parsed = parseXmlValue(object) as Record<string, unknown>;
+  return saveFromJson(
+    JSON.stringify({
+      ...parsed,
+      version: Number(root.attributes.version),
+      guid: root.attributes.guid,
+      createdAtMs: Number(root.attributes.createdAtMs),
+      savedAtMs: Number(root.attributes.savedAtMs),
+    }),
+  );
 };
-
 /** Base64 over UTF-8 bytes, so a save carrying non-ASCII text survives. */
 export const toBase64 = (text: string): string => {
   const bytes = new TextEncoder().encode(text);
@@ -306,10 +458,35 @@ export const findUnknownContentIds = (
     ...(data.defeatedEncounters ?? []),
     ...(data.enteredAges ?? []),
     ...(data.earnedAchievements ?? []),
-    ...(data.builtBuildings ?? []),
+    ...Object.keys(
+      data.buildingCounts ?? legacyBuildingCounts(data.builtBuildings),
+    ),
     ...Object.keys(data.unitCounts ?? {}),
   ]);
   return [...ids].filter((id) => id.length > 0 && !known(id)).sort();
+};
+
+const countBuildings = (
+  builtBuildings: readonly string[],
+): Record<string, string> => {
+  const counts: Record<string, number> = {};
+  for (const key of builtBuildings) counts[key] = (counts[key] ?? 0) + 1;
+  return Object.fromEntries(
+    Object.entries(counts).map(([key, count]) => [key, String(count)]),
+  );
+};
+
+const legacyBuildingCounts = (
+  builtBuildings: readonly string[] | undefined,
+): Record<string, string> => countBuildings(builtBuildings ?? []);
+
+const expandBuildingCounts = (counts: Record<string, string>): string[] => {
+  const buildings: string[] = [];
+  for (const [key, rawCount] of Object.entries(counts)) {
+    const count = Math.max(0, Math.floor(Number(rawCount)));
+    for (let index = 0; index < count; index += 1) buildings.push(key);
+  }
+  return buildings;
 };
 
 /**
@@ -358,7 +535,10 @@ export const remapSaveIds = (
 
   const repaired: SaveData = {
     ...data,
-    builtBuildings: remapList(data.builtBuildings ?? []),
+    buildingCounts: remapRecord(
+      data.buildingCounts ?? legacyBuildingCounts(data.builtBuildings),
+      true,
+    ) as Record<string, string>,
     boughtUpgrades: remapList(data.boughtUpgrades ?? []),
     defeatedEncounters: remapList(data.defeatedEncounters ?? []),
     enteredAges: remapList(data.enteredAges ?? []),
@@ -470,6 +650,11 @@ export const serializeStatistics = (
   ),
   playTimeMs: statistics.playTimeMs,
   runTimeMs: statistics.runTimeMs,
+  onlineTimeMs: statistics.onlineTimeMs,
+  offlineTimeMs: statistics.offlineTimeMs,
+  longestOfflineMs: statistics.longestOfflineMs,
+  longestActiveMs: statistics.longestActiveMs,
+  activeStreakMs: statistics.activeStreakMs,
   fastestAgeMs: { ...statistics.fastestAgeMs },
   fastestBattleMs: { ...statistics.fastestBattleMs },
   wastedResources: statistics.wastedResources.toString(),
@@ -491,6 +676,11 @@ export const deserializeStatistics = (
     buildingsBuiltByKey,
     playTimeMs: data.playTimeMs ?? 0,
     runTimeMs: data.runTimeMs ?? 0,
+    onlineTimeMs: data.onlineTimeMs ?? data.playTimeMs ?? 0,
+    offlineTimeMs: data.offlineTimeMs ?? 0,
+    longestOfflineMs: data.longestOfflineMs ?? 0,
+    longestActiveMs: data.longestActiveMs ?? data.playTimeMs ?? 0,
+    activeStreakMs: data.activeStreakMs ?? 0,
     fastestAgeMs: { ...(data.fastestAgeMs ?? {}) },
     fastestBattleMs: { ...(data.fastestBattleMs ?? {}) },
     wastedResources: ExpNumber.from(data.wastedResources ?? 0),
@@ -515,7 +705,7 @@ export const collectReferencedIds = (state: CivilizationState): string[] => {
     ...state.defeatedEncounters,
     ...state.enteredAges,
     ...state.earnedAchievements,
-    ...state.builtBuildings,
+    ...Object.keys(countBuildings(state.builtBuildings)),
     ...Object.keys(state.unitCounts),
     ...Object.keys(state.statistics.buildingsBuiltByKey),
     ...Object.keys(state.buildingCostOverrides),
@@ -534,6 +724,7 @@ export const createSaveData = (
   state: CivilizationState,
   guid: SaveGuid = generateSaveGuid(),
   createdAtMs: number = Date.now(),
+  uiState: SaveUiState = {},
 ): SaveData => ({
   version: SAVE_VERSION,
   guid,
@@ -551,7 +742,7 @@ export const createSaveData = (
       value.toString(),
     ]),
   ),
-  builtBuildings: [...state.builtBuildings],
+  buildingCounts: countBuildings(state.builtBuildings),
   resourceFactors: serializeFactorMap(state.resourceFactors),
   buildingCostOverrides: Object.fromEntries(
     Object.entries(state.buildingCostOverrides).map(([key, costs]) => [
@@ -575,6 +766,9 @@ export const createSaveData = (
   freeBuildings: state.freeBuildings,
   freeUnits: state.freeUnits,
   freeUpgrades: state.freeUpgrades,
+  actionMultiplier: uiState.actionMultiplier ?? 1,
+  largeMultiplier: uiState.largeMultiplier ?? 100,
+  dismissedAchievements: [...(uiState.dismissedAchievements ?? [])],
   referencedGuids: snapshotGuids(collectReferencedIds(state)),
 });
 
@@ -611,7 +805,9 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
   return new CivilizationState(
     resources,
     workers,
-    [...(data.builtBuildings ?? [])],
+    expandBuildingCounts(
+      data.buildingCounts ?? legacyBuildingCounts(data.builtBuildings),
+    ),
     deserializeFactorMap(data.resourceFactors),
     costOverrides,
     data.autoClicksPerSecond ?? 0,

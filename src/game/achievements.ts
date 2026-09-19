@@ -20,7 +20,9 @@ export type AchievementRequirement =
   | { type: "building-count"; building: BuildingKey; count: number }
   | { type: "buildings-total"; count: number }
   | { type: "encounter"; encounterId: string }
-  | { type: "upgrade-count"; count: number };
+  | { type: "upgrade-count"; count: number }
+  | { type: "offline-time"; amount: number }
+  | { type: "active-time"; amount: number };
 
 /**
  * An achievement is a permanent record, but it may still carry a **reward**: a
@@ -63,7 +65,9 @@ type AchievementRequirementData =
   | { type: "building-count"; building: BuildingKey; count: number }
   | { type: "buildings-total"; count: number }
   | { type: "encounter"; encounterId: string }
-  | { type: "upgrade-count"; count: number };
+  | { type: "upgrade-count"; count: number }
+  | { type: "offline-time"; amount: number }
+  | { type: "active-time"; amount: number };
 
 type AchievementData = {
   key: string;
@@ -101,6 +105,10 @@ const toRequirement = (
       return { type: "encounter", encounterId: data.encounterId };
     case "upgrade-count":
       return { type: "upgrade-count", count: data.count };
+    case "offline-time":
+      return { type: "offline-time", amount: data.amount };
+    case "active-time":
+      return { type: "active-time", amount: data.amount };
   }
 };
 
@@ -116,7 +124,9 @@ for (const data of achievementData as AchievementData[]) {
     requirement.type === "encounter" &&
     !encounterDefinitions.some(({ key }) => key === requirement.encounterId)
   ) {
-    throw new Error(`Unknown achievement encounter: ${requirement.encounterId}`);
+    throw new Error(
+      `Unknown achievement encounter: ${requirement.encounterId}`,
+    );
   }
 }
 
@@ -157,15 +167,41 @@ export type OpenEndedHoarderChain = {
 };
 
 export const openEndedHoarderChains: OpenEndedHoarderChain[] = [
-  { family: "food-hoarder", resource: "food", startExponent: 9, exponentStep: 3, label: "Food Hoarder" },
-  { family: "wood-hoarder", resource: "wood", startExponent: 9, exponentStep: 3, label: "Wood Hoarder" },
-  { family: "stone-hoarder", resource: "stone", startExponent: 9, exponentStep: 3, label: "Stone Hoarder" },
-  { family: "gold-hoarder", resource: "gold", startExponent: 9, exponentStep: 3, label: "Gold Hoarder" },
+  {
+    family: "food-hoarder",
+    resource: "food",
+    startExponent: 9,
+    exponentStep: 3,
+    label: "Food Hoarder",
+  },
+  {
+    family: "wood-hoarder",
+    resource: "wood",
+    startExponent: 9,
+    exponentStep: 3,
+    label: "Wood Hoarder",
+  },
+  {
+    family: "stone-hoarder",
+    resource: "stone",
+    startExponent: 9,
+    exponentStep: 3,
+    label: "Stone Hoarder",
+  },
+  {
+    family: "gold-hoarder",
+    resource: "gold",
+    startExponent: 9,
+    exponentStep: 3,
+    label: "Gold Hoarder",
+  },
 ];
 
 const chainForId = (
   id: string,
-): { chain: OpenEndedHoarderChain; exponent: number; endExponent: number } | undefined => {
+):
+  | { chain: OpenEndedHoarderChain; exponent: number; endExponent: number }
+  | undefined => {
   for (const chain of openEndedHoarderChains) {
     const prefix = `${chain.family}-e`;
     if (!id.startsWith(prefix)) continue;
@@ -173,10 +209,16 @@ const chainForId = (
     if (parts.length > 2) return undefined;
     const exponent = Number(parts[0]);
     const endExponent = Number(parts[1] ?? parts[0]);
-    if (![exponent, endExponent].every((value) =>
-      Number.isSafeInteger(value) && value >= chain.startExponent &&
-      (value - chain.startExponent) % chain.exponentStep === 0,
-    ) || endExponent < exponent) return undefined;
+    if (
+      ![exponent, endExponent].every(
+        (value) =>
+          Number.isSafeInteger(value) &&
+          value >= chain.startExponent &&
+          (value - chain.startExponent) % chain.exponentStep === 0,
+      ) ||
+      endExponent < exponent
+    )
+      return undefined;
     return { chain, exponent, endExponent };
   }
   return undefined;
@@ -281,7 +323,11 @@ export const findAchievementDefinition = (
     id,
     chain.label,
     `Hoarder milestones from 1e${exponent} through 1e${endExponent}. Rewards from every tier are included.`,
-    { type: "resource", resource: chain.resource, amount: ExpNumber.fromLog10(endExponent) },
+    {
+      type: "resource",
+      resource: chain.resource,
+      amount: ExpNumber.fromLog10(endExponent),
+    },
     [{ type: "attributeFlat", destination: chain.resource, value: reward }],
     chain.family,
     endExponent,
@@ -294,9 +340,10 @@ export const findAchievementDefinition = (
 export const nextHoarderExponent = (
   chain: OpenEndedHoarderChain,
   earnedIds: readonly string[],
-): number => earnedIds.reduce((next, id) => {
-  const match = chainForId(id);
-  return match?.chain.family === chain.family
-    ? Math.max(next, match.endExponent + chain.exponentStep)
-    : next;
-}, chain.startExponent);
+): number =>
+  earnedIds.reduce((next, id) => {
+    const match = chainForId(id);
+    return match?.chain.family === chain.family
+      ? Math.max(next, match.endExponent + chain.exponentStep)
+      : next;
+  }, chain.startExponent);

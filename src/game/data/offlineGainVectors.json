@@ -1,0 +1,47 @@
+{
+  "efficiency": "0.25",
+  "maxOfflineMs": 43200000,
+  "cases": [
+    {
+      "name": "normal production",
+      "elapsedMs": 3600000,
+      "rates": {
+        "food": "10",
+        "wood": "4"
+      },
+      "expected": {
+        "food": "9000",
+        "wood": "3600"
+      }
+    },
+    {
+      "name": "twelve hour cap",
+      "elapsedMs": 86400000,
+      "rates": {
+        "food": "10"
+      },
+      "expected": {
+        "food": "108000"
+      }
+    },
+    {
+      "name": "zero and negative rates are skipped",
+      "elapsedMs": 3600000,
+      "rates": {
+        "food": "0",
+        "gold": "-2"
+      },
+      "expected": {}
+    },
+    {
+      "name": "large values remain exact",
+      "elapsedMs": 3600000,
+      "rates": {
+        "food": "1e300"
+      },
+      "expected": {
+        "food": "9e302"
+      }
+    }
+  ]
+}

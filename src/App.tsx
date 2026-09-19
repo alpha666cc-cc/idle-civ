@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -489,15 +490,22 @@ function App() {
   };
 
   /** Write the internal autosave document; shared by autosave and Save. */
-  const writeInternalSave = (
-    state: CivilizationState,
-    identity: { guid: SaveGuid; createdAtMs: number },
-  ): SaveData => {
-    const data = createSaveData(state, identity.guid, identity.createdAtMs);
-    writeStoredSave(serializeSave(data, "json"));
-    setLastSavedAtMs(data.savedAtMs);
-    return data;
-  };
+  const writeInternalSave = useCallback(
+    (
+      state: CivilizationState,
+      identity: { guid: SaveGuid; createdAtMs: number },
+    ): SaveData => {
+      const data = createSaveData(state, identity.guid, identity.createdAtMs, {
+        actionMultiplier: multiplier,
+        largeMultiplier,
+        dismissedAchievements,
+      });
+      writeStoredSave(serializeSave(data, "json"));
+      setLastSavedAtMs(data.savedAtMs);
+      return data;
+    },
+    [multiplier, largeMultiplier, dismissedAchievements],
+  );
 
   /**
    * Adopt a save document: repair renamed ids through the static GUIDs, install
@@ -519,11 +527,26 @@ function App() {
     };
     saveIdentityRef.current = identity;
     setSaveGuid(identity.guid);
+    setMultiplier(data.actionMultiplier ?? 1);
+    setLargeMultiplier(data.largeMultiplier ?? 100);
+    setDismissedAchievements([
+      ...new Set([
+        ...(data.dismissedAchievements ?? []),
+        ...(data.earnedAchievements ?? []),
+      ]),
+    ]);
 
-    const nextState = loadSaveData(repaired.data);
+    const loadedState = loadSaveData(repaired.data);
     const elapsedMs = Date.now() - data.savedAtMs;
+    const nextState = options.offlineGain
+      ? loadedState.recordOfflineTime(elapsedMs).checkAchievements()
+      : loadedState;
     const gains = options.offlineGain
-      ? calculateOfflineGain(nextState.getProductionRates(), elapsedMs)
+      ? calculateOfflineGain(
+          nextState.getProductionRates(),
+          elapsedMs,
+          nextState.getOfflineEfficiency(),
+        )
       : {};
     const hasGains = Object.keys(gains).length > 0;
 
@@ -560,7 +583,7 @@ function App() {
       writeInternalSave(gameStateRef.current, ensureSaveIdentity());
     }, autosaveIntervalSeconds * 1000);
     return () => window.clearInterval(timer);
-  }, [autosaveIntervalSeconds]);
+  }, [autosaveIntervalSeconds, writeInternalSave]);
 
   // Relaunch: pick the internal save up and let the offline panel size the gap.
   useEffect(() => {
@@ -619,6 +642,31 @@ function App() {
     );
   };
 
+  /** Dev Tools: export JSON and XML from one timestamped document. */
+  const handleSaveBothFormats = async (): Promise<void> => {
+    const data = writeInternalSave(gameState, ensureSaveIdentity());
+    const results: string[] = [];
+    for (const format of ["json", "xml"] as const) {
+      const result = await saveTextToFile(
+        saveFileName(data, format),
+        serializeSave(data, format),
+        mimeForSaveFormat(format),
+        acceptForSaveFormat(format),
+      );
+      results.push(result);
+    }
+    const cancelled = results.filter((result) => result === "cancelled").length;
+    if (cancelled > 0) {
+      setNotice(
+        cancelled === 2
+          ? "Save written internally; both file dialogs were cancelled."
+          : "Save written internally; one file dialog was cancelled.",
+      );
+      return;
+    }
+    setNotice("Matching JSON and XML saves written with the same timestamp.");
+  };
+
   /** Parse imported text and adopt it, reporting anything unreadable. */
   const importText = (
     text: string,
@@ -669,6 +717,8 @@ function App() {
     setSaveGuid("");
     setLastSavedAtMs(null);
     setPendingLoad(null);
+    setMultiplier(1);
+    setLargeMultiplier(100);
     setGameState(new CivilizationState());
     setDismissedAchievements([]);
     setNotice("New settlement founded; the previous run was discarded.");
@@ -1337,6 +1387,14 @@ function App() {
                     <span>Import (no offline gain)</span>
                     <strong>IMPORT</strong>
                   </button>
+                  <button
+                    type="button"
+                    className="dev-tools-toggle"
+                    onClick={() => void handleSaveBothFormats()}
+                  >
+                    <span>Save JSON + XML together</span>
+                    <strong>EXPORT</strong>
+                  </button>
                 </div>
               </section>
             </>
@@ -1620,7 +1678,7 @@ function App() {
                 </div>
                 <span>
                   <ChartColumn size={15} strokeWidth={1.8} />
-                  {formatDuration(statistics.playTimeMs)} played
+                  {formatDuration(statistics.onlineTimeMs)} online
                 </span>
               </div>
 
@@ -1654,12 +1712,24 @@ function App() {
               <p className="gamepedia-category">Time</p>
               <div className="stat-grid">
                 <div className="stat-card">
-                  <span>Played (all time)</span>
-                  <strong>{formatDuration(statistics.playTimeMs)}</strong>
+                  <span>Online time</span>
+                  <strong>{formatDuration(statistics.onlineTimeMs)}</strong>
                 </div>
                 <div className="stat-card">
-                  <span>Played (this run)</span>
+                  <span>Offline time</span>
+                  <strong>{formatDuration(statistics.offlineTimeMs)}</strong>
+                </div>
+                <div className="stat-card">
+                  <span>Active time (this run)</span>
                   <strong>{formatDuration(statistics.runTimeMs)}</strong>
+                </div>
+                <div className="stat-card">
+                  <span>Longest offline streak</span>
+                  <strong>{formatDuration(statistics.longestOfflineMs)}</strong>
+                </div>
+                <div className="stat-card">
+                  <span>Longest active streak</span>
+                  <strong>{formatDuration(statistics.longestActiveMs)}</strong>
                 </div>
               </div>
 

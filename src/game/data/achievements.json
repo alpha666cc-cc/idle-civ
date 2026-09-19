@@ -968,6 +968,34 @@
     "tier": 2
   },
   {
+    "guid": "cdb940c2-c6f8-58af-aa18-113fafd94f96",
+    "key": "offline-24h",
+    "name": "Long Rest",
+    "description": "Remain offline for 24 consecutive hours. Offline gain efficiency +25%.",
+    "requirement": { "type": "offline-time", "amount": 86400000 },
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "offlineEfficiency",
+        "value": 0.25
+      }
+    ]
+  },
+  {
+    "guid": "42ebf0d0-647a-5eb6-a991-560d1440d573",
+    "key": "active-24h",
+    "name": "Enduring Hands",
+    "description": "Play actively for 24 consecutive hours. All production +10%.",
+    "requirement": { "type": "active-time", "amount": 86400000 },
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "all-production",
+        "value": 1.1
+      }
+    ]
+  },
+  {
     "guid": "ff398f56-2626-5337-8d82-bf880b486156",
     "key": "master-builder-3",
     "name": "Master Builder III",

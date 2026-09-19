@@ -91,7 +91,10 @@ const maximumUnitPurchase = 1_000_000;
  * change (a build, purchase, victory or earn) rebuilds once. This keeps tick
  * cost independent of building count and earned-achievement count.
  */
-const buildingCountCaches = new WeakMap<readonly string[], Map<string, number>>();
+const buildingCountCaches = new WeakMap<
+  readonly string[],
+  Map<string, number>
+>();
 const earnedAchievementSets = new WeakMap<readonly string[], Set<string>>();
 
 /** Cached activeBonuses(), keyed on the identity triple of the source lists. */
@@ -511,10 +514,17 @@ export class CivilizationState {
     }
     // One tick is one second of play time for both the lifetime counter and the
     // current run (a future prestige resets `runTimeMs` only).
+    const activeStreakMs = this.statistics.activeStreakMs + tickMilliseconds;
     const statistics: Statistics = {
       ...this.statistics,
       playTimeMs: this.statistics.playTimeMs + tickMilliseconds,
       runTimeMs: this.statistics.runTimeMs + tickMilliseconds,
+      onlineTimeMs: this.statistics.onlineTimeMs + tickMilliseconds,
+      activeStreakMs,
+      longestActiveMs: Math.max(
+        this.statistics.longestActiveMs,
+        activeStreakMs,
+      ),
     };
     // Achievements are evaluated after the tick's changes so the check always runs
     // after a domain event has landed (roadmap Milestone 6). Age-reach times are
@@ -546,6 +556,19 @@ export class CivilizationState {
     return rates;
   }
 
+  /** Offline efficiency after achievement bonuses, as a fraction of live gain. */
+  getOfflineEfficiency(): number {
+    let efficiency = ExpNumber.fromNumber(0.25);
+    for (const [, bonus] of this.activeBonuses()) {
+      if (bonus.destination !== "offlineEfficiency") continue;
+      if (bonus.type === "attributeFlat")
+        efficiency = efficiency.add(bonus.value);
+      if (bonus.type === "attributeMultiplier")
+        efficiency = efficiency.mul(bonus.value);
+    }
+    return Math.max(0, efficiency.toNumber());
+  }
+
   /**
    * Credit offline production (roadmap Milestone 3). The amounts are already
    * scaled by the offline efficiency factor and capped by the save system, so
@@ -562,7 +585,22 @@ export class CivilizationState {
       changed = true;
     }
     if (!changed) return this;
-    return this.withState(resources, this.buildingCostOverrides);
+    return this.withState(
+      resources,
+      this.buildingCostOverrides,
+    ).checkAchievements();
+  }
+
+  /** Record one imported/offline gap without advancing active play time. */
+  recordOfflineTime(elapsedMs: number): CivilizationState {
+    if (!Number.isFinite(elapsedMs) || elapsedMs <= 0) return this;
+    const statistics: Statistics = {
+      ...this.statistics,
+      offlineTimeMs: this.statistics.offlineTimeMs + elapsedMs,
+      longestOfflineMs: Math.max(this.statistics.longestOfflineMs, elapsedMs),
+      activeStreakMs: 0,
+    };
+    return this.withStatistics(statistics);
   }
 
   getFactors(resourceKey: ResourceKey): ResourceFactors {
@@ -610,7 +648,10 @@ export class CivilizationState {
       drain: [],
     };
     for (const [sourceId, bonus] of this.activeBonuses()) {
-      if (String(bonus.destination) !== resourceKey) continue;
+      const targetsResource = String(bonus.destination) === resourceKey;
+      const targetsAllProduction =
+        bonus.destination === "all-production" && isProductionKey;
+      if (!targetsResource && !targetsAllProduction) continue;
       if (bonus.type === "attributeMultiplier") {
         bonusFactors.multiplicative.push([sourceId, bonus.value]);
       } else if (bonus.type === "attributeFlat") {
@@ -655,7 +696,10 @@ export class CivilizationState {
       ...base,
       multiplicative: [
         ...base.multiplicative,
-        ["dev production multiplier", this.devProductionMultiplier] as ResourceFactor,
+        [
+          "dev production multiplier",
+          this.devProductionMultiplier,
+        ] as ResourceFactor,
       ],
     };
   }
@@ -845,7 +889,8 @@ export class CivilizationState {
   private costReductionsFor(buyableId: string) {
     const sources = this.activeBonuses().filter(
       ([, bonus]) =>
-        (bonus.destination === buyableId || bonus.destination === "all-buildings") &&
+        (bonus.destination === buyableId ||
+          bonus.destination === "all-buildings") &&
         bonus.type.startsWith("costReduction"),
     );
     return {
@@ -1492,9 +1537,7 @@ export class CivilizationState {
 
   buyUnit(unitId: string, count: number = 1): CivilizationState {
     if (count <= 0 || !this.canBuyUnit(unitId, count)) return this;
-    const cost = this.freeUnits
-      ? []
-      : this.getUnitCost(unitId, count);
+    const cost = this.freeUnits ? [] : this.getUnitCost(unitId, count);
     const resources = { ...this.resources };
     for (const { resource, base } of cost) {
       resources[resource] = resources[resource].sub(base);
@@ -1677,6 +1720,10 @@ export class CivilizationState {
           : ExpNumber.ZERO;
       case "upgrade-count":
         return ExpNumber.fromNumber(this.boughtUpgrades.length);
+      case "offline-time":
+        return ExpNumber.fromNumber(this.statistics.longestOfflineMs);
+      case "active-time":
+        return ExpNumber.fromNumber(this.statistics.longestActiveMs);
     }
   }
 
@@ -1693,6 +1740,9 @@ export class CivilizationState {
         return ExpNumber.ONE;
       case "upgrade-count":
         return ExpNumber.fromNumber(requirement.count);
+      case "offline-time":
+      case "active-time":
+        return ExpNumber.fromNumber(requirement.amount);
     }
   }
 
@@ -1782,6 +1832,10 @@ export class CivilizationState {
         return this.defeatedEncounters.includes(requirement.encounterId);
       case "upgrade-count":
         return this.boughtUpgrades.length >= requirement.count;
+      case "offline-time":
+        return this.statistics.longestOfflineMs >= requirement.amount;
+      case "active-time":
+        return this.statistics.longestActiveMs >= requirement.amount;
       default:
         return false;
     }
@@ -2033,10 +2087,18 @@ export class CivilizationState {
         this.computeResourceRate(resourceKey).mul(elapsedFactor),
       );
     }
+    const activeStreakMs =
+      this.statistics.activeStreakMs + elapsed * tickMilliseconds;
     const statistics: Statistics = {
       ...this.statistics,
       playTimeMs: this.statistics.playTimeMs + elapsed * tickMilliseconds,
       runTimeMs: this.statistics.runTimeMs + elapsed * tickMilliseconds,
+      onlineTimeMs: this.statistics.onlineTimeMs + elapsed * tickMilliseconds,
+      activeStreakMs,
+      longestActiveMs: Math.max(
+        this.statistics.longestActiveMs,
+        activeStreakMs,
+      ),
     };
     return this.withState(
       resources,

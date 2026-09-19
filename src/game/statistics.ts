@@ -20,6 +20,16 @@ export type Statistics = {
   readonly playTimeMs: number;
   /** Time played in this run in milliseconds; reset by a future prestige. */
   readonly runTimeMs: number;
+  /** Time spent actively online; equal to playTimeMs for save compatibility. */
+  readonly onlineTimeMs: number;
+  /** Time represented by imported/offline gaps. */
+  readonly offlineTimeMs: number;
+  /** Largest single offline gap observed. */
+  readonly longestOfflineMs: number;
+  /** Largest uninterrupted active streak observed. */
+  readonly longestActiveMs: number;
+  /** Active streak in progress, reset when an offline gap is recorded. */
+  readonly activeStreakMs: number;
   /** Fastest run time (ms) at which each age's population threshold was met, by age id. */
   readonly fastestAgeMs: Record<string, number>;
   /** Fastest run time (ms) at which each encounter was won, by encounter id. */
@@ -38,6 +48,11 @@ export const emptyStatistics = (): Statistics => ({
   buildingsBuiltByKey: {},
   playTimeMs: 0,
   runTimeMs: 0,
+  onlineTimeMs: 0,
+  offlineTimeMs: 0,
+  longestOfflineMs: 0,
+  longestActiveMs: 0,
+  activeStreakMs: 0,
   fastestAgeMs: {},
   fastestBattleMs: {},
   wastedResources: ExpNumber.ZERO,

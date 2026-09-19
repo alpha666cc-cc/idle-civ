@@ -42,6 +42,7 @@ import { buildingDefinitions } from "./buildings";
 import { encounterDefinitions } from "./encounters";
 import { unitDefinitions } from "./units";
 import { upgradeDefinitions } from "./upgrades";
+import offlineGainVectors from "./data/offlineGainVectors.json";
 
 /** A state that exercises every field the save has to carry. */
 const sampleState = (): CivilizationState =>
@@ -90,7 +91,10 @@ describe("save document identity", () => {
 
     it("survives XML unchanged", () => {
       const data = sampleSave();
-      expect(saveFromXml(saveToXml(data))).toEqual(data);
+      const xml = saveToXml(data);
+      expect(xml).not.toContain("CDATA");
+      expect(xml).not.toContain("<data>");
+      expect(saveFromXml(xml)).toEqual(data);
     });
 
     it("survives a payload containing the CDATA terminator", () => {
@@ -137,6 +141,29 @@ describe("save document identity", () => {
     });
   });
 
+  it("persists action controls and dismissed achievement notifications", () => {
+    const data = createSaveData(sampleState(), "ui-state", 1, {
+      actionMultiplier: "Max",
+      largeMultiplier: 1000000,
+      dismissedAchievements: ["click-100"],
+    });
+    const restored = saveFromJson(saveToJson(data));
+    expect(restored.actionMultiplier).toBe("Max");
+    expect(restored.largeMultiplier).toBe(1000000);
+    expect(restored.dismissedAchievements).toEqual(["click-100"]);
+  });
+
+  it("stores repeated buildings as counts instead of an entry per building", () => {
+    const state = new CivilizationState(
+      emptyResourceAmounts(),
+      emptyWorkerAssignments(),
+      Array.from({ length: 1_000_000 }, () => "farm"),
+    );
+    const data = createSaveData(state, "compact-buildings", 1);
+    expect(data.buildingCounts).toEqual({ farm: "1000000" });
+    expect(saveToJson(data)).not.toContain('"builtBuildings"');
+  });
+
   describe("save validation", () => {
     it("rejects text that is not JSON", () => {
       expect(() => saveFromJson("not json at all")).toThrow(SaveFormatError);
@@ -174,9 +201,9 @@ describe("save document identity", () => {
       );
     });
 
-    it("rejects XML with no CDATA payload", () => {
+    it("rejects XML with no typed save data", () => {
       expect(() => saveFromXml("<save><data>nope</data></save>")).toThrow(
-        /CDATA/,
+        /save data/,
       );
     });
 
@@ -283,7 +310,7 @@ describe("loading a state", () => {
   it("does not mutate the parsed document's arrays", () => {
     const data = sampleSave();
     loadSaveData(data).builtBuildings.push("mutant");
-    expect(data.builtBuildings).not.toContain("mutant");
+    expect(data.buildingCounts).not.toHaveProperty("mutant");
   });
 });
 describe("renamed content repair", () => {
@@ -442,6 +469,76 @@ describe("offline production", () => {
     expect(credited.resources.wood.isZero).toBe(true);
   });
 
+  it("checks achievements after offline credit", () => {
+    const state = new CivilizationState({
+      ...emptyResourceAmounts(),
+      food: ExpNumber.fromNumber(99),
+    });
+    const credited = state.applyOfflineGain({ food: ExpNumber.ONE });
+    expect(credited.resources.food.toNumber()).toBe(100);
+    expect(credited.isAchievementEarned("food-hoarder-1")).toBe(true);
+  });
+
+  it("uses already-earned achievement bonuses in offline rates", () => {
+    const state = new CivilizationState(
+      emptyResourceAmounts(),
+      { ...emptyWorkerAssignments(), food: ExpNumber.ONE },
+      [],
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      ["growing-hamlet"],
+    );
+    const rate = state.getProductionRates().food!;
+    const gain = calculateOfflineGain({ food: rate }, 1000);
+    expect(gain.food.toNumber()).toBeCloseTo(
+      rate.toNumber() * OFFLINE_EFFICIENCY,
+      10,
+    );
+  });
+
+  it("records consecutive online and offline durations", () => {
+    const active = new CivilizationState().advanceTime(86_400);
+    expect(active.statistics.onlineTimeMs).toBe(86_400_000);
+    expect(active.statistics.offlineTimeMs).toBe(0);
+    expect(active.statistics.longestActiveMs).toBe(86_400_000);
+    expect(active.isAchievementEarned("active-24h")).toBe(true);
+
+    const resumed = active.recordOfflineTime(86_400_000).checkAchievements();
+    expect(resumed.statistics.offlineTimeMs).toBe(86_400_000);
+    expect(resumed.statistics.longestOfflineMs).toBe(86_400_000);
+    expect(resumed.statistics.activeStreakMs).toBe(0);
+    expect(resumed.isAchievementEarned("offline-24h")).toBe(true);
+    expect(resumed.getOfflineEfficiency()).toBeCloseTo(0.5, 12);
+  });
+
+  it("applies the active streak reward to every production resource", () => {
+    const before = new CivilizationState(emptyResourceAmounts(), {
+      ...emptyWorkerAssignments(),
+      food: ExpNumber.ONE,
+    });
+    const after = new CivilizationState(
+      emptyResourceAmounts(),
+      { ...emptyWorkerAssignments(), food: ExpNumber.ONE },
+      ["town-hall"],
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      ["active-24h"],
+      { ...emptyStatistics(), longestActiveMs: 86_400_000 },
+    );
+    const baseRate = before.getProductionRates().food!;
+    const boostedRate = after.getProductionRates().food!;
+    expect(after.isAchievementEarned("active-24h")).toBe(true);
+    expect(boostedRate.toNumber()).toBeCloseTo(baseRate.toNumber() * 1.1, 10);
+  });
+
   it("adds to an existing amount instead of replacing it", () => {
     const state = new CivilizationState({
       ...emptyResourceAmounts(),
@@ -464,6 +561,30 @@ describe("offline production", () => {
     const liveRates = state.getProductionRates();
     expect(liveRates.wood?.gt(ExpNumber.ZERO)).toBe(true);
     expect(Object.keys(liveRates)).toContain("food");
+  });
+
+  it("matches the shared cross-language test vectors", () => {
+    for (const testCase of offlineGainVectors.cases) {
+      const gain = calculateOfflineGain(
+        Object.fromEntries(
+          Object.entries(testCase.rates).map(([key, value]) => [
+            key,
+            ExpNumber.from(value),
+          ]),
+        ),
+        testCase.elapsedMs,
+        Number(offlineGainVectors.efficiency),
+      );
+      expect(Object.keys(gain)).toEqual(Object.keys(testCase.expected));
+      for (const [key, expected] of Object.entries(testCase.expected)) {
+        const actualNumber = gain[key].toNumber();
+        const expectedNumber = ExpNumber.from(expected).toNumber();
+        const scale = Math.max(1, Math.abs(expectedNumber));
+        expect(Math.abs(actualNumber - expectedNumber) / scale).toBeLessThan(
+          1e-12,
+        );
+      }
+    }
   });
 });
 

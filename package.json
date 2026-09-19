@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "vitest run",
+    "test:cross-language": "python tools/tests/offline_gain_test.py",
     "test:watch": "vitest",
     "preview": "vite preview"
   },
