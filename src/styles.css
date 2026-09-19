@@ -2233,3 +2233,193 @@ button:focus-visible {
   }
 }
 
+/* ===== Research tab (Milestone 9) ===== */
+
+.research-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.research-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.research-progress {
+  margin: 0;
+  font-family: "DM Mono", monospace;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.research-scroll {
+  overflow: auto;
+  max-height: calc(100vh - 220px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper-deep);
+  padding: 8px;
+}
+
+.research-tree {
+  position: relative;
+}
+
+.research-edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.research-edge {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.6;
+}
+
+.research-arrow-head {
+  fill: var(--line);
+}
+
+.research-slot {
+  position: absolute;
+}
+
+.research-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  font-size: 0.78rem;
+}
+
+.research-card-bought {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.research-card-locked {
+  opacity: 0.6;
+}
+
+.research-card-expensive {
+  border-color: var(--warm);
+}
+
+.research-card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+
+.research-card-name {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  flex: 1;
+}
+
+.research-card-name:hover {
+  text-decoration: underline;
+}
+
+.research-card-effects {
+  margin: 0;
+  padding: 0 0 0 14px;
+  list-style: disc;
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+
+.research-card-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.research-card-cost {
+  font-family: "DM Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.research-buy {
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: none;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.research-buy-ready {
+  border-color: #2e7d32;
+  background: rgba(46, 125, 50, 0.16);
+  color: #2e7d32;
+}
+
+.research-buy-ready:hover:not(:disabled) {
+  background: #2e7d32;
+  color: var(--paper);
+}
+
+.research-buy-expensive {
+  border-color: #c0392b;
+  background: rgba(192, 57, 43, 0.14);
+  color: #c0392b;
+  cursor: not-allowed;
+}
+
+.research-buy-bought,
+.research-buy-locked {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.research-age-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.research-age-0 { background: rgba(122, 106, 74, 0.18); }
+.research-age-1 { background: rgba(143, 143, 156, 0.18); }
+.research-age-2 { background: rgba(46, 125, 50, 0.14); }
+.research-age-3 { background: rgba(166, 124, 46, 0.16); }
+.research-age-4 { background: rgba(140, 60, 130, 0.14); }
+.research-age-5 { background: rgba(42, 96, 140, 0.16); }
+.research-age-6 { background: rgba(192, 57, 43, 0.14); }
+
+.muted {
+  color: var(--muted);
+}
+
+

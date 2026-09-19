@@ -9,9 +9,5 @@ note :
  cost 1000 citien 2.47N
  
  
- 
-
-icons for units doe not work: 
-Attributon.md reference pages that ends with .svg but thos page does not exists , only the hml exists ( with a bunch of stuff)
-the html page has a download buuton
+hall of hall achivement add reduction of 0.01 of scale factor for all buildings ?
 

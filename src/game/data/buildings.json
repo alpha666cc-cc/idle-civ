@@ -29,7 +29,7 @@
       {
         "resource": "wood",
         "base": 10,
-        "factor": 5
+        "factor": 1.5
       }
     ],
     "available": true,
@@ -204,7 +204,7 @@
     "unlock": {
       "source": "building-count",
       "building": "people",
-      "threshold": 100
+      "threshold": 90
     }
   },
   {

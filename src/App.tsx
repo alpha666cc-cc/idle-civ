@@ -38,6 +38,7 @@ import {
 } from "./game/achievements";
 import { ageDefinitions } from "./game/ages";
 import { buildingDefinitions } from "./game/buildings";
+import { researchDefinitions } from "./game/research";
 import type { Bonus } from "./game/bonus";
 import { CivilizationState } from "./game/civilizationState";
 import { ExpNumber } from "./game/expNumber";
@@ -57,6 +58,7 @@ import {
   type ResourceKey,
 } from "./game/attributes";
 import ArmyPanel from "./components/ArmyPanel";
+import ResearchPanel from "./components/ResearchPanel";
 import { isBuyableUnit, unitDefinitions } from "./game/units";
 import {
   MAX_OFFLINE_MS,
@@ -439,6 +441,14 @@ function App() {
     for (const unit of unitDefinitions) {
       if (isBuyableUnit(unit) && gameState.isUnitAvailable(unit.key)) {
         gamepedia.reveal(unit.key);
+      }
+    }
+    for (const research of researchDefinitions) {
+      if (
+        gameState.isResearchUnlocked(research.key) ||
+        gameState.isResearchBought(research.key)
+      ) {
+        gamepedia.reveal(research.key);
       }
     }
     const nextBattle = gameState.getNextBattle();
@@ -1399,6 +1409,15 @@ function App() {
                 </div>
               </section>
             </>
+          )}
+
+          {activeTab === "Research" && (
+            <ResearchPanel
+              gameState={gameState}
+              setGameState={setGameState}
+              fmt={fmt}
+              onOpenGamepedia={openGamepediaAt}
+            />
           )}
 
           {activeTab === "Army" && (

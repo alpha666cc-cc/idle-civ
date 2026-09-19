@@ -42,7 +42,7 @@ import { emptyStatistics } from "./statistics";
  */
 describe("static content guids", () => {
   it("covers every data file", () => {
-    expect(dataFileKeys.length).toBe(7);
+    expect(dataFileKeys.length).toBe(8);
     for (const file of dataFileKeys) {
       expect(dataFileEntries[file].length, `${file} is empty`).toBeGreaterThan(0);
     }

@@ -8,6 +8,7 @@ import {
 import { encounterDefinitions } from "./encounters";
 import { GameObject } from "./gameObject";
 import { upgradeDefinitions } from "./upgrades";
+import { researchDefinitions } from "./research";
 import { unitDefinitions } from "./units";
 import {
   attributeDefinitions,
@@ -244,6 +245,24 @@ for (const encounter of encounterDefinitions) {
   gamepedia.register({
     object: encounter,
     category: "combat",
+    relatedIds: [...new Set(relatedIds)],
+  });
+}
+
+for (const research of researchDefinitions) {
+  const relatedIds = [
+    ...research.prerequisites,
+    ...research.costs.map(({ resource }) => resource),
+    ...research.bonuses.map(({ destination }) =>
+      String(destination).split(".")[0],
+    ),
+    ...research.unlocks,
+  ];
+  // seen stays false at registration: researches are revealed when their
+  // prerequisites and age gates fire (App reveals on every state change).
+  gamepedia.register({
+    object: research,
+    category: "research",
     relatedIds: [...new Set(relatedIds)],
   });
 }

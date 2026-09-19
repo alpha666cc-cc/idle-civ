@@ -2,6 +2,7 @@ import achievementsData from "./data/achievements.json";
 import agesData from "./data/ages.json";
 import buildingsData from "./data/buildings.json";
 import encountersData from "./data/encounters.json";
+import researchData from "./data/research.json";
 import statsData from "./data/stats.json";
 import unitsData from "./data/units.json";
 import upgradesData from "./data/upgrades.json";
@@ -29,7 +30,8 @@ export type DataFileKey =
   | "encounters"
   | "achievements"
   | "units"
-  | "stats";
+  | "stats"
+  | "research";
 
 /** The shape the guid registry needs from a data entry. */
 export type GuidEntry = {
@@ -46,6 +48,7 @@ export const dataFileEntries: Record<DataFileKey, readonly GuidEntry[]> = {
   achievements: achievementsData as unknown as GuidEntry[],
   units: unitsData as unknown as GuidEntry[],
   stats: statsData as unknown as GuidEntry[],
+  research: researchData as unknown as GuidEntry[],
 };
 
 export const dataFileKeys: DataFileKey[] = [
@@ -56,6 +59,7 @@ export const dataFileKeys: DataFileKey[] = [
   "achievements",
   "units",
   "stats",
+  "research",
 ];
 
 /** Entry identity: `key` everywhere except units.json, which uses `id`. */

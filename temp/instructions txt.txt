@@ -66,6 +66,7 @@ also record time stat if fastest since beginning of loop
 
 save system :
 
+add static guid to every json entry to identify field
 autosave input in seconds in settings (' default 10')
 add  import/export/save button in settings (save does save internally same as autosave)
 add 3 radio to save : base64 ( save in json encode to base 64 and put in clipboard), json (open saveFiledialog ( or modern equivalent) select a file in json ), xml ( same as json but in xml)
@@ -79,23 +80,24 @@ add an import button in dev tools that does not take into account offline gain
 
 
 
+19/10
 
 
-market will open a trade tab, first it will allow to trade gold from/to resources with a value/s equal to a new attribute ( trade power), market will generate trade power (like barraks generate military
-will later create resources generator ( trade routes)
-base value gold -> need a ratio fro each resource (all those that are in the summary). 
-sell, sell  resrouce/ratio for 1 gold. ( if food has 1/10 ratio, sell 10 food for 1 gold)
-or science has 50 (sell one science for 50 gold)
-buying is the reverse (10 factor: If I sell 1 military for 10 gold, I buy 1 military for 100 gold)-> the disappearing goes to wasted resource stats.  ( rework wasted resources to count in gold equivalent with the ratios)
-if I have 500 trade pwoer, I can trade 500 gold to equivalent)
+big work : science milesotne 
+tell me when the token are running out
+be as precise as possible in the plan another IA may have to execute it
 
+implement science from tech tree-v2-effects.json
 
-
-implement science ( user action beofre, review tech tree.json)
 create real techtree.json and replace human readble effects by engine effects 
+
 -> cost_reduction small is /2, medium /100 , big :  -0.01 scaling
 -> production_multiplier small is *2, medium *10, big *100 ( double for food)
-->
+-> unit unlock 
+-> IGNORe CAPACITY items. I will review them before
+flag in the old tech-tree all not treated effect ( either becuase they makes no sense or are capacity)
+i'll need a way to upadte the official tech-tree.json after editing tree-v2-effects.json ( or maybe v3)
+
 for now no harcoded cost , first science is 1K research, multiplied by 10 for each next research ( we will see later on if it works)
 
 reseach panel, I want a vertical tree that is contains in the main area, you can scroll to the bottom 
@@ -107,6 +109,15 @@ each research as a card with an icon, its name,below its effects, cost, and a bu
 arrows shows whcich research it unlocks (all arrows go right or bottom ( bottom left is ok) so taht the order is clear)
 
 
+
+
+market will open a trade tab, first it will allow to trade gold from/to resources with a value/s equal to a new attribute ( trade power), market will generate trade power (like barraks generate military
+will later create resources generator ( trade routes)
+base value gold -> need a ratio fro each resource (all those that are in the summary). 
+sell, sell  resrouce/ratio for 1 gold. ( if food has 1/10 ratio, sell 10 food for 1 gold)
+or science has 50 (sell one science for 50 gold)
+buying is the reverse (10 factor: If I sell 1 military for 10 gold, I buy 1 military for 100 gold)-> the disappearing goes to wasted resource stats.  ( rework wasted resources to count in gold equivalent with the ratios)
+if I have 500 trade pwoer, I can trade 500 gold to equivalent)
 
 
 

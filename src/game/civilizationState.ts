@@ -64,6 +64,7 @@ import {
   type Statistics,
 } from "./statistics";
 import { upgradeDefinitions } from "./upgrades";
+import { findResearchDefinition, researchesUnlockingUnit } from "./research";
 import {
   collectCostReductions,
   type Bonus,
@@ -97,11 +98,14 @@ const buildingCountCaches = new WeakMap<
 >();
 const earnedAchievementSets = new WeakMap<readonly string[], Set<string>>();
 
-/** Cached activeBonuses(), keyed on the identity triple of the source lists. */
+/** Cached activeBonuses(), keyed on the identity tuple of the source lists. */
 type ActiveBonusList = [sourceId: string, bonus: Bonus][];
 const activeBonusCaches = new WeakMap<
   readonly string[],
-  WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>
+  WeakMap<
+    readonly string[],
+    WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>
+  >
 >();
 
 /**
@@ -228,6 +232,7 @@ export class CivilizationState {
   readonly defeatedEncounters: readonly string[];
   readonly enteredAges: readonly string[];
   readonly earnedAchievements: readonly string[];
+  readonly boughtResearch: readonly string[];
   readonly statistics: Statistics;
   /** Units owned per unit id. Casualties never touch this (armies are restored). */
   readonly unitCounts: Record<string, ExpNumber>;
@@ -255,6 +260,7 @@ export class CivilizationState {
     freeBuildings = false,
     freeUnits = false,
     freeUpgrades = false,
+    boughtResearch: readonly string[] = [],
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -266,6 +272,7 @@ export class CivilizationState {
     this.defeatedEncounters = defeatedEncounters;
     this.enteredAges = enteredAges;
     this.earnedAchievements = earnedAchievements;
+    this.boughtResearch = boughtResearch;
     this.statistics = statistics;
     this.unitCounts = unitCounts;
     this.devProductionMultiplier = devProductionMultiplier;
@@ -501,6 +508,68 @@ export class CivilizationState {
       this.builtBuildings,
       this.autoClicksPerSecond,
       [...this.boughtUpgrades, upgradeId],
+    );
+  }
+
+  /** All prerequisites bought and the tech's age entered (§13.7 relocking). */
+  isResearchUnlocked(researchId: string): boolean {
+    const research = findResearchDefinition(researchId);
+    if (!research) return false;
+    if (
+      !research.prerequisites.every((id) => this.boughtResearch.includes(id))
+    ) {
+      return false;
+    }
+    return research.age === 0 || this.enteredAges.includes(`age-${research.age}`);
+  }
+
+  isResearchBought(researchId: string): boolean {
+    return this.boughtResearch.includes(researchId);
+  }
+
+  getResearchCost(researchId: string): BuildingCost[] {
+    return findResearchDefinition(researchId)?.costs ?? [];
+  }
+
+  hasResourcesForResearch(researchId: string): boolean {
+    return this.getResearchCost(researchId).every(({ resource, base }) =>
+      this.resources[resource].gte(base),
+    );
+  }
+
+  getResearchFailureReason(researchId: string): "locked" | "resources" | null {
+    if (!this.isResearchUnlocked(researchId)) return "locked";
+    if (!this.hasResourcesForResearch(researchId)) return "resources";
+    return null;
+  }
+
+  canBuyResearch(researchId: string): boolean {
+    return this.getResearchFailureReason(researchId) === null;
+  }
+
+  buyResearch(researchId: string): CivilizationState {
+    if (this.boughtResearch.includes(researchId)) return this;
+    if (!this.canBuyResearch(researchId)) return this;
+    const resources = { ...this.resources };
+    for (const { resource, base } of this.getResearchCost(researchId)) {
+      resources[resource] = resources[resource].sub(base);
+    }
+    return this.withState(
+      resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      [...this.boughtResearch, researchId],
     );
   }
 
@@ -1423,24 +1492,48 @@ export class CivilizationState {
     if (!byEncounters) {
       byEncounters = new WeakMap<
         readonly string[],
-        WeakMap<readonly string[], ActiveBonusList>
+        WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>
       >();
       activeBonusCaches.set(this.boughtUpgrades, byEncounters);
     }
     let byAchievements = byEncounters.get(this.defeatedEncounters);
     if (!byAchievements) {
-      byAchievements = new WeakMap<readonly string[], ActiveBonusList>();
+      byAchievements = new WeakMap<
+        readonly string[],
+        WeakMap<readonly string[], ActiveBonusList>
+      >();
       byEncounters.set(this.defeatedEncounters, byAchievements);
     }
-    const cached = byAchievements.get(this.earnedAchievements);
+    let byResearch = byAchievements.get(this.earnedAchievements);
+    if (!byResearch) {
+      byResearch = new WeakMap<readonly string[], ActiveBonusList>();
+      byAchievements.set(this.earnedAchievements, byResearch);
+    }
+    const cached = byResearch.get(this.boughtResearch);
     if (cached) return cached;
     const computed = [
       ...this.boughtUpgradeBonuses(),
       ...this.defeatedEncounterBonuses(),
       ...this.earnedAchievementBonuses(),
+      ...this.boughtResearchBonuses(),
     ];
-    byAchievements.set(this.earnedAchievements, computed);
+    byResearch.set(this.boughtResearch, computed);
     return computed;
+  }
+
+  /**
+   * Bonuses from bought researches, paired with the research id as the source.
+   * Derived from the bought id list, never stored as applied values (§13.4).
+   */
+  private boughtResearchBonuses(): [researchId: string, bonus: Bonus][] {
+    const results: [researchId: string, bonus: Bonus][] = [];
+    for (const researchId of this.boughtResearch) {
+      const definition = findResearchDefinition(researchId);
+      for (const bonus of definition?.bonuses ?? []) {
+        results.push([researchId, bonus]);
+      }
+    }
+    return results;
   }
 
   defeatEncounter(encounterId: string): CivilizationState {
@@ -1483,6 +1576,13 @@ export class CivilizationState {
     const unit = findUnitDefinition(unitId);
     if (!unit || !isBuyableUnit(unit)) return false;
     if (unit.available) return true;
+    if (
+      researchesUnlockingUnit(unitId).some((research) =>
+        this.boughtResearch.includes(research.key),
+      )
+    ) {
+      return true;
+    }
     return encounterDefinitions.some(
       (encounter) =>
         encounter.unlocks.includes(unitId) &&
@@ -1892,6 +1992,7 @@ export class CivilizationState {
       this.freeBuildings,
       this.freeUnits,
       this.freeUpgrades,
+      this.boughtResearch,
     );
   }
 
@@ -1915,6 +2016,7 @@ export class CivilizationState {
       this.freeBuildings,
       this.freeUnits,
       this.freeUpgrades,
+      this.boughtResearch,
     );
   }
 
@@ -1965,6 +2067,7 @@ export class CivilizationState {
     freeBuildings = this.freeBuildings,
     freeUnits = this.freeUnits,
     freeUpgrades = this.freeUpgrades,
+    boughtResearch = this.boughtResearch,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -1983,6 +2086,7 @@ export class CivilizationState {
       freeBuildings,
       freeUnits,
       freeUpgrades,
+      boughtResearch,
     );
   }
 

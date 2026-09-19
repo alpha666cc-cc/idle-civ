@@ -28,7 +28,7 @@ import { emptyStatistics, type Statistics } from "./statistics";
  */
 
 /** Bump when the shape changes; `migrateSaveData` handles older documents. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 /** How a save travels: the same document, three encodings. */
 export type SaveFormat = "base64" | "json" | "xml";
@@ -109,6 +109,8 @@ export type SaveData = {
   readonly defeatedEncounters: string[];
   readonly enteredAges: string[];
   readonly earnedAchievements: string[];
+  /** Added in version 2; empty for every version-1 document. */
+  readonly boughtResearch: string[];
   readonly statistics: SerializedStatistics;
   readonly unitCounts: Record<string, string>;
   readonly devProductionMultiplier: string;
@@ -213,6 +215,10 @@ export const migrateSaveData = (data: SaveData): SaveData => {
     throw new SaveFormatError(
       `The save was written by a newer build (version ${data.version}).`,
     );
+  }
+  // v1 → v2: research did not exist, so every old document starts with none.
+  if (data.version === 1) {
+    return { ...data, version: SAVE_VERSION, boughtResearch: [] };
   }
   return { ...data, version: SAVE_VERSION };
 };
@@ -458,6 +464,7 @@ export const findUnknownContentIds = (
     ...(data.defeatedEncounters ?? []),
     ...(data.enteredAges ?? []),
     ...(data.earnedAchievements ?? []),
+    ...(data.boughtResearch ?? []),
     ...Object.keys(
       data.buildingCounts ?? legacyBuildingCounts(data.builtBuildings),
     ),
@@ -543,6 +550,7 @@ export const remapSaveIds = (
     defeatedEncounters: remapList(data.defeatedEncounters ?? []),
     enteredAges: remapList(data.enteredAges ?? []),
     earnedAchievements: remapList(data.earnedAchievements ?? []),
+    boughtResearch: remapList(data.boughtResearch ?? []),
     unitCounts: remapRecord(data.unitCounts ?? {}, true) as Record<
       string,
       string
@@ -705,6 +713,7 @@ export const collectReferencedIds = (state: CivilizationState): string[] => {
     ...state.defeatedEncounters,
     ...state.enteredAges,
     ...state.earnedAchievements,
+    ...state.boughtResearch,
     ...Object.keys(countBuildings(state.builtBuildings)),
     ...Object.keys(state.unitCounts),
     ...Object.keys(state.statistics.buildingsBuiltByKey),
@@ -755,6 +764,7 @@ export const createSaveData = (
   defeatedEncounters: [...state.defeatedEncounters],
   enteredAges: [...state.enteredAges],
   earnedAchievements: [...state.earnedAchievements],
+  boughtResearch: [...state.boughtResearch],
   statistics: serializeStatistics(state.statistics),
   unitCounts: Object.fromEntries(
     Object.entries(state.unitCounts).map(([key, value]) => [
@@ -821,5 +831,6 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
     data.freeBuildings ?? false,
     data.freeUnits ?? false,
     data.freeUpgrades ?? false,
+    [...(data.boughtResearch ?? [])],
   );
 };

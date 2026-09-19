@@ -31,6 +31,7 @@ const dataFiles = [
   "achievements.json",
   "units.json",
   "stats.json",
+  "research.json",
 ];
 
 /** Fixed namespace so GUIDs are stable across machines and runs. */

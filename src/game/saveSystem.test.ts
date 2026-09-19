@@ -40,6 +40,7 @@ import { achievementDefinitions } from "./achievements";
 import { ageDefinitions } from "./ages";
 import { buildingDefinitions } from "./buildings";
 import { encounterDefinitions } from "./encounters";
+import { researchDefinitions } from "./research";
 import { unitDefinitions } from "./units";
 import { upgradeDefinitions } from "./upgrades";
 import offlineGainVectors from "./data/offlineGainVectors.json";
@@ -63,6 +64,7 @@ const sampleState = (): CivilizationState =>
     true,
     false,
     true,
+    ["tribal_organization"],
   );
 
 const sampleSave = (): SaveData =>
@@ -328,6 +330,7 @@ describe("renamed content repair", () => {
       ...encounterDefinitions.map(({ key }) => key),
       ...unitDefinitions.map(({ key }) => key),
       ...upgradeDefinitions.map(({ key }) => key),
+      ...researchDefinitions.map(({ key }) => key),
     ]);
     known.delete(oldId);
 
