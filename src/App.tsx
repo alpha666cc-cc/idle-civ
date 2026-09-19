@@ -404,6 +404,7 @@ function App() {
     availableWorkers,
     statistics,
   } = gameState;
+  const totalTimeMs = statistics.onlineTimeMs + statistics.offlineTimeMs;
 
   useEffect(() => {
     if (paused) return;
@@ -1678,7 +1679,7 @@ function App() {
                 </div>
                 <span>
                   <ChartColumn size={15} strokeWidth={1.8} />
-                  {formatDuration(statistics.onlineTimeMs)} online
+                  {formatDuration(totalTimeMs)} total
                 </span>
               </div>
 
@@ -1712,16 +1713,16 @@ function App() {
               <p className="gamepedia-category">Time</p>
               <div className="stat-grid">
                 <div className="stat-card">
-                  <span>Online time</span>
-                  <strong>{formatDuration(statistics.onlineTimeMs)}</strong>
+                  <span>Total time</span>
+                  <strong>{formatDuration(totalTimeMs)}</strong>
                 </div>
                 <div className="stat-card">
                   <span>Offline time</span>
                   <strong>{formatDuration(statistics.offlineTimeMs)}</strong>
                 </div>
                 <div className="stat-card">
-                  <span>Active time (this run)</span>
-                  <strong>{formatDuration(statistics.runTimeMs)}</strong>
+                  <span>Online time</span>
+                  <strong>{formatDuration(statistics.onlineTimeMs)}</strong>
                 </div>
                 <div className="stat-card">
                   <span>Longest offline streak</span>
