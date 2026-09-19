@@ -28,12 +28,19 @@
   {
     "key": "hall-of-halls",
     "name": "Hall of Halls",
-    "description": "Build 10 town halls to raise a true capital.",
+    "description": "Build 10 town halls to raise a true capital. Reward: all building costs scale 1% slower.",
     "requirement": {
       "type": "building-count",
       "building": "town-hall",
       "count": 10
-    }
+    },
+    "bonuses": [
+      {
+        "type": "costReductionFactor",
+        "destination": "all-buildings",
+        "value": 0.01
+      }
+    ]
   },
   {
     "key": "click-100",

@@ -457,10 +457,17 @@ function App() {
       return `${bonus.destination} ×${fmt(bonus.value)}`;
     }
     if (bonus.type.startsWith("costReduction")) {
-      const building = buildingDefinitions.find(
-        ({ key }) => key === bonus.destination,
-      );
-      const target = building ? building.name : String(bonus.destination);
+      const isAllBuildings = bonus.destination === "all-buildings";
+      const building = isAllBuildings
+        ? undefined
+        : buildingDefinitions.find(
+            ({ key }) => key === bonus.destination,
+          );
+      const target = building
+        ? building.name
+        : isAllBuildings
+          ? "all buildings"
+          : String(bonus.destination);
       if (bonus.type === "costReductionPercent") {
         const percent =
           Math.round(

@@ -814,7 +814,7 @@ export class CivilizationState {
   private costReductionsFor(buyableId: string) {
     const sources = this.activeBonuses().filter(
       ([, bonus]) =>
-        bonus.destination === buyableId &&
+        (bonus.destination === buyableId || bonus.destination === "all-buildings") &&
         bonus.type.startsWith("costReduction"),
     );
     return {
