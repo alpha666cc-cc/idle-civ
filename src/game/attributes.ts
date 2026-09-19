@@ -12,7 +12,15 @@ import { GameObject } from "./gameObject";
  */
 export type AttributeFamily = "amount" | "capacity" | "derived";
 
-export type ProductionResourceKey = "food" | "wood" | "stone" | "gold";
+export type ProductionResourceKey =
+  | "food"
+  | "wood"
+  | "stone"
+  | "gold"
+  | "military"
+  | "science"
+  | "metalwork"
+  | "trade";
 export type CapacityResourceKey =
   | "peopleCapacity"
   | "houseCapacity"
@@ -28,9 +36,6 @@ export type CapacityResourceKey =
 export type ResourceKey =
   | ProductionResourceKey
   | "population"
-  | "science"
-  | "military"
-  | "metalwork"
   | CapacityResourceKey;
 
 /** Derived attributes: computed from state on read, never stored (§13.2 decision 2). */
@@ -45,8 +50,10 @@ export type DerivedAttributeKey =
 /** Every value-side key a bonus destination may name; buyable ids are separate. */
 export type AttributeKey = ResourceKey | DerivedAttributeKey;
 
-const attributeDescription = (family: AttributeFamily, label: string): string =>
-  family === "amount" ? `${label} resource` : `${label} attribute`;
+const attributeDescription = (
+  family: AttributeFamily,
+  label: string,
+): string => (family === "amount" ? `${label} resource` : `${label} attribute`);
 
 export class AttributeDefinition extends GameObject {
   readonly key: AttributeKey;
@@ -75,26 +82,15 @@ export const productionDefinitions: AttributeDefinition[] = [
   new AttributeDefinition("stone", "Stone", "amount"),
   new AttributeDefinition("food", "Food", "amount"),
   new AttributeDefinition("gold", "Gold", "amount"),
+  new AttributeDefinition("military", "Military", "amount", undefined, 0.1),
+  new AttributeDefinition("science", "Science", "amount", undefined, 0.1),
+  new AttributeDefinition("metalwork", "Metalwork", "amount", undefined, 0.1),
+  new AttributeDefinition("trade", "trade", "amount", undefined, 0.1),
 ];
 
 export const populationDefinition = new AttributeDefinition(
   "population",
   "Population",
-  "amount",
-);
-export const scienceDefinition = new AttributeDefinition(
-  "science",
-  "Science",
-  "amount",
-);
-export const militaryDefinition = new AttributeDefinition(
-  "military",
-  "Military",
-  "amount",
-);
-export const metalworkDefinition = new AttributeDefinition(
-  "metalwork",
-  "Metalwork",
   "amount",
 );
 
@@ -186,9 +182,6 @@ derivedAttributeDefinitions.push(wastedResourcesDefinition);
 export const attributeDefinitions: AttributeDefinition[] = [
   ...productionDefinitions,
   populationDefinition,
-  scienceDefinition,
-  militaryDefinition,
-  metalworkDefinition,
   ...capacityDefinitions,
   ...derivedAttributeDefinitions,
 ];
@@ -201,9 +194,6 @@ export const findAttributeDefinition = (
 /** Resources whose amount accrues per tick: worker production + building output. */
 export const producerResourceKeys: ResourceKey[] = [
   ...productionDefinitions.map(({ key }) => key),
-  scienceDefinition.key,
-  militaryDefinition.key,
-  metalworkDefinition.key,
 ] as ResourceKey[];
 
 export type ResourceAmounts = Record<ResourceKey, ExpNumber>;
@@ -239,6 +229,7 @@ export const emptyResourceAmounts = (): ResourceAmounts => ({
   science: ExpNumber.ZERO,
   military: ExpNumber.ZERO,
   metalwork: ExpNumber.ZERO,
+  trade: ExpNumber.ZERO,
   peopleCapacity: ExpNumber.ZERO,
   houseCapacity: ExpNumber.ZERO,
   farmCapacity: ExpNumber.fromNumber(10),
@@ -257,6 +248,10 @@ export const emptyWorkerAssignments = (): WorkerAssignments => ({
   wood: ExpNumber.ZERO,
   stone: ExpNumber.ZERO,
   gold: ExpNumber.ZERO,
+  military: ExpNumber.ZERO,
+  science: ExpNumber.ZERO,
+  metalwork: ExpNumber.ZERO,
+  trade: ExpNumber.ZERO,
 });
 
 export const emptyResourceFactors = (): ResourceFactorMap => ({
@@ -268,6 +263,7 @@ export const emptyResourceFactors = (): ResourceFactorMap => ({
   science: { additional: [], multiplicative: [], drain: [] },
   military: { additional: [], multiplicative: [], drain: [] },
   metalwork: { additional: [], multiplicative: [], drain: [] },
+  trade: { additional: [], multiplicative: [], drain: [] },
   peopleCapacity: { additional: [], multiplicative: [], drain: [] },
   houseCapacity: { additional: [], multiplicative: [], drain: [] },
   farmCapacity: { additional: [], multiplicative: [], drain: [] },

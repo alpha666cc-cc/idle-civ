@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import {
   ArrowUpRight,
   BookOpen,
@@ -50,10 +56,7 @@ import {
   type ResourceKey,
 } from "./game/attributes";
 import ArmyPanel from "./components/ArmyPanel";
-import {
-  isBuyableUnit,
-  unitDefinitions,
-} from "./game/units";
+import { isBuyableUnit, unitDefinitions } from "./game/units";
 
 type Tab =
   | "Production"
@@ -107,6 +110,10 @@ const resourcePresentation: Record<
   stone: { icon: Pickaxe, tone: "slate" },
   food: { icon: Wheat, tone: "gold" },
   gold: { icon: Coins, tone: "amber" },
+  military: { icon: Swords, tone: "red" },
+  science: { icon: BookOpen, tone: "blue" },
+  metalwork: { icon: Hammer, tone: "slate" },
+  trade: { icon: Landmark, tone: "amber" },
 };
 
 const productionOrder: ProductionResourceKey[] = [
@@ -114,6 +121,10 @@ const productionOrder: ProductionResourceKey[] = [
   "wood",
   "stone",
   "gold",
+  "military",
+  "science",
+  "metalwork",
+  "trade",
 ];
 const resources: ResourcePresentation[] = productionOrder.map((key) => {
   const resource = productionDefinitions.find(
@@ -235,7 +246,9 @@ function App() {
   const [gamepediaFocusId, setGamepediaFocusId] = useState<string | null>(null);
   const [autoBuyBuildings, setAutoBuyBuildings] = useState(false);
   const [autoAssignWorkers, setAutoAssignWorkers] = useState(false);
-  const [dismissedAchievements, setDismissedAchievements] = useState<string[]>([]);
+  const [dismissedAchievements, setDismissedAchievements] = useState<string[]>(
+    [],
+  );
   const [paused, setPaused] = useState(false);
   const tickMsRef = useRef(0);
   const [lastTickMs, setLastTickMs] = useState(0);
@@ -423,8 +436,7 @@ function App() {
     if (label === "Army") return gameState.isBuildingAvailable("barracks");
     if (label === "Research")
       return gameState.isBuildingAvailable("university");
-    if (label === "Trade")
-      return gameState.isBuildingAvailable("market");
+    if (label === "Trade") return gameState.isBuildingAvailable("market");
     return true;
   });
 
@@ -460,9 +472,7 @@ function App() {
       const isAllBuildings = bonus.destination === "all-buildings";
       const building = isAllBuildings
         ? undefined
-        : buildingDefinitions.find(
-            ({ key }) => key === bonus.destination,
-          );
+        : buildingDefinitions.find(({ key }) => key === bonus.destination);
       const target = building
         ? building.name
         : isAllBuildings
@@ -482,7 +492,10 @@ function App() {
         return `${target} cost −${fmt(bonus.value)}`;
       }
       if (bonus.type === "costReductionBase") {
-        const percent = Math.round(bonus.value.mul(ExpNumber.fromNumber(100)).toNumber() * 10) / 10;
+        const percent =
+          Math.round(
+            bonus.value.mul(ExpNumber.fromNumber(100)).toNumber() * 10,
+          ) / 10;
         return `${target} base cost −${percent}%`;
       }
     }
@@ -499,8 +512,11 @@ function App() {
       ? (definition.name ?? definition.label ?? definition.id)
       : String(bonus.destination);
     if (bonus.type === "attributeMultiplier") {
-      if (bonus.destination === "buildingCostMultiplier" &&
-          bonus.value.gt(ExpNumber.ZERO) && bonus.value.lte(ExpNumber.ONE)) {
+      if (
+        bonus.destination === "buildingCostMultiplier" &&
+        bonus.value.gt(ExpNumber.ZERO) &&
+        bonus.value.lte(ExpNumber.ONE)
+      ) {
         return `Building base costs: ÷${fmt(ExpNumber.ONE.div(bonus.value))}`;
       }
       return `${target} ×${fmt(bonus.value)}`;
@@ -521,12 +537,16 @@ function App() {
     for (const bonus of bonuses) {
       const key = `${bonus.type}:${bonus.destination}`;
       const previous = grouped.get(key);
-      const value = !previous ? bonus.value
+      const value = !previous
+        ? bonus.value
         : bonus.type === "attributeMultiplier"
           ? previous.value.mul(bonus.value)
-          : bonus.type === "costReductionBase" || bonus.type === "costReductionPercent"
+          : bonus.type === "costReductionBase" ||
+              bonus.type === "costReductionPercent"
             ? ExpNumber.ONE.sub(
-                ExpNumber.ONE.sub(previous.value).mul(ExpNumber.ONE.sub(bonus.value)),
+                ExpNumber.ONE.sub(previous.value).mul(
+                  ExpNumber.ONE.sub(bonus.value),
+                ),
               )
             : previous.value.add(bonus.value);
       grouped.set(key, { ...bonus, value });
@@ -614,14 +634,20 @@ function App() {
                 {currentAge.name}
               </strong>
               <div className="era-progress-bars">
-                <div className="era-progress era-progress-battles" title="Battle progress">
+                <div
+                  className="era-progress era-progress-battles"
+                  title="Battle progress"
+                >
                   <i
                     style={{
                       width: `${(battleProgress[0] / Math.max(1, battleProgress[1])) * 100}%`,
                     }}
                   />
                 </div>
-                <div className="era-progress era-progress-buildings" title="Building progress">
+                <div
+                  className="era-progress era-progress-buildings"
+                  title="Building progress"
+                >
                   <i
                     style={{
                       width: `${(buildingProgress[0] / Math.max(1, buildingProgress[1])) * 100}%`,
@@ -697,9 +723,7 @@ function App() {
                       capacity {fmtSummary(maximumPopulation)}
                     </small>
                   ) : (
-                    <small
-                      className={`resource-rate ${resourceRateTone(key)}`}
-                    >
+                    <small className={`resource-rate ${resourceRateTone(key)}`}>
                       {formatResourceRate(key)}
                     </small>
                   )}
@@ -747,10 +771,7 @@ function App() {
                     ariaLabel="Auto clicks per second (accepts 1e6, 1.5K, 2M, 1A)"
                     placeholder="e.g. 10, 1e6, 2M"
                     onCommit={(parsed) => {
-                      const clicks = Math.max(
-                        0,
-                        Math.floor(parsed.toNumber()),
-                      );
+                      const clicks = Math.max(0, Math.floor(parsed.toNumber()));
                       if (!Number.isFinite(clicks)) return false;
                       setGameState((current) =>
                         current.setAutoClicksPerSecond(clicks),
@@ -789,9 +810,7 @@ function App() {
                     type="button"
                     className={`dev-tools-toggle ${autoAssignWorkers ? "on" : ""}`}
                     aria-pressed={autoAssignWorkers}
-                    onClick={() =>
-                      setAutoAssignWorkers((current) => !current)
-                    }
+                    onClick={() => setAutoAssignWorkers((current) => !current)}
                   >
                     <span>Auto assign workers</span>
                     <strong>{autoAssignWorkers ? "ON" : "OFF"}</strong>
@@ -948,46 +967,58 @@ function App() {
                 </span>
               </div>
               <div className="gather-grid">
-                {resources.map(({ key, label, icon: Icon, tone }) => (
-                  <div className="gather-card" key={key}>
-                    <button
-                      className={`gather-button ${tone}`}
-                      data-production-click
-                      onClick={() => gatherResource(key)}
-                    >
-                      <span className="gather-card-icon">
-                        <Icon size={18} strokeWidth={1.8} />
-                      </span>
-                      <span>
-                        <strong>{label}</strong>
-                        <small>{fmt(resourceAmounts[key])} stored</small>
-                      </span>
-                      <span className="gather-action">
-                        +{fmt(gameState.computeClickGain(key))}
-                      </span>
-                    </button>
-                    <div
-                      className="worker-controls"
-                      aria-label={`${label} workers`}
-                    >
+                {resources
+                  .filter(({ key }) => {
+                    if (key === "military")
+                      return gameState.getBuildingCount("barracks") > 0;
+                    if (key === "science")
+                      return gameState.getBuildingCount("university") > 0;
+                    if (key === "metalwork")
+                      return gameState.getBuildingCount("smithy") > 0;
+                    if (key === "trade")
+                      return gameState.getBuildingCount("market") > 0;
+                    return true;
+                  })
+                  .map(({ key, label, icon: Icon, tone }) => (
+                    <div className="gather-card" key={key}>
                       <button
-                        onClick={() => changeWorkers(key, -1)}
-                        disabled={workers[key] === ExpNumber.ZERO}
-                        aria-label={`Remove ${label} worker`}
+                        className={`gather-button ${tone}`}
+                        data-production-click
+                        onClick={() => gatherResource(key)}
                       >
-                        −
+                        <span className="gather-card-icon">
+                          <Icon size={18} strokeWidth={1.8} />
+                        </span>
+                        <span>
+                          <strong>{label}</strong>
+                          <small>{fmt(resourceAmounts[key])} stored</small>
+                        </span>
+                        <span className="gather-action">
+                          +{fmt(gameState.computeClickGain(key))}
+                        </span>
                       </button>
-                      <span>{fmt(workers[key])}</span>
-                      <button
-                        onClick={() => changeWorkers(key, 1)}
-                        disabled={availableWorkers === 0}
-                        aria-label={`Assign ${label} worker`}
+                      <div
+                        className="worker-controls"
+                        aria-label={`${label} workers`}
                       >
-                        +
-                      </button>
+                        <button
+                          onClick={() => changeWorkers(key, -1)}
+                          disabled={workers[key] === ExpNumber.ZERO}
+                          aria-label={`Remove ${label} worker`}
+                        >
+                          −
+                        </button>
+                        <span>{fmt(workers[key])}</span>
+                        <button
+                          onClick={() => changeWorkers(key, 1)}
+                          disabled={availableWorkers === 0}
+                          aria-label={`Assign ${label} worker`}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </section>
           )}
@@ -1029,12 +1060,14 @@ function App() {
                         type="button"
                         className={`upgrade-buy ${
                           gameState.hasResourcesForUpgrade(upgrade.key)
-                            ? "affordable" : "unaffordable"
+                            ? "affordable"
+                            : "unaffordable"
                         }`}
                         onClick={() => buyUpgrade(upgrade)}
                       >
                         {gameState.hasResourcesForUpgrade(upgrade.key)
-                          ? "Adopt upgrade" : "Not enough resources"}
+                          ? "Adopt upgrade"
+                          : "Not enough resources"}
                       </button>
                     </div>
                   ))}
@@ -1065,13 +1098,16 @@ function App() {
                 {achievementFamilies.map(({ family, tiers }) => {
                   const earnedTiers = gameState.earnedAchievements
                     .map(findAchievementDefinition)
-                    .filter((tier): tier is AchievementDefinition =>
-                      tier !== undefined && tier.family === family,
+                    .filter(
+                      (tier): tier is AchievementDefinition =>
+                        tier !== undefined && tier.family === family,
                     )
                     .sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0));
                   const goal = gameState.getNextAchievementGoal(family);
                   const complete = goal === undefined;
-                  const progress = gameState.getRequirementValue(tiers[0].requirement);
+                  const progress = gameState.getRequirementValue(
+                    tiers[0].requirement,
+                  );
                   const focus = earnedTiers[earnedTiers.length - 1] ?? tiers[0];
                   const state = complete
                     ? "earned"
@@ -1092,17 +1128,25 @@ function App() {
                       </span>
                       <span className="achievement-copy">
                         <strong>{focus.name}</strong>
-                        <small>{focus.description.replaceAll("/sec", "/s")}</small>
+                        <small>
+                          {focus.description.replaceAll("/sec", "/s")}
+                        </small>
                         {!complete && goal && progress && (
                           <small className="achievement-goal">
                             {fmt(progress)} / {fmt(goal.threshold)} — next:{" "}
                             {describeRewardList([
-                              ...earnedTiers.flatMap((tier) => tier.bonuses)
-                                .filter((bonus) => bonus.destination === "buildingCostMultiplier"),
+                              ...earnedTiers
+                                .flatMap((tier) => tier.bonuses)
+                                .filter(
+                                  (bonus) =>
+                                    bonus.destination ===
+                                    "buildingCostMultiplier",
+                                ),
                               ...goal.bonuses,
                             ])}
-                            {goal.bonuses.some((bonus) =>
-                              bonus.destination === "buildingCostMultiplier",
+                            {goal.bonuses.some(
+                              (bonus) =>
+                                bonus.destination === "buildingCostMultiplier",
                             ) && " (total)"}
                           </small>
                         )}
@@ -1318,7 +1362,6 @@ function App() {
               </div>
             </section>
           )}
-
         </div>
         <div className="notice-bar">
           <Sparkles size={16} />
@@ -1347,58 +1390,58 @@ function App() {
                 className={`building-actions ${atCapacity ? "at-capacity" : ""}`}
                 key={building.key}
               >
-              <button
-                type="button"
-                className={`building-card ${
-                  !gameState.isBuildingAvailable(building.key) ? "locked" : ""
-                }`}
-                onClick={() => buyBuilding(building)}
-              >
-                <span className={`building-icon ${building.tone}`}>
-                  <Icon size={19} strokeWidth={1.7} />
-                </span>
-                <span className="building-info">
-                  <span className="building-title-row">
-                    <strong>{building.name}</strong>
-                    <small>{building.description}</small>
-                    <span
-                      className={`building-count-inline ${
-                        atCapacity ? "maxed" : ""
-                      }`}
-                      title={
-                        atCapacity ? "Maximum capacity reached" : undefined
-                      }
-                    >
-                      {buildingCount}/
-                      {fmt(gameState.getBuildingMax(building.key))}
-                    </span>
-                  </span>
-                  <em>
-                    {gameState.formatBuildingCost(
-                      building.key,
-                      buildingCount,
-                      multiplier === "Max"
-                        ? Math.max(
-                            1,
-                            gameState.getMaxAffordableBuildings(building.key),
-                          )
-                        : multiplier,
-                      fmt,
-                    )}
-                  </em>
-                </span>
-              </button>
-              {gamepedia.get(building.key)?.object.seen && (
                 <button
                   type="button"
-                  className="building-pedia-button"
-                  onClick={() => openGamepediaAt(building.key)}
-                  aria-label={`Open ${building.name} in Gamepedia`}
-                  title={`Open ${building.name} in Gamepedia`}
+                  className={`building-card ${
+                    !gameState.isBuildingAvailable(building.key) ? "locked" : ""
+                  }`}
+                  onClick={() => buyBuilding(building)}
                 >
-                  <BookOpen size={16} strokeWidth={1.8} />
+                  <span className={`building-icon ${building.tone}`}>
+                    <Icon size={19} strokeWidth={1.7} />
+                  </span>
+                  <span className="building-info">
+                    <span className="building-title-row">
+                      <strong>{building.name}</strong>
+                      <small>{building.description}</small>
+                      <span
+                        className={`building-count-inline ${
+                          atCapacity ? "maxed" : ""
+                        }`}
+                        title={
+                          atCapacity ? "Maximum capacity reached" : undefined
+                        }
+                      >
+                        {buildingCount}/
+                        {fmt(gameState.getBuildingMax(building.key))}
+                      </span>
+                    </span>
+                    <em>
+                      {gameState.formatBuildingCost(
+                        building.key,
+                        buildingCount,
+                        multiplier === "Max"
+                          ? Math.max(
+                              1,
+                              gameState.getMaxAffordableBuildings(building.key),
+                            )
+                          : multiplier,
+                        fmt,
+                      )}
+                    </em>
+                  </span>
                 </button>
-              )}
+                {gamepedia.get(building.key)?.object.seen && (
+                  <button
+                    type="button"
+                    className="building-pedia-button"
+                    onClick={() => openGamepediaAt(building.key)}
+                    aria-label={`Open ${building.name} in Gamepedia`}
+                    title={`Open ${building.name} in Gamepedia`}
+                  >
+                    <BookOpen size={16} strokeWidth={1.8} />
+                  </button>
+                )}
               </div>
             );
           })}
@@ -1481,16 +1524,22 @@ function App() {
         </button>
       </div>
 
-      <section className="achievement-notifications" aria-label="Achievement notifications">
+      <section
+        className="achievement-notifications"
+        aria-label="Achievement notifications"
+      >
         <div role="status" aria-live="polite" aria-atomic="true">
           {pendingAchievements.length > 0 && (
             <strong>
-              <Trophy size={18} strokeWidth={1.8} />{" "}
-              Achievements earned: {fmt(pendingAchievements.length)}
+              <Trophy size={18} strokeWidth={1.8} /> Achievements earned:{" "}
+              {fmt(pendingAchievements.length)}
               <span className="visually-hidden">
-                {pendingAchievements.map(({ name, description }) =>
-                  `${name}: ${description.replaceAll("/sec", "/s")}`,
-                ).join(". ")}
+                {pendingAchievements
+                  .map(
+                    ({ name, description }) =>
+                      `${name}: ${description.replaceAll("/sec", "/s")}`,
+                  )
+                  .join(". ")}
               </span>
             </strong>
           )}
@@ -1500,9 +1549,12 @@ function App() {
             <button
               type="button"
               className="notice-link"
-              onClick={() => setDismissedAchievements((current) => [
-                ...current, ...pendingAchievements.map(({ key }) => key),
-              ])}
+              onClick={() =>
+                setDismissedAchievements((current) => [
+                  ...current,
+                  ...pendingAchievements.map(({ key }) => key),
+                ])
+              }
             >
               Dismiss notifications
             </button>
@@ -1518,7 +1570,11 @@ function App() {
                     {achievement.name} &rarr;
                   </button>
                   <p>{achievement.description.replaceAll("/sec", "/s")}</p>
-                  <p>Reward: {describeRewardList(achievement.bonuses) || "Achievement recorded"}</p>
+                  <p>
+                    Reward:{" "}
+                    {describeRewardList(achievement.bonuses) ||
+                      "Achievement recorded"}
+                  </p>
                 </li>
               ))}
             </ul>

@@ -27,7 +27,7 @@
       {
         "resource": "wood",
         "base": 10,
-        "factor": 1.4
+        "factor": 5
       }
     ],
     "available": true,
@@ -141,18 +141,18 @@
     "costs": [
       {
         "resource": "wood",
-        "base": 100000,
-        "factor": 1.25
+        "base": 20000,
+        "factor": 1.8
       },
       {
         "resource": "stone",
-        "base": 50000,
-        "factor": 1.25
+        "base": 15000,
+        "factor": 1.8
       },
       {
         "resource": "gold",
-        "base": 75000,
-        "factor": 1.25
+        "base": 25000,
+        "factor": 1.8
       }
     ],
     "available": true,
