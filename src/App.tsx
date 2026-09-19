@@ -566,6 +566,11 @@ function App() {
       nextState,
       identity.guid,
       identity.createdAtMs,
+      {
+        actionMultiplier: data.actionMultiplier ?? 1,
+        largeMultiplier: data.largeMultiplier ?? 100,
+        dismissedAchievements: data.dismissedAchievements ?? [],
+      },
     );
     writeStoredSave(serializeSave(reinstalled, "json"));
     setLastSavedAtMs(reinstalled.savedAtMs);
