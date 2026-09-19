@@ -47,8 +47,8 @@
     "enemyArmy": [
       {
         "unitId": "wolf",
-        "count": 100,
-        "label": "100 wolves"
+        "count": 30,
+        "label": "30 wolves"
       },
       {
         "unitId": "bear",
