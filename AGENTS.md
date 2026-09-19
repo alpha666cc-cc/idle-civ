@@ -463,6 +463,18 @@ one component per file with a `default export` for components and named exports 
 domain symbols. Classes are used for domain definitions (declared `readonly` fields,
 assigned in the constructor); helpers are `const` arrow functions.
 
+**Indentation convention (mandatory):** All files use 2-space indentation, no tabs.
+This applies to TypeScript/TSX (`.ts`, `.tsx`), JSON (`.json`), and all other source
+files in the repository. Do not mix indentation styles within a file. When editing an
+existing file, match its current indentation — do not reformat the whole file to a
+different style. JSON data files (`data/*.json`) follow the same 2-space rule as the
+rest of the codebase. For JSON files specifically: every value (object, array, or
+primitive) that is followed by a comma ends its line with that comma — never put a
+trailing comma after the last item in an object or array. Opening braces/brackets start
+a new line for their content; closing braces/brackets go on their own line at the
+indentation of the opening line. This convention exists so that indentation is consistent
+across contributions and not every model changes it differently.
+
 TypeScript hard requirements imposed by the tsconfigs:
 
 - `verbatimModuleSyntax: true` → use `import type { X }` for type-only imports (and

@@ -57,6 +57,35 @@ import {
 } from "./game/attributes";
 import ArmyPanel from "./components/ArmyPanel";
 import { isBuyableUnit, unitDefinitions } from "./game/units";
+import {
+  MAX_OFFLINE_MS,
+  SaveFormatError,
+  calculateOfflineGain,
+  cappedOfflineMs,
+  createSaveData,
+  detectSaveFormat,
+  generateSaveGuid,
+  loadSaveData,
+  parseSave,
+  remapSaveIds,
+  saveFileName,
+  saveFromJson,
+  serializeSave,
+  type SaveData,
+  type SaveFormat,
+  type SaveGuid,
+} from "./game/saveSystem";
+import {
+  acceptForSaveFormat,
+  anySaveAccept,
+  copyTextToClipboard,
+  downloadTextFile,
+  mimeForSaveFormat,
+  openTextFile,
+  readTextFromClipboard,
+  saveTextToFile,
+} from "./components/saveFileIo";
+import { resolveEntryId } from "./game/dataIds";
 
 type Tab =
   | "Production"
@@ -171,6 +200,79 @@ const loadNumberFormat = (): NumberFormat => {
   return "named";
 };
 
+/**
+ * The internal autosave document. It is always JSON, whatever interchange radio
+ * is selected — the radio only chooses how an *export* is encoded.
+ */
+const saveStorageKey = "idle-civ:save-v1";
+const autosaveIntervalStorageKey = "idle-civ:autosave-interval";
+const saveFormatStorageKey = "idle-civ:save-format";
+
+const saveFormatOptions: { value: SaveFormat; label: string; hint: string }[] =
+  [
+    { value: "base64", label: "Base64", hint: "clipboard" },
+    { value: "json", label: "JSON", hint: "save .json file" },
+    { value: "xml", label: "XML", hint: "save .xml file" },
+  ];
+
+const loadSaveFormat = (): SaveFormat => {
+  try {
+    const stored = window.localStorage.getItem(saveFormatStorageKey);
+    if (stored === "base64" || stored === "json" || stored === "xml") {
+      return stored;
+    }
+  } catch {
+    // localStorage unavailable - keep the default.
+  }
+  return "base64";
+};
+
+const loadAutosaveInterval = (): number => {
+  try {
+    const stored = window.localStorage.getItem(autosaveIntervalStorageKey);
+    const parsed = stored === null ? Number.NaN : Number.parseInt(stored, 10);
+    if (Number.isInteger(parsed) && parsed >= 0) return parsed;
+  } catch {
+    // localStorage unavailable - keep the default.
+  }
+  return 10;
+};
+
+/** Every id a save may legitimately name. */
+const knownContentIds: ReadonlySet<string> = (() => {
+  const ids = new Set<string>();
+  for (const entry of gamepedia.all()) ids.add(entry.object.id);
+  for (const definition of capacityDefinitions) ids.add(definition.key);
+  for (const age of ageDefinitions) ids.add(age.key);
+  for (const unit of unitDefinitions) ids.add(unit.key);
+  for (const upgrade of upgradeDefinitions) ids.add(upgrade.key);
+  return ids;
+})();
+
+const readStoredSave = (): string | null => {
+  try {
+    return window.localStorage.getItem(saveStorageKey);
+  } catch {
+    return null;
+  }
+};
+
+const writeStoredSave = (text: string): void => {
+  try {
+    window.localStorage.setItem(saveStorageKey, text);
+  } catch {
+    // Private mode or a full quota: the in-memory run continues either way.
+  }
+};
+
+const clearStoredSave = (): void => {
+  try {
+    window.localStorage.removeItem(saveStorageKey);
+  } catch {
+    // Nothing to clear.
+  }
+};
+
 const buildingPresentation: Record<string, { icon: LucideIcon; tone: string }> =
   {
     people: { icon: Users, tone: "teal" },
@@ -250,8 +352,30 @@ function App() {
     [],
   );
   const [paused, setPaused] = useState(false);
+  const [autosaveIntervalSeconds, setAutosaveIntervalSeconds] =
+    useState(loadAutosaveInterval);
+  const [saveFormat, setSaveFormat] = useState<SaveFormat>(loadSaveFormat);
+  const [saveGuid, setSaveGuid] = useState<SaveGuid>("");
+  const [lastSavedAtMs, setLastSavedAtMs] = useState<number | null>(null);
+  /** A loaded save waiting behind the offline-gain panel. */
+  const [pendingLoad, setPendingLoad] = useState<{
+    state: CivilizationState;
+    gains: Record<string, ExpNumber>;
+    elapsedMs: number;
+    source: string;
+  } | null>(null);
   const tickMsRef = useRef(0);
   const [lastTickMs, setLastTickMs] = useState(0);
+  /** Save-file identity, kept out of render so the autosave timer reads it. */
+  const saveIdentityRef = useRef<{
+    guid: SaveGuid;
+    createdAtMs: number;
+  } | null>(null);
+  /** The latest state, so the autosave timer writes without a state updater. */
+  const gameStateRef = useRef(gameState);
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
   const pendingAchievements = gameState.earnedAchievements
     .filter((id) => !dismissedAchievements.includes(id))
     .map(findAchievementDefinition)
@@ -334,6 +458,244 @@ function App() {
       // localStorage unavailable – setting simply won't persist.
     }
   }, [numberFormat]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(saveFormatStorageKey, saveFormat);
+    } catch {
+      // localStorage unavailable — the preference simply won't persist.
+    }
+  }, [saveFormat]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        autosaveIntervalStorageKey,
+        String(autosaveIntervalSeconds),
+      );
+    } catch {
+      // localStorage unavailable — the preference simply won't persist.
+    }
+  }, [autosaveIntervalSeconds]);
+
+  /** The save-file identity, created on first use and then carried forward. */
+  const ensureSaveIdentity = (): { guid: SaveGuid; createdAtMs: number } => {
+    const existing = saveIdentityRef.current;
+    if (existing) return existing;
+    const identity = { guid: generateSaveGuid(), createdAtMs: Date.now() };
+    saveIdentityRef.current = identity;
+    setSaveGuid(identity.guid);
+    return identity;
+  };
+
+  /** Write the internal autosave document; shared by autosave and Save. */
+  const writeInternalSave = (
+    state: CivilizationState,
+    identity: { guid: SaveGuid; createdAtMs: number },
+  ): SaveData => {
+    const data = createSaveData(state, identity.guid, identity.createdAtMs);
+    writeStoredSave(serializeSave(data, "json"));
+    setLastSavedAtMs(data.savedAtMs);
+    return data;
+  };
+
+  /**
+   * Adopt a save document: repair renamed ids through the static GUIDs, install
+   * the state, and route the elapsed time either into the offline-gain panel or
+   * straight into play.
+   */
+  const adoptSave = (
+    data: SaveData,
+    options: { offlineGain: boolean; source: string },
+  ): void => {
+    const repaired = remapSaveIds(
+      data,
+      (id) => knownContentIds.has(id),
+      resolveEntryId,
+    );
+    const identity = {
+      guid: data.guid,
+      createdAtMs: data.createdAtMs ?? data.savedAtMs,
+    };
+    saveIdentityRef.current = identity;
+    setSaveGuid(identity.guid);
+
+    const nextState = loadSaveData(repaired.data);
+    const elapsedMs = Date.now() - data.savedAtMs;
+    const gains = options.offlineGain
+      ? calculateOfflineGain(nextState.getProductionRates(), elapsedMs)
+      : {};
+    const hasGains = Object.keys(gains).length > 0;
+
+    // Re-stamp the document so a reload does not re-apply the same gap.
+    const reinstalled = createSaveData(
+      nextState,
+      identity.guid,
+      identity.createdAtMs,
+    );
+    writeStoredSave(serializeSave(reinstalled, "json"));
+    setLastSavedAtMs(reinstalled.savedAtMs);
+
+    let source = options.source;
+    const renamed = Object.keys(repaired.renamed).length;
+    if (renamed > 0) source += ` (${renamed} renamed id(s) resolved by GUID)`;
+    if (repaired.unknown.length > 0) {
+      source += ` — dropped unknown content: ${repaired.unknown.join(", ")}`;
+    }
+
+    if (!hasGains || elapsedMs <= 0) {
+      setGameState(nextState);
+      setPendingLoad(null);
+      setNotice(`Save loaded from ${source}.`);
+      return;
+    }
+
+    setPendingLoad({ state: nextState, gains, elapsedMs, source });
+  };
+
+  // Autosave: write the internal document every N seconds (0 turns it off).
+  useEffect(() => {
+    if (autosaveIntervalSeconds <= 0) return;
+    const timer = window.setInterval(() => {
+      writeInternalSave(gameStateRef.current, ensureSaveIdentity());
+    }, autosaveIntervalSeconds * 1000);
+    return () => window.clearInterval(timer);
+  }, [autosaveIntervalSeconds]);
+
+  // Relaunch: pick the internal save up and let the offline panel size the gap.
+  useEffect(() => {
+    const stored = readStoredSave();
+    if (!stored) return;
+    const timer = window.setTimeout(() => {
+      try {
+        adoptSave(saveFromJson(stored), {
+          offlineGain: true,
+          source: "this browser",
+        });
+      } catch {
+        // A stored save we cannot read at all: start fresh, and say so.
+        clearStoredSave();
+        setNotice(
+          "The stored save could not be read, so a new settlement was founded.",
+        );
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  /** Settings / Dev Tools: save now. Always writes internally first. */
+  const handleSaveNow = async (): Promise<void> => {
+    const identity = ensureSaveIdentity();
+    const data = writeInternalSave(gameState, identity);
+    const fileName = saveFileName(data, saveFormat);
+
+    if (saveFormat === "base64") {
+      const text = serializeSave(data, "base64");
+      if (await copyTextToClipboard(text)) {
+        setNotice("Save written and copied to the clipboard as Base64.");
+        return;
+      }
+      downloadTextFile(fileName.replace(/\.json$/, ".txt"), text, "text/plain");
+      setNotice(
+        "Save written; the clipboard was unavailable, so it downloaded instead.",
+      );
+      return;
+    }
+
+    const result = await saveTextToFile(
+      fileName,
+      serializeSave(data, saveFormat),
+      mimeForSaveFormat(saveFormat),
+      acceptForSaveFormat(saveFormat),
+    );
+    if (result === "cancelled") {
+      setNotice("Save written internally; the file dialog was cancelled.");
+      return;
+    }
+    setNotice(
+      result === "saved"
+        ? `Save written to ${fileName}.`
+        : `Save downloaded as ${fileName}.`,
+    );
+  };
+
+  /** Parse imported text and adopt it, reporting anything unreadable. */
+  const importText = (
+    text: string,
+    source: string,
+    options: { offlineGain: boolean },
+  ): void => {
+    const format = detectSaveFormat(text) ?? saveFormat;
+    try {
+      adoptSave(parseSave(text, format), { ...options, source });
+    } catch (error) {
+      const reason =
+        error instanceof SaveFormatError
+          ? error.message
+          : "That text is not a readable save.";
+      setNotice(`Import failed: ${reason}`);
+    }
+  };
+
+  /** Settings: import. Base64 reads the clipboard first, then falls back. */
+  const handleImport = async (): Promise<void> => {
+    if (saveFormat === "base64") {
+      const clipboard = await readTextFromClipboard();
+      if (clipboard && detectSaveFormat(clipboard)) {
+        importText(clipboard, "the clipboard", { offlineGain: true });
+        return;
+      }
+    }
+    const accept =
+      saveFormat === "json" || saveFormat === "xml"
+        ? acceptForSaveFormat(saveFormat)
+        : anySaveAccept;
+    const file = await openTextFile(accept);
+    if (!file) return;
+    importText(file.text, file.name, { offlineGain: true });
+  };
+
+  /** Dev Tools: import a save and ignore the offline gain entirely. */
+  const handleDevImport = async (): Promise<void> => {
+    const file = await openTextFile(anySaveAccept);
+    if (!file) return;
+    importText(file.text, file.name, { offlineGain: false });
+  };
+
+  /** Dev Tools: discard everything and start the first loop over. */
+  const resetToStart = (): void => {
+    clearStoredSave();
+    saveIdentityRef.current = null;
+    setSaveGuid("");
+    setLastSavedAtMs(null);
+    setPendingLoad(null);
+    setGameState(new CivilizationState());
+    setDismissedAchievements([]);
+    setNotice("New settlement founded; the previous run was discarded.");
+  };
+
+  /** Offline panel: credit the gains and start playing. */
+  const collectOfflineGain = (): void => {
+    if (!pendingLoad) return;
+    setGameState(pendingLoad.state.applyOfflineGain(pendingLoad.gains));
+    const credited = Object.keys(pendingLoad.gains)
+      .map((key) => fmt(pendingLoad.gains[key]))
+      .join(", ");
+    setNotice(
+      `Welcome back after ${formatDuration(
+        cappedOfflineMs(pendingLoad.elapsedMs),
+      )} — credited ${credited}.`,
+    );
+    setPendingLoad(null);
+  };
+
+  /** Offline panel: keep the save but skip the offline production. */
+  const skipOfflineGain = (): void => {
+    if (!pendingLoad) return;
+    setGameState(pendingLoad.state);
+    setNotice(`Save loaded from ${pendingLoad.source}, offline gain skipped.`);
+    setPendingLoad(null);
+  };
 
   const gatherResource = (resourceKey: ProductionResourceKey) => {
     setGameState((current) => current.gather(resourceKey));
@@ -942,6 +1304,41 @@ function App() {
                   </button>
                 </div>
               </section>
+              <section className="dev-tools-panel" aria-label="Save state">
+                <div className="dev-tools-heading">
+                  <p className="eyebrow">Save system</p>
+                  <h3>Save state</h3>
+                  <p className="dev-tools-copy">
+                    Reset discards the run and clears the stored save. Import
+                    loads a save file directly and ignores the offline-gain pass
+                    that a normal import would show.
+                  </p>
+                </div>
+                <div className="dev-tools-controls">
+                  <div className="dev-tools-control">
+                    <span>Save file</span>
+                    <strong>
+                      {saveGuid ? saveGuid.slice(0, 8) : "unsaved"}
+                    </strong>
+                  </div>
+                  <button
+                    type="button"
+                    className="dev-tools-toggle danger"
+                    onClick={resetToStart}
+                  >
+                    <span>Reset to start</span>
+                    <strong>RESET</strong>
+                  </button>
+                  <button
+                    type="button"
+                    className="dev-tools-toggle"
+                    onClick={() => void handleDevImport()}
+                  >
+                    <span>Import (no offline gain)</span>
+                    <strong>IMPORT</strong>
+                  </button>
+                </div>
+              </section>
             </>
           )}
 
@@ -1360,6 +1757,77 @@ function App() {
                   </button>
                 ))}
               </div>
+
+              <div className="workbench-heading settings-section-heading">
+                <div>
+                  <p className="eyebrow">Save</p>
+                  <h3>Autosave &amp; backup</h3>
+                </div>
+                <span>
+                  {lastSavedAtMs === null
+                    ? "not saved yet"
+                    : `saved at ${new Date(lastSavedAtMs).toLocaleTimeString()}`}
+                </span>
+              </div>
+              <p className="dev-tools-copy">
+                The game always writes an internal JSON save every{" "}
+                {autosaveIntervalSeconds}s (0 turns autosave off). The radio
+                below picks how Save exports a copy, and how Import reads one:{" "}
+                <strong>Base64</strong> goes through the clipboard, and{" "}
+                <strong>JSON</strong>/<strong>XML</strong> open a file dialog.
+                Save file id: {saveGuid ? saveGuid.slice(0, 8) : "unsaved"}.
+              </p>
+              <div className="dev-tools-controls">
+                <DevNumberField
+                  label="Autosave (seconds)"
+                  value={String(autosaveIntervalSeconds)}
+                  ariaLabel="Autosave interval in seconds (0 turns autosave off)"
+                  placeholder="e.g. 10"
+                  onCommit={(parsed) => {
+                    const seconds = Math.max(0, Math.floor(parsed.toNumber()));
+                    if (!Number.isFinite(seconds)) return false;
+                    setAutosaveIntervalSeconds(seconds);
+                    return true;
+                  }}
+                />
+              </div>
+              <div
+                className="format-picker"
+                role="radiogroup"
+                aria-label="Save format"
+              >
+                {saveFormatOptions.map(({ value, label, hint }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={saveFormat === value}
+                    className={`format-option ${
+                      saveFormat === value ? "active" : ""
+                    }`}
+                    onClick={() => setSaveFormat(value)}
+                  >
+                    <strong>{label}</strong>
+                    <small>{hint}</small>
+                  </button>
+                ))}
+              </div>
+              <div className="save-actions">
+                <button
+                  type="button"
+                  className="save-button primary"
+                  onClick={() => void handleSaveNow()}
+                >
+                  Save &amp; export
+                </button>
+                <button
+                  type="button"
+                  className="save-button"
+                  onClick={() => void handleImport()}
+                >
+                  Import
+                </button>
+              </div>
             </section>
           )}
         </div>
@@ -1581,6 +2049,69 @@ function App() {
           </>
         )}
       </section>
+
+      {pendingLoad && (
+        <div className="modal-backdrop" role="presentation">
+          <div
+            className="offline-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="offline-gain-title"
+          >
+            <div className="offline-heading">
+              <p className="eyebrow">While you were away</p>
+              <h3 id="offline-gain-title">Offline production</h3>
+            </div>
+            <p className="offline-copy">
+              The save from <strong>{pendingLoad.source}</strong> is{" "}
+              {formatDuration(pendingLoad.elapsedMs)} old. Settlers kept working
+              for {formatDuration(cappedOfflineMs(pendingLoad.elapsedMs))} at
+              25% of live output
+              {pendingLoad.elapsedMs > MAX_OFFLINE_MS
+                ? " (capped at 12 hours)"
+                : ""}
+              . Collect to credit it, or Skip to load the save as it was.
+            </p>
+            <ul className="offline-gain-list">
+              {Object.entries(pendingLoad.gains).map(([key, amount]) => {
+                const presentation =
+                  resourcePresentation[key as ProductionResourceKey];
+                const Icon = presentation?.icon ?? Sparkles;
+                return (
+                  <li key={key}>
+                    <span
+                      className={`resource-icon ${presentation?.tone ?? ""}`}
+                    >
+                      <Icon size={16} strokeWidth={1.8} />
+                    </span>
+                    <span>
+                      {productionDefinitions.find(({ key: k }) => k === key)
+                        ?.label ?? key}
+                    </span>
+                    <strong>+{fmt(amount)}</strong>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="offline-actions">
+              <button
+                type="button"
+                className="save-button primary"
+                onClick={collectOfflineGain}
+              >
+                Collect
+              </button>
+              <button
+                type="button"
+                className="save-button"
+                onClick={skipOfflineGain}
+              >
+                Skip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {gamepediaOpen && (
         <GamepediaModal

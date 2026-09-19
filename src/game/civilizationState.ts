@@ -534,6 +534,37 @@ export class CivilizationState {
       .checkAchievements();
   }
 
+  /**
+   * Per-second rate of every producer resource as one record. This is the input
+   * the save system multiplies by the elapsed seconds to size offline gains.
+   */
+  getProductionRates(): Partial<Record<ResourceKey, ExpNumber>> {
+    const rates: Partial<Record<ResourceKey, ExpNumber>> = {};
+    for (const resourceKey of producerResourceKeys) {
+      rates[resourceKey] = this.computeResourceRate(resourceKey);
+    }
+    return rates;
+  }
+
+  /**
+   * Credit offline production (roadmap Milestone 3). The amounts are already
+   * scaled by the offline efficiency factor and capped by the save system, so
+   * this is only the addition — and no play time is recorded, because the player
+   * was not playing. Returns `this` when there is nothing to credit.
+   */
+  applyOfflineGain(gains: Record<string, ExpNumber>): CivilizationState {
+    const resources = { ...this.resources };
+    let changed = false;
+    for (const [key, amount] of Object.entries(gains)) {
+      if (!(key in resources)) continue;
+      if (!amount || !amount.isFinite || amount.sign <= 0) continue;
+      resources[key as ResourceKey] = resources[key as ResourceKey].add(amount);
+      changed = true;
+    }
+    if (!changed) return this;
+    return this.withState(resources, this.buildingCostOverrides);
+  }
+
   getFactors(resourceKey: ResourceKey): ResourceFactors {
     const factors = this.resourceFactors[resourceKey];
     // `workers` only ever holds the four production keys, so membership is the
@@ -1806,6 +1837,7 @@ export class CivilizationState {
       this.devProductionMultiplier,
       this.freeBuildings,
       this.freeUnits,
+      this.freeUpgrades,
     );
   }
 
@@ -1828,6 +1860,7 @@ export class CivilizationState {
       this.devProductionMultiplier,
       this.freeBuildings,
       this.freeUnits,
+      this.freeUpgrades,
     );
   }
 

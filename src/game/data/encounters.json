@@ -1,5 +1,6 @@
 [
   {
+    "guid": "6ece3cfb-ca38-5396-98d4-b2a3516511d3",
     "key": "age0_1_first_fire",
     "name": "First Fire",
     "description": "A hunting band drives a wolf pack away from the winter camp. The settlement fights as a group for the first time, and keeps the fire.",
@@ -35,6 +36,7 @@
     "unlocks": ["slinger"]
   },
   {
+    "guid": "3a547849-831d-5f2d-b2f0-ec5af785cc04",
     "key": "age0_2_wolf_pack",
     "name": "Wolf Pack",
     "description": "A large Wolf Pack prevent the village from expending and found new settlements. The villagees fight the animals in the forest.",
@@ -84,6 +86,7 @@
     ]
   },
   {
+    "guid": "2e014ac9-a8d1-562f-8a3b-0bcefb045712",
     "key": "age0_3_bronze_raid",
     "name": "Bronze Raid",
     "description": "Bronze-armed raiders fall on the herds at the edge of the settlement. Whoever holds the field keeps the metal.",
@@ -109,6 +112,7 @@
     "unlocks": []
   },
   {
+    "guid": "f3bb491a-6edf-5650-bd54-2a46b86f5dbe",
     "key": "age0_boss_troy",
     "name": "Fall of Troy",
     "description": "A walled city finally falls after a long siege: the most famous ruin of the bronze age, and the end of the world that built it.",
@@ -158,6 +162,7 @@
     ]
   },
   {
+    "guid": "cb04d7e3-81cc-5bcf-b2b7-ab66b8635d67",
     "key": "age1_1_kadesh_iron",
     "name": "Kadesh",
     "description": "Two chariot empires collide beside the Orontes in the largest chariot battle anyone remembers. Neither side wins, and both claim it.",
@@ -209,6 +214,7 @@
     "unlocks": []
   },
   {
+    "guid": "f166bb4d-861d-539b-a6fc-fb0521439987",
     "key": "age1_2_assyrian_siege",
     "name": "Assyrian Siege",
     "description": "The first army organised for empire: iron points, siege engines, and a deliberate reputation for cruelty.",
@@ -239,6 +245,7 @@
     "unlocks": []
   },
   {
+    "guid": "eeea8105-f0b2-5d7e-b832-4f9ce76d273b",
     "key": "age1_boss_iron_collapse",
     "name": "The Sea Peoples",
     "description": "Cities from the Aegean to the Levant fall to raiders arriving by sea. Whole systems collapse, and iron survives because it is cheap.",
@@ -283,6 +290,7 @@
     ]
   },
   {
+    "guid": "760660c5-3d50-52bd-85b2-ac3e10a1452a",
     "key": "age2_1_marathon",
     "name": "Marathon",
     "description": "A smaller citizen army runs down a much larger one on a beach. The armoured line holds, and a messenger runs home with the news.",
@@ -324,6 +332,7 @@
     "unlocks": []
   },
   {
+    "guid": "b85942b5-53a4-552b-a27b-f94d5a2ad09f",
     "key": "age2_2_cannae",
     "name": "Cannae",
     "description": "A double envelopment destroys a far larger army in a single afternoon: the classic lesson in refusing your own centre.",
@@ -365,6 +374,7 @@
     "unlocks": []
   },
   {
+    "guid": "0be43359-d5ae-58d6-880d-9f369ffe9763",
     "key": "age2_boss_gaugamela",
     "name": "Gaugamela",
     "description": "A companion cavalry charge breaks a numerically superior imperial host on an open plain, and an empire changes hands.",
@@ -451,6 +461,7 @@
     ]
   },
   {
+    "guid": "307c7e4d-723d-53f7-aa23-c8fa185359e0",
     "key": "age3_1_tours",
     "name": "Battle of Tours",
     "description": "Infantry formed in a defensive square hold a hillside against repeated cavalry charges.",
@@ -476,6 +487,7 @@
     "unlocks": []
   },
   {
+    "guid": "ce825a75-e7ff-5eeb-aeb8-36d59f1727c5",
     "key": "age3_2_hastings",
     "name": "Hastings",
     "description": "A shield wall faces armoured cavalry and massed archers. A disputed crown is settled in one long day.",
@@ -501,6 +513,7 @@
     "unlocks": []
   },
   {
+    "guid": "3a21536b-c417-5a1e-b752-23d41a8c3c71",
     "key": "age3_boss_castillon",
     "name": "Castillon",
     "description": "Field cannon end the longbow's century of dominance, in the last battle of a hundred-year war.",
@@ -550,6 +563,7 @@
     ]
   },
   {
+    "guid": "3bc9c5c9-b2d4-5c36-9b03-916875811b63",
     "key": "age4_1_pavia",
     "name": "Pavia",
     "description": "Pikes and handguns shred a knightly charge. The armour that ruled the battlefield for centuries is suddenly obsolete.",
@@ -601,6 +615,7 @@
     "unlocks": []
   },
   {
+    "guid": "6f343833-d82c-57aa-b618-3f557ed07ac7",
     "key": "age4_2_lepanto",
     "name": "Lepanto",
     "description": "Oared fleets fight it out in a narrow gulf: the last great galley battle in the Mediterranean.",
@@ -642,6 +657,7 @@
     "unlocks": []
   },
   {
+    "guid": "99903251-d63c-5e3a-87cd-c4133fc25611",
     "key": "age4_boss_vienna",
     "name": "Vienna 1683",
     "description": "A relief force breaks the siege of an imperial capital, and heavy cavalry with field guns finishes the work.",
@@ -693,6 +709,7 @@
     ]
   },
   {
+    "guid": "8bbdbd6b-8869-592a-ab71-aa8b92231ae0",
     "key": "age5_1_waterloo",
     "name": "Waterloo",
     "description": "A single day of infantry squares, cavalry charges and massed artillery settles the fate of an empire.",
@@ -728,6 +745,7 @@
     "unlocks": []
   },
   {
+    "guid": "28053282-0477-5fa7-91e4-e42af5ee3fb3",
     "key": "age5_2_gettysburg",
     "name": "Gettysburg",
     "description": "Rifled muskets and massed artillery make the frontal assault suicidal. Three days decide where a war is going.",
@@ -758,6 +776,7 @@
     "unlocks": []
   },
   {
+    "guid": "d5c56fc4-29aa-50a0-884f-2c702a30a3c3",
     "key": "age5_boss_somme",
     "name": "The Somme",
     "description": "After a week of bombardment, an army gains a few miles for tens of thousands of casualties. Attrition becomes the strategy.",
@@ -823,6 +842,7 @@
     ]
   },
   {
+    "guid": "b8850d57-7854-51df-bc9e-89403f0484a2",
     "key": "age6_1_midway",
     "name": "Midway",
     "description": "Aircraft carriers decide a naval war without the fleets ever sighting each other. Air power becomes the measure of a navy.",
@@ -853,6 +873,7 @@
     "unlocks": []
   },
   {
+    "guid": "148e7acf-353b-5788-952f-d3e677deb281",
     "key": "age6_2_berlin_1945",
     "name": "Berlin 1945",
     "description": "Tanks and infantry fight street by street through a capital as a war in Europe ends.",
@@ -883,6 +904,7 @@
     "unlocks": []
   },
   {
+    "guid": "6bae5949-a558-53f8-844a-0fb8c2b98869",
     "key": "age6_3_desert_storm",
     "name": "Desert Storm",
     "description": "Precision air power and armoured manoeuvre defeat a much larger army in a hundred hours.",
@@ -913,6 +935,7 @@
     "unlocks": []
   },
   {
+    "guid": "38fc7528-05fc-54f5-88c5-62618c9e9f93",
     "key": "age6_4_drone_war",
     "name": "Drone War",
     "description": "Cheap unmanned aircraft watch and strike, and artillery becomes guided and disposable.",
@@ -943,6 +966,7 @@
     "unlocks": []
   },
   {
+    "guid": "1e9d543d-362f-5fbc-aae9-32e92a57bc0f",
     "key": "age6_boss_orbital",
     "name": "Orbital War",
     "description": "The last battle is directed from orbit, where nothing left on the ground can answer it.",

@@ -1,5 +1,6 @@
 [
   {
+    "guid": "f6aeeb06-974d-503e-a188-5a3cf67c277e",
     "key": "farm-enhancer-9",
     "name": "Enhanced Farm I",
     "description": "increase Farm capacity and food production",
@@ -33,6 +34,7 @@
     ]
   },
   {
+    "guid": "aecded6c-aabc-5af3-91e7-6193973a7472",
     "key": "farm-enhancer-98",
     "name": "Enhanced Farm II",
     "description": "increase Farm capacity and food production",
@@ -66,6 +68,7 @@
     ]
   },
   {
+    "guid": "de22fd64-35a9-5b65-b09f-28978794d893",
     "key": "farm-enhancer-980",
     "name": "Enhanced Farm III",
     "description": "increase Farm capacity and food production",
@@ -109,6 +112,7 @@
     ]
   },
   {
+    "guid": "b10e2b2c-5b38-59da-aba8-2fd9817d50f5",
     "key": "farm-enhancer-9800",
     "name": "Enhanced Farm IV",
     "description": "increase Farm capacity and food production",
@@ -152,6 +156,7 @@
     ]
   },
   {
+    "guid": "b4e96630-eeb5-5cc4-94ed-83ca91c6b8cf",
     "key": "farm-enhancer-98000",
     "name": "Enhanced Farm V",
     "description": "increase Farm capacity and food production",
@@ -195,6 +200,7 @@
     ]
   },
   {
+    "guid": "a60d975f-9c60-54fc-98af-0df3e028d962",
     "key": "farm-enhancer-980000",
     "name": "Enhanced Farm VI",
     "description": "increase Farm capacity and food production",
@@ -238,6 +244,7 @@
     ]
   },
   {
+    "guid": "c48c1463-1498-539e-8237-17c0157c3246",
     "key": "farm-enhancer-9800000",
     "name": "Enhanced Farm VII",
     "description": "increase Farm capacity and food production",
@@ -281,6 +288,7 @@
     ]
   },
   {
+    "guid": "beda5b0a-12a0-588c-bdc9-bb552c06f5ba",
     "key": "farm-enhancer-98000000",
     "name": "Enhanced Farm VIII",
     "description": "increase Farm capacity and food production",
@@ -324,6 +332,7 @@
     ]
   },
   {
+    "guid": "0887c264-decb-5922-be04-aabf82795993",
     "key": "lumber-yard-enhancer-9",
     "name": "Enhanced Lumber Yard I",
     "description": "increase Lumber Yard capacity and wood production",
@@ -357,6 +366,7 @@
     ]
   },
   {
+    "guid": "048e3910-4762-55fe-ba40-ba0b9b1f1677",
     "key": "lumber-yard-enhancer-98",
     "name": "Enhanced Lumber Yard II",
     "description": "increase Lumber Yard capacity and wood production",
@@ -390,6 +400,7 @@
     ]
   },
   {
+    "guid": "cc0b8a5a-3900-53f7-8f5d-9a3fed3f0fa0",
     "key": "lumber-yard-enhancer-980",
     "name": "Enhanced Lumber Yard III",
     "description": "increase Lumber Yard capacity and wood production",
@@ -433,6 +444,7 @@
     ]
   },
   {
+    "guid": "f9c61889-7423-5aab-8d47-41e81ff0de98",
     "key": "lumber-yard-enhancer-9800",
     "name": "Enhanced Lumber Yard IV",
     "description": "increase Lumber Yard capacity and wood production",
@@ -476,6 +488,7 @@
     ]
   },
   {
+    "guid": "440a6b51-76d2-5e0a-a66b-00812b1e1ce3",
     "key": "lumber-yard-enhancer-98000",
     "name": "Enhanced Lumber Yard V",
     "description": "increase Lumber Yard capacity and wood production",
@@ -519,6 +532,7 @@
     ]
   },
   {
+    "guid": "576300e6-a295-598e-a3bf-03f2aa8e5b00",
     "key": "lumber-yard-enhancer-980000",
     "name": "Enhanced Lumber Yard VI",
     "description": "increase Lumber Yard capacity and wood production",
@@ -562,6 +576,7 @@
     ]
   },
   {
+    "guid": "557bf92b-7e72-5b78-a379-be784d942f8c",
     "key": "lumber-yard-enhancer-9800000",
     "name": "Enhanced Lumber Yard VII",
     "description": "increase Lumber Yard capacity and wood production",
@@ -605,6 +620,7 @@
     ]
   },
   {
+    "guid": "03e3a780-6d94-5fa9-8ac5-8ce78610f68c",
     "key": "lumber-yard-enhancer-98000000",
     "name": "Enhanced Lumber Yard VIII",
     "description": "increase Lumber Yard capacity and wood production",
@@ -648,6 +664,7 @@
     ]
   },
   {
+    "guid": "f32e8c41-dee6-5ae0-bc0f-0f5cda4c064d",
     "key": "quarry-enhancer-9",
     "name": "Enhanced Quarry I",
     "description": "increase Quarry capacity and stone production",
@@ -676,6 +693,7 @@
     ]
   },
   {
+    "guid": "7a666ca9-464f-5adb-9364-b638f6845b87",
     "key": "quarry-enhancer-98",
     "name": "Enhanced Quarry II",
     "description": "increase Quarry capacity and stone production",
@@ -704,6 +722,7 @@
     ]
   },
   {
+    "guid": "6eb570c1-52c9-5f71-b828-8194b6cf0d21",
     "key": "quarry-enhancer-980",
     "name": "Enhanced Quarry III",
     "description": "increase Quarry capacity and stone production",
@@ -742,6 +761,7 @@
     ]
   },
   {
+    "guid": "a05c924b-12c9-538f-90c8-d3fd04f12122",
     "key": "quarry-enhancer-9800",
     "name": "Enhanced Quarry IV",
     "description": "increase Quarry capacity and stone production",
@@ -780,6 +800,7 @@
     ]
   },
   {
+    "guid": "e3ee482a-7236-5580-a35d-8e4bbf957508",
     "key": "quarry-enhancer-98000",
     "name": "Enhanced Quarry V",
     "description": "increase Quarry capacity and stone production",
@@ -818,6 +839,7 @@
     ]
   },
   {
+    "guid": "13a53d24-681d-58c9-a452-cd7d6a68c302",
     "key": "quarry-enhancer-980000",
     "name": "Enhanced Quarry VI",
     "description": "increase Quarry capacity and stone production",
@@ -856,6 +878,7 @@
     ]
   },
   {
+    "guid": "01ebb713-bf9a-5ee8-a83a-35e282d43354",
     "key": "quarry-enhancer-9800000",
     "name": "Enhanced Quarry VII",
     "description": "increase Quarry capacity and stone production",
@@ -894,6 +917,7 @@
     ]
   },
   {
+    "guid": "9e586797-aac0-5c9c-91b1-c06ad97868a8",
     "key": "quarry-enhancer-98000000",
     "name": "Enhanced Quarry VIII",
     "description": "increase Quarry capacity and stone production",
@@ -932,6 +956,7 @@
     ]
   },
   {
+    "guid": "5ef7957a-4ffe-5a59-93e3-a24caab39547",
     "key": "gold-mine-enhancer-9",
     "name": "Enhanced Gold Mine I",
     "description": "increase Gold Mine capacity and gold production",
@@ -965,6 +990,7 @@
     ]
   },
   {
+    "guid": "da2c4410-3a26-540d-9781-1ef6b81fa023",
     "key": "gold-mine-enhancer-98",
     "name": "Enhanced Gold Mine II",
     "description": "increase Gold Mine capacity and gold production",
@@ -998,6 +1024,7 @@
     ]
   },
   {
+    "guid": "f8504d09-7b2a-569d-ac4c-5d1e30b9843d",
     "key": "gold-mine-enhancer-980",
     "name": "Enhanced Gold Mine III",
     "description": "increase Gold Mine capacity and gold production",
@@ -1041,6 +1068,7 @@
     ]
   },
   {
+    "guid": "a1e72619-0d40-5340-bd99-306ceb88b556",
     "key": "gold-mine-enhancer-9800",
     "name": "Enhanced Gold Mine IV",
     "description": "increase Gold Mine capacity and gold production",
@@ -1084,6 +1112,7 @@
     ]
   },
   {
+    "guid": "dbf5549f-2f7b-5cb4-b879-7a0447892f46",
     "key": "gold-mine-enhancer-98000",
     "name": "Enhanced Gold Mine V",
     "description": "increase Gold Mine capacity and gold production",
@@ -1127,6 +1156,7 @@
     ]
   },
   {
+    "guid": "8df7ba3d-2393-5121-b4cc-14dd597dad4a",
     "key": "gold-mine-enhancer-980000",
     "name": "Enhanced Gold Mine VI",
     "description": "increase Gold Mine capacity and gold production",
@@ -1170,6 +1200,7 @@
     ]
   },
   {
+    "guid": "66279396-f1ba-58f8-8e1c-223c14ea9038",
     "key": "gold-mine-enhancer-9800000",
     "name": "Enhanced Gold Mine VII",
     "description": "increase Gold Mine capacity and gold production",
@@ -1213,6 +1244,7 @@
     ]
   },
   {
+    "guid": "7c61752a-8934-56a3-8fe8-4aa7867b2ba8",
     "key": "gold-mine-enhancer-98000000",
     "name": "Enhanced Gold Mine VIII",
     "description": "increase Gold Mine capacity and gold production",

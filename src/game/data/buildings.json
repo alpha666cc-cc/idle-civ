@@ -1,5 +1,6 @@
 [
   {
+    "guid": "246437f9-5cde-5e87-8bde-0ffd5cee2659",
     "key": "people",
     "name": "Citizen",
     "description": "add population",
@@ -20,6 +21,7 @@
     }
   },
   {
+    "guid": "f399a404-2767-5f2d-8f7a-f1e5e0f45d84",
     "key": "house",
     "name": "House",
     "description": "Increase citizen capacity",
@@ -40,6 +42,7 @@
     }
   },
   {
+    "guid": "10032549-20b8-5342-870e-8a82ccc7ddd3",
     "key": "farm",
     "name": "Farm",
     "description": "help gather food",
@@ -65,6 +68,7 @@
     }
   },
   {
+    "guid": "01d9b552-c2c9-5f62-90db-d242290b9ae6",
     "key": "lumber-yard",
     "name": "Lumber Yard",
     "description": "help gather wood",
@@ -90,6 +94,7 @@
     }
   },
   {
+    "guid": "e0a61b46-2389-573f-9b59-4d129ac4da3c",
     "key": "quarry",
     "name": "Quarry",
     "description": "help mine stone",
@@ -110,6 +115,7 @@
     }
   },
   {
+    "guid": "92a4c82c-27f5-53d4-ba99-dd0a8d9b6673",
     "key": "gold-mine",
     "name": "Gold Mine",
     "description": "help gold miner",
@@ -135,6 +141,7 @@
     }
   },
   {
+    "guid": "c0c8a597-3080-599b-b9e1-c182ff9297b6",
     "key": "town-hall",
     "name": "Town Hall",
     "description": "Increase house capacity",
@@ -165,6 +172,7 @@
     }
   },
   {
+    "guid": "71c611fc-baa3-5877-b0fd-7906ffb5091d",
     "key": "barracks",
     "name": "Barracks",
     "description": "Train units",
@@ -200,6 +208,7 @@
     }
   },
   {
+    "guid": "47530f9d-639e-5d0e-9ef3-37355f92df58",
     "key": "university",
     "name": "University",
     "description": "generate science",
@@ -234,6 +243,7 @@
     }
   },
   {
+    "guid": "d7be6041-0f0d-5d92-908b-25b5f0da0f05",
     "key": "smithy",
     "name": "Smithy",
     "description": "Produce metalwork",
@@ -265,6 +275,7 @@
   },
 
   {
+    "guid": "5f40b930-c61a-5df3-8cd0-e92c9bc8084e",
     "key": "market",
     "name": "Market",
     "description": "Trade resources",

@@ -1,5 +1,6 @@
 [
   {
+    "guid": "6a7d6e09-5966-5aaa-a143-356a459b2867",
     "key": "growing-hamlet",
     "name": "Growing Hamlet",
     "description": "Reach a population of 25 citizens.",
@@ -13,6 +14,7 @@
     ]
   },
   {
+    "guid": "effed5d3-ac6d-5158-8e42-75b58153708e",
     "key": "wolf-slayer",
     "name": "Wolf Slayer",
     "description": "Win the first battle and drive the wolves from the fields.",
@@ -26,6 +28,7 @@
     ]
   },
   {
+    "guid": "cc1999e4-d9bf-50c0-89a8-ec0f4f065f88",
     "key": "hall-of-halls",
     "name": "Hall of Halls",
     "description": "Build 10 town halls to raise a true capital. Reward: all building costs scale 1% slower.",
@@ -43,6 +46,7 @@
     ]
   },
   {
+    "guid": "f4dfda8c-60fc-597b-988a-f49864e27b26",
     "key": "click-100",
     "family": "clicks",
     "tier": 1,
@@ -54,6 +58,7 @@
     ]
   },
   {
+    "guid": "1a0a2e12-b1fe-5343-880d-d1ba1445466d",
     "key": "click-1000",
     "family": "clicks",
     "tier": 2,
@@ -65,6 +70,7 @@
     ]
   },
   {
+    "guid": "5c52032f-95c2-5885-b909-61ccb80c60ee",
     "key": "click-10000",
     "family": "clicks",
     "tier": 3,
@@ -76,6 +82,7 @@
     ]
   },
   {
+    "guid": "d3d6921a-a413-52fc-ac80-6ab803473e55",
     "key": "click-100000",
     "family": "clicks",
     "tier": 4,
@@ -87,6 +94,7 @@
     ]
   },
   {
+    "guid": "bc2a4961-567b-54a9-b358-c2b70fa89287",
     "key": "click-1000000",
     "family": "clicks",
     "tier": 5,
@@ -98,6 +106,7 @@
     ]
   },
   {
+    "guid": "1b9536e8-26e7-5fa9-b5fb-3cde0b88890d",
     "key": "farm-power-1",
     "name": "Farm Power I",
     "description": "Own 10 farms. Reward: Farm power +20%",
@@ -117,6 +126,7 @@
     "tier": 1
   },
   {
+    "guid": "cbcc18e0-2925-505b-92f5-9bbaa1fbb144",
     "key": "farm-power-2",
     "name": "Farm Power II",
     "description": "Own 100 farms. Reward: Farm power ×3.",
@@ -132,6 +142,7 @@
     "tier": 2
   },
   {
+    "guid": "77774c41-f116-5a99-b693-d88e487542ff",
     "key": "farm-power-3",
     "name": "Farm Power III",
     "description": "Own 1,000 farms. Reward: Farm power ×4.",
@@ -147,6 +158,7 @@
     "tier": 3
   },
   {
+    "guid": "9e8816e2-8335-5a39-9819-7cd63b3b92e6",
     "key": "farm-power-4",
     "name": "Farm Power IV",
     "description": "Own 10,000 farms. Reward: Farm power ×5.",
@@ -162,6 +174,7 @@
     "tier": 4
   },
   {
+    "guid": "5c53c699-a55c-5332-b1d9-7595b94ddce0",
     "key": "farm-power-5",
     "name": "Farm Power V",
     "description": "Own 100,000 farms. Reward: Farm power ×6.",
@@ -177,6 +190,7 @@
     "tier": 5
   },
   {
+    "guid": "dea577d6-30a4-5b88-9969-5a50096fa3aa",
     "key": "farm-power-6",
     "name": "Farm Power VI",
     "description": "Own 1,000,000 farms. Reward: Farm power ×7.",
@@ -192,6 +206,7 @@
     "tier": 6
   },
   {
+    "guid": "57952a3b-e869-5f96-bdef-f6cbd543fba1",
     "key": "farm-power-7",
     "name": "Farm Power VII",
     "description": "Own 10,000,000 farms. Reward: Farm power ×8.",
@@ -207,6 +222,7 @@
     "tier": 7
   },
   {
+    "guid": "b7926878-5fe1-5201-b46d-0df9e11cefe2",
     "key": "farm-power-8",
     "name": "Farm Power VIII",
     "description": "Own 100,000,000 farms. Reward: Farm power ×9.",
@@ -222,6 +238,7 @@
     "tier": 8
   },
   {
+    "guid": "a4836216-aa7c-5aa1-8be2-0f5432fa1246",
     "key": "farm-power-9",
     "name": "Farm Power IX",
     "description": "Own 1,000,000,000 farms. Reward: Farm power ×10.",
@@ -237,6 +254,7 @@
     "tier": 9
   },
   {
+    "guid": "f6d64419-1c05-5f50-9472-9e4b4de2e2b5",
     "key": "lumber-yard-power-1",
     "name": "Lumber Yard Power I",
     "description": "Own 10 lumber yards. Reward: Lumber Yard power +20%",
@@ -256,6 +274,7 @@
     "tier": 1
   },
   {
+    "guid": "822bd535-32ea-501b-afb6-7251694e644f",
     "key": "lumber-yard-power-2",
     "name": "Lumber Yard Power II",
     "description": "Own 100 lumber yards. Reward: Lumber Yard power ×3.",
@@ -275,6 +294,7 @@
     "tier": 2
   },
   {
+    "guid": "8ce402ab-170f-5491-a1b6-245e2ca4bfcd",
     "key": "lumber-yard-power-3",
     "name": "Lumber Yard Power III",
     "description": "Own 1,000 lumber yards. Reward: Lumber Yard power ×4.",
@@ -294,6 +314,7 @@
     "tier": 3
   },
   {
+    "guid": "d7576494-78b0-5bc2-beec-55311793fd1f",
     "key": "lumber-yard-power-4",
     "name": "Lumber Yard Power IV",
     "description": "Own 10,000 lumber yards. Reward: Lumber Yard power ×5.",
@@ -313,6 +334,7 @@
     "tier": 4
   },
   {
+    "guid": "6e4c7a1a-653a-5aa7-8739-411c9a3a88c8",
     "key": "lumber-yard-power-5",
     "name": "Lumber Yard Power V",
     "description": "Own 100,000 lumber yards. Reward: Lumber Yard power ×6.",
@@ -332,6 +354,7 @@
     "tier": 5
   },
   {
+    "guid": "512a7db7-3d7d-508a-8fce-7811146ebdaf",
     "key": "lumber-yard-power-6",
     "name": "Lumber Yard Power VI",
     "description": "Own 1,000,000 lumber yards. Reward: Lumber Yard power ×7.",
@@ -351,6 +374,7 @@
     "tier": 6
   },
   {
+    "guid": "a30f41c5-b276-54f1-834c-aac4fdbd8967",
     "key": "lumber-yard-power-7",
     "name": "Lumber Yard Power VII",
     "description": "Own 10,000,000 lumber yards. Reward: Lumber Yard power ×8.",
@@ -370,6 +394,7 @@
     "tier": 7
   },
   {
+    "guid": "b18f9f29-8f3a-54a2-abac-0a6ab1a06269",
     "key": "lumber-yard-power-8",
     "name": "Lumber Yard Power VIII",
     "description": "Own 100,000,000 lumber yards. Reward: Lumber Yard power ×9.",
@@ -389,6 +414,7 @@
     "tier": 8
   },
   {
+    "guid": "47487d6d-8c98-5261-8cce-aa333f89c5f9",
     "key": "lumber-yard-power-9",
     "name": "Lumber Yard Power IX",
     "description": "Own 1,000,000,000 lumber yards. Reward: Lumber Yard power ×10.",
@@ -408,6 +434,7 @@
     "tier": 9
   },
   {
+    "guid": "9b5cd521-1b8c-5938-afee-1afafcecc972",
     "key": "quarry-power-1",
     "name": "Quarry Power I",
     "description": "Own 10 quarries. Reward: Quarry power +20%.",
@@ -427,6 +454,7 @@
     "tier": 1
   },
   {
+    "guid": "9cd536a2-2b2d-5dc4-ba0e-7126eabf235a",
     "key": "quarry-power-2",
     "name": "Quarry Power II",
     "description": "Own 100 quarries. Reward: Quarry power ×3.",
@@ -446,6 +474,7 @@
     "tier": 2
   },
   {
+    "guid": "352e734d-df5d-5b4a-b880-aea1cccac4bb",
     "key": "quarry-power-3",
     "name": "Quarry Power III",
     "description": "Own 1,000 quarries. Reward: Quarry power ×4.",
@@ -465,6 +494,7 @@
     "tier": 3
   },
   {
+    "guid": "6931575f-0be0-5e3d-b090-56a8237abc1e",
     "key": "quarry-power-4",
     "name": "Quarry Power IV",
     "description": "Own 10,000 quarries. Reward: Quarry power ×5.",
@@ -484,6 +514,7 @@
     "tier": 4
   },
   {
+    "guid": "df71c845-c8e9-5de7-ac2a-15d6bf01dfea",
     "key": "quarry-power-5",
     "name": "Quarry Power V",
     "description": "Own 100,000 quarries. Reward: Quarry power ×6.",
@@ -503,6 +534,7 @@
     "tier": 5
   },
   {
+    "guid": "864c87c6-6028-5b47-ba24-bef69c9b3574",
     "key": "quarry-power-6",
     "name": "Quarry Power VI",
     "description": "Own 1,000,000 quarries. Reward: Quarry power ×7.",
@@ -522,6 +554,7 @@
     "tier": 6
   },
   {
+    "guid": "5b5eaf50-fdad-51ff-81ff-971b408725de",
     "key": "quarry-power-7",
     "name": "Quarry Power VII",
     "description": "Own 10,000,000 quarries. Reward: Quarry power ×8.",
@@ -541,6 +574,7 @@
     "tier": 7
   },
   {
+    "guid": "6ee0c8da-97ce-51f7-8e7b-1c8ae67b87f4",
     "key": "quarry-power-8",
     "name": "Quarry Power VIII",
     "description": "Own 100,000,000 quarries. Reward: Quarry power ×9.",
@@ -560,6 +594,7 @@
     "tier": 8
   },
   {
+    "guid": "72417030-2557-5662-a79d-886df42c94dc",
     "key": "quarry-power-9",
     "name": "Quarry Power IX",
     "description": "Own 1,000,000,000 quarries. Reward: Quarry power ×10.",
@@ -579,6 +614,7 @@
     "tier": 9
   },
   {
+    "guid": "fe3ddcb8-a6fc-598a-b66c-3cd2956d3145",
     "key": "gold-mine-power-1",
     "name": "Gold Mine Power I",
     "description": "Own 10 gold mines. Reward: Gold Mine power +20%.",
@@ -598,6 +634,7 @@
     "tier": 1
   },
   {
+    "guid": "4eff887c-4302-5e26-82f3-ddd230cd8513",
     "key": "gold-mine-power-2",
     "name": "Gold Mine Power II",
     "description": "Own 100 gold mines. Reward: Gold Mine power ×3.",
@@ -617,6 +654,7 @@
     "tier": 2
   },
   {
+    "guid": "7cb1abbb-b3cd-5f51-9cb8-ec3f2032808f",
     "key": "gold-mine-power-3",
     "name": "Gold Mine Power III",
     "description": "Own 1,000 gold mines. Reward: Gold Mine power ×4.",
@@ -636,6 +674,7 @@
     "tier": 3
   },
   {
+    "guid": "d05878a4-4c61-5909-9779-f51607c236f4",
     "key": "gold-mine-power-4",
     "name": "Gold Mine Power IV",
     "description": "Own 10,000 gold mines. Reward: Gold Mine power ×5.",
@@ -655,6 +694,7 @@
     "tier": 4
   },
   {
+    "guid": "e9ea44d2-f002-5a9a-bb91-6c6d623e45d0",
     "key": "gold-mine-power-5",
     "name": "Gold Mine Power V",
     "description": "Own 100,000 gold mines. Reward: Gold Mine power ×6.",
@@ -674,6 +714,7 @@
     "tier": 5
   },
   {
+    "guid": "10c05032-5eb6-52bd-a33d-db14b6ceb368",
     "key": "gold-mine-power-6",
     "name": "Gold Mine Power VI",
     "description": "Own 1,000,000 gold mines. Reward: Gold Mine power ×7.",
@@ -693,6 +734,7 @@
     "tier": 6
   },
   {
+    "guid": "bd9136d7-4bb3-50c9-9754-fd100d2977c1",
     "key": "gold-mine-power-7",
     "name": "Gold Mine Power VII",
     "description": "Own 10,000,000 gold mines. Reward: Gold Mine power ×8.",
@@ -712,6 +754,7 @@
     "tier": 7
   },
   {
+    "guid": "9aeaad32-d0d2-50aa-9a60-8a9f5c2c95c8",
     "key": "gold-mine-power-8",
     "name": "Gold Mine Power VIII",
     "description": "Own 100,000,000 gold mines. Reward: Gold Mine power ×9.",
@@ -731,6 +774,7 @@
     "tier": 8
   },
   {
+    "guid": "1a1f6084-6022-5dd1-819e-dcabde0ac2f9",
     "key": "gold-mine-power-9",
     "name": "Gold Mine Power IX",
     "description": "Own 1,000,000,000 gold mines. Reward: Gold Mine power ×10.",
@@ -750,6 +794,7 @@
     "tier": 9
   },
   {
+    "guid": "01056cb6-c1aa-552a-8c9a-6879ec30ba25",
     "key": "food-hoarder-1",
     "name": "Food Hoarder I",
     "description": "Hold 100 food. Reward: +2 food/sec.",
@@ -759,6 +804,7 @@
     "tier": 1
   },
   {
+    "guid": "07c1b2be-f25f-551e-92af-9ada1f22176c",
     "key": "food-hoarder-2",
     "name": "Food Hoarder II",
     "description": "Hold 1,000 food. Reward: +3 food/sec.",
@@ -768,6 +814,7 @@
     "tier": 2
   },
   {
+    "guid": "9a245ee0-1f7c-54fe-9747-0dd8e0fce044",
     "key": "food-hoarder-5",
     "name": "Food Hoarder III",
     "description": "Hold 1,000,000 food. Reward: +6 food/sec.",
@@ -781,6 +828,7 @@
     "tier": 3
   },
   {
+    "guid": "421ff198-757b-5e00-9933-718866e0f201",
     "key": "wood-hoarder-1",
     "name": "Wood Hoarder I",
     "description": "Hold 100 wood. Reward: +2 wood/sec.",
@@ -790,6 +838,7 @@
     "tier": 1
   },
   {
+    "guid": "47efbf5d-ee6f-5ace-94a1-a42c91aff7bc",
     "key": "wood-hoarder-2",
     "name": "Wood Hoarder II",
     "description": "Hold 1,000 wood. Reward: +3 wood/sec.",
@@ -799,6 +848,7 @@
     "tier": 2
   },
   {
+    "guid": "6ea6e1a1-3b1a-5273-95d0-58dfd9c2578c",
     "key": "wood-hoarder-5",
     "name": "Wood Hoarder III",
     "description": "Hold 1,000,000 wood. Reward: +6 wood/sec.",
@@ -812,6 +862,7 @@
     "tier": 3
   },
   {
+    "guid": "a162fa02-df0e-52d1-89a7-b757e9da4c85",
     "key": "stone-hoarder-1",
     "name": "Stone Hoarder I",
     "description": "Hold 100 stone. Reward: +2 stone/sec.",
@@ -823,6 +874,7 @@
     "tier": 1
   },
   {
+    "guid": "a6d76bce-f4c0-5781-8be0-dffa8f6ba900",
     "key": "stone-hoarder-2",
     "name": "Stone Hoarder II",
     "description": "Hold 1,000 stone. Reward: +3 stone/sec.",
@@ -834,6 +886,7 @@
     "tier": 2
   },
   {
+    "guid": "4f8f4cd6-630b-5715-abc7-6f439e0d4ce6",
     "key": "stone-hoarder-5",
     "name": "Stone Hoarder III",
     "description": "Hold 1,000,000 stone. Reward: +6 stone/sec.",
@@ -849,6 +902,7 @@
     "tier": 3
   },
   {
+    "guid": "28a74712-4ec3-5f52-825e-8039242d9d24",
     "key": "gold-hoarder-1",
     "name": "Gold Hoarder I",
     "description": "Hold 100 gold. Reward: +2 gold/sec.",
@@ -858,6 +912,7 @@
     "tier": 1
   },
   {
+    "guid": "d9e4056f-34de-5966-98a5-b6eb0e28b2ef",
     "key": "gold-hoarder-2",
     "name": "Gold Hoarder II",
     "description": "Hold 1,000 gold. Reward: +3 gold/sec.",
@@ -867,6 +922,7 @@
     "tier": 2
   },
   {
+    "guid": "887bdc97-7442-5e70-ba44-26e599b4ff8e",
     "key": "gold-hoarder-5",
     "name": "Gold Hoarder III",
     "description": "Hold 1,000,000 gold. Reward: +6 gold/sec.",
@@ -880,6 +936,7 @@
     "tier": 3
   },
   {
+    "guid": "ba07e5ad-c4dc-5281-93fb-1ae170affff8",
     "key": "master-builder-1",
     "name": "Master Builder I",
     "description": "Construct 1,000 buildings in total. Building base costs: ÷2 total.",
@@ -895,6 +952,7 @@
     "tier": 1
   },
   {
+    "guid": "e5228ec5-370b-5c83-9644-6e629613e36f",
     "key": "master-builder-2",
     "name": "Master Builder II",
     "description": "Construct 10,000 buildings in total. Building base costs: ÷3 total with earlier milestones.",
@@ -910,6 +968,7 @@
     "tier": 2
   },
   {
+    "guid": "ff398f56-2626-5337-8d82-bf880b486156",
     "key": "master-builder-3",
     "name": "Master Builder III",
     "description": "Construct 100,000 buildings in total. Building base costs: ÷4 total with earlier milestones.",
@@ -925,6 +984,7 @@
     "tier": 3
   },
   {
+    "guid": "d957faca-dfdd-57b0-9830-30312d009690",
     "key": "master-builder-4",
     "name": "Master Builder IV",
     "description": "Construct 1,000,000 buildings in total. Building base costs: ÷5 total with earlier milestones.",
@@ -940,6 +1000,7 @@
     "tier": 4
   },
   {
+    "guid": "91480179-7aed-51a9-8114-f14e704ef78d",
     "key": "master-builder-5",
     "name": "Master Builder V",
     "description": "Construct 10,000,000 buildings in total. Building base costs: ÷6 total with earlier milestones.",
@@ -955,6 +1016,7 @@
     "tier": 5
   },
   {
+    "guid": "4390adbb-332f-543e-b42b-d49cc3228465",
     "key": "master-builder-6",
     "name": "Master Builder VI",
     "description": "Construct 100,000,000 buildings in total. Building base costs: ÷7 total with earlier milestones.",
@@ -970,6 +1032,7 @@
     "tier": 6
   },
   {
+    "guid": "d43e01d6-02c9-51f8-ab2d-f4b73f3d9432",
     "key": "master-builder-7",
     "name": "Master Builder VII",
     "description": "Construct 1,000,000,000 buildings in total. Building base costs: ÷8 total with earlier milestones.",

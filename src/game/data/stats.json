@@ -1,25 +1,30 @@
 [
   {
+    "guid": "9ad29f7f-bd40-5e93-a96e-be707abeb5db",
     "key": "clickPower",
     "label": "Click power",
     "description": "Resources gained by one production click, before resource multipliers. Click-power achievements raise it permanently, and it appears on every production-click factor list."
   },
   {
+    "guid": "12765fcd-74a3-5d92-a5ac-acb19ce52d0a",
     "key": "autoClickRate",
     "label": "Auto-click rate",
     "description": "Automated production clicks generated every second. Dev Tools set the current rate; bonuses are planned to feed it once upgrades target this stat."
   },
   {
+    "guid": "91a4fb37-5f3a-54c6-bb46-e91d06d1902a",
     "key": "buildingCostMultiplier",
     "label": "Building cost multiplier",
     "description": "Multiplies every building's base cost before growth and other discounts. Starts at ×1; lower is cheaper. Master Builder milestones reduce it cumulatively to ÷2, ÷3, through ÷8. Does not affect upgrade prices."
   },
   {
+    "guid": "318b5e4c-e0b5-5e66-96f8-43e8116e10fc",
     "key": "buildingPower",
     "label": "Building power",
     "description": "Global multiplier on every building's power. Endgame bonuses raise it for all buildings at once."
   },
   {
+    "guid": "2c7a2810-cd94-5845-bc92-389ae250e2ca",
     "key": "armyPower",
     "label": "Army power",
     "description": "Combined fighting strength of every owned unit, summed from each stack's attack, accuracy, armour and hit points. Shown on both army headers in battle."

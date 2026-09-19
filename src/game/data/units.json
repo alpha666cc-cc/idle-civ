@@ -1,5 +1,6 @@
 [
   {
+    "guid": "49bc95e9-7aae-5c62-8c29-6302ea8ad01a",
     "id": "warrior",
     "name": "Tribesman",
     "description": "Hunter-spearmen with fire-hardened pikes. The first defenders of the settlement, and its last resort.",
@@ -22,6 +23,7 @@
     ]
   },
   {
+    "guid": "5a60d269-8cc9-51a8-99a8-e93d4bcf6922",
     "id": "slinger",
     "name": "Slinger",
     "description": "Whirls a river stone at anything within a few paces. Quick to raise, easy to replace.",
@@ -44,6 +46,7 @@
     ]
   },
   {
+    "guid": "9382c9ad-4b11-59e6-8c36-ed94dc92e297",
     "id": "archer_prehist",
     "name": "Stone Bowman",
     "description": "Flint-tipped arrows fly further than any thrown stone, and can reach a bird in flight.",
@@ -66,6 +69,7 @@
     ]
   },
   {
+    "guid": "68245e8a-565a-56f2-b462-f0c9f56c70eb",
     "id": "wolf",
     "name": "Wolf",
     "description": "Hunts in a pack and closes fast. Nothing a trained line cannot handle, and nothing a lone hunter can.",
@@ -84,6 +88,7 @@
     "costs": []
   },
   {
+    "guid": "a459e002-52ae-5e85-9a43-9dc654590e82",
     "id": "bear",
     "name": "Bear",
     "description": "Half a ton of muscle and claw. Slow to rouse, and it does not stop when it is hurt.",
@@ -102,6 +107,7 @@
     "costs": []
   },
   {
+    "guid": "5f989dcf-3699-5cb0-96ff-538c8ae24804",
     "id": "canoe",
     "name": "Dugout Canoe",
     "description": "A dugout hull for river and coast. Carries a raiding party, and nothing heavier.",
@@ -124,6 +130,7 @@
     ]
   },
   {
+    "guid": "ac2a79ae-6e6d-514a-8da5-b99acc5c77cf",
     "id": "spearman_bronze",
     "name": "Bronze Spearman",
     "description": "Bronze heads on long shafts, braced against cavalry. The point is meant for armour.",
@@ -146,6 +153,7 @@
     ]
   },
   {
+    "guid": "538e9384-abb7-589e-ab93-4b717b6e4de6",
     "id": "axeman_bronze",
     "name": "Bronze Axeman",
     "description": "Heavy bronze axes for close work; no shield line survives them for long.",
@@ -168,6 +176,7 @@
     ]
   },
   {
+    "guid": "db7a4287-bc35-53cd-8974-58be63eed68c",
     "id": "chariot_bronze",
     "name": "Bronze Chariot",
     "description": "Two horses, a driver and a fighting platform. Terrifying in the open, useless in a bog.",
@@ -190,6 +199,7 @@
     ]
   },
   {
+    "guid": "01aa75d1-3289-5f86-83cc-76b1d0d46034",
     "id": "bowman_bronze",
     "name": "Bronze Bowman",
     "description": "Bronze-tipped arrows in massed volleys. Cheap damage at a safe distance.",
@@ -212,6 +222,7 @@
     ]
   },
   {
+    "guid": "86c974f3-eb26-527d-a565-4e4c816c770a",
     "id": "trireme_bronze",
     "name": "Bronze Galley",
     "description": "Bronze-age galley packed with rowers and a ram at the waterline.",
@@ -235,6 +246,7 @@
     ]
   },
   {
+    "guid": "95e6c564-6019-50e0-a839-109c4ace7c0f",
     "id": "catapult_ancient",
     "name": "Catapult",
     "description": "Torsion artillery that lobs stones over a wall and through a shield line.",
@@ -257,6 +269,7 @@
     ]
   },
   {
+    "guid": "f2baff69-a21f-56f4-b635-e6d3db37466b",
     "id": "spearman_iron",
     "name": "Iron Spearman",
     "description": "Iron-pointed pikes for the phalanx. Cheaper than bronze and harder to blunt.",
@@ -279,6 +292,7 @@
     ]
   },
   {
+    "guid": "94dc5171-d570-5bd4-a907-ce163cf76c30",
     "id": "swordsman_iron",
     "name": "Iron Swordsman",
     "description": "Short iron blade and a big shield; the workhorse of the first iron armies.",
@@ -301,6 +315,7 @@
     ]
   },
   {
+    "guid": "1e682a39-4799-5383-9546-4f5644c3788a",
     "id": "chariot_iron",
     "name": "Iron Chariot",
     "description": "An iron-age chariot with a heavier crew and a longer reach than its bronze ancestor.",
@@ -323,6 +338,7 @@
     ]
   },
   {
+    "guid": "1ab95ff5-4831-5592-ae35-f349e7f86bce",
     "id": "cavalry_iron",
     "name": "Iron Cavalry",
     "description": "Riders who fight from the saddle rather than riding to the fight. Speed is the armour.",
@@ -345,6 +361,7 @@
     ]
   },
   {
+    "guid": "48d43a5d-1e4a-5b7c-aa5e-ccd7da9be587",
     "id": "war_galley_iron",
     "name": "War Galley",
     "description": "A decked galley with an iron-shod ram, built to sink rather than to board.",
@@ -368,6 +385,7 @@
     ]
   },
   {
+    "guid": "4fecca86-4ad5-527d-b336-fed209a4351b",
     "id": "elephant_iron",
     "name": "War Elephant",
     "description": "A war elephant with a howdah on its back. Breaks a line by weight alone.",
@@ -391,6 +409,7 @@
     ]
   },
   {
+    "guid": "aa979276-6295-5ee8-8d94-6a38a2931ab0",
     "id": "ballista",
     "name": "Ballista",
     "description": "Bolt-throwing engine on a wooden frame. Long range, slow to reload, indifferent to arrows.",
@@ -413,6 +432,7 @@
     ]
   },
   {
+    "guid": "08086c17-e4ca-54da-bc56-972d6a7e2be7",
     "id": "quinquereme",
     "name": "Quinquereme",
     "description": "Five banks of oars and a reinforced bow; the heaviest ram afloat in its age.",
@@ -436,6 +456,7 @@
     ]
   },
   {
+    "guid": "700da8f2-7d9c-5551-a7ba-390e91cfe66f",
     "id": "legionary",
     "name": "Legionary",
     "description": "Drilled infantry who can hold a line, throw, and rotate under pressure.",
@@ -458,6 +479,7 @@
     ]
   },
   {
+    "guid": "189a25a3-637e-53e0-a071-1cd725e9b323",
     "id": "hoplite",
     "name": "Hoplite",
     "description": "Shield-wall infantry with a long spear and heavy panoply. Unbeaten head-on.",
@@ -480,6 +502,7 @@
     ]
   },
   {
+    "guid": "cc8dc93c-5e4c-594f-aff2-6da62b462598",
     "id": "companion",
     "name": "Companion Cavalry",
     "description": "Companion cavalry: the decisive shock charge aimed at a gap, not the front.",
@@ -502,6 +525,7 @@
     ]
   },
   {
+    "guid": "d498410a-202f-5b23-8970-80a8ff9e8c5f",
     "id": "archer_classical",
     "name": "Composite Archer",
     "description": "Composite bow shooting from a horse or a hill; range and mobility together.",
@@ -524,6 +548,7 @@
     ]
   },
   {
+    "guid": "e981a169-cf08-5200-be71-9223a384d46c",
     "id": "onager",
     "name": "Onager",
     "description": "Arm-throwing engine that arcs a stone into a fortified position.",
@@ -546,6 +571,7 @@
     ]
   },
   {
+    "guid": "a032f523-1d37-54c9-a891-4cf4780c0273",
     "id": "fire_ship",
     "name": "Fire Ship",
     "description": "A hull packed with pitch and set alight, steered into an enemy fleet.",
@@ -569,6 +595,7 @@
     ]
   },
   {
+    "guid": "594a34f5-a9d5-5bb9-b96c-db27d6244f8d",
     "id": "assassin",
     "name": "Assassin",
     "description": "A single blade in the right tent. Fragile, fast, and lethal to a commander.",
@@ -591,6 +618,7 @@
     ]
   },
   {
+    "guid": "b81cb3e8-f49b-59c1-85c3-bab8ac9e60e5",
     "id": "trader_classical",
     "name": "Trade Galley",
     "description": "A trade galley with wide holds and a small crew. Barely fights, but sails anywhere.",
@@ -614,6 +642,7 @@
     ]
   },
   {
+    "guid": "9b102c4c-0d0c-5f8a-aeba-c19431b57c7c",
     "id": "knight",
     "name": "Knight",
     "description": "Plate armour, a lance and a destrier. The dominant shock arm of its age.",
@@ -636,6 +665,7 @@
     ]
   },
   {
+    "guid": "cb426712-e89a-5e8a-a9c8-e9e8dc1691e7",
     "id": "longbow",
     "name": "Longbowman",
     "description": "Yew bows with a high draw weight: massed arrow storms at long range.",
@@ -658,6 +688,7 @@
     ]
   },
   {
+    "guid": "ff3cf9f7-5e2f-5242-8a8d-c0eb9592b333",
     "id": "crossbow",
     "name": "Crossbowman",
     "description": "Slow to span, but a bolt punches through mail at close range.",
@@ -680,6 +711,7 @@
     ]
   },
   {
+    "guid": "b16eaacb-7952-5b72-87c6-8981220b35dc",
     "id": "man_at_arms",
     "name": "Man-at-Arms",
     "description": "Professional infantry with mail, spear and poleaxe; the core of a medieval host.",
@@ -702,6 +734,7 @@
     ]
   },
   {
+    "guid": "0adaed67-6dc5-5c95-ba54-90d680d672cf",
     "id": "trebuchet",
     "name": "Trebuchet",
     "description": "Counterweight engine that drops a stone onto a wall from far beyond bowshot.",
@@ -724,6 +757,7 @@
     ]
   },
   {
+    "guid": "8b8658f9-e3ba-5d77-82fa-ed09010bc23d",
     "id": "cog",
     "name": "Cog",
     "description": "Broad-hulled trader turned transport. Carries an army's baggage and its horses.",
@@ -747,6 +781,7 @@
     ]
   },
   {
+    "guid": "1b5184b0-1367-5337-8ccb-a1591548c84b",
     "id": "longship",
     "name": "Longship",
     "description": "Shallow-draught hull that rows up a river and beaches without a harbour.",
@@ -770,6 +805,7 @@
     ]
   },
   {
+    "guid": "3e970e2f-e44b-50c0-9980-cf7c16d4a927",
     "id": "bombard",
     "name": "Bombard Cannon",
     "description": "Early gunpowder artillery, enormous and slow, built to break stone gates.",
@@ -792,6 +828,7 @@
     ]
   },
   {
+    "guid": "1b64ea7a-7c2d-5a45-ba0f-073bc84065aa",
     "id": "caravel",
     "name": "Caravel",
     "description": "Lateen-sailed hull that can beat upwind; explores and raids far from home.",
@@ -815,6 +852,7 @@
     ]
   },
   {
+    "guid": "3acf7c50-4fdb-5923-812c-c23d09d0db5b",
     "id": "musketeer",
     "name": "Musketeer",
     "description": "Black-powder volleys in ranks. Terrifying to cavalry, helpless in the rain.",
@@ -837,6 +875,7 @@
     ]
   },
   {
+    "guid": "e7f0f848-c60c-5fb9-9cd0-828a7581de66",
     "id": "pikeman_ren",
     "name": "Tercio Pikeman",
     "description": "Pike and shot's other half: a hedge of points that keeps cavalry at bay.",
@@ -859,6 +898,7 @@
     ]
   },
   {
+    "guid": "4ec3d725-b9de-5b0f-bf57-530fb9a9edb8",
     "id": "dragoon_ren",
     "name": "Dragoon - Renaissance",
     "description": "Mounted infantry who ride to the fight and shoot from the ground on arrival.",
@@ -881,6 +921,7 @@
     ]
   },
   {
+    "guid": "ab38d42b-47a4-5cee-ad47-bacb45978a06",
     "id": "cuirassier",
     "name": "Cuirassier",
     "description": "Heavy cavalry in steel breastplates, charging home in a single mass.",
@@ -903,6 +944,7 @@
     ]
   },
   {
+    "guid": "33e95e63-d8f0-5cb5-8cb8-ef23a2faaf4f",
     "id": "cannon",
     "name": "Field Cannon",
     "description": "Mobile field gun with an iron barrel. Shreds formations and siege works alike.",
@@ -925,6 +967,7 @@
     ]
   },
   {
+    "guid": "477f87d0-d06d-53da-9cce-b19a56f74d8b",
     "id": "galleon",
     "name": "Galleon",
     "description": "Ocean-going hull with heavy timbers and a broadside of guns.",
@@ -948,6 +991,7 @@
     ]
   },
   {
+    "guid": "4aebd5b6-b8a6-5793-8017-7d36fda6b4cb",
     "id": "frigate_sail",
     "name": "Sailing Frigate",
     "description": "Fast sailing warship built for escort, patrol and raiding rather than the line.",
@@ -971,6 +1015,7 @@
     ]
   },
   {
+    "guid": "87cbfabb-6982-54b5-8d83-7876581077ea",
     "id": "privateer",
     "name": "Privateer",
     "description": "A licensed raider: light guns, deep holds, and a crew paid in plunder.",
@@ -994,6 +1039,7 @@
     ]
   },
   {
+    "guid": "9700c9b0-6660-51c9-aa69-d5c339c1869a",
     "id": "line_infantry",
     "name": "Line Infantry",
     "description": "Bayoneted muskets and formal drill. Holds a line by discipline alone.",
@@ -1017,6 +1063,7 @@
     ]
   },
   {
+    "guid": "059228c5-8eb2-5007-9787-f4853df98b43",
     "id": "rifleman",
     "name": "Rifleman",
     "description": "Rifled barrels and aimed fire; kills at ranges the old muskets only hoped for.",
@@ -1040,6 +1087,7 @@
     ]
   },
   {
+    "guid": "a8e0e21b-e8e7-512f-b864-d29c37d81404",
     "id": "dragoon_ind",
     "name": "Dragoon - Industrial",
     "description": "Mounted infantry with modern carbines: mobility plus firepower.",
@@ -1063,6 +1111,7 @@
     ]
   },
   {
+    "guid": "63fdebd2-092a-5882-8061-44e2c489e8c0",
     "id": "lancer",
     "name": "Lancer",
     "description": "Horse cavalry with a long lance, still useful in the charge's last decades.",
@@ -1086,6 +1135,7 @@
     ]
   },
   {
+    "guid": "e39b8a95-0f19-5281-bbda-8c75e94da802",
     "id": "gatling",
     "name": "Gatling Gun",
     "description": "Hand-cranked multibarrel gun. Devastating in a fixed position, quick to jam.",
@@ -1109,6 +1159,7 @@
     ]
   },
   {
+    "guid": "4410df30-831e-5334-95b2-924fbe869d61",
     "id": "ironclad",
     "name": "Ironclad",
     "description": "Iron-plated hull with a revolving turret and no sails at all.",
@@ -1133,6 +1184,7 @@
     ]
   },
   {
+    "guid": "47f55c72-5181-5cdb-817b-ec84dfbb0209",
     "id": "zeppelin",
     "name": "Zeppelin",
     "description": "Rigid airship for observation and night bombing. Slow, huge, and vulnerable.",
@@ -1156,6 +1208,7 @@
     ]
   },
   {
+    "guid": "9c5996d0-45a4-5556-9847-015177bec222",
     "id": "biplane",
     "name": "Biplane",
     "description": "Canvas and wire fighter; it owns the air until something faster appears.",
@@ -1179,6 +1232,7 @@
     ]
   },
   {
+    "guid": "12cbb60e-6204-53b6-99e9-5fa4f617c69e",
     "id": "howitzer_ind",
     "name": "Howitzer",
     "description": "Indirect-fire artillery that drops shells into trenches behind a ridge.",
@@ -1202,6 +1256,7 @@
     ]
   },
   {
+    "guid": "3fe980a2-4abc-5ecd-b7c7-13e8a2e87fcd",
     "id": "sub_early",
     "name": "Early Submarine",
     "description": "A petrol-driven boat that attacks unseen, and sinks if it is seen.",
@@ -1226,6 +1281,7 @@
     ]
   },
   {
+    "guid": "873e7425-8a5f-5d60-83d6-50b3ee38892c",
     "id": "ww1_infantry",
     "name": "WW1 Infantry",
     "description": "Bolt-action rifle, entrenching tool and gas mask; a war of attrition in one soldier.",
@@ -1249,6 +1305,7 @@
     ]
   },
   {
+    "guid": "c38010c8-e997-5b9f-bb92-2c1b0f453908",
     "id": "ww2_infantry",
     "name": "WW2 Infantry",
     "description": "Semi-automatic rifles, grenades and radios: the first fully modern foot soldier.",
@@ -1272,6 +1329,7 @@
     ]
   },
   {
+    "guid": "43ef8bb3-64da-50ce-ad13-b0c80e1df81b",
     "id": "dragoon_mech",
     "name": "Dragoon - Motorized",
     "description": "Halftrack-borne infantry: they arrive with the armour and fight with it.",
@@ -1295,6 +1353,7 @@
     ]
   },
   {
+    "guid": "abdc1497-68ee-512c-8fb8-f44a13811398",
     "id": "tank_ww2",
     "name": "Sherman Tank",
     "description": "Medium tank with an all-round turret; armour becomes an arm of decision, not infantry support.",
@@ -1318,6 +1377,7 @@
     ]
   },
   {
+    "guid": "b9411b9a-d1b5-599a-8d76-cc2fbba98cc8",
     "id": "fighter_ww2",
     "name": "P-51 Fighter",
     "description": "Piston fighter with self-sealing tanks and heavy machine guns; escorts what it fights.",
@@ -1341,6 +1401,7 @@
     ]
   },
   {
+    "guid": "1ca763ae-2f93-5e76-857a-ed9d9d9d8ba6",
     "id": "bomber_ww2",
     "name": "B-17 Bomber",
     "description": "Heavy four-engine bomber. Carries a city's worth of ordnance, and needs a fighter screen.",
@@ -1364,6 +1425,7 @@
     ]
   },
   {
+    "guid": "7635ccc0-03de-5178-a1c2-e4ac00e1cc62",
     "id": "battleship",
     "name": "Battleship",
     "description": "Steel hull, armour belt and 16-inch rifles. A fleet is built around it.",
@@ -1388,6 +1450,7 @@
     ]
   },
   {
+    "guid": "a87a4d20-da07-5914-98d2-d00cfce99951",
     "id": "carrier_ww2",
     "name": "Carrier WW2",
     "description": "A flight deck on a hull. Its punch is the aircraft it carries, not its guns.",
@@ -1412,6 +1475,7 @@
     ]
   },
   {
+    "guid": "7a4774b5-407f-570e-bd94-1da6931241e4",
     "id": "soldier_modern",
     "name": "Modern Soldier",
     "description": "Assault rifle, body armour and a radio: one soldier who is also a sensor.",
@@ -1435,6 +1499,7 @@
     ]
   },
   {
+    "guid": "41d28ac1-d354-5747-bffa-ac3ac3ec1160",
     "id": "tank_abrams",
     "name": "Abrams Tank",
     "description": "Composite-armour main battle tank with a stabilised gun that hits on the move.",
@@ -1458,6 +1523,7 @@
     ]
   },
   {
+    "guid": "cc01f416-876c-5928-be5f-f9ddbef0c421",
     "id": "fighter_jet",
     "name": "F-35 Fighter",
     "description": "Supersonic multirole jet with radar-guided missiles. Owns the air outright.",
@@ -1482,6 +1548,7 @@
     ]
   },
   {
+    "guid": "a2e4fa86-dafc-59e0-a220-31fa59265e9c",
     "id": "destroyer_modern",
     "name": "Burke Destroyer",
     "description": "Guided-missile destroyer: air defence, anti-submarine work and precision strikes in one hull.",
@@ -1507,6 +1574,7 @@
     ]
   },
   {
+    "guid": "60dc6d92-66f3-5e33-b04d-d42432cef7e3",
     "id": "dragoon_modern",
     "name": "Dragoon - Modern Armored Cavalry",
     "description": "Armoured cavalry with thermal sights: scouts, screens and flank guards for the tank force.",
@@ -1530,6 +1598,7 @@
     ]
   },
   {
+    "guid": "05f26697-46d6-5bdf-ab07-27e548a7132c",
     "id": "drone",
     "name": "Reaper Drone",
     "description": "Unmanned aircraft loitering overhead, finding targets and striking them from above.",
@@ -1554,6 +1623,7 @@
     ]
   },
   {
+    "guid": "4568cb86-f9cd-5ed6-8a7f-3fc15d7f35b2",
     "id": "attack_heli",
     "name": "Apache Helicopter",
     "description": "Rotary-wing gunship that hunts armour from behind a treeline.",
@@ -1577,6 +1647,7 @@
     ]
   },
   {
+    "guid": "d6f383a4-9dac-573f-9e27-c2fed35a8aac",
     "id": "artillery_modern",
     "name": "M270 MLRS",
     "description": "Multiple-launch rocket system. One salvo covers a grid square, and then it moves.",
@@ -1600,6 +1671,7 @@
     ]
   },
   {
+    "guid": "89469736-5b48-5b09-ad59-9b0a04578809",
     "id": "sub_nuclear",
     "name": "Nuclear Submarine",
     "description": "Nuclear attack submarine. Stays under for months and sinks what it is sent for.",
@@ -1625,6 +1697,7 @@
     ]
   },
   {
+    "guid": "f2366715-1f8e-511a-8332-61b3290ffbac",
     "id": "carrier_nuclear",
     "name": "Nuclear Carrier",
     "description": "Nuclear-powered carrier: an airbase that sails, with the escorts to survive it.",
@@ -1649,6 +1722,7 @@
     ]
   },
   {
+    "guid": "f22a0312-bccc-5412-b3e3-39ae8dc29af2",
     "id": "special_forces",
     "name": "Special Forces",
     "description": "Small teams behind the lines. Trains, bridges and commanders disappear.",
@@ -1672,6 +1746,7 @@
     ]
   },
   {
+    "guid": "3a47baa6-bcc0-5190-80a4-82e4bfdb043b",
     "id": "bomber_stealth",
     "name": "Stealth Bomber",
     "description": "Radar-absorbent flying wing. Arrives before anyone knows it is over the border.",
@@ -1696,6 +1771,7 @@
     ]
   },
   {
+    "guid": "6d244a3e-6ba2-5b57-8402-9873dd1e4732",
     "id": "satellite",
     "name": "Military Satellite",
     "description": "Military satellite: it watches, listens and directs. Nothing can reach it at all.",
@@ -1720,6 +1796,7 @@
     ]
   },
   {
+    "guid": "206c956d-01e8-5e45-91a8-fff5d1a4a3ef",
     "id": "orbital_laser",
     "name": "Orbital Laser",
     "description": "Orbital beam platform. Reaches anything on the far side of the planet.",
@@ -1744,6 +1821,7 @@
     ]
   },
   {
+    "guid": "df036515-7317-5204-bcb0-14be42dc5b53",
     "id": "mech_suit",
     "name": "Mech Suit",
     "description": "One pilot in layered armour carrying a cannon. Walks through whatever it is aimed at.",
@@ -1768,6 +1846,7 @@
     ]
   },
   {
+    "guid": "135f6761-16a0-5c31-b962-66aecd263967",
     "id": "starship",
     "name": "Starship Trooper",
     "description": "A trooper that flies and fights in vacuum, carrying a division's firepower in one suit.",
