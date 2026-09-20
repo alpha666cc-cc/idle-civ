@@ -1576,7 +1576,7 @@
   {
     "guid": "60dc6d92-66f3-5e33-b04d-d42432cef7e3",
     "id": "dragoon_modern",
-    "name": "Dragoon - Modern Armored Cavalry",
+    "name": "Dragoon - Armored",
     "description": "Armoured cavalry with thermal sights: scouts, screens and flank guards for the tank force.",
     "age": 6,
     "domain": "ground",

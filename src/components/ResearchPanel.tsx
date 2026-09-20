@@ -1,12 +1,9 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Castle, Check, FlaskConical, Lock } from "lucide-react";
 import type { CivilizationState } from "../game/civilizationState";
 import { ageDefinitions } from "../game/ages";
-import {
-  buildingDefinitions,
-  type BuildingKey,
-} from "../game/buildings";
+import { buildingDefinitions, type BuildingKey } from "../game/buildings";
 import { researchDefinitions, type ResearchDefinition } from "../game/research";
 import { unitDefinitions } from "../game/units";
 import { ExpNumber } from "../game/expNumber";
@@ -23,14 +20,15 @@ type Props = {
 
 // Layout geometry (px). Fixed sizes keep the SVG arrow overlay computable
 // without measuring the DOM.
-const CARD_W = 236;
-const CARD_H = 96;
-const COL_GAP = 56;
+const CARD_W = 190;
+const CARD_H = 100;
+const COL_GAP = 100;
 const COL_W = CARD_W + COL_GAP;
-const ROW_H = CARD_H + 16;
-const BAR_H = 46;
-
-const COLS = 2; // civilian | military
+const ROW_H = CARD_H + 20;
+const AGE_CARD_ROWS = 5;
+const AGE_HEADER_H = 30;
+const AGE_GAP_COLS = 0;
+const AGE_INSET = 32;
 
 type PlacedTech = {
   research: ResearchDefinition;
@@ -38,12 +36,13 @@ type PlacedTech = {
   row: number;
 };
 
-type AgeBar = { ageIndex: number; y: number };
+type AgeBar = { ageIndex: number; x: number; width: number; height: number };
 
 type Layout = {
   placed: PlacedTech[];
   bars: AgeBar[];
   edges: { path: string; key: string }[];
+  width: number;
   height: number;
 };
 
@@ -68,47 +67,47 @@ const depthOf = (() => {
 
 const buildLayout = (): Layout => {
   const placed: PlacedTech[] = [];
-  const rowByKey = new Map<string, number>();
-  const occupied = new Set<string>();
-  let nextRow = 0;
-  let lastAge = -1;
+  const ageCounts = new Map<number, number>();
 
-  // Ages in order; within an age, prerequisite depth first keeps parents above
-  // children, so every arrow points right, down or down-left.
+  // Depth is horizontal: prerequisites always sit to the left of their children.
   const techs = [...researchDefinitions].sort(
     (a, b) =>
       a.age - b.age || (depthOf.get(a.key) ?? 0) - (depthOf.get(b.key) ?? 0),
   );
 
   for (const research of techs) {
-    if (research.age !== lastAge) {
-      lastAge = research.age;
-      nextRow += 1; // the age bar consumes one row slot before its techs
-    }
-    const col = research.category === "military" ? 1 : 0;
-    let row = nextRow;
-    for (const prerequisite of research.prerequisites) {
-      const parentRow = rowByKey.get(prerequisite);
-      if (parentRow !== undefined) row = Math.max(row, parentRow + 1);
-    }
-    while (occupied.has(`${col}:${row}`)) row += 1;
-    occupied.add(`${col}:${row}`);
-    nextRow = Math.max(nextRow, row + 1);
-    rowByKey.set(research.key, row);
-    placed.push({ research, col, row });
+    ageCounts.set(research.age, (ageCounts.get(research.age) ?? 0) + 1);
   }
 
-  const barRows = new Map<number, number>();
-  for (const { research, row } of placed) {
-    const current = barRows.get(research.age);
-    if (current === undefined || row < current) barRows.set(research.age, row);
-  }
-  const bars: AgeBar[] = [...barRows.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([ageIndex, row]) => ({
+  const ageOffsets = new Map<number, number>();
+  let nextColumn = 0;
+  const bars: AgeBar[] = [];
+  for (const ageIndex of [...ageCounts.keys()].sort((a, b) => a - b)) {
+    const columnCount = Math.ceil(
+      (ageCounts.get(ageIndex) ?? 0) / AGE_CARD_ROWS,
+    );
+    ageOffsets.set(ageIndex, nextColumn);
+    bars.push({
       ageIndex,
-      y: Math.max(0, row * ROW_H - BAR_H),
-    }));
+      x: nextColumn * COL_W,
+      width: columnCount * COL_W - COL_GAP + AGE_INSET * 2,
+      height: AGE_HEADER_H + AGE_CARD_ROWS * ROW_H,
+    });
+    nextColumn += columnCount + AGE_GAP_COLS;
+  }
+
+  const agePositions = new Map<number, number>();
+  for (const research of techs) {
+    const agePosition = agePositions.get(research.age) ?? 0;
+    agePositions.set(research.age, agePosition + 1);
+    placed.push({
+      research,
+      col:
+        (ageOffsets.get(research.age) ?? 0) +
+        Math.floor(agePosition / AGE_CARD_ROWS),
+      row: agePosition % AGE_CARD_ROWS,
+    });
+  }
 
   const edges = placed.flatMap(({ research, col, row }) =>
     research.prerequisites.map((prerequisiteId) => {
@@ -117,14 +116,11 @@ const buildLayout = (): Layout => {
       );
       const key = `${prerequisiteId}->${research.key}`;
       if (!parent) return { path: "", key };
-      const x1 = parent.col * COL_W + CARD_W / 2;
-      const y1 = parent.row * ROW_H + CARD_H;
-      const x2 = col * COL_W + CARD_W / 2;
-      const y2 = row * ROW_H;
-      const path =
-        parent.col === col
-          ? `M ${x1} ${y1} L ${x2} ${y2}`
-          : `M ${x1} ${y1} L ${x1} ${y2 - 12} L ${x2} ${y2 - 12} L ${x2} ${y2}`;
+      const x1 = parent.col * COL_W + AGE_INSET + CARD_W;
+      const y1 = AGE_HEADER_H + parent.row * ROW_H + CARD_H / 2;
+      const x2 = col * COL_W + AGE_INSET;
+      const y2 = AGE_HEADER_H + row * ROW_H + CARD_H / 2;
+      const path = `M ${x1} ${y1} L ${x2} ${y2}`;
       return { path, key };
     }),
   );
@@ -133,7 +129,9 @@ const buildLayout = (): Layout => {
     placed,
     bars,
     edges,
-    height: Math.max(...placed.map(({ row }) => row)) * ROW_H + CARD_H + BAR_H,
+    width:
+      (Math.max(...placed.map(({ col }) => col)) + 1) * COL_W + AGE_INSET * 2,
+    height: AGE_HEADER_H + AGE_CARD_ROWS * ROW_H,
   };
 };
 
@@ -157,8 +155,7 @@ const unitStatLabels: Record<string, string> = {
 const destinationLabel = (destination: string): string => {
   if (destination === "all-production") return "all production";
   const named =
-    buildingNames.get(destination as BuildingKey) ??
-    unitNames.get(destination);
+    buildingNames.get(destination as BuildingKey) ?? unitNames.get(destination);
   return named ?? destination;
 };
 
@@ -192,6 +189,30 @@ const describeBonus = (bonus: Bonus): string => {
   }
 };
 
+const describeEffects = (research: ResearchDefinition): string[] => {
+  const buildingReductions = research.bonuses.filter(
+    (bonus) =>
+      bonus.type.startsWith("costReduction") &&
+      buildingNames.has(String(bonus.destination) as BuildingKey),
+  );
+  const effects = research.bonuses
+    .filter((bonus) => !buildingReductions.includes(bonus))
+    .map(describeBonus);
+  if (buildingReductions.length === 0) return effects;
+  const coversEveryBuilding = buildingReductions.length === buildingNames.size;
+  const firstReduction = buildingReductions[0];
+  const samePercent = buildingReductions.every(
+    (bonus) =>
+      bonus.type === "costReductionPercent" &&
+      bonus.value.eq(firstReduction.value),
+  );
+  const summary =
+    coversEveryBuilding && samePercent
+      ? `All building costs −${firstReduction.value.toNumber() * 100}%`
+      : "Building costs reduced";
+  return [summary, ...effects];
+};
+
 /** One research card: icon, name, effects, cost, buy button. */
 const ResearchCard = ({
   research,
@@ -199,12 +220,18 @@ const ResearchCard = ({
   setGameState,
   fmt,
   onOpenGamepedia,
+  highlighted,
+  selected,
+  onSelect,
 }: {
   research: ResearchDefinition;
   gameState: CivilizationState;
   setGameState: Props["setGameState"];
   fmt: Props["fmt"];
   onOpenGamepedia: Props["onOpenGamepedia"];
+  highlighted: boolean;
+  selected: boolean;
+  onSelect: () => void;
 }) => {
   const bought = gameState.isResearchBought(research.key);
   const unlocked = gameState.isResearchUnlocked(research.key);
@@ -217,12 +244,32 @@ const ResearchCard = ({
         ? "ready"
         : "expensive"
       : "locked";
-  const effects = research.bonuses.map(describeBonus);
+  const unlocks = research.unlocks.map(
+    (unitId) => unitNames.get(unitId) ?? unitId,
+  );
+  const effects = [
+    ...(unlocks.length > 0
+      ? [
+          `Unlocks ${unlocks.slice(0, 2).join(", ")}${
+            unlocks.length > 2 ? ` +${unlocks.length - 2} more` : ""
+          }`,
+        ]
+      : []),
+    ...describeEffects(research),
+  ];
   const Icon: LucideIcon =
     research.category === "military" ? Castle : FlaskConical;
 
   return (
-    <div className={`research-card research-card-${state}`}>
+    <div
+      className={`research-card research-card-${state} ${
+        selected ? "research-card-selected" : ""
+      } ${highlighted ? "research-card-related" : "research-card-dimmed"}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect();
+      }}
+    >
       <div className="research-card-title">
         <Icon size={16} strokeWidth={1.7} aria-hidden />
         <button
@@ -233,14 +280,17 @@ const ResearchCard = ({
           {research.name}
         </button>
         {bought && <Check size={14} strokeWidth={2} aria-hidden />}
-        {!bought && !unlocked && <Lock size={14} strokeWidth={1.7} aria-hidden />}
+        {!bought && !unlocked && (
+          <Lock size={14} strokeWidth={1.7} aria-hidden />
+        )}
       </div>
       <ul className="research-card-effects">
         {effects.slice(0, 2).map((effect, index) => (
           <li key={index}>{effect}</li>
         ))}
-        {effects.length > 2 && <li>+{effects.length - 2} more</li>}
-        {effects.length === 0 && <li className="muted">No engine effect yet</li>}
+        {effects.length === 0 && (
+          <li className="muted">No engine effect yet</li>
+        )}
       </ul>
       <div className="research-card-footer">
         <span className="research-card-cost">
@@ -275,7 +325,34 @@ export default function ResearchPanel({
 }: Props) {
   const layout = useMemo(buildLayout, []);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const boughtCount = gameState.boughtResearch.length;
+
+  const relatedKeys = useMemo(() => {
+    if (!selectedKey) return new Set<string>();
+    const byKey = new Map(
+      researchDefinitions.map((research) => [research.key, research]),
+    );
+    const related = new Set<string>([selectedKey]);
+    const visitParents = (key: string): void => {
+      for (const parent of byKey.get(key)?.prerequisites ?? []) {
+        if (related.has(parent)) continue;
+        related.add(parent);
+        visitParents(parent);
+      }
+    };
+    const visitChildren = (key: string): void => {
+      for (const child of researchDefinitions) {
+        if (!child.prerequisites.includes(key) || related.has(child.key))
+          continue;
+        related.add(child.key);
+        visitChildren(child.key);
+      }
+    };
+    visitParents(selectedKey);
+    visitChildren(selectedKey);
+    return related;
+  }, [selectedKey]);
 
   // Default scroll: the highest row holding an unresearched tech sits on the
   // second visible row from the top. Re-runs when the bought set changes.
@@ -285,8 +362,8 @@ export default function ResearchPanel({
     const firstUnbought = layout.placed
       .filter(({ research }) => !gameState.isResearchBought(research.key))
       .sort((a, b) => a.row - b.row)[0];
-    container.scrollTop = firstUnbought
-      ? Math.max(0, firstUnbought.row * ROW_H - ROW_H)
+    container.scrollLeft = firstUnbought
+      ? Math.max(0, firstUnbought.col * COL_W - COL_W)
       : 0;
     // The bought count is the trigger; layout is stable and gameState is read
     // through the engine methods.
@@ -301,7 +378,6 @@ export default function ResearchPanel({
     <section className="research-panel" aria-label="Research tree">
       <div className="research-heading">
         <div>
-          <p className="eyebrow">Science</p>
           <h3>Technology tree</h3>
         </div>
         <p className="research-progress">
@@ -309,14 +385,24 @@ export default function ResearchPanel({
           researched
         </p>
       </div>
-      <div className="research-scroll" ref={scrollRef}>
+      <div
+        className="research-scroll"
+        ref={scrollRef}
+        onWheel={(event) => {
+          const delta = event.deltaX !== 0 ? event.deltaX : event.deltaY;
+          if (delta === 0) return;
+          event.preventDefault();
+          event.currentTarget.scrollLeft += delta;
+        }}
+      >
         <div
           className="research-tree"
-          style={{ width: COLS * COL_W, height: layout.height }}
+          style={{ width: layout.width, height: layout.height }}
+          onClick={() => setSelectedKey(null)}
         >
           <svg
             className="research-edges"
-            width={COLS * COL_W}
+            width={layout.width}
             height={layout.height}
             aria-hidden
           >
@@ -330,7 +416,10 @@ export default function ResearchPanel({
                 markerHeight="7"
                 orient="auto-start-reverse"
               >
-                <path d="M 0 0 L 10 5 L 0 10 z" className="research-arrow-head" />
+                <path
+                  d="M 0 0 L 10 5 L 0 10 z"
+                  className="research-arrow-head"
+                />
               </marker>
             </defs>
             {layout.edges.map(
@@ -339,7 +428,14 @@ export default function ResearchPanel({
                   <path
                     key={edge.key}
                     d={edge.path}
-                    className="research-edge"
+                    className={`research-edge ${
+                      selectedKey &&
+                      edge.key.split("->").every((key) => relatedKeys.has(key))
+                        ? "research-edge-related"
+                        : selectedKey
+                          ? "research-edge-dimmed"
+                          : ""
+                    }`}
                     markerEnd="url(#research-arrow)"
                   />
                 ),
@@ -349,7 +445,12 @@ export default function ResearchPanel({
             <div
               key={`bar-${bar.ageIndex}`}
               className={`research-age-bar research-age-${bar.ageIndex}`}
-              style={{ top: bar.y, height: BAR_H }}
+              style={{
+                left: bar.x,
+                top: 0,
+                width: bar.width,
+                height: bar.height,
+              }}
             >
               <span>{ageName(bar.ageIndex)}</span>
             </div>
@@ -359,8 +460,8 @@ export default function ResearchPanel({
               key={research.key}
               className="research-slot"
               style={{
-                left: col * COL_W,
-                top: row * ROW_H,
+                left: col * COL_W + AGE_INSET,
+                top: AGE_HEADER_H + row * ROW_H,
                 width: CARD_W,
                 height: CARD_H,
               }}
@@ -371,6 +472,9 @@ export default function ResearchPanel({
                 setGameState={setGameState}
                 fmt={fmt}
                 onOpenGamepedia={onOpenGamepedia}
+                highlighted={!selectedKey || relatedKeys.has(research.key)}
+                selected={selectedKey === research.key}
+                onSelect={() => setSelectedKey(research.key)}
               />
             </div>
           ))}
@@ -379,5 +483,3 @@ export default function ResearchPanel({
     </section>
   );
 }
-
-

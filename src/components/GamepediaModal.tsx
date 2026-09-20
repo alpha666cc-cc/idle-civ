@@ -28,6 +28,7 @@ import {
 import type { AchievementDefinition } from "../game/achievements";
 import type { Bonus } from "../game/bonus";
 import type { UpgradeDefinition } from "../game/upgrades";
+import { researchDefinitions, type ResearchDefinition } from "../game/research";
 import type { CivilizationState } from "../game/civilizationState";
 import {
   gamepedia,
@@ -285,7 +286,8 @@ export default function GamepediaModal({
     const effects = gameState.getBuildingEffects(building.key);
     const totalEffects = gameState.getBuildingEffects(building.key, count);
     const parameters = gameState.getBuildingCostParameters(building.key);
-    const { sources, reductions, globalMultiplier } = gameState.getBuildingCostModifiers(building.key);
+    const { sources, reductions, globalMultiplier } =
+      gameState.getBuildingCostModifiers(building.key);
 
     return (
       <div className="gamepedia-detail">
@@ -295,7 +297,9 @@ export default function GamepediaModal({
         <p className="gamepedia-category">Price</p>
         <div className="gamepedia-cost-list">
           {costs.map(({ resource, base }) => {
-            const factor = parameters.find(({ cost }) => cost.resource === resource)?.unitFactor;
+            const factor = parameters.find(
+              ({ cost }) => cost.resource === resource,
+            )?.unitFactor;
             return (
               <div className="gamepedia-cost-row" key={resource}>
                 <div className="gamepedia-cost-copy">
@@ -316,31 +320,59 @@ export default function GamepediaModal({
 
         <p className="gamepedia-category">Cost reductions</p>
         <div className="gamepedia-recap">
-          <p>Per building: base → growth → percentage → flat. Costs floor at 0; growth floors at 1.</p>
-          <p>Base remaining: {formatAmount(reductions.base.mul(ExpNumber.fromNumber(100)))}%</p>
-          <p>Growth reduction: {formatAmount(reductions.factor.mul(ExpNumber.fromNumber(100)))} percentage points</p>
-          <p>Cost remaining after percentage reductions: {formatAmount(reductions.percent.mul(ExpNumber.fromNumber(100)))}%</p>
-          <p>Flat reduction per cost resource: {formatAmount(reductions.flat)}</p>
+          <p>
+            Per building: base → growth → percentage → flat. Costs floor at 0;
+            growth floors at 1.
+          </p>
+          <p>
+            Base remaining:{" "}
+            {formatAmount(reductions.base.mul(ExpNumber.fromNumber(100)))}%
+          </p>
+          <p>
+            Growth reduction:{" "}
+            {formatAmount(reductions.factor.mul(ExpNumber.fromNumber(100)))}{" "}
+            percentage points
+          </p>
+          <p>
+            Cost remaining after percentage reductions:{" "}
+            {formatAmount(reductions.percent.mul(ExpNumber.fromNumber(100)))}%
+          </p>
+          <p>
+            Flat reduction per cost resource: {formatAmount(reductions.flat)}
+          </p>
           {parameters.map(({ cost, unitBase, unitFactor }) => (
             <div key={cost.resource}>
               {renderReference(cost.resource)}
-              <p>Base: {formatAmount(cost.base)} → {formatAmount(unitBase)}</p>
-              <p>Growth: ×{formatAmount(cost.factor)} → ×{formatAmount(unitFactor)}</p>
+              <p>
+                Base: {formatAmount(cost.base)} → {formatAmount(unitBase)}
+              </p>
+              <p>
+                Growth: ×{formatAmount(cost.factor)} → ×
+                {formatAmount(unitFactor)}
+              </p>
             </div>
           ))}
-          <p>{renderReference("buildingCostMultiplier")}: ×{formatNumber(globalMultiplier, numberFormat)}</p>
-          {sources.length === 0 && globalMultiplier.eq(ExpNumber.ONE) && <p>No active cost reductions.</p>}
+          <p>
+            {renderReference("buildingCostMultiplier")}: ×
+            {formatNumber(globalMultiplier, numberFormat)}
+          </p>
+          {sources.length === 0 && globalMultiplier.eq(ExpNumber.ONE) && (
+            <p>No active cost reductions.</p>
+          )}
           {sources.map(([source, bonus], index) => (
             <p key={`${source}-${index}`}>
-              {renderReference(source)} — {bonusEffectLabel(bonus)}: {bonusValueText(bonus, numberFormat)}
+              {renderReference(source)} — {bonusEffectLabel(bonus)}:{" "}
+              {bonusValueText(bonus, numberFormat)}
             </p>
           ))}
         </div>
 
         <p className="gamepedia-category">Effects</p>
         <p className="gamepedia-recap">
-          {renderReference(`${building.key}Power`)}: ×{formatAmount(gameState.getAttributeValue(`${building.key}Power`))}.
-          Production and multiplier effects below include power; drains and capacity grants do not scale.
+          {renderReference(`${building.key}Power`)}: ×
+          {formatAmount(gameState.getAttributeValue(`${building.key}Power`))}.
+          Production and multiplier effects below include power; drains and
+          capacity grants do not scale.
         </p>
         <div className="gamepedia-effect-list">
           {effects.resourceProduction && (
@@ -348,7 +380,8 @@ export default function GamepediaModal({
               <div className="gamepedia-effect-copy">
                 {renderReference(effects.resourceProduction.resource)}
                 <span className="gamepedia-effect-meta">
-                  +{formatAmount(effects.resourceProduction.amount)}/s per building
+                  +{formatAmount(effects.resourceProduction.amount)}/s per
+                  building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
@@ -404,9 +437,7 @@ export default function GamepediaModal({
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
-                +
-                {formatAmount(totalEffects.capacityProvided!.perBuilding)}{" "}
-                now
+                +{formatAmount(totalEffects.capacityProvided!.perBuilding)} now
               </strong>
             </div>
           ) : null}
@@ -437,14 +468,26 @@ export default function GamepediaModal({
     return (
       <div className="gamepedia-recap">
         {derived && <p>Base: {formatAmount(summary.base)}</p>}
-        <p>Additions (sum): {formatAmount(summary.additional)}{unit}</p>
+        <p>
+          Additions (sum): {formatAmount(summary.additional)}
+          {unit}
+        </p>
         <p>Multipliers (product): ×{formatAmount(summary.multiplier)}</p>
-        <p>Drains (sum): {formatAmount(summary.drain)}{unit}</p>
+        <p>
+          Drains (sum): {formatAmount(summary.drain)}
+          {unit}
+        </p>
         <p>
           {derived && `(${formatAmount(summary.base)} + `}
-          {formatAmount(summary.additional)}{derived && ")"}
-          {" × "}{formatAmount(summary.multiplier)} − {formatAmount(summary.drain)}
-          {" = "}<strong>{formatAmount(summary.result)}{unit}</strong>
+          {formatAmount(summary.additional)}
+          {derived && ")"}
+          {" × "}
+          {formatAmount(summary.multiplier)} − {formatAmount(summary.drain)}
+          {" = "}
+          <strong>
+            {formatAmount(summary.result)}
+            {unit}
+          </strong>
         </p>
       </div>
     );
@@ -457,7 +500,9 @@ export default function GamepediaModal({
     const factors = gameState.getProductionFactors(key);
     const factorTabs: FactorTab[] = ["additional", "multiplicative", "drain"];
     const isPopulation = key === "population";
-    const hasWorkers = productionDefinitions.some(({ key: resourceKey }) => resourceKey === key);
+    const hasWorkers = productionDefinitions.some(
+      ({ key: resourceKey }) => resourceKey === key,
+    );
     const workerProduction = hasWorkers
       ? gameState.getWorkerProduction(key as ProductionResourceKey)
       : undefined;
@@ -667,6 +712,92 @@ export default function GamepediaModal({
     );
   };
 
+  const renderResearchDetail = (entry: GamepediaEntry) => {
+    const research = entry.object as ResearchDefinition;
+    const unlockedResearch = researchDefinitions.filter((candidate) =>
+      candidate.prerequisites.includes(research.key),
+    );
+
+    return (
+      <div className="gamepedia-detail">
+        {renderDetailHeader(entry)}
+        <p className="gamepedia-detail-description">
+          {entry.object.description}
+        </p>
+
+        {research.prerequisites.length > 0 && (
+          <>
+            <p className="gamepedia-category">Prerequisites</p>
+            <div className="gamepedia-reference-list">
+              {research.prerequisites.map((id) => (
+                <span key={id}>{renderReference(id)}</span>
+              ))}
+            </div>
+          </>
+        )}
+
+        <p className="gamepedia-category">Cost</p>
+        <div className="gamepedia-stats">
+          {research.costs.map(({ resource, base }) => (
+            <div className="gamepedia-stat" key={resource}>
+              <span>{renderReference(resource)}</span>
+              <strong>{formatAmount(base)}</strong>
+            </div>
+          ))}
+        </div>
+
+        {research.bonuses.length > 0 && (
+          <>
+            <p className="gamepedia-category">Effects</p>
+            <div className="gamepedia-effect-list">
+              {research.bonuses.map((bonus, index) => (
+                <div
+                  className="gamepedia-effect-row"
+                  key={`${bonus.type}-${bonus.destination}-${index}`}
+                >
+                  <div className="gamepedia-effect-copy">
+                    <span className="gamepedia-effect-meta">
+                      {bonusEffectLabel(bonus)}
+                    </span>
+                  </div>
+                  <strong className="gamepedia-effect-total">
+                    {bonusValueText(bonus, numberFormat)}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {research.unlocks.length > 0 && (
+          <>
+            <p className="gamepedia-category">Unlocks</p>
+            <div className="gamepedia-reference-list">
+              {research.unlocks.map((id) => (
+                <span key={id}>{renderReference(id)}</span>
+              ))}
+            </div>
+          </>
+        )}
+
+        {unlockedResearch.length > 0 && (
+          <>
+            <p className="gamepedia-category">Unlocks research</p>
+            <div className="gamepedia-reference-list">
+              {unlockedResearch.map((candidate) => (
+                <span key={candidate.key}>
+                  {renderReference(candidate.key, candidate.name)}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+
+        {renderRelated(entry)}
+      </div>
+    );
+  };
+
   const renderAchievementDetail = (entry: GamepediaEntry) => {
     const achievement = entry.object as AchievementDefinition;
     const earned = gameState.isAchievementEarned(achievement.key);
@@ -816,11 +947,7 @@ export default function GamepediaModal({
         <p className="gamepedia-detail-description">{unit.description}</p>
         <p className="gamepedia-category">
           Icon:{" "}
-          <a
-            href="https://game-icons.net/"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a href="https://game-icons.net/" target="_blank" rel="noreferrer">
             game-icons.net
           </a>{" "}
           (CC BY 3.0 — see public/units/ATTRIBUTION.md)
@@ -863,13 +990,9 @@ export default function GamepediaModal({
     return (
       <div className="gamepedia-detail">
         {renderDetailHeader(entry)}
-        <p className="gamepedia-detail-description">
-          {encounter.description}
-        </p>
+        <p className="gamepedia-detail-description">{encounter.description}</p>
         {encounter.historical && (
-          <p className="gamepedia-detail-description">
-            {encounter.historical}
-          </p>
+          <p className="gamepedia-detail-description">{encounter.historical}</p>
         )}
         <p className="gamepedia-category">Enemy army</p>
         <div className="gamepedia-effect-list">
@@ -908,8 +1031,8 @@ export default function GamepediaModal({
     if (entry.category === "resource") return renderResourceDetail(entry);
     if (entry.category === "capacity") return renderCapacityDetail(entry);
     if (entry.category === "upgrade") return renderUpgradeDetail(entry);
-    if (entry.category === "achievement")
-      return renderAchievementDetail(entry);
+    if (entry.category === "research") return renderResearchDetail(entry);
+    if (entry.category === "achievement") return renderAchievementDetail(entry);
     if (entry.category === "stat") return renderStatDetail(entry);
     return renderGenericDetail(entry);
   };

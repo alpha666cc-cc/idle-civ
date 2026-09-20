@@ -33,7 +33,7 @@
         "value": 2
       }
     ],
-    "unlocks": ["slinger"]
+    "unlocks": []
   },
   {
     "guid": "3a547849-831d-5f2d-b2f0-ec5af785cc04",
@@ -74,16 +74,7 @@
         "value": 4
       }
     ],
-    "unlocks": [
-      "archer_prehist",
-      "canoe",
-      "spearman_bronze",
-      "bowman_bronze",
-      "axeman_bronze",
-      "chariot_bronze",
-      "trireme_bronze",
-      "catapult_ancient"
-    ]
+    "unlocks": []
   },
   {
     "guid": "2e014ac9-a8d1-562f-8a3b-0bcefb045712",
@@ -150,16 +141,7 @@
         "value": 1.2
       }
     ],
-    "unlocks": [
-      "spearman_iron",
-      "swordsman_iron",
-      "chariot_iron",
-      "cavalry_iron",
-      "war_galley_iron",
-      "elephant_iron",
-      "ballista",
-      "quinquereme"
-    ]
+    "unlocks": []
   },
   {
     "guid": "cb04d7e3-81cc-5bcf-b2b7-ab66b8635d67",
@@ -278,16 +260,7 @@
         "value": 1.05
       }
     ],
-    "unlocks": [
-      "legionary",
-      "hoplite",
-      "companion",
-      "archer_classical",
-      "onager",
-      "fire_ship",
-      "assassin",
-      "trader_classical"
-    ]
+    "unlocks": []
   },
   {
     "guid": "760660c5-3d50-52bd-85b2-ac3e10a1452a",
@@ -448,17 +421,7 @@
         "value": 1.05
       }
     ],
-    "unlocks": [
-      "knight",
-      "longbow",
-      "crossbow",
-      "man_at_arms",
-      "trebuchet",
-      "cog",
-      "longship",
-      "bombard",
-      "caravel"
-    ]
+    "unlocks": []
   },
   {
     "guid": "307c7e4d-723d-53f7-aa23-c8fa185359e0",
@@ -551,16 +514,7 @@
         "value": 1.05
       }
     ],
-    "unlocks": [
-      "musketeer",
-      "pikeman_ren",
-      "dragoon_ren",
-      "cuirassier",
-      "cannon",
-      "galleon",
-      "frigate_sail",
-      "privateer"
-    ]
+    "unlocks": []
   },
   {
     "guid": "3bc9c5c9-b2d4-5c36-9b03-916875811b63",
@@ -695,18 +649,7 @@
         "value": 1.05
       }
     ],
-    "unlocks": [
-      "line_infantry",
-      "rifleman",
-      "dragoon_ind",
-      "lancer",
-      "gatling",
-      "ironclad",
-      "zeppelin",
-      "biplane",
-      "howitzer_ind",
-      "sub_early"
-    ]
+    "unlocks": []
   },
   {
     "guid": "8bbdbd6b-8869-592a-ab71-aa8b92231ae0",
@@ -814,32 +757,7 @@
         "value": 1.05
       }
     ],
-    "unlocks": [
-      "ww1_infantry",
-      "ww2_infantry",
-      "dragoon_mech",
-      "tank_ww2",
-      "fighter_ww2",
-      "bomber_ww2",
-      "battleship",
-      "carrier_ww2",
-      "soldier_modern",
-      "tank_abrams",
-      "fighter_jet",
-      "destroyer_modern",
-      "dragoon_modern",
-      "drone",
-      "attack_heli",
-      "artillery_modern",
-      "sub_nuclear",
-      "carrier_nuclear",
-      "special_forces",
-      "bomber_stealth",
-      "satellite",
-      "orbital_laser",
-      "mech_suit",
-      "starship"
-    ]
+    "unlocks": []
   },
   {
     "guid": "b8850d57-7854-51df-bc9e-89403f0484a2",

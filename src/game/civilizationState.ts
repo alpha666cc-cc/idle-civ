@@ -520,7 +520,9 @@ export class CivilizationState {
     ) {
       return false;
     }
-    return research.age === 0 || this.enteredAges.includes(`age-${research.age}`);
+    return (
+      research.age === 0 || this.enteredAges.includes(`age-${research.age}`)
+    );
   }
 
   isResearchBought(researchId: string): boolean {
@@ -1583,11 +1585,7 @@ export class CivilizationState {
     ) {
       return true;
     }
-    return encounterDefinitions.some(
-      (encounter) =>
-        encounter.unlocks.includes(unitId) &&
-        this.defeatedEncounters.includes(encounter.key),
-    );
+    return false;
   }
 
   /** The Army tab's buyable roster: current + previous age, unlocked only. */

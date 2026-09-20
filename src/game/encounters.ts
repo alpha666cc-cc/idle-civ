@@ -15,9 +15,9 @@ export type EnemyStack = {
 /**
  * A battle (AGENTS.md §13.4/§14, roadmap Milestone 8). Encounters are ordered:
  * the campaign is a sequence and the engine offers the first battle not yet won.
- * A battle owns its enemy army, its victory bonuses, the unit ids its victory
- * unlocks, and the enemy's "fake research" boosts that keep an older enemy army
- * relevant in its own age.
+ * A battle owns its enemy army, its victory bonuses, and the enemy's "fake
+ * research" boosts that keep an older enemy army relevant in its own age. Unit
+ * access is research-driven.
  */
 export class EncounterDefinition extends GameObject {
   readonly key: string;
@@ -120,7 +120,9 @@ export const findEncounterDefinition = (
 for (const encounter of encounterDefinitions) {
   for (const stack of encounter.enemyArmy) {
     if (!findUnitDefinition(stack.unitId)) {
-      throw new Error(`Unknown enemy unit in ${encounter.key}: ${stack.unitId}`);
+      throw new Error(
+        `Unknown enemy unit in ${encounter.key}: ${stack.unitId}`,
+      );
     }
   }
   for (const unitId of encounter.unlocks) {
