@@ -144,14 +144,30 @@ const toUnitDefinition = (data: UnitData): UnitDefinition =>
       factor,
     })) ?? [],
     {
-      hp: ExpNumber.fromNumber(data.hp),
-      attack: ExpNumber.fromNumber(data.attack),
+      hp: ExpNumber.fromNumber(data.hp).mul(
+        ExpNumber.fromNumber(unitStrengthScale(data)),
+      ),
+      attack: ExpNumber.fromNumber(data.attack).mul(
+        ExpNumber.fromNumber(unitStrengthScale(data)),
+      ),
       armor: data.armor,
       range: data.range,
       speed: data.speed,
       accuracy: data.accuracy,
     },
   );
+
+/**
+ * Combat strength follows the cost ladder without requiring every JSON stat to
+ * be hand-tuned. A 1,000x military-cost step adds one strength multiple; free
+ * enemy-only units keep their authored stats.
+ */
+const unitStrengthScale = (data: UnitData): number => {
+  const military = data.costs?.find(({ resource }) => resource === "military");
+  if (!military) return 1;
+  const log1000Cost = ExpNumber.from(military.base).log10() / 3;
+  return Math.max(1, log1000Cost);
+};
 
 export const unitDefinitions: UnitDefinition[] = (unitData as UnitData[]).map(
   toUnitDefinition,
@@ -235,7 +251,9 @@ export const maximumArmor = 0.9;
 /** Effective hit points — armour divides incoming damage, so it multiplies HP. */
 export const effectiveHitPoints = (stats: UnitStats): ExpNumber =>
   stats.hp.div(
-    ExpNumber.ONE.sub(ExpNumber.fromNumber(Math.min(stats.armor, maximumArmor))),
+    ExpNumber.ONE.sub(
+      ExpNumber.fromNumber(Math.min(stats.armor, maximumArmor)),
+    ),
   );
 
 /**

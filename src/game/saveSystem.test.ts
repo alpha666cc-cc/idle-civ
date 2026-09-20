@@ -417,13 +417,12 @@ describe("unknown content detection", () => {
     };
     const repaired = remapSaveIds(
       data,
-      (id) => entryGuidById.has(id) || findAchievementDefinition(id) !== undefined,
+      (id) =>
+        entryGuidById.has(id) || findAchievementDefinition(id) !== undefined,
       () => undefined,
     );
     expect(repaired.unknown).toEqual([]);
-    expect(repaired.data.earnedAchievements).toEqual(
-      data.earnedAchievements,
-    );
+    expect(repaired.data.earnedAchievements).toEqual(data.earnedAchievements);
   });
 });
 

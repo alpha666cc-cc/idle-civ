@@ -20,13 +20,24 @@ const iconUrl = (unit) => `/public/units/${unit.id}.svg`;
 const typeLabel = (unit) =>
   [unit.domain, ...(unit.tags ?? []).slice(0, 2)].join(" · ");
 
-const candidateUnits = (battle) =>
-  state.units.filter(
-    (unit) =>
-      unit.costs?.length &&
-      unit.age >= battle.age - 1 &&
-      unit.age <= battle.age,
+const candidateUnits = (battle) => {
+  const ageBattles = state.battles.filter(({ age }) => age === battle.age);
+  const ordinal = ageBattles.findIndex(({ key }) => key === battle.key);
+  const current = state.units.filter(
+    (unit) => unit.costs?.length && unit.age === battle.age,
   );
+  const previous = state.units.filter(
+    (unit) => unit.costs?.length && unit.age === battle.age - 1,
+  );
+  if (battle.age === 0 && ordinal === 0) {
+    return state.units.filter((unit) => unit.id === "warrior");
+  }
+  if (battle.isBoss) return [...previous, ...current];
+  if (ordinal === 0) return [...previous, ...current.slice(0, 2)];
+  if (ordinal === 1)
+    return [...previous, ...current.slice(0, Math.ceil(current.length / 2))];
+  return [...previous, ...current];
+};
 
 const defaultSelection = (battle) =>
   new Set(

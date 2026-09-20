@@ -165,10 +165,20 @@
     "available": true,
     "maxCount": 10,
     "effects": {
-      "capacityProvided": {
-        "building": "house",
-        "perBuilding": 10
-      }
+      "capacityProvided": [
+        {
+          "building": "house",
+          "perBuilding": 10
+        },
+        {
+          "building": "barracks",
+          "perBuilding": 1
+        },
+        {
+          "building": "university",
+          "perBuilding": 1
+        }
+      ]
     }
   },
   {
@@ -199,6 +209,10 @@
       "resourceProduction": {
         "resource": "military",
         "amount": 1
+      },
+      "resourceMultiplier": {
+        "resource": "military",
+        "factor": 1.05
       }
     },
     "unlock": {
@@ -235,6 +249,10 @@
       "resourceProduction": {
         "resource": "science",
         "amount": 1
+      },
+      "resourceMultiplier": {
+        "resource": "science",
+        "factor": 1.05
       }
     },
     "unlock": {
@@ -265,6 +283,10 @@
       "resourceProduction": {
         "resource": "metalwork",
         "amount": 1
+      },
+      "resourceMultiplier": {
+        "resource": "metalwork",
+        "factor": 1.05
       }
     },
     "unlock": {
