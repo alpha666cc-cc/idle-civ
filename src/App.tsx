@@ -59,6 +59,7 @@ import {
 } from "./game/attributes";
 import ArmyPanel from "./components/ArmyPanel";
 import ResearchPanel from "./components/ResearchPanel";
+import BattleSimulatorPanel from "./components/BattleSimulatorPanel";
 import { isBuyableUnit, unitDefinitions } from "./game/units";
 import {
   MAX_OFFLINE_MS,
@@ -529,7 +530,8 @@ function App() {
   ): void => {
     const repaired = remapSaveIds(
       data,
-      (id) => knownContentIds.has(id),
+      (id) =>
+        knownContentIds.has(id) || findAchievementDefinition(id) !== undefined,
       resolveEntryId,
     );
     const identity = {
@@ -1413,6 +1415,8 @@ function App() {
                   </button>
                 </div>
               </section>
+
+              <BattleSimulatorPanel gameState={gameState} fmt={fmt} />
             </>
           )}
 
@@ -1980,17 +1984,47 @@ function App() {
                       </span>
                     </span>
                     <em>
-                      {gameState.formatBuildingCost(
-                        building.key,
-                        buildingCount,
-                        multiplier === "Max"
-                          ? Math.max(
-                              1,
-                              gameState.getMaxAffordableBuildings(building.key),
-                            )
-                          : multiplier,
-                        fmt,
-                      )}
+                      {(() => {
+                        const isMax = multiplier === "Max";
+                        const maxAffordable =
+                          gameState.getMaxAffordableBuildings(building.key);
+                        const purchaseCount = isMax
+                          ? Math.max(1, maxAffordable)
+                          : multiplier;
+                        const costs = gameState.getBuildingCost(
+                          building.key,
+                          buildingCount,
+                          purchaseCount,
+                        );
+                        return (
+                          <>
+                            {isMax && maxAffordable > 0 && (
+                              <span className="building-cost-count">
+                                &times;{maxAffordable}{" "}
+                              </span>
+                            )}
+                            {costs.map(({ resource, base }, index) => {
+                              const lacking =
+                                !gameState.freeBuildings &&
+                                resourceAmounts[resource].lt(base);
+                              return (
+                                <span key={resource}>
+                                  {index > 0 && " + "}
+                                  <span
+                                    className={
+                                      lacking
+                                        ? "building-cost-lacking"
+                                        : undefined
+                                    }
+                                  >
+                                    {fmt(base)} {resource}
+                                  </span>
+                                </span>
+                              );
+                            })}
+                          </>
+                        );
+                      })()}
                     </em>
                   </span>
                 </button>

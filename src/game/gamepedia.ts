@@ -39,7 +39,9 @@ export type GamepediaEntry = {
  * resources, buildings and encounters by id, and rewards name their destination
  * the same way, so the graph links achievements both ways.
  */
-const achievementRelatedIds = (achievement: AchievementDefinition): string[] => {
+const achievementRelatedIds = (
+  achievement: AchievementDefinition,
+): string[] => {
   const { requirement } = achievement;
   return [
     ...(requirement.type === "resource"
@@ -51,8 +53,9 @@ const achievementRelatedIds = (achievement: AchievementDefinition): string[] => 
           : requirement.type === "encounter"
             ? [requirement.encounterId]
             : []),
-    ...achievement.bonuses.map(({ destination }) =>
-      String(destination).split(".")[0]),
+    ...achievement.bonuses.map(
+      ({ destination }) => String(destination).split(".")[0],
+    ),
   ];
 };
 
@@ -198,18 +201,16 @@ for (const building of buildingDefinitions) {
   const relatedIds = [
     ...building.costs.map(({ resource }) => resource),
     "buildingCostMultiplier",
-    ...(building.effects.resourceMultiplier
-      ? [building.effects.resourceMultiplier.resource]
-      : []),
-    ...(building.effects.resourceDrain
-      ? [building.effects.resourceDrain.resource]
-      : []),
-    ...(building.effects.resourceProduction
-      ? [building.effects.resourceProduction.resource]
-      : []),
-    ...(building.effects.capacityProvided
-      ? [building.effects.capacityProvided.building]
-      : []),
+    ...(building.effects.resourceMultiplier ?? []).map(
+      ({ resource }) => resource,
+    ),
+    ...(building.effects.resourceDrain ?? []).map(({ resource }) => resource),
+    ...(building.effects.resourceProduction ?? []).map(
+      ({ resource }) => resource,
+    ),
+    ...(building.effects.capacityProvided ?? []).map(
+      ({ building: capacityBuilding }) => capacityBuilding,
+    ),
   ];
 
   building.seen = building.available;
@@ -223,8 +224,9 @@ for (const building of buildingDefinitions) {
 for (const upgrade of upgradeDefinitions) {
   const relatedIds = [
     ...upgrade.costs.map(({ resource }) => resource),
-    ...upgrade.bonuses.map(({ destination }) =>
-      String(destination).split(".")[0]),
+    ...upgrade.bonuses.map(
+      ({ destination }) => String(destination).split(".")[0],
+    ),
   ];
   // seen stays false at registration: upgrades are revealed when their
   // unlock condition fires (App reveals on every state change).
@@ -253,8 +255,8 @@ for (const research of researchDefinitions) {
   const relatedIds = [
     ...research.prerequisites,
     ...research.costs.map(({ resource }) => resource),
-    ...research.bonuses.map(({ destination }) =>
-      String(destination).split(".")[0],
+    ...research.bonuses.map(
+      ({ destination }) => String(destination).split(".")[0],
     ),
     ...research.unlocks,
   ];

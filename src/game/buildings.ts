@@ -23,11 +23,25 @@ export type BuildingCost = {
   factor: number;
 };
 
+export type BuildingEffectEntry<T extends object> = T[];
+
 export type BuildingEffects = {
-  capacityProvided?: { building: BuildingKey; perBuilding: ExpNumber };
-  resourceMultiplier?: { resource: ResourceKey; factor: ExpNumber };
-  resourceDrain?: { resource: ResourceKey; amount: ExpNumber };
-  resourceProduction?: { resource: ResourceKey; amount: ExpNumber };
+  capacityProvided?: BuildingEffectEntry<{
+    building: BuildingKey;
+    perBuilding: ExpNumber;
+  }>;
+  resourceMultiplier?: BuildingEffectEntry<{
+    resource: ResourceKey;
+    factor: ExpNumber;
+  }>;
+  resourceDrain?: BuildingEffectEntry<{
+    resource: ResourceKey;
+    amount: ExpNumber;
+  }>;
+  resourceProduction?: BuildingEffectEntry<{
+    resource: ResourceKey;
+    amount: ExpNumber;
+  }>;
 };
 
 /**
@@ -95,12 +109,27 @@ type BuildingData = {
   available: boolean;
   maxCount?: number;
   effects?: {
-    capacityProvided?: { building: BuildingKey; perBuilding: number };
-    resourceMultiplier?: { resource: ResourceKey; factor: number };
-    resourceDrain?: { resource: ResourceKey; amount: number };
-    resourceProduction?: { resource: ResourceKey; amount: number };
+    capacityProvided?:
+      | { building: BuildingKey; perBuilding: number }
+      | { building: BuildingKey; perBuilding: number }[];
+    resourceMultiplier?:
+      | { resource: ResourceKey; factor: number }
+      | { resource: ResourceKey; factor: number }[];
+    resourceDrain?:
+      | { resource: ResourceKey; amount: number }
+      | { resource: ResourceKey; amount: number }[];
+    resourceProduction?:
+      | { resource: ResourceKey; amount: number }
+      | { resource: ResourceKey; amount: number }[];
   };
   unlock?: BuildingUnlock;
+};
+
+const normalizeBuildingEffects = <T extends object>(
+  value: T | T[] | undefined,
+): T[] | undefined => {
+  if (value === undefined) return undefined;
+  return Array.isArray(value) ? value : [value];
 };
 
 const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
@@ -118,32 +147,30 @@ const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
     data.maxCount,
     effects
       ? {
-          capacityProvided: effects.capacityProvided
-            ? {
-                building: effects.capacityProvided.building,
-                perBuilding: ExpNumber.fromNumber(
-                  effects.capacityProvided.perBuilding,
-                ),
-              }
-            : undefined,
-          resourceMultiplier: effects.resourceMultiplier
-            ? {
-                resource: effects.resourceMultiplier.resource,
-                factor: ExpNumber.fromNumber(effects.resourceMultiplier.factor),
-              }
-            : undefined,
-          resourceDrain: effects.resourceDrain
-            ? {
-                resource: effects.resourceDrain.resource,
-                amount: ExpNumber.fromNumber(effects.resourceDrain.amount),
-              }
-            : undefined,
-          resourceProduction: effects.resourceProduction
-            ? {
-                resource: effects.resourceProduction.resource,
-                amount: ExpNumber.fromNumber(effects.resourceProduction.amount),
-              }
-            : undefined,
+          capacityProvided: normalizeBuildingEffects(
+            effects.capacityProvided,
+          )?.map(({ building, perBuilding }) => ({
+            building,
+            perBuilding: ExpNumber.fromNumber(perBuilding),
+          })),
+          resourceMultiplier: normalizeBuildingEffects(
+            effects.resourceMultiplier,
+          )?.map(({ resource, factor }) => ({
+            resource,
+            factor: ExpNumber.fromNumber(factor),
+          })),
+          resourceDrain: normalizeBuildingEffects(effects.resourceDrain)?.map(
+            ({ resource, amount }) => ({
+              resource,
+              amount: ExpNumber.fromNumber(amount),
+            }),
+          ),
+          resourceProduction: normalizeBuildingEffects(
+            effects.resourceProduction,
+          )?.map(({ resource, amount }) => ({
+            resource,
+            amount: ExpNumber.fromNumber(amount),
+          })),
         }
       : undefined,
     data.unlock,

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Idle Civ Battle Helper</title>
+    <link rel="stylesheet" href="./battle-simulator.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <p class="eyebrow">Idle Civ · helper</p>
+        <h1>Battle planner</h1>
+        <p>
+          Select a campaign battle, then choose the units the minimum-army
+          solver may use.
+        </p>
+      </header>
+
+      <section class="section" aria-labelledby="battle-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">01</p>
+            <h2 id="battle-heading">Choose a battle</h2>
+          </div>
+          <span id="battle-count" class="count"></span>
+        </div>
+        <div
+          id="battles"
+          class="battle-grid"
+          role="radiogroup"
+          aria-label="Campaign battles"
+        ></div>
+      </section>
+
+      <section
+        id="units-section"
+        class="section is-hidden"
+        aria-labelledby="units-heading"
+      >
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">02</p>
+            <h2 id="units-heading">Choose units</h2>
+          </div>
+          <span id="unit-count" class="count"></span>
+        </div>
+        <div id="enemy" class="enemy-panel"></div>
+        <div
+          id="units"
+          class="unit-grid"
+          role="group"
+          aria-label="Candidate units"
+        ></div>
+        <div class="actions">
+          <button id="select-all" type="button">Select all</button>
+          <button id="clear-all" type="button" class="secondary">Clear</button>
+          <button id="launch-simulation" type="button" class="primary">
+            Launch simulation
+          </button>
+        </div>
+        <output id="simulation-status" class="command" aria-live="polite"
+          >Select a battle and at least one unit.</output
+        >
+      </section>
+
+      <section
+        id="results-section"
+        class="section results-section is-hidden"
+        aria-labelledby="results-heading"
+      >
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">03</p>
+            <h2 id="results-heading">Simulation results</h2>
+          </div>
+          <span id="results-status" class="count"></span>
+        </div>
+        <div id="results" class="results" aria-live="polite"></div>
+      </section>
+    </main>
+    <script type="module" src="./battle-simulator.js"></script>
+  </body>
+</html>

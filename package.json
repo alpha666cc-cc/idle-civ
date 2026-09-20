@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:cross-language": "python tools/tests/offline_gain_test.py",
     "test:watch": "vitest",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "simulate:battle": "node --experimental-strip-types temp/min-army.mjs",
+    "helper:battle": "node helper/serve-battle-simulator.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

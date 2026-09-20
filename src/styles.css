@@ -627,6 +627,98 @@ button:focus-visible {
 .settings-panel .dev-tools-copy {
   margin: 6px 0 4px;
 }
+.dev-tools-label {
+  display: block;
+  margin: 12px 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #78877b;
+}
+.dev-tools-select {
+  display: block;
+  width: 100%;
+  margin: 0 0 4px;
+  padding: 9px 10px;
+  border: 1px solid rgba(67, 86, 68, 0.24);
+  border-radius: 8px;
+  background: #f6f8ef;
+  color: #2f3b25;
+  font: inherit;
+  font-size: 13px;
+}
+.dev-tools-select:focus-visible {
+  outline: 2px solid #8ea94e;
+  outline-offset: 1px;
+}
+.battle-simulator-units {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 6px 0 12px;
+}
+.battle-simulator-unit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid rgba(67, 86, 68, 0.18);
+  border-radius: 8px;
+  background: #f6f8ef;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 0;
+}
+.battle-simulator-unit input {
+  margin: 0;
+  accent-color: #6f8a3a;
+}
+.battle-simulator-unit span {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.battle-simulator-unit small {
+  color: #78877b;
+  font-size: 11px;
+}
+.battle-simulator-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.battle-simulator-actions .dev-tools-toggle {
+  cursor: pointer;
+}
+.battle-simulator-actions .dev-tools-toggle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.battle-simulator-result {
+  padding: 12px 14px;
+  border: 1px solid rgba(67, 86, 68, 0.18);
+  border-radius: 10px;
+  background: #eef3e2;
+}
+.battle-simulator-result h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.battle-simulator-result ul {
+  margin: 0 0 6px;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.battle-simulator-result p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
 .format-picker {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
@@ -786,15 +878,16 @@ button:focus-visible {
 }
 .gather-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 .gather-card {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
-  padding: 12px;
+  min-width: 0;
+  padding: 10px;
   background: #e7eadf;
   border: 1px solid rgba(93, 111, 90, 0.14);
 }
@@ -817,8 +910,8 @@ button:focus-visible {
 .gather-card-icon {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 8px;
   transition: transform 0.15s;
 }
@@ -837,6 +930,14 @@ button:focus-visible {
 .gather-button.amber .gather-card-icon {
   color: #9e682c;
   background: #ecd1a5;
+}
+.gather-button.red .gather-card-icon {
+  color: #96504a;
+  background: #e5c9c5;
+}
+.gather-button.blue .gather-card-icon {
+  color: #4f6d8f;
+  background: #ccd9e6;
 }
 .gather-button > span:nth-child(2) {
   display: flex;
@@ -1485,6 +1586,14 @@ button:focus-visible {
     monospace;
   font-style: normal;
 }
+.building-cost-lacking {
+  color: #c04226;
+  font-weight: 700;
+}
+.building-cost-count {
+  color: #5c706e;
+  font-weight: 700;
+}
 .fab-container {
   position: fixed;
   z-index: 15;
@@ -1912,6 +2021,9 @@ button:focus-visible {
   .app-shell {
     grid-template-columns: 235px minmax(390px, 1fr) 295px;
   }
+  .gather-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .sidebar {
     padding-left: 16px;
     padding-right: 16px;
@@ -1947,6 +2059,9 @@ button:focus-visible {
     padding: 27px 22px;
   }
   .building-grid {
+    grid-template-columns: 1fr;
+  }
+  .gather-grid {
     grid-template-columns: 1fr;
   }
   .building-card {

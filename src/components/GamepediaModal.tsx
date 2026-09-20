@@ -375,72 +375,90 @@ export default function GamepediaModal({
           capacity grants do not scale.
         </p>
         <div className="gamepedia-effect-list">
-          {effects.resourceProduction && (
-            <div className="gamepedia-effect-row">
+          {effects.resourceProduction?.map((effect, index) => (
+            <div
+              className="gamepedia-effect-row"
+              key={`production-${effect.resource}-${index}`}
+            >
               <div className="gamepedia-effect-copy">
-                {renderReference(effects.resourceProduction.resource)}
+                {renderReference(effect.resource)}
                 <span className="gamepedia-effect-meta">
-                  +{formatAmount(effects.resourceProduction.amount)}/s per
-                  building
+                  +{formatAmount(effect.amount)}/s per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
-                +{formatAmount(totalEffects.resourceProduction!.amount)}/s now
+                +
+                {formatAmount(
+                  totalEffects.resourceProduction?.[index]?.amount ??
+                    effect.amount,
+                )}
+                /s now
               </strong>
             </div>
-          )}
-          {effects.resourceMultiplier ? (
-            <div className="gamepedia-effect-row" key="multiplier">
+          ))}
+          {effects.resourceMultiplier?.map((effect, index) => (
+            <div
+              className="gamepedia-effect-row"
+              key={`multiplier-${effect.resource}-${index}`}
+            >
               <div className="gamepedia-effect-copy">
-                {renderReference(effects.resourceMultiplier.resource)}
+                {renderReference(effect.resource)}
                 <span className="gamepedia-effect-meta">
-                  ×
-                  {formatNumber(
-                    effects.resourceMultiplier.factor,
-                    numberFormat,
-                  )}{" "}
-                  gain per building
+                  ×{formatNumber(effect.factor, numberFormat)} gain per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
                 ×
                 {formatNumber(
-                  totalEffects.resourceMultiplier!.factor,
+                  totalEffects.resourceMultiplier?.[index]?.factor ??
+                    effect.factor,
                   numberFormat,
                 )}{" "}
                 now
               </strong>
             </div>
-          ) : null}
-          {effects.resourceDrain ? (
-            <div className="gamepedia-effect-row" key="drain">
+          ))}
+          {effects.resourceDrain?.map((effect, index) => (
+            <div
+              className="gamepedia-effect-row"
+              key={`drain-${effect.resource}-${index}`}
+            >
               <div className="gamepedia-effect-copy">
-                {renderReference(effects.resourceDrain.resource)}
+                {renderReference(effect.resource)}
                 <span className="gamepedia-effect-meta">
-                  {formatAmount(effects.resourceDrain.amount)}/s per building
+                  {formatAmount(effect.amount)}/s per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
-                {formatAmount(totalEffects.resourceDrain!.amount)}
+                {formatAmount(
+                  totalEffects.resourceDrain?.[index]?.amount ?? effect.amount,
+                )}
                 /s now
               </strong>
             </div>
-          ) : null}
-          {effects.capacityProvided ? (
-            <div className="gamepedia-effect-row" key="capacity">
+          ))}
+          {effects.capacityProvided?.map((effect, index) => (
+            <div
+              className="gamepedia-effect-row"
+              key={`capacity-${effect.building}-${index}`}
+            >
               <div className="gamepedia-effect-copy">
-                {renderReference(effects.capacityProvided.building)}
+                {renderReference(effect.building)}
                 <span className="gamepedia-effect-meta">
-                  +{formatAmount(effects.capacityProvided.perBuilding)}{" "}
-                  {capacityLabel(effects.capacityProvided.building)} per
-                  building
+                  +{formatAmount(effect.perBuilding)}{" "}
+                  {capacityLabel(effect.building)} per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
-                +{formatAmount(totalEffects.capacityProvided!.perBuilding)} now
+                +
+                {formatAmount(
+                  totalEffects.capacityProvided?.[index]?.perBuilding ??
+                    effect.perBuilding,
+                )}{" "}
+                now
               </strong>
             </div>
-          ) : null}
+          ))}
         </div>
 
         <p className="gamepedia-category">Capacity</p>

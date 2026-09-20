@@ -36,7 +36,10 @@ import {
 import { entryGuidById, entryIdByGuid } from "./dataIds";
 import { ExpNumber } from "./expNumber";
 import { emptyStatistics } from "./statistics";
-import { achievementDefinitions } from "./achievements";
+import {
+  achievementDefinitions,
+  findAchievementDefinition,
+} from "./achievements";
 import { ageDefinitions } from "./ages";
 import { buildingDefinitions } from "./buildings";
 import { encounterDefinitions } from "./encounters";
@@ -405,6 +408,22 @@ describe("unknown content detection", () => {
     expect(
       findUnknownContentIds(sampleSave(), (id) => entryGuidById.has(id)),
     ).toEqual([]);
+  });
+
+  it("keeps materialized open-ended achievement tiers during repair", () => {
+    const data: SaveData = {
+      ...sampleSave(),
+      earnedAchievements: ["food-hoarder-e9", "stone-hoarder-e9-through-e12"],
+    };
+    const repaired = remapSaveIds(
+      data,
+      (id) => entryGuidById.has(id) || findAchievementDefinition(id) !== undefined,
+      () => undefined,
+    );
+    expect(repaired.unknown).toEqual([]);
+    expect(repaired.data.earnedAchievements).toEqual(
+      data.earnedAchievements,
+    );
   });
 });
 

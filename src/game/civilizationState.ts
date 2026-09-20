@@ -691,22 +691,27 @@ export class CivilizationState {
     for (const building of buildingDefinitions) {
       const count = this.buildingCount(building.key);
       if (count === 0) continue;
-      const { resourceMultiplier, resourceDrain, resourceProduction } =
-        this.getBuildingEffects(building.key, count);
-      if (resourceMultiplier?.resource === resourceKey) {
-        buildingFactors.multiplicative.push([
-          building.key,
-          resourceMultiplier.factor,
-        ]);
+      const effects = this.getBuildingEffects(building.key, count);
+      for (const resourceMultiplier of effects.resourceMultiplier ?? []) {
+        if (resourceMultiplier.resource === resourceKey) {
+          buildingFactors.multiplicative.push([
+            building.key,
+            resourceMultiplier.factor,
+          ]);
+        }
       }
-      if (resourceDrain?.resource === resourceKey) {
-        buildingFactors.drain.push([building.key, resourceDrain.amount]);
+      for (const resourceDrain of effects.resourceDrain ?? []) {
+        if (resourceDrain.resource === resourceKey) {
+          buildingFactors.drain.push([building.key, resourceDrain.amount]);
+        }
       }
-      if (resourceProduction?.resource === resourceKey) {
-        buildingFactors.additional.push([
-          building.key,
-          resourceProduction.amount,
-        ]);
+      for (const resourceProduction of effects.resourceProduction ?? []) {
+        if (resourceProduction.resource === resourceKey) {
+          buildingFactors.additional.push([
+            building.key,
+            resourceProduction.amount,
+          ]);
+        }
       }
     }
 
@@ -935,24 +940,28 @@ export class CivilizationState {
     const power = this.buildingPower(buildingKey);
     const quantity = ExpNumber.fromNumber(count);
     return {
-      resourceMultiplier: effects.resourceMultiplier && {
-        ...effects.resourceMultiplier,
-        factor: ExpNumber.ONE.add(
-          effects.resourceMultiplier.factor.sub(ExpNumber.ONE).mul(power),
-        ).pow(quantity),
-      },
-      resourceProduction: effects.resourceProduction && {
-        ...effects.resourceProduction,
-        amount: effects.resourceProduction.amount.mul(power).mul(quantity),
-      },
-      resourceDrain: effects.resourceDrain && {
-        ...effects.resourceDrain,
-        amount: effects.resourceDrain.amount.mul(quantity),
-      },
-      capacityProvided: effects.capacityProvided && {
-        ...effects.capacityProvided,
-        perBuilding: effects.capacityProvided.perBuilding.mul(quantity),
-      },
+      resourceMultiplier:
+        effects.resourceMultiplier?.map((effect) => ({
+          ...effect,
+          factor: ExpNumber.ONE.add(
+            effect.factor.sub(ExpNumber.ONE).mul(power),
+          ).pow(quantity),
+        })) ?? undefined,
+      resourceProduction:
+        effects.resourceProduction?.map((effect) => ({
+          ...effect,
+          amount: effect.amount.mul(power).mul(quantity),
+        })) ?? undefined,
+      resourceDrain:
+        effects.resourceDrain?.map((effect) => ({
+          ...effect,
+          amount: effect.amount.mul(quantity),
+        })) ?? undefined,
+      capacityProvided:
+        effects.capacityProvided?.map((effect) => ({
+          ...effect,
+          perBuilding: effect.perBuilding.mul(quantity),
+        })) ?? undefined,
     };
   }
 
@@ -1041,6 +1050,33 @@ export class CivilizationState {
       this.getUnitCount(unitId),
       count,
     );
+  }
+
+  /**
+   * Cost of `count` units from scratch (owned = 0), for the battle simulator's
+   * "raise the army" totals. Public so dev-only UI can reuse the series
+   * evaluator instead of re-implementing the cost pipeline.
+   */
+  costSeriesFrom(
+    parameters: readonly CostParameters[],
+    count: number,
+  ): BuildingCost[] {
+    return this.costSeries(parameters, ExpNumber.ZERO, count);
+  }
+
+  /**
+   * Simulates a battle for arbitrary stacks (dev-only simulator): the player
+   * side is the candidate composition, the enemy side its boosted stacks. The
+   * seed folds in the battle id like the campaign path, so results replay.
+   */
+  simulateWithStacks(
+    battleId: string,
+    player: readonly ArmyStack[],
+    enemy: readonly ArmyStack[],
+  ): BattleSimulation {
+    return simulateBattle(player, enemy, {
+      seed: battleSeed(player, enemy, battleId),
+    });
   }
 
   /** Owned count of one unit (units have no capacity ceiling, §13.3). */
@@ -1356,14 +1392,11 @@ export class CivilizationState {
         ExpNumber.fromNumber(count),
       );
     }
-    if (buildingKey === "house") {
-      resources.peopleCapacity = resources.peopleCapacity.add(
-        ExpNumber.fromNumber(10 * count),
-      );
-    }
-    if (buildingKey === "town-hall") {
-      resources.houseCapacity = resources.houseCapacity.add(
-        ExpNumber.fromNumber(10 * count),
+    for (const effect of buildingDefinitions.find(({ key }) => key === buildingKey)
+      ?.effects.capacityProvided ?? []) {
+      const targetKey = capacityKey(effect.building);
+      resources[targetKey] = resources[targetKey].add(
+        effect.perBuilding.mul(ExpNumber.fromNumber(count)),
       );
     }
 

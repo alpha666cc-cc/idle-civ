@@ -44,7 +44,9 @@ describe("static content guids", () => {
   it("covers every data file", () => {
     expect(dataFileKeys.length).toBe(8);
     for (const file of dataFileKeys) {
-      expect(dataFileEntries[file].length, `${file} is empty`).toBeGreaterThan(0);
+      expect(dataFileEntries[file].length, `${file} is empty`).toBeGreaterThan(
+        0,
+      );
     }
     expect(dataEntryCount).toBe(
       dataFileKeys.reduce(
@@ -96,6 +98,42 @@ describe("static content guids", () => {
     });
     expect(snapshotGuids([])).toEqual({});
   });
+
+  it("keeps multiple capacity effect entries instead of overwriting them", () => {
+    const townHall = buildingDefinitions.find(({ key }) => key === "town-hall");
+    expect(townHall).toBeDefined();
+    expect(townHall?.effects.capacityProvided).toHaveLength(3);
+    expect(
+      townHall?.effects.capacityProvided?.map(({ building }) => building),
+    ).toEqual(["house", "barracks", "university"]);
+  });
+
+  it("applies town hall capacity grants to other building capacities", () => {
+    const state = new CivilizationState(
+      {
+        ...emptyResourceAmounts(),
+        wood: ExpNumber.fromNumber(200_000),
+        stone: ExpNumber.fromNumber(200_000),
+        gold: ExpNumber.fromNumber(200_000),
+        food: ExpNumber.fromNumber(200_000),
+      },
+      emptyWorkerAssignments(),
+      [],
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      [],
+      emptyStatistics(),
+      {},
+    );
+
+    const after = state.build("town-hall", 1);
+    expect(after.getBuildingMax("barracks").toNumber()).toBe(11);
+    expect(after.getBuildingMax("university").toNumber()).toBe(11);
+  });
 });
 
 describe("a fresh save survives a data-edit cycle", () => {
@@ -122,9 +160,9 @@ describe("a fresh save survives a data-edit cycle", () => {
 
   it("names nothing the data files do not define", () => {
     const data = createSaveData(richState(), "integrity", 1);
-    expect(findUnknownContentIds(data, (id) => findEntryGuid(id) !== undefined)).toEqual(
-      [],
-    );
+    expect(
+      findUnknownContentIds(data, (id) => findEntryGuid(id) !== undefined),
+    ).toEqual([]);
   });
 
   it("round-trips its content lists and their guid snapshot", () => {
@@ -141,9 +179,10 @@ describe("a fresh save survives a data-edit cycle", () => {
       ...data.earnedAchievements,
       ...Object.keys(data.unitCounts),
     ]) {
-      expect(data.referencedGuids[id], `${id} is missing from the snapshot`).toBe(
-        entryGuidById.get(id),
-      );
+      expect(
+        data.referencedGuids[id],
+        `${id} is missing from the snapshot`,
+      ).toBe(entryGuidById.get(id));
     }
   });
 
