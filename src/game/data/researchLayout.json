@@ -1,0 +1,30 @@
+{
+  "tribal_organization": {
+    "column": 3,
+    "row": 0
+  },
+  "pottery": {
+    "column": 0,
+    "row": 4
+  },
+  "writing": {
+    "column": 1,
+    "row": 3
+  },
+  "city_planning": {
+    "column": 2,
+    "row": 2
+  },
+  "archery_mechanics": {
+    "column": 3,
+    "row": 2
+  },
+  "bronze_casting": {
+    "column": 4,
+    "row": 2
+  },
+  "composite_bowcraft": {
+    "column": 5,
+    "row": 4
+  }
+}

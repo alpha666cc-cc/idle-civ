@@ -8,6 +8,7 @@ import { researchDefinitions, type ResearchDefinition } from "../game/research";
 import { unitDefinitions } from "../game/units";
 import { ExpNumber } from "../game/expNumber";
 import type { Bonus } from "../game/bonus";
+import researchLayout from "../game/data/researchLayout.json";
 
 type Props = {
   gameState: CivilizationState;
@@ -41,38 +42,91 @@ type AgeBar = { ageIndex: number; x: number; width: number; height: number };
 type Layout = {
   placed: PlacedTech[];
   bars: AgeBar[];
-  edges: { path: string; key: string }[];
+  edges: { path: string; key: string; crossAge: boolean }[];
   width: number;
   height: number;
 };
 
-/** Stable per-tech prerequisite depth, so parents always sit above children. */
-const depthOf = (() => {
-  const depths = new Map<string, number>();
-  const byKey = new Map(researchDefinitions.map((r) => [r.key, r]));
-  const visit = (id: string): number => {
-    const cached = depths.get(id);
-    if (cached !== undefined) return cached;
-    const research = byKey.get(id);
-    const value =
-      research && research.prerequisites.length > 0
-        ? 1 + Math.max(...research.prerequisites.map(visit))
-        : 0;
-    depths.set(id, value);
-    return value;
-  };
-  researchDefinitions.forEach((research) => visit(research.key));
-  return depths;
-})();
+type Point = { x: number; y: number };
+type CardRect = { left: number; top: number; right: number; bottom: number };
+
+const orientation = (a: Point, b: Point, c: Point): number =>
+  (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+
+const segmentsIntersect = (
+  firstStart: Point,
+  firstEnd: Point,
+  secondStart: Point,
+  secondEnd: Point,
+): boolean => {
+  const firstA = orientation(firstStart, firstEnd, secondStart);
+  const firstB = orientation(firstStart, firstEnd, secondEnd);
+  const secondA = orientation(secondStart, secondEnd, firstStart);
+  const secondB = orientation(secondStart, secondEnd, firstEnd);
+  return (
+    Math.sign(firstA) !== Math.sign(firstB) &&
+    Math.sign(secondA) !== Math.sign(secondB)
+  );
+};
+
+const segmentHitsCard = (start: Point, end: Point, card: CardRect): boolean => {
+  if (
+    start.x > card.left &&
+    start.x < card.right &&
+    start.y > card.top &&
+    start.y < card.bottom
+  )
+    return true;
+  if (
+    end.x > card.left &&
+    end.x < card.right &&
+    end.y > card.top &&
+    end.y < card.bottom
+  )
+    return true;
+  const topLeft = { x: card.left, y: card.top };
+  const topRight = { x: card.right, y: card.top };
+  const bottomLeft = { x: card.left, y: card.bottom };
+  const bottomRight = { x: card.right, y: card.bottom };
+  return (
+    segmentsIntersect(start, end, topLeft, topRight) ||
+    segmentsIntersect(start, end, topRight, bottomRight) ||
+    segmentsIntersect(start, end, bottomRight, bottomLeft) ||
+    segmentsIntersect(start, end, bottomLeft, topLeft)
+  );
+};
+
+type LayoutOverride = { column?: number; row?: number };
+const layoutOverrides = researchLayout as Record<string, LayoutOverride>;
 
 const buildLayout = (): Layout => {
   const placed: PlacedTech[] = [];
   const ageCounts = new Map<number, number>();
+  const byKey = new Map(
+    researchDefinitions.map((research) => [research.key, research]),
+  );
+  const localDepth = new Map<string, number>();
+
+  const getLocalDepth = (research: ResearchDefinition): number => {
+    const cached = localDepth.get(research.key);
+    if (cached !== undefined) return cached;
+    const override = layoutOverrides[research.key]?.column;
+    if (override !== undefined) {
+      localDepth.set(research.key, override);
+      return override;
+    }
+    const depth = research.prerequisites.reduce((maximum, prerequisiteId) => {
+      const prerequisite = byKey.get(prerequisiteId);
+      if (!prerequisite || prerequisite.age !== research.age) return maximum;
+      return Math.max(maximum, getLocalDepth(prerequisite) + 1);
+    }, layoutOverrides[research.key]?.column ?? 0);
+    localDepth.set(research.key, depth);
+    return depth;
+  };
 
   // Depth is horizontal: prerequisites always sit to the left of their children.
   const techs = [...researchDefinitions].sort(
-    (a, b) =>
-      a.age - b.age || (depthOf.get(a.key) ?? 0) - (depthOf.get(b.key) ?? 0),
+    (a, b) => a.age - b.age || getLocalDepth(a) - getLocalDepth(b),
   );
 
   for (const research of techs) {
@@ -83,9 +137,21 @@ const buildLayout = (): Layout => {
   let nextColumn = 0;
   const bars: AgeBar[] = [];
   for (const ageIndex of [...ageCounts.keys()].sort((a, b) => a - b)) {
-    const columnCount = Math.ceil(
-      (ageCounts.get(ageIndex) ?? 0) / AGE_CARD_ROWS,
-    );
+    const ageTechs = techs.filter((research) => research.age === ageIndex);
+    const levels = new Map<number, number>();
+    for (const research of ageTechs) {
+      levels.set(
+        getLocalDepth(research),
+        (levels.get(getLocalDepth(research)) ?? 0) + 1,
+      );
+    }
+    const columnCount =
+      Math.max(
+        0,
+        ...[...levels.entries()].map(
+          ([level, count]) => level + Math.ceil(count / AGE_CARD_ROWS) - 1,
+        ),
+      ) + 1;
     ageOffsets.set(ageIndex, nextColumn);
     bars.push({
       ageIndex,
@@ -96,17 +162,59 @@ const buildLayout = (): Layout => {
     nextColumn += columnCount + AGE_GAP_COLS;
   }
 
-  const agePositions = new Map<number, number>();
-  for (const research of techs) {
-    const agePosition = agePositions.get(research.age) ?? 0;
-    agePositions.set(research.age, agePosition + 1);
-    placed.push({
-      research,
-      col:
-        (ageOffsets.get(research.age) ?? 0) +
-        Math.floor(agePosition / AGE_CARD_ROWS),
-      row: agePosition % AGE_CARD_ROWS,
-    });
+  const rowByKey = new Map<string, number>();
+  for (const ageIndex of [...ageCounts.keys()].sort((a, b) => a - b)) {
+    const ageTechs = techs.filter((research) => research.age === ageIndex);
+    const levelPositions = new Map<number, number>();
+    const occupied = new Set<string>();
+    for (const research of ageTechs) {
+      const level = getLocalDepth(research);
+      const position = levelPositions.get(level) ?? 0;
+      levelPositions.set(level, position + 1);
+      const parentRows = research.prerequisites
+        .map((id) => rowByKey.get(id))
+        .filter((row): row is number => row !== undefined);
+      const preferredRow =
+        layoutOverrides[research.key]?.row ??
+        (parentRows.length > 0
+          ? Math.round(
+              parentRows.reduce((sum, row) => sum + row, 0) / parentRows.length,
+            )
+          : position % AGE_CARD_ROWS);
+      let row = Math.min(AGE_CARD_ROWS - 1, preferredRow);
+      let overflowColumn = Math.floor(position / AGE_CARD_ROWS);
+      while (occupied.has(`${level + overflowColumn}:${row}`)) {
+        row += 1;
+        if (row >= AGE_CARD_ROWS) {
+          row = 0;
+          overflowColumn += 1;
+        }
+      }
+      occupied.add(`${level + overflowColumn}:${row}`);
+      rowByKey.set(research.key, row);
+      placed.push({
+        research,
+        col: (ageOffsets.get(research.age) ?? 0) + level + overflowColumn,
+        row,
+      });
+    }
+  }
+
+  // Row collision resolution can add overflow columns. Repack age bands from
+  // the measured placement so one age can never overlap the next age.
+  let correctedOffset = 0;
+  for (const bar of bars) {
+    const agePlacements = placed.filter(
+      ({ research }) => research.age === bar.ageIndex,
+    );
+    const oldOffset = ageOffsets.get(bar.ageIndex) ?? 0;
+    const localColumnCount =
+      Math.max(...agePlacements.map(({ col }) => col - oldOffset)) + 1;
+    const shift = correctedOffset - oldOffset;
+    for (const placement of agePlacements) placement.col += shift;
+    bar.x = correctedOffset * COL_W;
+    bar.width = localColumnCount * COL_W - COL_GAP + AGE_INSET * 2;
+    correctedOffset += localColumnCount + AGE_GAP_COLS;
   }
 
   const edges = placed.flatMap(({ research, col, row }) =>
@@ -115,13 +223,47 @@ const buildLayout = (): Layout => {
         (candidate) => candidate.research.key === prerequisiteId,
       );
       const key = `${prerequisiteId}->${research.key}`;
-      if (!parent) return { path: "", key };
+      if (!parent) return { path: "", key, crossAge: false };
       const x1 = parent.col * COL_W + AGE_INSET + CARD_W;
       const y1 = AGE_HEADER_H + parent.row * ROW_H + CARD_H / 2;
       const x2 = col * COL_W + AGE_INSET;
       const y2 = AGE_HEADER_H + row * ROW_H + CARD_H / 2;
-      const path = `M ${x1} ${y1} L ${x2} ${y2}`;
-      return { path, key };
+      const crossAge = parent.research.age !== research.age;
+      const directStart = { x: x1, y: y1 };
+      const directEnd = { x: x2, y: y2 };
+      const directHitsCard = placed.some((candidate) => {
+        if (
+          candidate.research.key === parent.research.key ||
+          candidate.research.key === research.key
+        )
+          return false;
+        const left = candidate.col * COL_W + AGE_INSET;
+        const top = AGE_HEADER_H + candidate.row * ROW_H;
+        return segmentHitsCard(directStart, directEnd, {
+          left,
+          top,
+          right: left + CARD_W,
+          bottom: top + CARD_H,
+        });
+      });
+      const sameColumn = parent.col === col;
+      if (sameColumn) {
+        const centerX = parent.col * COL_W + AGE_INSET + CARD_W / 2;
+        const bottomY = AGE_HEADER_H + parent.row * ROW_H + CARD_H;
+        const topY = AGE_HEADER_H + row * ROW_H;
+        return {
+          path: `M ${centerX} ${bottomY} L ${centerX} ${topY}`,
+          key,
+          crossAge,
+        };
+      }
+      const path =
+        (!crossAge || !directHitsCard) && x2 > x1
+          ? `M ${x1} ${y1} L ${x2} ${y2}`
+          : crossAge && x2 > x1
+            ? `M ${x1} ${y1} L ${x1 + 14} ${y1} L ${x1 + 14} ${AGE_HEADER_H / 2} L ${x2 - 14} ${AGE_HEADER_H / 2} L ${x2 - 14} ${y2} L ${x2} ${y2}`
+            : `M ${x1} ${y1} L ${x1 + 18} ${y1} L ${x1 + 18} ${y2} L ${x2} ${y2}`;
+      return { path, key, crossAge };
     }),
   );
 
@@ -429,6 +571,8 @@ export default function ResearchPanel({
                     key={edge.key}
                     d={edge.path}
                     className={`research-edge ${
+                      edge.crossAge ? "research-edge-cross-age" : ""
+                    } ${
                       selectedKey &&
                       edge.key.split("->").every((key) => relatedKeys.has(key))
                         ? "research-edge-related"

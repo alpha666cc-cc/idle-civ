@@ -2312,6 +2312,17 @@ button:focus-visible {
     stroke-width 160ms ease;
 }
 
+.research-edge-cross-age {
+  stroke-width: 1.6;
+  stroke-dasharray: 6 5;
+  opacity: 0.28;
+}
+
+.research-edge-cross-age.research-edge-related {
+  stroke-width: 2.4;
+  opacity: 0.85;
+}
+
 .research-edge-related {
   stroke-width: 3.8;
   opacity: 1;

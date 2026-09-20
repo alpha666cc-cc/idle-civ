@@ -7,7 +7,7 @@
       "request": "launch",
       "url": "http://127.0.0.1:5173/",
       "webRoot": "${workspaceFolder}",
-      "preLaunchTask": "Idle Civ: Start Vite",
+      "preLaunchTask": "Idle Civ: Start Dev Server",
       "postDebugTask": "Idle Civ: Stop Vite",
       "sourceMaps": true
     }

@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Idle Civ: Start Vite",
+      "label": "Idle Civ: Start Dev Server",
       "type": "shell",
-      "dependsOn": ["Idle Civ: Stop Vite", "Idle Civ: Build"],
+      "dependsOn": ["Idle Civ: Build"],
       "dependsOrder": "sequence",
       "command": "${workspaceFolder}\\tools\\node\\npm.cmd",
       "args": ["run", "dev", "--", "--host", "127.0.0.1"],
