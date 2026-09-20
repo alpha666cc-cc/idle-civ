@@ -114,7 +114,7 @@ idle-civ/
   .vscode/                  tasks (Start Vite, Build), chrome launch, PATH + Prettier
   public/                   favicon.svg (used), icons.svg (currently unused), units/ (79 vendored unit SVGs + ATTRIBUTION.md)
   tools/node/               vendored Node v22.23.2 + npm 10.9.8 (PATH is patched to it)
-  tools/gen/                data + icon generators (units.mjs, battles.mjs, icons.mjs + icon-index.txt)
+  tools/gen/                data + icon generators (units.mjs, battles.mjs, techtree.mjs, researchLayout.mjs, icons.mjs + icon-index.txt)
   temp/                     exploratory prototypes: battle.ts, campaign_v2.json, unit100-v3.json
   src/
     main.tsx                createRoot + <StrictMode> + styles.css
@@ -123,6 +123,7 @@ idle-civ/
     components/
       GamepediaModal.tsx    codex modal: list, search, per-category detail views
       ArmyPanel.tsx         Army tab: unit roster, buy path, battle panel (1 round/sec playback)
+      ResearchPanel.tsx     Research tab: the technology tree grid + arrow overlay
       unitIcons.ts          per-unit icon resolution (vendored SVG map + lucide fallback)
     game/                   pure domain layer, zero React imports
       gameObject.ts         abstract GameObject base (id, description, seen)
