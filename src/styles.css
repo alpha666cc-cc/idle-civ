@@ -544,6 +544,186 @@ button:focus-visible {
   color: #78877b;
   font-size: 11px;
 }
+
+/* Trade Tab Styles */
+.trade-overview {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.trade-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trade-metric .metric-label {
+  font-size: 11px;
+  color: #78877b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.trade-metric .metric-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #344239;
+}
+
+.trade-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.trade-card {
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(67, 86, 68, 0.12);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trade-resource-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.trade-resource-header .resource-name {
+  font-weight: 600;
+  color: #344239;
+  text-transform: capitalize;
+}
+
+.trade-resource-header .resource-ratio {
+  font-size: 11px;
+  color: #78877b;
+}
+
+.trade-balances {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.balance-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.balance-item .balance-label {
+  font-size: 10px;
+  color: #78877b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.balance-item .balance-value {
+  font-size: 12px;
+  font-weight: 500;
+  color: #344239;
+}
+
+.trade-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.trade-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(67, 86, 68, 0.3);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.5);
+  color: #344239;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trade-action:hover:not(:disabled) {
+  background: rgba(169, 199, 74, 0.3);
+  border-color: var(--accent);
+}
+
+.trade-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.trade-action.sell {
+  color: #285b24;
+}
+
+.trade-action.buy {
+  color: #8a2727;
+}
+
+.trade-action .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.trade-conversion {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.trade-conversion h4 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #344239;
+}
+
+.conversion-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.conversion-button {
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(67, 86, 68, 0.3);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.5);
+  color: #344239;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.conversion-button:hover:not(:disabled) {
+  background: rgba(169, 199, 74, 0.3);
+  border-color: var(--accent);
+}
+
+.conversion-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .dev-tools-control {
   display: flex;
   flex-wrap: wrap;

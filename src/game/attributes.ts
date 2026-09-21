@@ -42,7 +42,8 @@ export type DerivedAttributeKey =
   | "clickPower"
   | "autoClickRate"
   | "buildingCostMultiplier"
-  | "wastedResources";
+  | "wastedResources"
+  | "tradeProductionMultiplier";
 
 /** Every value-side key a bonus destination may name; buyable ids are separate. */
 export type AttributeKey = ResourceKey | DerivedAttributeKey;

@@ -7,6 +7,8 @@ import {
   type ReactNode,
 } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
   ArrowUpRight,
   BookOpen,
   Building2,
@@ -43,6 +45,12 @@ import type { Bonus } from "./game/bonus";
 import { CivilizationState } from "./game/civilizationState";
 import { ExpNumber } from "./game/expNumber";
 import { gamepedia } from "./game/gamepedia";
+import {
+  DEFAULT_TRADE_SPREAD,
+  goldToResource,
+  tradeRatios,
+  type TradeResourceKey,
+} from "./game/trade";
 import { upgradeDefinitions, type UpgradeDefinition } from "./game/upgrades";
 import { encounterDefinitions } from "./game/encounters";
 import {
@@ -1690,11 +1698,129 @@ function App() {
                   <p className="eyebrow">Commerce</p>
                   <h3>Trade</h3>
                 </div>
+                <div className="stat-badge">
+                  <Store className="icon" />
+                  <span className="stat-value">
+                    {fmt(gameState.resources.trade)} Trade Power
+                  </span>
+                </div>
               </div>
-              <p className="tab-placeholder-copy">
-                Trade caravans and market stalls will open here once your
-                merchants have a market to work from.
-              </p>
+
+              <div className="trade-overview">
+                <div className="trade-metric">
+                  <span className="metric-label">Trade Multiplier</span>
+                  <span className="metric-value">
+                    ×{fmt(gameState.getTradeMultiplier().toNumber())}
+                  </span>
+                </div>
+                <div className="trade-metric">
+                  <span className="metric-label">Spread</span>
+                  <span className="metric-value">{DEFAULT_TRADE_SPREAD}×</span>
+                </div>
+              </div>
+
+              <div className="trade-grid">
+                {Object.entries(tradeRatios).map(([resource, ratio]) => (
+                  <div key={resource} className="trade-card">
+                    <div className="trade-resource-header">
+                      <span className="resource-name">{resource}</span>
+                      <span className="resource-ratio">{ratio}:1 to gold</span>
+                    </div>
+                    <div className="trade-balances">
+                      <div className="balance-item">
+                        <span className="balance-label">Balance</span>
+                        <span className="balance-value">
+                          {fmt(
+                            gameState.resources[
+                              resource as keyof typeof gameState.resources
+                            ],
+                          )}
+                        </span>
+                      </div>
+                      <div className="balance-item">
+                        <span className="balance-label">Gold</span>
+                        <span className="balance-value">
+                          {fmt(gameState.resources.gold)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="trade-actions">
+                      <button
+                        className="trade-action sell"
+                        onClick={() => {
+                          const amount = ExpNumber.fromNumber(10);
+                          setGameState(
+                            gameState.sellResource(
+                              resource as TradeResourceKey,
+                              amount,
+                            ),
+                          );
+                        }}
+                        disabled={
+                          !gameState.resources[resource as ResourceKey].gt(
+                            ExpNumber.ZERO,
+                          )
+                        }
+                      >
+                        <ArrowDown className="icon" />
+                        Sell 10
+                      </button>
+                      <button
+                        className="trade-action buy"
+                        onClick={() => {
+                          const amount = ExpNumber.fromNumber(1);
+                          setGameState(
+                            gameState.buyResource(
+                              resource as TradeResourceKey,
+                              amount,
+                            ),
+                          );
+                        }}
+                        disabled={gameState.resources.gold.lt(
+                          goldToResource(
+                            resource as TradeResourceKey,
+                            ExpNumber.fromNumber(1),
+                            DEFAULT_TRADE_SPREAD,
+                          ),
+                        )}
+                      >
+                        <ArrowUp className="icon" />
+                        Buy 1
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="trade-conversion">
+                <h4>Convert Trade Power to Gold</h4>
+                <div className="conversion-controls">
+                  <button
+                    className="conversion-button"
+                    onClick={() => {
+                      const amount = ExpNumber.fromNumber(10);
+                      setGameState(gameState.convertTradeToGold(amount));
+                    }}
+                    disabled={
+                      !gameState.resources.trade.gte(ExpNumber.fromNumber(10))
+                    }
+                  >
+                    Convert 10 Trade Power → 10 Gold
+                  </button>
+                  <button
+                    className="conversion-button"
+                    onClick={() => {
+                      const amount = ExpNumber.fromNumber(100);
+                      setGameState(gameState.convertTradeToGold(amount));
+                    }}
+                    disabled={
+                      !gameState.resources.trade.gte(ExpNumber.fromNumber(100))
+                    }
+                  >
+                    Convert 100 Trade Power → 100 Gold
+                  </button>
+                </div>
+              </div>
             </section>
           )}
 

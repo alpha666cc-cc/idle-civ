@@ -41,6 +41,14 @@ import {
   type CostReductions,
 } from "./bonus";
 import {
+  calculateTradeMultiplier,
+  DEFAULT_TRADE_SPREAD,
+  goldToResource,
+  isTradable,
+  resourceToGold,
+  type TradeResourceKey,
+} from "./trade";
+import {
   buildingDefinitions,
   type BuildingCost,
   type BuildingEffects,
@@ -208,12 +216,18 @@ const compoundStatValue = (
   return flat.mul(multiplier);
 };
 
-for (const key of ["buildingCostMultiplier", "wastedResources"]) {
+for (const key of [
+  "buildingCostMultiplier",
+  "wastedResources",
+  "tradeProductionMultiplier",
+]) {
   derivedAttributeComputations[key] = {
     value:
       key === "wastedResources"
         ? (state) => state.statistics.wastedResources
-        : (state) => compoundStatValue(state, key),
+        : key === "tradeProductionMultiplier"
+          ? (state) => calculateTradeMultiplier(state.resources.trade)
+          : (state) => compoundStatValue(state, key),
     base: () => ExpNumber.ONE,
   };
 }
@@ -784,16 +798,31 @@ export class CivilizationState {
 
   getProductionFactors(resourceKey: ResourceKey): ResourceFactors {
     const base = this.getFactors(resourceKey);
-    if (this.devProductionMultiplier.eq(ExpNumber.ONE)) return base;
+    const multiplicative = [...base.multiplicative];
+
+    // Add dev production multiplier
+    if (!this.devProductionMultiplier.eq(ExpNumber.ONE)) {
+      multiplicative.push([
+        "dev production multiplier",
+        this.devProductionMultiplier,
+      ] as ResourceFactor);
+    }
+
+    // Add trade production multiplier for production resources
+    const isProductionKey = resourceKey in this.workers;
+    if (isProductionKey && this.resources.trade.gt(ExpNumber.ZERO)) {
+      const tradeMultiplier = calculateTradeMultiplier(this.resources.trade);
+      if (!tradeMultiplier.eq(ExpNumber.ONE)) {
+        multiplicative.push([
+          "trade production multiplier",
+          tradeMultiplier,
+        ] as ResourceFactor);
+      }
+    }
+
     return {
       ...base,
-      multiplicative: [
-        ...base.multiplicative,
-        [
-          "dev production multiplier",
-          this.devProductionMultiplier,
-        ] as ResourceFactor,
-      ],
+      multiplicative,
     };
   }
 
@@ -890,10 +919,24 @@ export class CivilizationState {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return ExpNumber.ZERO;
     const capacity = capacityKey(building.key);
-    // Effective capacity: the stored base amount times every capacity multiplier in
-    // force, from any bonus source (§13.7 decision 3 — capacity keeps its own
-    // representation).
+    // Effective capacity: the stored base amount plus capacity provided by other buildings,
+    // then multiplied by every capacity multiplier in force (§13.7 decision 3).
     let max = this.resources[capacity];
+
+    // Add capacity provided by other buildings
+    for (const otherBuilding of buildingDefinitions) {
+      if (otherBuilding.key === buildingKey) continue;
+      const otherCount = this.buildingCount(otherBuilding.key);
+      if (otherCount === 0) continue;
+      const effects = this.getBuildingEffects(otherBuilding.key, otherCount);
+      for (const capacityProvided of effects.capacityProvided ?? []) {
+        if (capacityProvided.building === buildingKey) {
+          max = max.add(capacityProvided.perBuilding);
+        }
+      }
+    }
+
+    // Apply capacity multipliers
     for (const [, bonus] of this.activeBonuses()) {
       if (
         bonus.type === "attributeMultiplier" &&
@@ -1344,7 +1387,7 @@ export class CivilizationState {
       case "battle":
         return this.defeatedEncounters.includes(unlock.encounterId);
       case "age":
-        return this.enteredAges.includes(unlock.ageId);
+        return this.isAgeUnlocked(unlock.ageId);
       default:
         return false;
     }
@@ -2384,5 +2427,77 @@ export class CivilizationState {
 
   getFastestAgeTime(ageId: string): number | undefined {
     return this.statistics.fastestAgeMs[ageId];
+  }
+
+  /**
+   * Trade operations: sell resource for gold, buy resource with gold
+   * Trade power acts as a currency that can be converted to gold for trading
+   */
+  sellResource(
+    resource: TradeResourceKey,
+    amount: ExpNumber,
+  ): CivilizationState {
+    if (!isTradable(resource)) return this;
+    if (this.resources[resource].lt(amount)) return this;
+
+    const goldGained = resourceToGold(resource, amount);
+    const resources = { ...this.resources };
+    resources[resource] = resources[resource].sub(amount);
+    resources.gold = resources.gold.add(goldGained);
+
+    return this.withResources(resources);
+  }
+
+  buyResource(
+    resource: TradeResourceKey,
+    amount: ExpNumber,
+    spread: number = DEFAULT_TRADE_SPREAD,
+  ): CivilizationState {
+    if (!isTradable(resource)) return this;
+
+    const goldCost = goldToResource(resource, amount, spread);
+    if (this.resources.gold.lt(goldCost)) return this;
+
+    const resources = { ...this.resources };
+    resources.gold = resources.gold.sub(goldCost);
+    resources[resource] = resources[resource].add(amount);
+
+    return this.withResources(resources);
+  }
+
+  /**
+   * Convert trade power to gold for trading
+   * Trade power can be used as currency, converting it to gold at 1:1 ratio
+   */
+  convertTradeToGold(amount: ExpNumber): CivilizationState {
+    if (this.resources.trade.lt(amount)) return this;
+
+    const resources = { ...this.resources };
+    resources.trade = resources.trade.sub(amount);
+    resources.gold = resources.gold.add(amount);
+
+    return this.withResources(resources);
+  }
+
+  /**
+   * Get the current trade production multiplier
+   * Formula: 1 + log₁₀(trade + 1)
+   */
+  getTradeMultiplier(): ExpNumber {
+    return calculateTradeMultiplier(this.resources.trade);
+  }
+
+  /**
+   * Get the gold equivalent of wasted resources
+   * Used for tracking total lost value over time
+   */
+  getWastedResourcesGoldEquivalent(): ExpNumber {
+    let total = ExpNumber.ZERO;
+    for (const [resource, amount] of Object.entries(this.resources)) {
+      if (isTradable(resource as TradeResourceKey)) {
+        total = total.add(resourceToGold(resource as TradeResourceKey, amount));
+      }
+    }
+    return total;
   }
 }

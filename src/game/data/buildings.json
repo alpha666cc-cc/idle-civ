@@ -314,9 +314,15 @@
       }
     ],
     "available": true,
+    "effects": {
+      "resourceProduction": {
+        "resource": "trade",
+        "amount": 1
+      }
+    },
     "unlock": {
       "source": "age",
-      "ageId": "first-age"
+      "ageId": "age-1"
     }
   }
 ]
