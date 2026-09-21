@@ -756,7 +756,7 @@ export default function GamepediaModal({
 
         <p className="gamepedia-category">Cost</p>
         <div className="gamepedia-stats">
-          {research.costs.map(({ resource, base }) => (
+          {gameState.getResearchNextCost().map(({ resource, base }) => (
             <div className="gamepedia-stat" key={resource}>
               <span>{renderReference(resource)}</span>
               <strong>{formatAmount(base)}</strong>

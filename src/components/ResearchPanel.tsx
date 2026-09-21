@@ -322,12 +322,11 @@ const describeEffects = (research: ResearchDefinition): string[] => {
   return [summary, ...effects];
 };
 
-/** One research card: icon, name, effects, cost, buy button. */
+/** One research card: icon, name, effects, buy button. */
 const ResearchCard = ({
   research,
   gameState,
   setGameState,
-  fmt,
   onOpenGamepedia,
   highlighted,
   selected,
@@ -336,7 +335,6 @@ const ResearchCard = ({
   research: ResearchDefinition;
   gameState: CivilizationState;
   setGameState: Props["setGameState"];
-  fmt: Props["fmt"];
   onOpenGamepedia: Props["onOpenGamepedia"];
   highlighted: boolean;
   selected: boolean;
@@ -344,8 +342,7 @@ const ResearchCard = ({
 }) => {
   const bought = gameState.isResearchBought(research.key);
   const unlocked = gameState.isResearchUnlocked(research.key);
-  const affordable = gameState.hasResourcesForResearch(research.key);
-  const cost = gameState.getResearchCost(research.key)[0];
+  const affordable = gameState.hasResourcesForResearch();
   const state = bought
     ? "bought"
     : unlocked
@@ -402,9 +399,6 @@ const ResearchCard = ({
         )}
       </ul>
       <div className="research-card-footer">
-        <span className="research-card-cost">
-          {fmt(cost ? cost.base : ExpNumber.ZERO)}
-        </span>
         <button
           type="button"
           className={`research-buy research-buy-${state}`}
@@ -436,6 +430,7 @@ export default function ResearchPanel({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const boughtCount = gameState.boughtResearch.length;
+  const nextResearchCost = gameState.getResearchNextCost()[0];
 
   const relatedKeys = useMemo(() => {
     if (!selectedKey) return new Set<string>();
@@ -489,6 +484,13 @@ export default function ResearchPanel({
         <div>
           <h3>Technology tree</h3>
         </div>
+        <p
+          className="research-global-cost"
+          title="Current science / cost of the next research"
+        >
+          <FlaskConical size={13} strokeWidth={1.7} aria-hidden />
+          {fmt(gameState.resources.science)} / {fmt(nextResearchCost.base)}
+        </p>
         <p className="research-progress">
           {gameState.boughtResearch.length} / {researchDefinitions.length}{" "}
           researched
@@ -581,7 +583,6 @@ export default function ResearchPanel({
                 research={research}
                 gameState={gameState}
                 setGameState={setGameState}
-                fmt={fmt}
                 onOpenGamepedia={onOpenGamepedia}
                 highlighted={!selectedKey || relatedKeys.has(research.key)}
                 selected={selectedKey === research.key}

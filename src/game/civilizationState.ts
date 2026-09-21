@@ -86,6 +86,14 @@ type BuildingCostOverrides = Partial<Record<BuildingKey, BuildingCost[]>>;
 const maximumUnitPurchase = 1_000_000;
 
 /**
+ * Global research pricing: the first tech costs 100 science and every later
+ * purchase costs ×10 the previous one, whichever tech is bought. The JSON
+ * costs on ResearchDefinition are not charged.
+ */
+const researchFirstCost = ExpNumber.fromNumber(100);
+const researchCostGrowth = ExpNumber.fromNumber(10);
+
+/**
  * Identity-keyed recompute caches. Every state array is replaced immutably and
  * never mutated, so array identity is a free "did anything change" test: a tick
  * that changes nothing reuses the cached values, and the one call after a real
@@ -511,15 +519,10 @@ export class CivilizationState {
     );
   }
 
-  /** All prerequisites bought and the tech's age entered (§13.7 relocking). */
+  /** The tech's age is entered — order is free; prerequisites are display data. */
   isResearchUnlocked(researchId: string): boolean {
     const research = findResearchDefinition(researchId);
     if (!research) return false;
-    if (
-      !research.prerequisites.every((id) => this.boughtResearch.includes(id))
-    ) {
-      return false;
-    }
     return (
       research.age === 0 || this.enteredAges.includes(`age-${research.age}`)
     );
@@ -529,19 +532,32 @@ export class CivilizationState {
     return this.boughtResearch.includes(researchId);
   }
 
-  getResearchCost(researchId: string): BuildingCost[] {
-    return findResearchDefinition(researchId)?.costs ?? [];
+  /**
+   * The cost of the next research purchase, global across the whole tree: the
+   * first tech costs 100 science and every later purchase costs ×10 the
+   * previous one, whichever tech is bought.
+   */
+  getResearchNextCost(): BuildingCost[] {
+    return [
+      {
+        resource: "science",
+        base: researchFirstCost.mul(
+          researchCostGrowth.pow(this.boughtResearch.length),
+        ),
+        factor: 1,
+      },
+    ];
   }
 
-  hasResourcesForResearch(researchId: string): boolean {
-    return this.getResearchCost(researchId).every(({ resource, base }) =>
+  hasResourcesForResearch(): boolean {
+    return this.getResearchNextCost().every(({ resource, base }) =>
       this.resources[resource].gte(base),
     );
   }
 
   getResearchFailureReason(researchId: string): "locked" | "resources" | null {
     if (!this.isResearchUnlocked(researchId)) return "locked";
-    if (!this.hasResourcesForResearch(researchId)) return "resources";
+    if (!this.hasResourcesForResearch()) return "resources";
     return null;
   }
 
@@ -553,7 +569,7 @@ export class CivilizationState {
     if (this.boughtResearch.includes(researchId)) return this;
     if (!this.canBuyResearch(researchId)) return this;
     const resources = { ...this.resources };
-    for (const { resource, base } of this.getResearchCost(researchId)) {
+    for (const { resource, base } of this.getResearchNextCost()) {
       resources[resource] = resources[resource].sub(base);
     }
     return this.withState(
