@@ -19,7 +19,7 @@ export type BonusType =
   | "costReductionFlat" // destination cost −N (absolute, per unit)
   | "costReductionPercent" // destination cost × (1 − N) per unit
   | "costReductionBase" // destination cost's base term reduced
-  | "costReductionFactor"; // destination cost's growth factor reduced
+  | "costReductionFactor"; // destination cost's growth factor reduced multiplicatively (clamped at 1.01 minimum)
 
 /** A bonus targets an attribute (resource, capacity or stat) or a buyable id. */
 export type BonusDestination = AttributeKey | string;
@@ -51,7 +51,11 @@ export const capacityMultiplierBonus = (
 });
 
 export const costReductionBonus = (
-  type: "costReductionFlat" | "costReductionPercent" | "costReductionBase" | "costReductionFactor",
+  type:
+    | "costReductionFlat"
+    | "costReductionPercent"
+    | "costReductionBase"
+    | "costReductionFactor",
   buyableId: string,
   value: number | ExpNumber,
 ): Bonus => ({ type, destination: buyableId, value: ExpNumber.from(value) });
@@ -83,7 +87,11 @@ export type CostReductions = {
    * each source clamped at a 0 floor.
    */
   base: ExpNumber;
-  /** Σ reductions of the cost's growth factor (engine clamps the factor at 1). */
+  /**
+   * Π multiplicative factor reductions (clamped at 1.01 minimum).
+   * Each 0.01 value reduces the (factor - 1.01) range by 1% multiplicatively.
+   * Formula: 1.01 + (baseFactor - 1.01) * Π(1 - value)
+   */
   factor: ExpNumber;
   /** Π(1 − N) — percent reductions compound; each source clamped at a 0 floor. */
   percent: ExpNumber;
@@ -99,7 +107,7 @@ export type CostReductions = {
 export const collectCostReductions = (bonuses: Bonus[]): CostReductions => {
   const reductions: CostReductions = {
     base: ExpNumber.ONE,
-    factor: ExpNumber.ZERO,
+    factor: ExpNumber.ONE,
     percent: ExpNumber.ONE,
     flat: ExpNumber.ZERO,
   };
@@ -111,7 +119,10 @@ export const collectCostReductions = (bonuses: Bonus[]): CostReductions => {
         );
         break;
       case "costReductionFactor":
-        reductions.factor = reductions.factor.add(bonus.value);
+        // Multiplicative factor reduction: each value reduces the (factor - 1.01) range
+        reductions.factor = reductions.factor.mul(
+          ExpNumber.max(ExpNumber.ZERO, ExpNumber.ONE.sub(bonus.value)),
+        );
         break;
       case "costReductionPercent":
         reductions.percent = reductions.percent.mul(

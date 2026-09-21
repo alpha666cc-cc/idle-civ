@@ -18,12 +18,6 @@
     "description": "Multiplies every building's base cost before growth and other discounts. Starts at ×1; lower is cheaper. Master Builder milestones reduce it cumulatively to ÷2, ÷3, through ÷8. Does not affect upgrade prices."
   },
   {
-    "guid": "318b5e4c-e0b5-5e66-96f8-43e8116e10fc",
-    "key": "buildingPower",
-    "label": "Building power",
-    "description": "Global multiplier on every building's power. Endgame bonuses raise it for all buildings at once."
-  },
-  {
     "guid": "2c7a2810-cd94-5845-bc92-389ae250e2ca",
     "key": "armyPower",
     "label": "Army power",

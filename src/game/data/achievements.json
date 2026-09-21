@@ -5,7 +5,9 @@
     "name": "Growing Hamlet",
     "description": "Reach a population of 25 citizens.",
     "requirement": { "type": "population", "amount": 25 },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "food", "value": 2 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 2 }
+    ]
   },
   {
     "guid": "effed5d3-ac6d-5158-8e42-75b58153708e",
@@ -16,7 +18,9 @@
       "type": "encounter",
       "encounterId": "age0_1_first_fire"
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "food", "value": 10 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 10 }
+    ]
   },
   {
     "guid": "cc1999e4-d9bf-50c0-89a8-ec0f4f065f88",
@@ -28,7 +32,13 @@
       "building": "town-hall",
       "count": 10
     },
-    "bonuses": [{ "type": "costReductionFactor", "destination": "all-buildings", "value": 0.01 }]
+    "bonuses": [
+      {
+        "type": "costReductionFactor",
+        "destination": "all-buildings",
+        "value": 0.01
+      }
+    ]
   },
   {
     "guid": "f4dfda8c-60fc-597b-988a-f49864e27b26",
@@ -38,7 +48,9 @@
     "name": "Hundred Hands",
     "description": "Make 100 production clicks. Reward: +1 click power.",
     "requirement": { "type": "clicks", "amount": 100 },
-    "bonuses": [{ "type": "attributeFlat", "destination": "clickPower", "value": 1 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "clickPower", "value": 1 }
+    ]
   },
   {
     "guid": "1a0a2e12-b1fe-5343-880d-d1ba1445466d",
@@ -48,7 +60,9 @@
     "name": "A Thousand Hands",
     "description": "Make 1,000 production clicks. Reward: +2 click power.",
     "requirement": { "type": "clicks", "amount": 1000 },
-    "bonuses": [{ "type": "attributeFlat", "destination": "clickPower", "value": 2 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "clickPower", "value": 2 }
+    ]
   },
   {
     "guid": "5c52032f-95c2-5885-b909-61ccb80c60ee",
@@ -58,7 +72,9 @@
     "name": "Ten Thousand Hands",
     "description": "Make 10,000 production clicks. Reward: +5 click power.",
     "requirement": { "type": "clicks", "amount": 10000 },
-    "bonuses": [{ "type": "attributeFlat", "destination": "clickPower", "value": 5 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "clickPower", "value": 5 }
+    ]
   },
   {
     "guid": "d3d6921a-a413-52fc-ac80-6ab803473e55",
@@ -68,7 +84,9 @@
     "name": "Hundred Thousand Hands",
     "description": "Make 100,000 production clicks. Reward: +20 click power.",
     "requirement": { "type": "clicks", "amount": 100000 },
-    "bonuses": [{ "type": "attributeFlat", "destination": "clickPower", "value": 20 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "clickPower", "value": 20 }
+    ]
   },
   {
     "guid": "bc2a4961-567b-54a9-b358-c2b70fa89287",
@@ -78,511 +96,693 @@
     "name": "A Million Hands",
     "description": "Make 1,000,000 production clicks. Reward: +100 click power.",
     "requirement": { "type": "clicks", "amount": 1000000 },
-    "bonuses": [{ "type": "attributeFlat", "destination": "clickPower", "value": 100 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "clickPower", "value": 100 }
+    ]
   },
   {
     "guid": "1b9536e8-26e7-5fa9-b5fb-3cde0b88890d",
-    "key": "farm-power-1",
-    "family": "farm-power",
+    "key": "food-multiplier-1",
+    "family": "food-multiplier",
     "tier": 1,
-    "name": "Farm Power I",
-    "description": "Own 10 farms. Reward: Farm power +20%",
+    "name": "Food Multiplier I",
+    "description": "Own 10 farms. Reward: Food Multiplier +20%",
     "requirement": {
       "type": "building-count",
       "building": "farm",
       "count": 10
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "farmPower", "value": 1.2 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 1.2 }
+    ]
   },
   {
     "guid": "cbcc18e0-2925-505b-92f5-9bbaa1fbb144",
-    "key": "farm-power-2",
-    "family": "farm-power",
+    "key": "food-multiplier-2",
+    "family": "food-multiplier",
     "tier": 2,
-    "name": "Farm Power II",
-    "description": "Own 100 farms. Reward: Farm power ×3.",
+    "name": "Food Multiplier II",
+    "description": "Own 100 farms. Reward: Food Multiplier ×3.",
     "requirement": {
       "type": "building-count",
       "building": "farm",
       "count": 100
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "farmPower", "value": 3 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 3 }
+    ]
   },
   {
     "guid": "77774c41-f116-5a99-b693-d88e487542ff",
-    "key": "farm-power-3",
-    "family": "farm-power",
+    "key": "food-multiplier-3",
+    "family": "food-multiplier",
     "tier": 3,
-    "name": "Farm Power III",
-    "description": "Own 1,000 farms. Reward: Farm power ×4.",
+    "name": "Food Multiplier III",
+    "description": "Own 1,000 farms. Reward: Food Multiplier ×4.",
     "requirement": {
       "type": "building-count",
       "building": "farm",
       "count": 1000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "farmPower", "value": 4 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 4 }
+    ]
   },
   {
     "guid": "9e8816e2-8335-5a39-9819-7cd63b3b92e6",
-    "key": "farm-power-4",
-    "family": "farm-power",
+    "key": "food-multiplier-4",
+    "family": "food-multiplier",
     "tier": 4,
-    "name": "Farm Power IV",
-    "description": "Own 10,000 farms. Reward: Farm power ×5.",
+    "name": "Food Multiplier IV",
+    "description": "Own 10,000 farms. Reward: Food Multiplier ×5.",
     "requirement": {
       "type": "building-count",
       "building": "farm",
       "count": 10000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "farmPower", "value": 5 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 5 }
+    ]
   },
   {
     "guid": "5c53c699-a55c-5332-b1d9-7595b94ddce0",
-    "key": "farm-power-5",
-    "family": "farm-power",
+    "key": "food-multiplier-5",
+    "family": "food-multiplier",
     "tier": 5,
-    "name": "Farm Power V",
-    "description": "Own 100,000 farms. Reward: Farm power ×6.",
+    "name": "Food Multiplier V",
+    "description": "Own 100,000 farms. Reward: Food Multiplier ×6.",
     "requirement": {
       "type": "building-count",
       "building": "farm",
       "count": 100000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "farmPower", "value": 6 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 6 }
+    ]
   },
   {
     "guid": "dea577d6-30a4-5b88-9969-5a50096fa3aa",
-    "key": "farm-power-6",
-    "family": "farm-power",
+    "key": "food-multiplier-6",
+    "family": "food-multiplier",
     "tier": 6,
-    "name": "Farm Power VI",
-    "description": "Own 1,000,000 farms. Reward: Farm power ×7.",
+    "name": "Food Multiplier VI",
+    "description": "Own 1,000,000 farms. Reward: Food Multiplier ×7.",
     "requirement": {
       "type": "building-count",
       "building": "farm",
       "count": 1000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "farmPower", "value": 7 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 7 }
+    ]
   },
   {
     "guid": "57952a3b-e869-5f96-bdef-f6cbd543fba1",
-    "key": "farm-power-7",
-    "family": "farm-power",
+    "key": "food-multiplier-7",
+    "family": "food-multiplier",
     "tier": 7,
-    "name": "Farm Power VII",
-    "description": "Own 10,000,000 farms. Reward: Farm power ×8.",
+    "name": "Food Multiplier VII",
+    "description": "Own 10,000,000 farms. Reward: Food Multiplier ×8.",
     "requirement": {
       "type": "building-count",
       "building": "farm",
       "count": 10000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "farmPower", "value": 8 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 8 }
+    ]
   },
   {
     "guid": "b7926878-5fe1-5201-b46d-0df9e11cefe2",
-    "key": "farm-power-8",
-    "family": "farm-power",
+    "key": "food-multiplier-8",
+    "family": "food-multiplier",
     "tier": 8,
-    "name": "Farm Power VIII",
-    "description": "Own 100,000,000 farms. Reward: Farm power ×9.",
+    "name": "Food Multiplier VIII",
+    "description": "Own 100,000,000 farms. Reward: Food Multiplier ×9.",
     "requirement": {
       "type": "building-count",
       "building": "farm",
       "count": 100000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "farmPower", "value": 9 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 9 }
+    ]
   },
   {
     "guid": "a4836216-aa7c-5aa1-8be2-0f5432fa1246",
-    "key": "farm-power-9",
-    "family": "farm-power",
+    "key": "food-multiplier-9",
+    "family": "food-multiplier",
     "tier": 9,
-    "name": "Farm Power IX",
-    "description": "Own 1,000,000,000 farms. Reward: Farm power ×10.",
+    "name": "Food Multiplier IX",
+    "description": "Own 1,000,000,000 farms. Reward: Food Multiplier ×10.",
     "requirement": {
       "type": "building-count",
       "building": "farm",
       "count": 1000000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "farmPower", "value": 10 }]
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "food", "value": 10 }
+    ]
   },
   {
     "guid": "f6d64419-1c05-5f50-9472-9e4b4de2e2b5",
-    "key": "lumber-yard-power-1",
-    "family": "lumber-yard-power",
+    "key": "wood-multiplier-1",
+    "family": "wood-multiplier",
     "tier": 1,
-    "name": "Lumber Yard Power I",
-    "description": "Own 10 lumber yards. Reward: Lumber Yard power +20%",
+    "name": "Wood Multiplier I",
+    "description": "Own 10 lumber yards. Reward: Wood Multiplier +20%",
     "requirement": {
       "type": "building-count",
       "building": "lumber-yard",
       "count": 10
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "lumber-yardPower", "value": 1.2 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 1.2
+      }
+    ]
   },
   {
     "guid": "822bd535-32ea-501b-afb6-7251694e644f",
-    "key": "lumber-yard-power-2",
-    "family": "lumber-yard-power",
+    "key": "wood-multiplier-2",
+    "family": "wood-multiplier",
     "tier": 2,
-    "name": "Lumber Yard Power II",
-    "description": "Own 100 lumber yards. Reward: Lumber Yard power ×3.",
+    "name": "Wood Multiplier II",
+    "description": "Own 100 lumber yards. Reward: Wood Multiplier ×3.",
     "requirement": {
       "type": "building-count",
       "building": "lumber-yard",
       "count": 100
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "lumber-yardPower", "value": 3 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 3
+      }
+    ]
   },
   {
     "guid": "8ce402ab-170f-5491-a1b6-245e2ca4bfcd",
-    "key": "lumber-yard-power-3",
-    "family": "lumber-yard-power",
+    "key": "wood-multiplier-3",
+    "family": "wood-multiplier",
     "tier": 3,
-    "name": "Lumber Yard Power III",
-    "description": "Own 1,000 lumber yards. Reward: Lumber Yard power ×4.",
+    "name": "Wood Multiplier III",
+    "description": "Own 1,000 lumber yards. Reward: Wood Multiplier ×4.",
     "requirement": {
       "type": "building-count",
       "building": "lumber-yard",
       "count": 1000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "lumber-yardPower", "value": 4 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 4
+      }
+    ]
   },
   {
     "guid": "d7576494-78b0-5bc2-beec-55311793fd1f",
-    "key": "lumber-yard-power-4",
-    "family": "lumber-yard-power",
+    "key": "wood-multiplier-4",
+    "family": "wood-multiplier",
     "tier": 4,
-    "name": "Lumber Yard Power IV",
-    "description": "Own 10,000 lumber yards. Reward: Lumber Yard power ×5.",
+    "name": "Wood Multiplier IV",
+    "description": "Own 10,000 lumber yards. Reward: Wood Multiplier ×5.",
     "requirement": {
       "type": "building-count",
       "building": "lumber-yard",
       "count": 10000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "lumber-yardPower", "value": 5 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 5
+      }
+    ]
   },
   {
     "guid": "6e4c7a1a-653a-5aa7-8739-411c9a3a88c8",
-    "key": "lumber-yard-power-5",
-    "family": "lumber-yard-power",
+    "key": "wood-multiplier-5",
+    "family": "wood-multiplier",
     "tier": 5,
-    "name": "Lumber Yard Power V",
-    "description": "Own 100,000 lumber yards. Reward: Lumber Yard power ×6.",
+    "name": "Wood Multiplier V",
+    "description": "Own 100,000 lumber yards. Reward: Wood Multiplier ×6.",
     "requirement": {
       "type": "building-count",
       "building": "lumber-yard",
       "count": 100000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "lumber-yardPower", "value": 6 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 6
+      }
+    ]
   },
   {
     "guid": "512a7db7-3d7d-508a-8fce-7811146ebdaf",
-    "key": "lumber-yard-power-6",
-    "family": "lumber-yard-power",
+    "key": "wood-multiplier-6",
+    "family": "wood-multiplier",
     "tier": 6,
-    "name": "Lumber Yard Power VI",
-    "description": "Own 1,000,000 lumber yards. Reward: Lumber Yard power ×7.",
+    "name": "Wood Multiplier VI",
+    "description": "Own 1,000,000 lumber yards. Reward: Wood Multiplier ×7.",
     "requirement": {
       "type": "building-count",
       "building": "lumber-yard",
       "count": 1000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "lumber-yardPower", "value": 7 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 7
+      }
+    ]
   },
   {
     "guid": "a30f41c5-b276-54f1-834c-aac4fdbd8967",
-    "key": "lumber-yard-power-7",
-    "family": "lumber-yard-power",
+    "key": "wood-multiplier-7",
+    "family": "wood-multiplier",
     "tier": 7,
-    "name": "Lumber Yard Power VII",
-    "description": "Own 10,000,000 lumber yards. Reward: Lumber Yard power ×8.",
+    "name": "Wood Multiplier VII",
+    "description": "Own 10,000,000 lumber yards. Reward: Wood Multiplier ×8.",
     "requirement": {
       "type": "building-count",
       "building": "lumber-yard",
       "count": 10000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "lumber-yardPower", "value": 8 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 8
+      }
+    ]
   },
   {
     "guid": "b18f9f29-8f3a-54a2-abac-0a6ab1a06269",
-    "key": "lumber-yard-power-8",
-    "family": "lumber-yard-power",
+    "key": "wood-multiplier-8",
+    "family": "wood-multiplier",
     "tier": 8,
-    "name": "Lumber Yard Power VIII",
-    "description": "Own 100,000,000 lumber yards. Reward: Lumber Yard power ×9.",
+    "name": "Wood Multiplier VIII",
+    "description": "Own 100,000,000 lumber yards. Reward: Wood Multiplier ×9.",
     "requirement": {
       "type": "building-count",
       "building": "lumber-yard",
       "count": 100000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "lumber-yardPower", "value": 9 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 9
+      }
+    ]
   },
   {
     "guid": "47487d6d-8c98-5261-8cce-aa333f89c5f9",
-    "key": "lumber-yard-power-9",
-    "family": "lumber-yard-power",
+    "key": "wood-multiplier-9",
+    "family": "wood-multiplier",
     "tier": 9,
-    "name": "Lumber Yard Power IX",
-    "description": "Own 1,000,000,000 lumber yards. Reward: Lumber Yard power ×10.",
+    "name": "Wood Multiplier IX",
+    "description": "Own 1,000,000,000 lumber yards. Reward: Wood Multiplier ×10.",
     "requirement": {
       "type": "building-count",
       "building": "lumber-yard",
       "count": 1000000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "lumber-yardPower", "value": 10 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 10
+      }
+    ]
   },
   {
     "guid": "9b5cd521-1b8c-5938-afee-1afafcecc972",
-    "key": "quarry-power-1",
-    "family": "quarry-power",
+    "key": "stone-multiplier-1",
+    "family": "stone-multiplier",
     "tier": 1,
-    "name": "Quarry Power I",
-    "description": "Own 10 quarries. Reward: Quarry power +20%.",
+    "name": "Stone Multiplier I",
+    "description": "Own 10 quarries. Reward: Stone Multiplier +20%.",
     "requirement": {
       "type": "building-count",
       "building": "quarry",
       "count": 10
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "quarryPower", "value": 1.2 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 1.2
+      }
+    ]
   },
   {
     "guid": "9cd536a2-2b2d-5dc4-ba0e-7126eabf235a",
-    "key": "quarry-power-2",
-    "family": "quarry-power",
+    "key": "stone-multiplier-2",
+    "family": "stone-multiplier",
     "tier": 2,
-    "name": "Quarry Power II",
-    "description": "Own 100 quarries. Reward: Quarry power ×3.",
+    "name": "Stone Multiplier II",
+    "description": "Own 100 quarries. Reward: Stone Multiplier ×3.",
     "requirement": {
       "type": "building-count",
       "building": "quarry",
       "count": 100
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "quarryPower", "value": 3 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 3
+      }
+    ]
   },
   {
     "guid": "352e734d-df5d-5b4a-b880-aea1cccac4bb",
-    "key": "quarry-power-3",
-    "family": "quarry-power",
+    "key": "stone-multiplier-3",
+    "family": "stone-multiplier",
     "tier": 3,
-    "name": "Quarry Power III",
-    "description": "Own 1,000 quarries. Reward: Quarry power ×4.",
+    "name": "Stone Multiplier III",
+    "description": "Own 1,000 quarries. Reward: Stone Multiplier ×4.",
     "requirement": {
       "type": "building-count",
       "building": "quarry",
       "count": 1000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "quarryPower", "value": 4 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 4
+      }
+    ]
   },
   {
     "guid": "6931575f-0be0-5e3d-b090-56a8237abc1e",
-    "key": "quarry-power-4",
-    "family": "quarry-power",
+    "key": "stone-multiplier-4",
+    "family": "stone-multiplier",
     "tier": 4,
-    "name": "Quarry Power IV",
-    "description": "Own 10,000 quarries. Reward: Quarry power ×5.",
+    "name": "Stone Multiplier IV",
+    "description": "Own 10,000 quarries. Reward: Stone Multiplier ×5.",
     "requirement": {
       "type": "building-count",
       "building": "quarry",
       "count": 10000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "quarryPower", "value": 5 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 5
+      }
+    ]
   },
   {
     "guid": "df71c845-c8e9-5de7-ac2a-15d6bf01dfea",
-    "key": "quarry-power-5",
-    "family": "quarry-power",
+    "key": "stone-multiplier-5",
+    "family": "stone-multiplier",
     "tier": 5,
-    "name": "Quarry Power V",
-    "description": "Own 100,000 quarries. Reward: Quarry power ×6.",
+    "name": "Stone Multiplier V",
+    "description": "Own 100,000 quarries. Reward: Stone Multiplier ×6.",
     "requirement": {
       "type": "building-count",
       "building": "quarry",
       "count": 100000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "quarryPower", "value": 6 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 6
+      }
+    ]
   },
   {
     "guid": "864c87c6-6028-5b47-ba24-bef69c9b3574",
-    "key": "quarry-power-6",
-    "family": "quarry-power",
+    "key": "stone-multiplier-6",
+    "family": "stone-multiplier",
     "tier": 6,
-    "name": "Quarry Power VI",
-    "description": "Own 1,000,000 quarries. Reward: Quarry power ×7.",
+    "name": "Stone Multiplier VI",
+    "description": "Own 1,000,000 quarries. Reward: Stone Multiplier ×7.",
     "requirement": {
       "type": "building-count",
       "building": "quarry",
       "count": 1000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "quarryPower", "value": 7 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 7
+      }
+    ]
   },
   {
     "guid": "5b5eaf50-fdad-51ff-81ff-971b408725de",
-    "key": "quarry-power-7",
-    "family": "quarry-power",
+    "key": "stone-multiplier-7",
+    "family": "stone-multiplier",
     "tier": 7,
-    "name": "Quarry Power VII",
-    "description": "Own 10,000,000 quarries. Reward: Quarry power ×8.",
+    "name": "Stone Multiplier VII",
+    "description": "Own 10,000,000 quarries. Reward: Stone Multiplier ×8.",
     "requirement": {
       "type": "building-count",
       "building": "quarry",
       "count": 10000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "quarryPower", "value": 8 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 8
+      }
+    ]
   },
   {
     "guid": "6ee0c8da-97ce-51f7-8e7b-1c8ae67b87f4",
-    "key": "quarry-power-8",
-    "family": "quarry-power",
+    "key": "stone-multiplier-8",
+    "family": "stone-multiplier",
     "tier": 8,
-    "name": "Quarry Power VIII",
-    "description": "Own 100,000,000 quarries. Reward: Quarry power ×9.",
+    "name": "Stone Multiplier VIII",
+    "description": "Own 100,000,000 quarries. Reward: Stone Multiplier ×9.",
     "requirement": {
       "type": "building-count",
       "building": "quarry",
       "count": 100000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "quarryPower", "value": 9 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 9
+      }
+    ]
   },
   {
     "guid": "72417030-2557-5662-a79d-886df42c94dc",
-    "key": "quarry-power-9",
-    "family": "quarry-power",
+    "key": "stone-multiplier-9",
+    "family": "stone-multiplier",
     "tier": 9,
-    "name": "Quarry Power IX",
-    "description": "Own 1,000,000,000 quarries. Reward: Quarry power ×10.",
+    "name": "Stone Multiplier IX",
+    "description": "Own 1,000,000,000 quarries. Reward: Stone Multiplier ×10.",
     "requirement": {
       "type": "building-count",
       "building": "quarry",
       "count": 1000000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "quarryPower", "value": 10 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 10
+      }
+    ]
   },
   {
     "guid": "fe3ddcb8-a6fc-598a-b66c-3cd2956d3145",
-    "key": "gold-mine-power-1",
-    "family": "gold-mine-power",
+    "key": "gold-multiplier-1",
+    "family": "gold-multiplier",
     "tier": 1,
-    "name": "Gold Mine Power I",
-    "description": "Own 10 gold mines. Reward: Gold Mine power +20%.",
+    "name": "Gold Multiplier I",
+    "description": "Own 10 gold mines. Reward: Gold Multiplier +20%.",
     "requirement": {
       "type": "building-count",
       "building": "gold-mine",
       "count": 10
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "gold-minePower", "value": 1.2 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": 1.2
+      }
+    ]
   },
   {
     "guid": "4eff887c-4302-5e26-82f3-ddd230cd8513",
-    "key": "gold-mine-power-2",
-    "family": "gold-mine-power",
+    "key": "gold-multiplier-2",
+    "family": "gold-multiplier",
     "tier": 2,
-    "name": "Gold Mine Power II",
-    "description": "Own 100 gold mines. Reward: Gold Mine power ×3.",
+    "name": "Gold Multiplier II",
+    "description": "Own 100 gold mines. Reward: Gold Multiplier ×3.",
     "requirement": {
       "type": "building-count",
       "building": "gold-mine",
       "count": 100
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "gold-minePower", "value": 3 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": 3
+      }
+    ]
   },
   {
     "guid": "7cb1abbb-b3cd-5f51-9cb8-ec3f2032808f",
-    "key": "gold-mine-power-3",
-    "family": "gold-mine-power",
+    "key": "gold-multiplier-3",
+    "family": "gold-multiplier",
     "tier": 3,
-    "name": "Gold Mine Power III",
-    "description": "Own 1,000 gold mines. Reward: Gold Mine power ×4.",
+    "name": "Gold Multiplier III",
+    "description": "Own 1,000 gold mines. Reward: Gold Multiplier ×4.",
     "requirement": {
       "type": "building-count",
       "building": "gold-mine",
       "count": 1000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "gold-minePower", "value": 4 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": 4
+      }
+    ]
   },
   {
     "guid": "d05878a4-4c61-5909-9779-f51607c236f4",
-    "key": "gold-mine-power-4",
-    "family": "gold-mine-power",
+    "key": "gold-multiplier-4",
+    "family": "gold-multiplier",
     "tier": 4,
-    "name": "Gold Mine Power IV",
-    "description": "Own 10,000 gold mines. Reward: Gold Mine power ×5.",
+    "name": "Gold Multiplier IV",
+    "description": "Own 10,000 gold mines. Reward: Gold Multiplier ×5.",
     "requirement": {
       "type": "building-count",
       "building": "gold-mine",
       "count": 10000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "gold-minePower", "value": 5 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": 5
+      }
+    ]
   },
   {
     "guid": "e9ea44d2-f002-5a9a-bb91-6c6d623e45d0",
-    "key": "gold-mine-power-5",
-    "family": "gold-mine-power",
+    "key": "gold-multiplier-5",
+    "family": "gold-multiplier",
     "tier": 5,
-    "name": "Gold Mine Power V",
-    "description": "Own 100,000 gold mines. Reward: Gold Mine power ×6.",
+    "name": "Gold Multiplier V",
+    "description": "Own 100,000 gold mines. Reward: Gold Multiplier ×6.",
     "requirement": {
       "type": "building-count",
       "building": "gold-mine",
       "count": 100000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "gold-minePower", "value": 6 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": 6
+      }
+    ]
   },
   {
     "guid": "10c05032-5eb6-52bd-a33d-db14b6ceb368",
-    "key": "gold-mine-power-6",
-    "family": "gold-mine-power",
+    "key": "gold-multiplier-6",
+    "family": "gold-multiplier",
     "tier": 6,
-    "name": "Gold Mine Power VI",
-    "description": "Own 1,000,000 gold mines. Reward: Gold Mine power ×7.",
+    "name": "Gold Multiplier VI",
+    "description": "Own 1,000,000 gold mines. Reward: Gold Multiplier ×7.",
     "requirement": {
       "type": "building-count",
       "building": "gold-mine",
       "count": 1000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "gold-minePower", "value": 7 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": 7
+      }
+    ]
   },
   {
     "guid": "bd9136d7-4bb3-50c9-9754-fd100d2977c1",
-    "key": "gold-mine-power-7",
-    "family": "gold-mine-power",
+    "key": "gold-multiplier-7",
+    "family": "gold-multiplier",
     "tier": 7,
-    "name": "Gold Mine Power VII",
-    "description": "Own 10,000,000 gold mines. Reward: Gold Mine power ×8.",
+    "name": "Gold Multiplier VII",
+    "description": "Own 10,000,000 gold mines. Reward: Gold Multiplier ×8.",
     "requirement": {
       "type": "building-count",
       "building": "gold-mine",
       "count": 10000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "gold-minePower", "value": 8 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": 8
+      }
+    ]
   },
   {
     "guid": "9aeaad32-d0d2-50aa-9a60-8a9f5c2c95c8",
-    "key": "gold-mine-power-8",
-    "family": "gold-mine-power",
+    "key": "gold-multiplier-8",
+    "family": "gold-multiplier",
     "tier": 8,
-    "name": "Gold Mine Power VIII",
-    "description": "Own 100,000,000 gold mines. Reward: Gold Mine power ×9.",
+    "name": "Gold Multiplier VIII",
+    "description": "Own 100,000,000 gold mines. Reward: Gold Multiplier ×9.",
     "requirement": {
       "type": "building-count",
       "building": "gold-mine",
       "count": 100000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "gold-minePower", "value": 9 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": 9
+      }
+    ]
   },
   {
     "guid": "1a1f6084-6022-5dd1-819e-dcabde0ac2f9",
-    "key": "gold-mine-power-9",
-    "family": "gold-mine-power",
+    "key": "gold-multiplier-9",
+    "family": "gold-multiplier",
     "tier": 9,
-    "name": "Gold Mine Power IX",
-    "description": "Own 1,000,000,000 gold mines. Reward: Gold Mine power ×10.",
+    "name": "Gold Multiplier IX",
+    "description": "Own 1,000,000,000 gold mines. Reward: Gold Multiplier ×10.",
     "requirement": {
       "type": "building-count",
       "building": "gold-mine",
       "count": 1000000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "gold-minePower", "value": 10 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": 10
+      }
+    ]
   },
   {
     "guid": "01056cb6-c1aa-552a-8c9a-6879ec30ba25",
@@ -763,7 +963,13 @@
       "type": "buildings-total",
       "count": 1000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "buildingCostMultiplier", "value": 0.5 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "buildingCostMultiplier",
+        "value": 0.5
+      }
+    ]
   },
   {
     "guid": "e5228ec5-370b-5c83-9644-6e629613e36f",
@@ -776,7 +982,13 @@
       "type": "buildings-total",
       "count": 10000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "buildingCostMultiplier", "value": 0.6666666666666667 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "buildingCostMultiplier",
+        "value": 0.6666666666666667
+      }
+    ]
   },
   {
     "guid": "cdb940c2-c6f8-58af-aa18-113fafd94f96",
@@ -784,7 +996,13 @@
     "name": "Long Rest",
     "description": "Remain offline for 24 consecutive hours. Offline gain efficiency +25%.",
     "requirement": { "type": "offline-time", "amount": 86400000 },
-    "bonuses": [{ "type": "attributeFlat", "destination": "offlineEfficiency", "value": 0.25 }]
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "offlineEfficiency",
+        "value": 0.25
+      }
+    ]
   },
   {
     "guid": "42ebf0d0-647a-5eb6-a991-560d1440d573",
@@ -792,7 +1010,13 @@
     "name": "Enduring Hands",
     "description": "Play actively for 24 consecutive hours. All production +10%.",
     "requirement": { "type": "active-time", "amount": 86400000 },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "all-production", "value": 1.1 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "all-production",
+        "value": 1.1
+      }
+    ]
   },
   {
     "guid": "ff398f56-2626-5337-8d82-bf880b486156",
@@ -805,7 +1029,13 @@
       "type": "buildings-total",
       "count": 100000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "buildingCostMultiplier", "value": 0.75 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "buildingCostMultiplier",
+        "value": 0.75
+      }
+    ]
   },
   {
     "guid": "d957faca-dfdd-57b0-9830-30312d009690",
@@ -818,7 +1048,13 @@
       "type": "buildings-total",
       "count": 1000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "buildingCostMultiplier", "value": 0.8 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "buildingCostMultiplier",
+        "value": 0.8
+      }
+    ]
   },
   {
     "guid": "91480179-7aed-51a9-8114-f14e704ef78d",
@@ -831,7 +1067,13 @@
       "type": "buildings-total",
       "count": 10000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "buildingCostMultiplier", "value": 0.8333333333333334 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "buildingCostMultiplier",
+        "value": 0.8333333333333334
+      }
+    ]
   },
   {
     "guid": "4390adbb-332f-543e-b42b-d49cc3228465",
@@ -844,7 +1086,13 @@
       "type": "buildings-total",
       "count": 100000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "buildingCostMultiplier", "value": 0.8571428571428572 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "buildingCostMultiplier",
+        "value": 0.8571428571428572
+      }
+    ]
   },
   {
     "guid": "d43e01d6-02c9-51f8-ab2d-f4b73f3d9432",
@@ -857,385 +1105,553 @@
       "type": "buildings-total",
       "count": 1000000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "buildingCostMultiplier", "value": 0.875 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "buildingCostMultiplier",
+        "value": 0.875
+      }
+    ]
   },
   {
     "guid": "c1df1448-ee48-5d6c-a068-55222c80af6e",
-    "key": "barracks-power-1",
-    "family": "barracks-power",
+    "key": "military-multiplier-1",
+    "family": "military-multiplier",
     "tier": 1,
-    "name": "Barracks Power I",
-    "description": "Own 10 barracks. Reward: Barracks power +20%.",
+    "name": "Military Multiplier I",
+    "description": "Own 10 barracks. Reward: Military Multiplier +20%.",
     "requirement": {
       "type": "building-count",
       "building": "barracks",
       "count": 10
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "barracksPower", "value": 1.2 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 1.2
+      }
+    ]
   },
   {
     "guid": "a9e7007c-6190-5718-bf97-07a016db15f9",
-    "key": "barracks-power-2",
-    "family": "barracks-power",
+    "key": "military-multiplier-2",
+    "family": "military-multiplier",
     "tier": 2,
-    "name": "Barracks Power II",
-    "description": "Own 100 barracks. Reward: Barracks power ×3.",
+    "name": "Military Multiplier II",
+    "description": "Own 100 barracks. Reward: Military Multiplier ×3.",
     "requirement": {
       "type": "building-count",
       "building": "barracks",
       "count": 100
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "barracksPower", "value": 3 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 3
+      }
+    ]
   },
   {
     "guid": "2b7fc0d1-2fe4-502f-aafc-774aa4a82df4",
-    "key": "barracks-power-3",
-    "family": "barracks-power",
+    "key": "military-multiplier-3",
+    "family": "military-multiplier",
     "tier": 3,
-    "name": "Barracks Power III",
-    "description": "Own 1,000 barracks. Reward: Barracks power ×4.",
+    "name": "Military Multiplier III",
+    "description": "Own 1,000 barracks. Reward: Military Multiplier ×4.",
     "requirement": {
       "type": "building-count",
       "building": "barracks",
       "count": 1000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "barracksPower", "value": 4 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 4
+      }
+    ]
   },
   {
     "guid": "401b0790-415f-5283-b176-17cda43356cf",
-    "key": "barracks-power-4",
-    "family": "barracks-power",
+    "key": "military-multiplier-4",
+    "family": "military-multiplier",
     "tier": 4,
-    "name": "Barracks Power IV",
-    "description": "Own 10,000 barracks. Reward: Barracks power ×5.",
+    "name": "Military Multiplier IV",
+    "description": "Own 10,000 barracks. Reward: Military Multiplier ×5.",
     "requirement": {
       "type": "building-count",
       "building": "barracks",
       "count": 10000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "barracksPower", "value": 5 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 5
+      }
+    ]
   },
   {
     "guid": "5adfbe89-a523-5316-b72d-1acac90bf659",
-    "key": "barracks-power-5",
-    "family": "barracks-power",
+    "key": "military-multiplier-5",
+    "family": "military-multiplier",
     "tier": 5,
-    "name": "Barracks Power V",
-    "description": "Own 100,000 barracks. Reward: Barracks power ×6.",
+    "name": "Military Multiplier V",
+    "description": "Own 100,000 barracks. Reward: Military Multiplier ×6.",
     "requirement": {
       "type": "building-count",
       "building": "barracks",
       "count": 100000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "barracksPower", "value": 6 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 6
+      }
+    ]
   },
   {
     "guid": "7bc7a921-1eb6-56ac-8a53-e81d25e96f1e",
-    "key": "barracks-power-6",
-    "family": "barracks-power",
+    "key": "military-multiplier-6",
+    "family": "military-multiplier",
     "tier": 6,
-    "name": "Barracks Power VI",
-    "description": "Own 1,000,000 barracks. Reward: Barracks power ×7.",
+    "name": "Military Multiplier VI",
+    "description": "Own 1,000,000 barracks. Reward: Military Multiplier ×7.",
     "requirement": {
       "type": "building-count",
       "building": "barracks",
       "count": 1000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "barracksPower", "value": 7 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 7
+      }
+    ]
   },
   {
     "guid": "498b0804-5d54-540e-8bf8-724131b8bae0",
-    "key": "barracks-power-7",
-    "family": "barracks-power",
+    "key": "military-multiplier-7",
+    "family": "military-multiplier",
     "tier": 7,
-    "name": "Barracks Power VII",
-    "description": "Own 10,000,000 barracks. Reward: Barracks power ×8.",
+    "name": "Military Multiplier VII",
+    "description": "Own 10,000,000 barracks. Reward: Military Multiplier ×8.",
     "requirement": {
       "type": "building-count",
       "building": "barracks",
       "count": 10000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "barracksPower", "value": 8 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 8
+      }
+    ]
   },
   {
     "guid": "0a72f3f6-1337-592d-b72a-41d747aaf4bd",
-    "key": "barracks-power-8",
-    "family": "barracks-power",
+    "key": "military-multiplier-8",
+    "family": "military-multiplier",
     "tier": 8,
-    "name": "Barracks Power VIII",
-    "description": "Own 100,000,000 barracks. Reward: Barracks power ×9.",
+    "name": "Military Multiplier VIII",
+    "description": "Own 100,000,000 barracks. Reward: Military Multiplier ×9.",
     "requirement": {
       "type": "building-count",
       "building": "barracks",
       "count": 100000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "barracksPower", "value": 9 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 9
+      }
+    ]
   },
   {
     "guid": "f34e2fc7-6f67-5822-b7e2-018ae38f036c",
-    "key": "barracks-power-9",
-    "family": "barracks-power",
+    "key": "military-multiplier-9",
+    "family": "military-multiplier",
     "tier": 9,
-    "name": "Barracks Power IX",
-    "description": "Own 1,000,000,000 barracks. Reward: Barracks power ×10.",
+    "name": "Military Multiplier IX",
+    "description": "Own 1,000,000,000 barracks. Reward: Military Multiplier ×10.",
     "requirement": {
       "type": "building-count",
       "building": "barracks",
       "count": 1000000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "barracksPower", "value": 10 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 10
+      }
+    ]
   },
   {
     "guid": "3f9a7c1b-c05e-5f2b-bbc5-b483e7ff03f4",
-    "key": "university-power-1",
-    "family": "university-power",
+    "key": "science-multiplier-1",
+    "family": "science-multiplier",
     "tier": 1,
-    "name": "University Power I",
-    "description": "Own 10 universities. Reward: University power +20%.",
+    "name": "Science Multiplier I",
+    "description": "Own 10 universities. Reward: Science Multiplier +20%.",
     "requirement": {
       "type": "building-count",
       "building": "university",
       "count": 10
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "universityPower", "value": 1.2 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 1.2
+      }
+    ]
   },
   {
     "guid": "ebbe0058-13e9-54c5-9c44-3b699a57af4d",
-    "key": "university-power-2",
-    "family": "university-power",
+    "key": "science-multiplier-2",
+    "family": "science-multiplier",
     "tier": 2,
-    "name": "University Power II",
-    "description": "Own 100 universities. Reward: University power ×3.",
+    "name": "Science Multiplier II",
+    "description": "Own 100 universities. Reward: Science Multiplier ×3.",
     "requirement": {
       "type": "building-count",
       "building": "university",
       "count": 100
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "universityPower", "value": 3 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 3
+      }
+    ]
   },
   {
     "guid": "3db5b3f4-58b7-5f14-aab0-daa22ca7425a",
-    "key": "university-power-3",
-    "family": "university-power",
+    "key": "science-multiplier-3",
+    "family": "science-multiplier",
     "tier": 3,
-    "name": "University Power III",
-    "description": "Own 1,000 universities. Reward: University power ×4.",
+    "name": "Science Multiplier III",
+    "description": "Own 1,000 universities. Reward: Science Multiplier ×4.",
     "requirement": {
       "type": "building-count",
       "building": "university",
       "count": 1000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "universityPower", "value": 4 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 4
+      }
+    ]
   },
   {
     "guid": "bed03704-743e-5f1a-bf58-7899580424a4",
-    "key": "university-power-4",
-    "family": "university-power",
+    "key": "science-multiplier-4",
+    "family": "science-multiplier",
     "tier": 4,
-    "name": "University Power IV",
-    "description": "Own 10,000 universities. Reward: University power ×5.",
+    "name": "Science Multiplier IV",
+    "description": "Own 10,000 universities. Reward: Science Multiplier ×5.",
     "requirement": {
       "type": "building-count",
       "building": "university",
       "count": 10000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "universityPower", "value": 5 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 5
+      }
+    ]
   },
   {
     "guid": "c422f6ae-71cb-539f-8c9b-63563447c1b7",
-    "key": "university-power-5",
-    "family": "university-power",
+    "key": "science-multiplier-5",
+    "family": "science-multiplier",
     "tier": 5,
-    "name": "University Power V",
-    "description": "Own 100,000 universities. Reward: University power ×6.",
+    "name": "Science Multiplier V",
+    "description": "Own 100,000 universities. Reward: Science Multiplier ×6.",
     "requirement": {
       "type": "building-count",
       "building": "university",
       "count": 100000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "universityPower", "value": 6 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 6
+      }
+    ]
   },
   {
     "guid": "d42b826c-b36a-59ab-8fa9-95c7695b46ff",
-    "key": "university-power-6",
-    "family": "university-power",
+    "key": "science-multiplier-6",
+    "family": "science-multiplier",
     "tier": 6,
-    "name": "University Power VI",
-    "description": "Own 1,000,000 universities. Reward: University power ×7.",
+    "name": "Science Multiplier VI",
+    "description": "Own 1,000,000 universities. Reward: Science Multiplier ×7.",
     "requirement": {
       "type": "building-count",
       "building": "university",
       "count": 1000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "universityPower", "value": 7 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 7
+      }
+    ]
   },
   {
     "guid": "9d875d3c-62c8-5da8-a405-85fa9135b350",
-    "key": "university-power-7",
-    "family": "university-power",
+    "key": "science-multiplier-7",
+    "family": "science-multiplier",
     "tier": 7,
-    "name": "University Power VII",
-    "description": "Own 10,000,000 universities. Reward: University power ×8.",
+    "name": "Science Multiplier VII",
+    "description": "Own 10,000,000 universities. Reward: Science Multiplier ×8.",
     "requirement": {
       "type": "building-count",
       "building": "university",
       "count": 10000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "universityPower", "value": 8 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 8
+      }
+    ]
   },
   {
     "guid": "47d00e85-073a-5cfa-9b91-8536a95b9e2c",
-    "key": "university-power-8",
-    "family": "university-power",
+    "key": "science-multiplier-8",
+    "family": "science-multiplier",
     "tier": 8,
-    "name": "University Power VIII",
-    "description": "Own 100,000,000 universities. Reward: University power ×9.",
+    "name": "Science Multiplier VIII",
+    "description": "Own 100,000,000 universities. Reward: Science Multiplier ×9.",
     "requirement": {
       "type": "building-count",
       "building": "university",
       "count": 100000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "universityPower", "value": 9 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 9
+      }
+    ]
   },
   {
     "guid": "62b31f33-0538-5f0c-90b0-bfb436d4b39d",
-    "key": "university-power-9",
-    "family": "university-power",
+    "key": "science-multiplier-9",
+    "family": "science-multiplier",
     "tier": 9,
-    "name": "University Power IX",
-    "description": "Own 1,000,000,000 universities. Reward: University power ×10.",
+    "name": "Science Multiplier IX",
+    "description": "Own 1,000,000,000 universities. Reward: Science Multiplier ×10.",
     "requirement": {
       "type": "building-count",
       "building": "university",
       "count": 1000000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "universityPower", "value": 10 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 10
+      }
+    ]
   },
   {
     "guid": "93e1e5d0-a054-562c-96ae-d45c4db29895",
-    "key": "smithy-power-1",
-    "family": "smithy-power",
+    "key": "metalwork-multiplier-1",
+    "family": "metalwork-multiplier",
     "tier": 1,
-    "name": "Smithy Power I",
-    "description": "Own 10 smithies. Reward: Smithy power +20%.",
+    "name": "Metalwork Multiplier I",
+    "description": "Own 10 smithies. Reward: Metalwork Multiplier +20%.",
     "requirement": {
       "type": "building-count",
       "building": "smithy",
       "count": 10
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "smithyPower", "value": 1.2 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 1.2
+      }
+    ]
   },
   {
     "guid": "b63c59e3-287e-545d-a937-c0b05fc54758",
-    "key": "smithy-power-2",
-    "family": "smithy-power",
+    "key": "metalwork-multiplier-2",
+    "family": "metalwork-multiplier",
     "tier": 2,
-    "name": "Smithy Power II",
-    "description": "Own 100 smithies. Reward: Smithy power ×3.",
+    "name": "Metalwork Multiplier II",
+    "description": "Own 100 smithies. Reward: Metalwork Multiplier ×3.",
     "requirement": {
       "type": "building-count",
       "building": "smithy",
       "count": 100
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "smithyPower", "value": 3 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 3
+      }
+    ]
   },
   {
     "guid": "b85c6410-3fe5-521c-81a0-491c6cbb55d0",
-    "key": "smithy-power-3",
-    "family": "smithy-power",
+    "key": "metalwork-multiplier-3",
+    "family": "metalwork-multiplier",
     "tier": 3,
-    "name": "Smithy Power III",
-    "description": "Own 1,000 smithies. Reward: Smithy power ×4.",
+    "name": "Metalwork Multiplier III",
+    "description": "Own 1,000 smithies. Reward: Metalwork Multiplier ×4.",
     "requirement": {
       "type": "building-count",
       "building": "smithy",
       "count": 1000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "smithyPower", "value": 4 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 4
+      }
+    ]
   },
   {
     "guid": "58980c67-dd64-58b2-8b41-a076c1f0aab2",
-    "key": "smithy-power-4",
-    "family": "smithy-power",
+    "key": "metalwork-multiplier-4",
+    "family": "metalwork-multiplier",
     "tier": 4,
-    "name": "Smithy Power IV",
-    "description": "Own 10,000 smithies. Reward: Smithy power ×5.",
+    "name": "Metalwork Multiplier IV",
+    "description": "Own 10,000 smithies. Reward: Metalwork Multiplier ×5.",
     "requirement": {
       "type": "building-count",
       "building": "smithy",
       "count": 10000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "smithyPower", "value": 5 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 5
+      }
+    ]
   },
   {
     "guid": "549fc6fd-f611-5481-96e5-93c0f25b9303",
-    "key": "smithy-power-5",
-    "family": "smithy-power",
+    "key": "metalwork-multiplier-5",
+    "family": "metalwork-multiplier",
     "tier": 5,
-    "name": "Smithy Power V",
-    "description": "Own 100,000 smithies. Reward: Smithy power ×6.",
+    "name": "Metalwork Multiplier V",
+    "description": "Own 100,000 smithies. Reward: Metalwork Multiplier ×6.",
     "requirement": {
       "type": "building-count",
       "building": "smithy",
       "count": 100000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "smithyPower", "value": 6 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 6
+      }
+    ]
   },
   {
     "guid": "03a424da-0234-5e93-842a-53fc88aed0d3",
-    "key": "smithy-power-6",
-    "family": "smithy-power",
+    "key": "metalwork-multiplier-6",
+    "family": "metalwork-multiplier",
     "tier": 6,
-    "name": "Smithy Power VI",
-    "description": "Own 1,000,000 smithies. Reward: Smithy power ×7.",
+    "name": "Metalwork Multiplier VI",
+    "description": "Own 1,000,000 smithies. Reward: Metalwork Multiplier ×7.",
     "requirement": {
       "type": "building-count",
       "building": "smithy",
       "count": 1000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "smithyPower", "value": 7 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 7
+      }
+    ]
   },
   {
     "guid": "ea583cda-d527-5fd4-9e5f-20079a6dc3f7",
-    "key": "smithy-power-7",
-    "family": "smithy-power",
+    "key": "metalwork-multiplier-7",
+    "family": "metalwork-multiplier",
     "tier": 7,
-    "name": "Smithy Power VII",
-    "description": "Own 10,000,000 smithies. Reward: Smithy power ×8.",
+    "name": "Metalwork Multiplier VII",
+    "description": "Own 10,000,000 smithies. Reward: Metalwork Multiplier ×8.",
     "requirement": {
       "type": "building-count",
       "building": "smithy",
       "count": 10000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "smithyPower", "value": 8 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 8
+      }
+    ]
   },
   {
     "guid": "fbc748ff-de76-570a-9880-221adb36fd19",
-    "key": "smithy-power-8",
-    "family": "smithy-power",
+    "key": "metalwork-multiplier-8",
+    "family": "metalwork-multiplier",
     "tier": 8,
-    "name": "Smithy Power VIII",
-    "description": "Own 100,000,000 smithies. Reward: Smithy power ×9.",
+    "name": "Metalwork Multiplier VIII",
+    "description": "Own 100,000,000 smithies. Reward: Metalwork Multiplier ×9.",
     "requirement": {
       "type": "building-count",
       "building": "smithy",
       "count": 100000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "smithyPower", "value": 9 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 9
+      }
+    ]
   },
   {
     "guid": "c726f3af-2019-5cfc-92c3-7de0b79c86c2",
-    "key": "smithy-power-9",
-    "family": "smithy-power",
+    "key": "metalwork-multiplier-9",
+    "family": "metalwork-multiplier",
     "tier": 9,
-    "name": "Smithy Power IX",
-    "description": "Own 1,000,000,000 smithies. Reward: Smithy power ×10.",
+    "name": "Metalwork Multiplier IX",
+    "description": "Own 1,000,000,000 smithies. Reward: Metalwork Multiplier ×10.",
     "requirement": {
       "type": "building-count",
       "building": "smithy",
       "count": 1000000000
     },
-    "bonuses": [{ "type": "attributeMultiplier", "destination": "smithyPower", "value": 10 }]
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 10
+      }
+    ]
   },
   {
     "guid": "b6e7193e-d92c-54eb-8ea3-155ee040291c",
@@ -1249,7 +1665,9 @@
       "resource": "science",
       "amount": 1000
     },
-    "bonuses": [{ "type": "attributeFlat", "destination": "science", "value": 2 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "science", "value": 2 }
+    ]
   },
   {
     "guid": "2eafc474-7c24-53cf-884c-4f93cd0128cf",
@@ -1263,7 +1681,9 @@
       "resource": "science",
       "amount": 10000
     },
-    "bonuses": [{ "type": "attributeFlat", "destination": "science", "value": 3 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "science", "value": 3 }
+    ]
   },
   {
     "guid": "76e9ad30-8f67-5d01-bd31-c07be863e3a6",
@@ -1277,7 +1697,9 @@
       "resource": "science",
       "amount": 1000000
     },
-    "bonuses": [{ "type": "attributeFlat", "destination": "science", "value": 6 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "science", "value": 6 }
+    ]
   },
   {
     "guid": "309fe151-5b9d-5f6a-bc75-002530ac5fd1",
@@ -1291,7 +1713,9 @@
       "resource": "military",
       "amount": 1000
     },
-    "bonuses": [{ "type": "attributeFlat", "destination": "military", "value": 2 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "military", "value": 2 }
+    ]
   },
   {
     "guid": "cc422da8-5d4f-5a08-a710-f6735fc1ea6e",
@@ -1305,7 +1729,9 @@
       "resource": "military",
       "amount": 10000
     },
-    "bonuses": [{ "type": "attributeFlat", "destination": "military", "value": 3 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "military", "value": 3 }
+    ]
   },
   {
     "guid": "5b119cff-d1d1-5907-94f4-238469d927c7",
@@ -1319,7 +1745,9 @@
       "resource": "military",
       "amount": 1000000
     },
-    "bonuses": [{ "type": "attributeFlat", "destination": "military", "value": 6 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "military", "value": 6 }
+    ]
   },
   {
     "guid": "814513d0-27a1-5e5d-bcd2-24b5c34106f3",
@@ -1333,7 +1761,9 @@
       "resource": "metalwork",
       "amount": 1000
     },
-    "bonuses": [{ "type": "attributeFlat", "destination": "metalwork", "value": 2 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "metalwork", "value": 2 }
+    ]
   },
   {
     "guid": "28c1be5c-719e-59f6-a6a6-094132c148ac",
@@ -1347,7 +1777,9 @@
       "resource": "metalwork",
       "amount": 10000
     },
-    "bonuses": [{ "type": "attributeFlat", "destination": "metalwork", "value": 3 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "metalwork", "value": 3 }
+    ]
   },
   {
     "guid": "ff491522-159c-5c63-af39-614c240509cd",
@@ -1361,6 +1793,8 @@
       "resource": "metalwork",
       "amount": 1000000
     },
-    "bonuses": [{ "type": "attributeFlat", "destination": "metalwork", "value": 6 }]
+    "bonuses": [
+      { "type": "attributeFlat", "destination": "metalwork", "value": 6 }
+    ]
   }
 ]

@@ -3,12 +3,12 @@
 Shared instructions for **every** AI agent (and human contributor) working in this
 repository. Read this file first, then the docs it points to.
 
-| Document | Answers |
-| --- | --- |
-| `AGENTS.md` (this file) | How to work here: rules, architecture, conventions, validation |
-| `docs/roadmap.md` | What to build next: milestones, save format, ages, balance intent |
+| Document                    | Answers                                                           |
+| --------------------------- | ----------------------------------------------------------------- |
+| `AGENTS.md` (this file)     | How to work here: rules, architecture, conventions, validation    |
+| `docs/roadmap.md`           | What to build next: milestones, save format, ages, balance intent |
 | `.github/agents/*.agent.md` | Per-agent roles (lead / coder / balance). They defer to this file |
-| `README.md` | Getting started, template notes |
+| `README.md`                 | Getting started, template notes                                   |
 
 If a per-agent file and this file disagree, **this file wins**.
 
@@ -222,11 +222,11 @@ building keys are Gamepedia ids, the Gamepedia modal turns factor sources into l
 ### 4.4 Buildings and cost scaling (`src/game/buildings.ts`)
 
 ```ts
-type BuildingCost    = { resource: ResourceKey; base: ExpNumber; factor: number };
+type BuildingCost = { resource: ResourceKey; base: ExpNumber; factor: number };
 type BuildingEffects = {
-  capacityProvided?:   { building: BuildingKey; perBuilding: ExpNumber };
+  capacityProvided?: { building: BuildingKey; perBuilding: ExpNumber };
   resourceMultiplier?: { resource: ResourceKey; factor: ExpNumber };
-  resourceDrain?:      { resource: ResourceKey; amount: ExpNumber };
+  resourceDrain?: { resource: ResourceKey; amount: ExpNumber };
 };
 ```
 
@@ -255,7 +255,7 @@ Current data conventions: production buildings give `resourceMultiplier` `×1.1`
 `market`/`monument` have no effects; monument stays `available: false`.
 
 `effects` is a **per-building stopgap**. The target model is a shared
-`bonuses: Bonus[]` list whose destinations are resources *or* buyables (buildings and
+`bonuses: Bonus[]` list whose destinations are resources _or_ buyables (buildings and
 units), with resource bonuses reusing today's factor model and four new cost-reduction
 types — full spec in §13. Nothing of that is implemented; keep authoring `effects` data
 as it is until that work is scheduled, and do not add a third effect shape in the
@@ -271,26 +271,26 @@ and `statistics` (`src/game/statistics.ts`).
 Getters: `population` (= `resources.population`), `maximumPopulation` /
 `housingCapacity` (= `peopleCapacity`), `assignedWorkers`, `availableWorkers`.
 
-| Method | Behaviour |
-| --- | --- |
-| `tick()` | Applies `computeResourceRate()` to each **production** resource (clamped at 0), advances both play-time counters by one second, records any age whose population threshold was just met (`recordReachedAges()`), then `checkAchievements()` |
-| `gather(key)` | Adds `computeClickGain(key)` = `clickPower × productionPerWorker × Π multipliers` (drains excluded) and counts one production click |
-| `assignWorker` / `unassignWorker` | Clamped by available workers / current count |
-| `autoAssignWorkers(count = Infinity)` | Assigns all idle workers (or up to `count`); keeps food ≈ 10× the other resources while equalising the others |
-| `build(key, count)` | No-op unless `canBuild()`; subtracts cost, applies special resource deltas, appends ids, adds to the cumulative building counters |
-| `autoBuyBuildings()` | One pass in definition order, buying `getMaxAffordableBuildings()` each |
-| `upgradeBuildingLimit(key, slots)` | Raises `` `${key}Capacity` `` |
-| `upgradeBuildingCosts(key, costs)` | Per-building cost override (for future upgrades) |
-| `addFactor(key, type, factor)` | Appends a factor (for future upgrades/research) |
-| `setAutoClicksPerSecond(n)` | Dev-tools auto clicker (also the current `autoClickRate` stat value) |
-| `recordUiClick()` | Counts one click anywhere in the UI shell (production clicks are counted by `gather()`) |
-| `computeClickPower()` | The global click power stat: base 1, `attributeFlat` bonuses sum, `attributeMultiplier` bonuses compound |
-| `getAttributeValue(key)` | Current value of any attribute: computed for derived stats, stored amount/capacity base otherwise |
-| `getDerivedAttributeFactors(key)` | Base term + every active flat/multiplier bonus targeting a derived attribute, paired with source ids (feeds the Gamepedia stat page) |
-| `buyUpgrade(id)` | No-op unless unlocked and affordable; pays the cost and appends the id |
-| `defeatEncounter(id)` | Idempotent; appends the encounter id and records the fastest victory time |
-| `enterAge(id)` | Idempotent; appends the age id and records the fastest entry time |
-| `checkAchievements()` | Appends every achievement whose requirement is met; returns `this` when nothing is new |
+| Method                                | Behaviour                                                                                                                                                                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tick()`                              | Applies `computeResourceRate()` to each **production** resource (clamped at 0), advances both play-time counters by one second, records any age whose population threshold was just met (`recordReachedAges()`), then `checkAchievements()` |
+| `gather(key)`                         | Adds `computeClickGain(key)` = `clickPower × productionPerWorker × Π multipliers` (drains excluded) and counts one production click                                                                                                         |
+| `assignWorker` / `unassignWorker`     | Clamped by available workers / current count                                                                                                                                                                                                |
+| `autoAssignWorkers(count = Infinity)` | Assigns all idle workers (or up to `count`); keeps food ≈ 10× the other resources while equalising the others                                                                                                                               |
+| `build(key, count)`                   | No-op unless `canBuild()`; subtracts cost, applies special resource deltas, appends ids, adds to the cumulative building counters                                                                                                           |
+| `autoBuyBuildings()`                  | One pass in definition order, buying `getMaxAffordableBuildings()` each                                                                                                                                                                     |
+| `upgradeBuildingLimit(key, slots)`    | Raises `` `${key}Capacity` ``                                                                                                                                                                                                               |
+| `upgradeBuildingCosts(key, costs)`    | Per-building cost override (for future upgrades)                                                                                                                                                                                            |
+| `addFactor(key, type, factor)`        | Appends a factor (for future upgrades/research)                                                                                                                                                                                             |
+| `setAutoClicksPerSecond(n)`           | Dev-tools auto clicker (also the current `autoClickRate` stat value)                                                                                                                                                                        |
+| `recordUiClick()`                     | Counts one click anywhere in the UI shell (production clicks are counted by `gather()`)                                                                                                                                                     |
+| `computeClickPower()`                 | The global click power stat: base 1, `attributeFlat` bonuses sum, `attributeMultiplier` bonuses compound                                                                                                                                    |
+| `getAttributeValue(key)`              | Current value of any attribute: computed for derived stats, stored amount/capacity base otherwise                                                                                                                                           |
+| `getDerivedAttributeFactors(key)`     | Base term + every active flat/multiplier bonus targeting a derived attribute, paired with source ids (feeds the Gamepedia stat page)                                                                                                        |
+| `buyUpgrade(id)`                      | No-op unless unlocked and affordable; pays the cost and appends the id                                                                                                                                                                      |
+| `defeatEncounter(id)`                 | Idempotent; appends the encounter id and records the fastest victory time                                                                                                                                                                   |
+| `enterAge(id)`                        | Idempotent; appends the age id and records the fastest entry time                                                                                                                                                                           |
+| `checkAchievements()`                 | Appends every achievement whose requirement is met; returns `this` when nothing is new                                                                                                                                                      |
 
 Queries: `getFactors`, `computeResourceRate`, `computeClickGain`, `getBuildingMax`,
 `getBuildingCost`, `formatBuildingCost`, `getMaxAffordableBuildings`,
@@ -537,12 +537,12 @@ cd d:\work\dev\idle-civ
 
 Available scripts (this is the whole list — there is **no `test` script**):
 
-| Script | Runs | When |
-| --- | --- | --- |
-| `npm run dev` | `vite` (dev server; VS Code task binds `127.0.0.1:5173`) | interactive development |
-| `npm run build` | `tsc -b && vite build` | **required** before declaring work done |
-| `npm run lint` | `oxlint` | **required**, currently 0 warnings / 0 errors |
-| `npm run preview` | `vite preview` (serves `dist/`) | checking a production build |
+| Script            | Runs                                                     | When                                          |
+| ----------------- | -------------------------------------------------------- | --------------------------------------------- |
+| `npm run dev`     | `vite` (dev server; VS Code task binds `127.0.0.1:5173`) | interactive development                       |
+| `npm run build`   | `tsc -b && vite build`                                   | **required** before declaring work done       |
+| `npm run lint`    | `oxlint`                                                 | **required**, currently 0 warnings / 0 errors |
+| `npm run preview` | `vite preview` (serves `dist/`)                          | checking a production build                   |
 
 VS Code integration: task **"Idle Civ: Build"** (default build task, `$tsc` problem
 matcher) and **"Idle Civ: Start Vite"** (background task), used as the `preLaunchTask` of
@@ -565,6 +565,7 @@ works here: **batch everything, and never run a command to learn something this 
 already tells you.**
 
 **Reading files**
+
 - Know which files you need? Read them **all in one parallel batch** — the file you will
   edit, one nearby usage, and the JSON payload that backs it. Do not read a 20-line
   slice at a guessed offset, see it is wrong, and guess again: read the whole file (or a
@@ -575,6 +576,7 @@ already tells you.**
   about to read anyway.
 
 **Editing files**
+
 - Use the edit tool with exact `old_text → new_text` chunks, and emit **all independent
   edits (different files, or non-overlapping regions of one file) in the same message**
   instead of one edit per turn.
@@ -584,6 +586,7 @@ already tells you.**
   with the build; spot-read only the regions you are genuinely unsure about.
 
 **Compiling / validating**
+
 - Run both gates **in one batched command**, with output redirected (see PowerShell
   notes below) and scratch files cleaned up in the same command:
 
@@ -614,7 +617,7 @@ Do not leave scratch artifacts (output files, `dist/`, ad-hoc scripts) behind in
 tracked tree. `dist/` and `node_modules/` are already gitignored (`*.local` too).
 
 Version control: **do not** `git commit`, `push`, `reset`, `checkout`, `stash`, or delete
-files unless the user explicitly asks. Confirm `git status` is clean of *your*
+files unless the user explicitly asks. Confirm `git status` is clean of _your_
 accidental additions before you finish. Never commit with `--amend` or force flags.
 **Always run git commands that may page with `--no-pager`** (e.g.
 `git --no-pager log`, `git --no-pager diff`) — a paged command hangs the
@@ -747,7 +750,7 @@ with a roadmap entry already assigned.
   Adding an entry whose id already exists (for example reusing a resource id for a
   building) throws at import time and blanks the app.
 - **The tick is a 1-second `setInterval` in React**, not a fixed-step loop with delta
-  time. Background tabs throttle it, so elapsed/offline progress is *not* modelled yet;
+  time. Background tabs throttle it, so elapsed/offline progress is _not_ modelled yet;
   the roadmap's Milestone 3 now specifies the planned mechanic (an Offline Production
   Efficiency Factor `E_off` of 25–50% of active production, capped at 12 hours).
 - **`styles.css` is one 1356-line global file** with no scoping — reuse class names
@@ -763,7 +766,7 @@ with a roadmap entry already assigned.
   (plain, scientific and `K/M/B`-style suffixed input). **Hazard, reproduced in headless
   Chrome:** never read `event.target.checked` from a control in the shell — `countUiClick`
   on `<main>` runs in the **capture** phase, so its `setGameState()` commit re-renders the
-  tree and React writes the controlled `checked` value back onto the node *before* the
+  tree and React writes the controlled `checked` value back onto the node _before_ the
   `change` handler runs. `change saw checked=false` therefore made every
   "turn this on" click read `false` (the original auto-buy checkbox bug). Dev toggles are
   now `aria-pressed` buttons whose handlers **invert React state**
@@ -775,19 +778,19 @@ with a roadmap entry already assigned.
 
 Full detail in `docs/roadmap.md`; this is orientation only.
 
-| Milestone | Status |
-| --- | --- |
-| 0 — Shared `GameObject` + `Gamepedia` registry | **Done** (ids, descriptions, `seen`, registry, relations) |
-| 1 — Data-driven definitions | **Partly done** — definitions are data modules under `src/game/`, but the roadmap's `src/game/data/` split and a full effect DSL are not in place, and `available` is still a boolean |
-| 2 — Ages / era progression (7 ages by powers of ten) | **Not started** (the era card is a hardcoded mock) |
-| 3 — Save system (versioned JSON/XML/Base64 + migrations) | **Not started** |
-| 4 — Action multiplier (1 / 10 / MAX) | **Partly done** — the UI has 1, 10, powers of ten and Max; the engine has `getMaxAffordableBuildings()` and clamped worker commands, but no shared `getActionQuantity()` |
-| 5 — Statistics | **Not started** |
-| 6 — Achievements | **First slice done** — `src/game/achievements.ts` + `data/achievements.json` (12 milestone records, five requirement types), `CivilizationState.checkAchievements()` evaluated at the end of `tick()`, `earnedAchievements` id list, Achievements tab, `achievement` Gamepedia category. Age-transition and click-power achievements still pending (they need ages and the `stat` family) |
-| 7 — Upgrades | **First slice done** — bonus type, 32 enhancer upgrades (capacity/production, plus cost reductions on tiers 3–8), Upgrades tab, unlock-gated buildings, cost-reduction engine path. Flat/drain/base bonus data and research/achievement/battle sources still pending; full model in **§13** |
-| 8 — Battle system | **First slice done** — `src/game/battle.ts` (deterministic stack sim, seed = battle id + army signatures, ≤ 200 rounds), `src/game/units.ts` + `data/units.json` (79 units, cost factor 1.2, per-age hp/attack scale), 23 encounters in `data/encounters.json` with enemy boosts and victory bonuses, `unitCounts` + buy/resolve paths on the engine, Army tab (`components/ArmyPanel.tsx`), unit icons vendored from game-icons.net (`public/units/`). Unit retirement, research-sourced unlocks and unit boosts via research are pending |
-| 9 — Research tree | **Not started** |
-| 10 — Game-length simulation | **Not started** |
+| Milestone                                                | Status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0 — Shared `GameObject` + `Gamepedia` registry           | **Done** (ids, descriptions, `seen`, registry, relations)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 1 — Data-driven definitions                              | **Partly done** — definitions are data modules under `src/game/`, but the roadmap's `src/game/data/` split and a full effect DSL are not in place, and `available` is still a boolean                                                                                                                                                                                                                                                                                                                                                      |
+| 2 — Ages / era progression (7 ages by powers of ten)     | **Not started** (the era card is a hardcoded mock)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| 3 — Save system (versioned JSON/XML/Base64 + migrations) | **Not started**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 4 — Action multiplier (1 / 10 / MAX)                     | **Partly done** — the UI has 1, 10, powers of ten and Max; the engine has `getMaxAffordableBuildings()` and clamped worker commands, but no shared `getActionQuantity()`                                                                                                                                                                                                                                                                                                                                                                   |
+| 5 — Statistics                                           | **Not started**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 6 — Achievements                                         | **First slice done** — `src/game/achievements.ts` + `data/achievements.json` (12 milestone records, five requirement types), `CivilizationState.checkAchievements()` evaluated at the end of `tick()`, `earnedAchievements` id list, Achievements tab, `achievement` Gamepedia category. Age-transition and click-power achievements still pending (they need ages and the `stat` family)                                                                                                                                                  |
+| 7 — Upgrades                                             | **First slice done** — bonus type, 32 enhancer upgrades (capacity/production, plus cost reductions on tiers 3–8), Upgrades tab, unlock-gated buildings, cost-reduction engine path. Flat/drain/base bonus data and research/achievement/battle sources still pending; full model in **§13**                                                                                                                                                                                                                                                |
+| 8 — Battle system                                        | **First slice done** — `src/game/battle.ts` (deterministic stack sim, seed = battle id + army signatures, ≤ 200 rounds), `src/game/units.ts` + `data/units.json` (79 units, cost factor 1.2, per-age hp/attack scale), 23 encounters in `data/encounters.json` with enemy boosts and victory bonuses, `unitCounts` + buy/resolve paths on the engine, Army tab (`components/ArmyPanel.tsx`), unit icons vendored from game-icons.net (`public/units/`). Unit retirement, research-sourced unlocks and unit boosts via research are pending |
+| 9 — Research tree                                        | **Not started**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 10 — Game-length simulation                              | **Not started**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 Roadmap's recommended order: data modules → ages → command-style actions and result
 events → statistics → saves → multipliers → upgrades/research → achievements → combat →
@@ -801,15 +804,15 @@ decision**, along with the prestige-bonus system and its relock semantics (§13.
 
 ## 11. Agent roles
 
-Custom agents live in `.github/agents/`. They encode *who* should do *what*; this file
-encodes *how* anything gets done here.
+Custom agents live in `.github/agents/`. They encode _who_ should do _what_; this file
+encodes _how_ anything gets done here.
 
-| Agent | Scope | Tools |
-| --- | --- | --- |
-| `Idle Civ Lead` | Architecture, integration, review, conflict resolution, final `npm run build`; may delegate to the coder and balance agents | read, search, edit, execute, todo, agent |
-| `Idle Civ Coder` | One narrow implementation task; smallest coherent edit; no opportunistic refactors | read, search, edit, execute |
-| `Idle Civ Balance` | Balance, pacing, economics, historical research — **does not edit production code**; proposes values with rationale and sources | read, search, web |
-| `Enter` | Unconfigured template stub; ignore it | — |
+| Agent              | Scope                                                                                                                           | Tools                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `Idle Civ Lead`    | Architecture, integration, review, conflict resolution, final `npm run build`; may delegate to the coder and balance agents     | read, search, edit, execute, todo, agent |
+| `Idle Civ Coder`   | One narrow implementation task; smallest coherent edit; no opportunistic refactors                                              | read, search, edit, execute              |
+| `Idle Civ Balance` | Balance, pacing, economics, historical research — **does not edit production code**; proposes values with rationale and sources | read, search, web                        |
+| `Enter`            | Unconfigured template stub; ignore it                                                                                           | —                                        |
 
 Working agreement for all of them: inspect the owning module and one usage before
 editing; make the smallest coherent change; keep engine logic out of components; do not
@@ -859,7 +862,7 @@ A change is done when:
 
 ### 13.1 Bonuses — the single unit of change
 
-A **bonus** is the one data-driven primitive that should eventually express *every*
+A **bonus** is the one data-driven primitive that should eventually express _every_
 effect in the game: building effects, upgrade effects, research effects, battle rewards
 and achievement rewards. Instead of adding a new bespoke effect field per feature, add a
 bonus type (or a new destination), so the engine keeps a single application path.
@@ -867,14 +870,14 @@ bonus type (or a new destination), so the engine keeps a single application path
 ```ts
 type BonusType =
   // attribute-targeted: the destination is a resource, capacity or stat
-  | "attributeFlat"         // +N to the destination attribute
-  | "attributeMultiplier"   // ×N on the destination attribute
-  | "attributeDrain"        // −N per second of the destination attribute
+  | "attributeFlat" // +N to the destination attribute
+  | "attributeMultiplier" // ×N on the destination attribute
+  | "attributeDrain" // −N per second of the destination attribute
   // buyable-targeted: the destination is a buyable (building or unit)
-  | "costReductionFlat"     // destination cost −N (absolute)
-  | "costReductionPercent"  // destination cost × (1 − N)
-  | "costReductionBase"     // base term × Π(1 − N) — divides the base
-  | "costReductionFactor";  // destination cost's growth factor reduced
+  | "costReductionFlat" // destination cost −N (absolute)
+  | "costReductionPercent" // destination cost × (1 − N)
+  | "costReductionBase" // base term × Π(1 − N) — divides the base
+  | "costReductionFactor"; // destination cost's growth factor reduced
 
 type BonusDestination = AttributeKey | BuyableId;
 
@@ -885,15 +888,15 @@ type Bonus = {
 };
 ```
 
-| Bonus type | Destination | Meaning | Nearest existing equivalent |
-| --- | --- | --- | --- |
-| `attributeFlat` | attribute (resource, capacity or stat) | adds a flat amount to the attribute's accrual | `ResourceFactors.additional` |
-| `attributeMultiplier` | attribute (resource, capacity or stat) | multiplies the attribute's gain | `ResourceFactors.multiplicative` |
-| `attributeDrain` | attribute (resource, capacity or stat) | subtracts a flat per-second amount (consumption) | `ResourceFactors.drain` |
-| `costReductionFlat` | buyable | lowers every cost entry of the buyable by an absolute amount | **none** (new) |
-| `costReductionPercent` | buyable | lowers every cost entry by a percentage | **none** (new) |
-| `costReductionBase` | buyable | divides the base term *before* geometric growth (Π(1 − N), compounding; e.g. Master Builder tiers) | `buildingCostOverrides` precursor |
-| `costReductionFactor` | buyable | reduces the growth factor (e.g. `1.25` → `1.20`) | crude precursor: `buildingCostOverrides` |
+| Bonus type             | Destination                            | Meaning                                                                                            | Nearest existing equivalent              |
+| ---------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `attributeFlat`        | attribute (resource, capacity or stat) | adds a flat amount to the attribute's accrual                                                      | `ResourceFactors.additional`             |
+| `attributeMultiplier`  | attribute (resource, capacity or stat) | multiplies the attribute's gain                                                                    | `ResourceFactors.multiplicative`         |
+| `attributeDrain`       | attribute (resource, capacity or stat) | subtracts a flat per-second amount (consumption)                                                   | `ResourceFactors.drain`                  |
+| `costReductionFlat`    | buyable                                | lowers every cost entry of the buyable by an absolute amount                                       | **none** (new)                           |
+| `costReductionPercent` | buyable                                | lowers every cost entry by a percentage                                                            | **none** (new)                           |
+| `costReductionBase`    | buyable                                | divides the base term _before_ geometric growth (Π(1 − N), compounding; e.g. Master Builder tiers) | `buildingCostOverrides` precursor        |
+| `costReductionFactor`  | buyable                                | reduces the growth factor multiplicatively (clamped at 1.01 minimum)                               | crude precursor: `buildingCostOverrides` |
 
 The first three map exactly onto today's factor model, so they can reuse
 `ResourceFactors` and `computeResourceRate()` (`(Σ flat) × (Π mult) − (Σ drain)`) and the
@@ -916,7 +919,8 @@ ones), `percent` reductions **compound** as `Π(1 − N)` with each source clamp
 0 floor, and `flat` reductions **sum** and absorb each unit's cost after the percent
 step, clamped at 0 per unit. The enhancer upgrades use this: tiers 3–5 each add
 `costReductionPercent` 0.5 (compounding to ÷8) and tiers 6–8 each add
-`costReductionFactor` 0.01 on their building.
+`costReductionFactor` 0.01 on their building (multiplicative reduction of the growth factor,
+clamped at 1.01 minimum).
 
 Because a bonus names its destination, and building/unit ids are Gamepedia ids, a bonus
 list is also a **relation graph**: it feeds `GamepediaEntry.relatedIds` the same way
@@ -927,7 +931,7 @@ building costs and effects do today (§4.6/§4.7). Design them so the Gamepedia 
 fixed order — `base → factor → percent → flat`:
 
 1. `costReductionBase` — reduce the cost's `base` term.
-2. `costReductionFactor` — reduce the growth `factor` (e.g. `1.25` → `1.20`).
+2. `costReductionFactor` — reduce the growth `factor` multiplicatively (clamped at 1.01 minimum). Formula: `1.01 + (baseFactor - 1.01) * Π(1 - N)`, where each N reduces the (factor - 1.01) range by N% multiplicatively.
 3. `costReductionPercent` — scale the resulting unit cost by `(1 − N)`.
 4. `costReductionFlat` — subtract `N` from the unit cost last.
 
@@ -944,13 +948,13 @@ Per-unit was chosen over applying reductions to the bulk total because:
 
 ### 13.2 Resources — the taxonomy and where each family is displayed
 
-| Resource family | Members | Displayed in |
-| --- | --- | --- |
-| population / worker (**special case**) | `population` — both the population count and the worker pool | sidebar summary (as `availableWorkers/population` + capacity) |
-| production | `wood`, `food`, `gold`, `stone` | sidebar summary |
-| building | `science` (university), `military` (barracks), `metalwork` (smithy) | sidebar summary |
-| capacities | population max (`peopleCapacity`) and per-building max (`` `${buildingKey}Capacity` ``) | **buildings UI**, not the summary |
-| derived | click power (`clickPower`), automated click power (`autoClickRate`) | **stats tab** and the Gamepedia |
+| Resource family                        | Members                                                                                 | Displayed in                                                  |
+| -------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| population / worker (**special case**) | `population` — both the population count and the worker pool                            | sidebar summary (as `availableWorkers/population` + capacity) |
+| production                             | `wood`, `food`, `gold`, `stone`                                                         | sidebar summary                                               |
+| building                               | `science` (university), `military` (barracks), `metalwork` (smithy)                     | sidebar summary                                               |
+| capacities                             | population max (`peopleCapacity`) and per-building max (`` `${buildingKey}Capacity` ``) | **buildings UI**, not the summary                             |
+| derived                                | click power (`clickPower`), automated click power (`autoClickRate`)                     | **stats tab** and the Gamepedia                               |
 
 Reconciliation with the code as it stands:
 
@@ -984,12 +988,6 @@ Reconciliation with the code as it stands:
   Caveat settled by the same decision: `clickPower` is **one global stat** scaling every
   manual click (today's per-resource `productionPerWorker` stays as resource data), and the
   auto-clicker becomes the `autoClickRate` stat rather than a bare state field.
-- **Building power** (§13.2): the global `buildingPower` stat multiplies every
-  building's own `<buildingKey>Power` (base 1, one per building, derived from the
-  building registry). Power scales a building's multiplier effects by their excess
-  (`1 + (f−1)·P`) and its flat production in full — drains and build-time capacity
-  grants never scale. Chain milestones target the per-building powers; endgame
-  "all buildings" bonuses target the global.
 
 ### 13.3 Buyables
 
@@ -1019,24 +1017,24 @@ cost model and the cost-reduction bonuses apply to upgrades too.
 
 Three state flags drive the whole lifecycle:
 
-| Flag | Meaning | Effect |
-| --- | --- | --- |
-| `seen` | the upgrade has been shown at least once | it becomes a Gamepedia entry |
-| `unlocked` | its unlock condition is satisfied | it appears in the **Upgrades tab** |
-| `bought` | its cost has been paid and its bonuses applied | bonuses apply and it disappears from the tab (it stays in the Gamepedia as a record) |
+| Flag       | Meaning                                        | Effect                                                                               |
+| ---------- | ---------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `seen`     | the upgrade has been shown at least once       | it becomes a Gamepedia entry                                                         |
+| `unlocked` | its unlock condition is satisfied              | it appears in the **Upgrades tab**                                                   |
+| `bought`   | its cost has been paid and its bonuses applied | bonuses apply and it disappears from the tab (it stays in the Gamepedia as a record) |
 
 ```ts
 type UpgradeDefinition = {
-  id: string;            // stable, kebab-case, Gamepedia id
+  id: string; // stable, kebab-case, Gamepedia id
   name: string;
   description: string;
   costs: BuildingCost[]; // limit of one purchase
-  bonuses: Bonus[];      // §13.1 — may target resources or buyables
+  bonuses: Bonus[]; // §13.1 — may target resources or buyables
 };
 
 // Unlocks are declared on the SOURCE, which lists the ids it unlocks:
-type AgeDefinition       = { /* ... */ unlocks: string[] }; // upgrade + research ids
-type ResearchDefinition  = { /* ... */ unlocks: string[] }; // applied on completion (purchase)
+type AgeDefinition = { /* ... */ unlocks: string[] }; // upgrade + research ids
+type ResearchDefinition = { /* ... */ unlocks: string[] }; // applied on completion (purchase)
 type EncounterDefinition = { /* ... */ unlocks: string[] }; // applied on victory
 ```
 
@@ -1054,7 +1052,7 @@ Unlocks are declared **by the source**, and each source lists the ids it unlocks
 **re-locked and re-unlocked on every prestige loop** (a designed-for future layer). A
 relockable effect therefore cannot hang off a permanent record — it has to hang off the
 **age**, which each loop re-enters. The **first** arrival at an age still fires an
-achievement, but that achievement is a permanent *historical record* ("this civilization
+achievement, but that achievement is a permanent _historical record_ ("this civilization
 first reached the Iron Age"); the age itself owns the unlock.
 
 Consequences for the three flags, under repeated prestige loops:
@@ -1066,7 +1064,7 @@ Consequences for the three flags, under repeated prestige loops:
   would keep its bonuses.
 
 That makes upgrades the join point between the economy, the research tree, encounters and
-ages — so the upgrade model should be built *after* those systems have their ids, or it
+ages — so the upgrade model should be built _after_ those systems have their ids, or it
 will need rework.
 
 Two pieces of state-management guidance:
@@ -1091,8 +1089,8 @@ Two pieces of state-management guidance:
   finite JSON; never reset `seen` for them.
 
 > Resolved: **a buyable's bonus never unlocks an upgrade.** There is no `grantUpgrade`
-> bonus type — the list stays at the seven types in §13.1, which only *modify* resources /
-> capacities or *reduce the cost* of buyables. Unlocks come exclusively from the unlock
+> bonus type — the list stays at the seven types in §13.1, which only _modify_ resources /
+> capacities or _reduce the cost_ of buyables. Unlocks come exclusively from the unlock
 > sources described above. An upgrade's bonuses may still **target** buyables, which is
 > what lets an upgrade reduce building or unit costs.
 
@@ -1115,7 +1113,7 @@ src/game/data/
   encounters.ts     combat encounters and their rewards
 ```
 
-Each file owns exactly one definition type and its registry data; shared *shapes* (the
+Each file owns exactly one definition type and its registry data; shared _shapes_ (the
 cost model, the bonus union) stay in the type module they belong to and are imported by
 the others.
 
@@ -1147,7 +1145,7 @@ unlock gates). The remaining seams to reuse instead of adding parallel machinery
   `costAt()`/`formatCost()` remain stateless raw previews with no callers.
 - **Keeping buy-N and buy-MAX O(1)** under the decided per-unit order (§13.1): the `base`
   and `factor` reductions rewrite the series inputs, so `first × (factor^count − 1) /
-  (factor − 1)` keeps its shape; the percent reduction scales `first` uniformly; and the
+(factor − 1)` keeps its shape; the percent reduction scales `first` uniformly; and the
   flat reduction is `− count × N`. The only wrinkle is the per-unit clamp at 0
   (`Σ max(0, unitᵢ − N)`): skip the leading units that clamp to zero — there are at most
   `log_factor(base′ / N) + 1` of them, so a handful, findable with a log (validate the
@@ -1163,7 +1161,7 @@ unlock gates). The remaining seams to reuse instead of adding parallel machinery
 - The Upgrades tab lists unlocked unbought upgrades and the Gamepedia `upgrade`
   category fills as unlocks fire (App reveals on every state change). `combat` holds
   the 23 campaign battles; `research` is still empty.
-- Sequencing: the roadmap's recommended order puts saves and statistics *before*
+- Sequencing: the roadmap's recommended order puts saves and statistics _before_
   upgrades. Do not start without agreeing the target milestone, because
   `seen`/`unlocked`/`bought` are meaningless until a save exists.
 
@@ -1171,25 +1169,25 @@ unlock gates). The remaining seams to reuse instead of adding parallel machinery
 
 **Resolved** (decisions, not open points — implement them as specified):
 
-| # | Question | Decision |
-| --- | --- | --- |
-| 1 | Order of application for the four cost-reduction types | `base → factor → percent → flat` (§13.1) |
-| 1 | Clamp floor for costs | **0** — a cost may become free |
-| 5 | Clamp floor for drains | **0** — a drain may never go negative |
-| 2 | Per-unit vs bulk-total cost reductions | **Per unit**, keeping buy-N and buy-MAX on one O(1) evaluator (§13.1, §13.6) |
-| 3 | Is `capacityProvided` replaced by `attributeFlat`? | **No — capacity keeps its own representation.** Flat today, but may gain a **multiplier** later, so the capacity door stays open |
-| 6 | Where are click power / automated click power shown? | **Stats screen** (live) **and** somewhere in the Gamepedia |
-| 7 | Do units use the buyable cost model? | **Yes** — they receive cost-reduction bonuses |
-| 7 | What caps units? | **Nothing.** Affordability is the only limit; no capacity, population or slot cap |
-| 8 | Can a buyable's bonus unlock an upgrade? | **No.** There is no `grantUpgrade` type; bonuses only modify resources/capacities or reduce buyable costs. Unlocks come only from unlock sources |
-| 8 | Unlock carriers | **The source carries the list**: an **age** on arrival, a **research** on completion (purchase), an **encounter** on victory. **Achievements do not carry unlock lists** (they never reset, so they cannot drive relocking) — this supersedes an earlier draft that put the lists on the achievement |
-| 8 | Why not let achievements carry the unlocks? | Because prestige returns to the early ages, so unlocks must **relock and re-unlock each loop**; a permanent record cannot express that. The first arrival at an age still fires an achievement, but only as a permanent historical record |
-| 9 | Is `seen` ever reset? | **Never** — not on prestige, not on a new colony loop. Relocking affects `unlocked` only, so a relocked upgrade stays in the Gamepedia |
-| 1 | How resource bonuses stack | **Option A** (rationale below): multipliers multiply, flats and drains **sum equally**, fixed type order, **no tiers/groups** |
-| 2 | Where click power / automated click power live | **Derived attributes** in the attribute registry, own `stat` Gamepedia category, plus an in-game **stats tab** whose values open the Gamepedia page via `focusId` (§13.2) |
-| 3 | Who owns building-count unlocks | **The building definition**, with an explicit `unlocks` list + count threshold. All unlocks are **explicit id lists**, never a generic condition/rule engine |
-| 4 | Prestige: what resets | **`bought` resets every loop.** Permanent: **achievements**, **prestige bonuses** (to be defined) and `seen` |
-| 5 | Implementation priority | **The first loop first** — prestige design is deferred (see below) |
+| #   | Question                                               | Decision                                                                                                                                                                                                                                                                                             |
+| --- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Order of application for the four cost-reduction types | `base → factor → percent → flat` (§13.1)                                                                                                                                                                                                                                                             |
+| 1   | Clamp floor for costs                                  | **0** — a cost may become free                                                                                                                                                                                                                                                                       |
+| 5   | Clamp floor for drains                                 | **0** — a drain may never go negative                                                                                                                                                                                                                                                                |
+| 2   | Per-unit vs bulk-total cost reductions                 | **Per unit**, keeping buy-N and buy-MAX on one O(1) evaluator (§13.1, §13.6)                                                                                                                                                                                                                         |
+| 3   | Is `capacityProvided` replaced by `attributeFlat`?     | **No — capacity keeps its own representation.** Flat today, but may gain a **multiplier** later, so the capacity door stays open                                                                                                                                                                     |
+| 6   | Where are click power / automated click power shown?   | **Stats screen** (live) **and** somewhere in the Gamepedia                                                                                                                                                                                                                                           |
+| 7   | Do units use the buyable cost model?                   | **Yes** — they receive cost-reduction bonuses                                                                                                                                                                                                                                                        |
+| 7   | What caps units?                                       | **Nothing.** Affordability is the only limit; no capacity, population or slot cap                                                                                                                                                                                                                    |
+| 8   | Can a buyable's bonus unlock an upgrade?               | **No.** There is no `grantUpgrade` type; bonuses only modify resources/capacities or reduce buyable costs. Unlocks come only from unlock sources                                                                                                                                                     |
+| 8   | Unlock carriers                                        | **The source carries the list**: an **age** on arrival, a **research** on completion (purchase), an **encounter** on victory. **Achievements do not carry unlock lists** (they never reset, so they cannot drive relocking) — this supersedes an earlier draft that put the lists on the achievement |
+| 8   | Why not let achievements carry the unlocks?            | Because prestige returns to the early ages, so unlocks must **relock and re-unlock each loop**; a permanent record cannot express that. The first arrival at an age still fires an achievement, but only as a permanent historical record                                                            |
+| 9   | Is `seen` ever reset?                                  | **Never** — not on prestige, not on a new colony loop. Relocking affects `unlocked` only, so a relocked upgrade stays in the Gamepedia                                                                                                                                                               |
+| 1   | How resource bonuses stack                             | **Option A** (rationale below): multipliers multiply, flats and drains **sum equally**, fixed type order, **no tiers/groups**                                                                                                                                                                        |
+| 2   | Where click power / automated click power live         | **Derived attributes** in the attribute registry, own `stat` Gamepedia category, plus an in-game **stats tab** whose values open the Gamepedia page via `focusId` (§13.2)                                                                                                                            |
+| 3   | Who owns building-count unlocks                        | **The building definition**, with an explicit `unlocks` list + count threshold. All unlocks are **explicit id lists**, never a generic condition/rule engine                                                                                                                                         |
+| 4   | Prestige: what resets                                  | **`bought` resets every loop.** Permanent: **achievements**, **prestige bonuses** (to be defined) and `seen`                                                                                                                                                                                         |
+| 5   | Implementation priority                                | **The first loop first** — prestige design is deferred (see below)                                                                                                                                                                                                                                   |
 
 **Decided, with the rationale kept** (so it does not get silently re-litigated):
 

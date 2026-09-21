@@ -1,13 +1,23 @@
 import {
+  achievementDefinitions,
+  chainFamilyForId,
+  findAchievementDefinition,
+  materializeOpenEndedTier,
+  nextHoarderExponent,
+  openEndedHoarderChains,
+  type AchievementRequirement,
+} from "./achievements";
+import { ageDefinitions, findAgeDefinition, type AgeDefinition } from "./ages";
+import {
   computeResourceRate,
-  summarizeResourceFactors,
   derivedAttributeDefinitions,
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
   findAttributeDefinition,
-  productionDefinitions,
   producerResourceKeys,
+  productionDefinitions,
+  summarizeResourceFactors,
   type CapacityResourceKey,
   type DerivedAttributeFactors,
   type ProductionResourceKey,
@@ -18,23 +28,6 @@ import {
   type ResourceKey,
   type WorkerAssignments,
 } from "./attributes";
-import { ExpNumber } from "./expNumber";
-import { WorkerProduction } from "./workerProduction";
-import {
-  buildingDefinitions,
-  type BuildingCost,
-  type BuildingEffects,
-  type BuildingKey,
-} from "./buildings";
-import {
-  achievementDefinitions,
-  chainFamilyForId,
-  findAchievementDefinition,
-  materializeOpenEndedTier,
-  nextHoarderExponent,
-  openEndedHoarderChains,
-  type AchievementRequirement,
-} from "./achievements";
 import {
   armyPower,
   battleSeed,
@@ -43,10 +36,28 @@ import {
   type BattleSimulation,
 } from "./battle";
 import {
-  findEncounterDefinition,
+  collectCostReductions,
+  type Bonus,
+  type CostReductions,
+} from "./bonus";
+import {
+  buildingDefinitions,
+  type BuildingCost,
+  type BuildingEffects,
+  type BuildingKey,
+} from "./buildings";
+import {
   encounterDefinitions,
+  findEncounterDefinition,
   type EncounterDefinition,
 } from "./encounters";
+import { ExpNumber } from "./expNumber";
+import { findResearchDefinition, researchesUnlockingUnit } from "./research";
+import {
+  emptyStatistics,
+  tickMilliseconds,
+  type Statistics,
+} from "./statistics";
 import {
   findUnitDefinition,
   isBuyableUnit,
@@ -58,19 +69,8 @@ import {
   type UnitStatKey,
   type UnitStats,
 } from "./units";
-import {
-  emptyStatistics,
-  tickMilliseconds,
-  type Statistics,
-} from "./statistics";
 import { upgradeDefinitions } from "./upgrades";
-import { findResearchDefinition, researchesUnlockingUnit } from "./research";
-import {
-  collectCostReductions,
-  type Bonus,
-  type CostReductions,
-} from "./bonus";
-import { ageDefinitions, findAgeDefinition, type AgeDefinition } from "./ages";
+import { WorkerProduction } from "./workerProduction";
 
 /** One cost entry rewritten by the §13.1 per-unit reduction order. */
 type CostParameters = {
@@ -208,12 +208,7 @@ const compoundStatValue = (
   return flat.mul(multiplier);
 };
 
-for (const key of [
-  "buildingPower",
-  "buildingCostMultiplier",
-  "wastedResources",
-  ...buildingDefinitions.map(({ key }) => `${key}Power`),
-]) {
+for (const key of ["buildingCostMultiplier", "wastedResources"]) {
   derivedAttributeComputations[key] = {
     value:
       key === "wastedResources"
@@ -824,16 +819,6 @@ export class CivilizationState {
   }
 
   /**
-   * The effective power of one building: its own power attribute — which
-   * already folds in the global building-power layer — defaulting to 1 for any
-   * key without a power attribute.
-   */
-  private buildingPower(buildingKey: BuildingKey): ExpNumber {
-    const value = this.getAttributeValue(`${buildingKey}Power`);
-    return value.gt(ExpNumber.ZERO) ? value : ExpNumber.ONE;
-  }
-
-  /**
    * The global click power stat: base 1 plus every `clickPower` bonus in force.
    * Flats sum, multipliers compound — the attribute-bonus rule of §13.1, reused.
    */
@@ -883,17 +868,6 @@ export class CivilizationState {
       } else if (bonus.type === "attributeMultiplier") {
         factors.multiplicative.push([sourceId, bonus.value]);
       }
-    }
-    // Building powers fold in the global layer so the displayed value is the
-    // effective one; the row links the global stat's Gamepedia page (§13.2).
-    const isBuildingPower = buildingDefinitions.some(
-      ({ key: buildingKey }) => `${buildingKey}Power` === key,
-    );
-    if (isBuildingPower) {
-      factors.multiplicative.push([
-        "buildingPower",
-        this.getAttributeValue("buildingPower"),
-      ]);
     }
     return factors;
   }
@@ -959,20 +933,17 @@ export class CivilizationState {
       ({ key }) => key === buildingKey,
     )?.effects;
     if (!effects) return {};
-    const power = this.buildingPower(buildingKey);
     const quantity = ExpNumber.fromNumber(count);
     return {
       resourceMultiplier:
         effects.resourceMultiplier?.map((effect) => ({
           ...effect,
-          factor: ExpNumber.ONE.add(
-            effect.factor.sub(ExpNumber.ONE).mul(power),
-          ).pow(quantity),
+          factor: effect.factor.pow(quantity),
         })) ?? undefined,
       resourceProduction:
         effects.resourceProduction?.map((effect) => ({
           ...effect,
-          amount: effect.amount.mul(power).mul(quantity),
+          amount: effect.amount.mul(quantity),
         })) ?? undefined,
       resourceDrain:
         effects.resourceDrain?.map((effect) => ({
@@ -1031,8 +1002,12 @@ export class CivilizationState {
       cost,
       unitBase: ExpNumber.max(ExpNumber.ZERO, cost.base.mul(reductions.base)),
       unitFactor: ExpNumber.max(
-        ExpNumber.ONE,
-        ExpNumber.fromNumber(cost.factor).sub(reductions.factor),
+        ExpNumber.fromNumber(1.01),
+        ExpNumber.fromNumber(1.01).add(
+          ExpNumber.fromNumber(cost.factor)
+            .sub(ExpNumber.fromNumber(1.01))
+            .mul(reductions.factor),
+        ),
       ),
       reductions,
     }));

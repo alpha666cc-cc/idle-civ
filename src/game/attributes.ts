@@ -1,5 +1,4 @@
 import statData from "./data/stats.json";
-import { buildingDefinitions, type BuildingKey } from "./buildings";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 
@@ -42,10 +41,8 @@ export type ResourceKey =
 export type DerivedAttributeKey =
   | "clickPower"
   | "autoClickRate"
-  | "buildingPower"
   | "buildingCostMultiplier"
-  | "wastedResources"
-  | `${BuildingKey}Power`;
+  | "wastedResources";
 
 /** Every value-side key a bonus destination may name; buyable ids are separate. */
 export type AttributeKey = ResourceKey | DerivedAttributeKey;
@@ -149,25 +146,7 @@ export const derivedAttributeDefinitions: AttributeDefinition[] = (
     ),
 );
 
-/**
- * Every building owns a derived power attribute (§13.2): base 1, raised by
- * bonuses targeting `<buildingKey>Power`. Derived from the building registry so
- * new buildings get their power automatically — the building list is the single
- * source of truth.
- */
-export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
-  buildingDefinitions.map(
-    ({ key, name }) =>
-      new AttributeDefinition(
-        `${key}Power`,
-        `${name} power`,
-        "derived",
-        `${name} power multiplies this building's effects. Milestones raise it.`,
-      ),
-  );
-
 /** Every attribute definition, in Gamepedia registration order. */
-derivedAttributeDefinitions.push(...buildingPowerAttributeDefinitions);
 
 /** Wasted resources: accumulated resource cost of retired units (§Age system). */
 export const wastedResourcesDefinition = new AttributeDefinition(
