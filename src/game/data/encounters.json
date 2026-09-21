@@ -11,8 +11,8 @@
     "enemyArmy": [
       {
         "unitId": "wolf",
-        "count": 6,
-        "label": "6 wolves"
+        "count": 8,
+        "label": "8 wolves"
       }
     ],
     "enemyBoosts": [],
@@ -47,13 +47,13 @@
     "enemyArmy": [
       {
         "unitId": "wolf",
-        "count": 30,
-        "label": "30 wolves"
+        "count": 20,
+        "label": "20 wolves"
       },
       {
         "unitId": "bear",
-        "count": 5,
-        "label": "5 bears"
+        "count": 3,
+        "label": "3 bears"
       }
     ],
     "enemyBoosts": [],
@@ -72,6 +72,11 @@
         "type": "attributeMultiplier",
         "destination": "farmPower",
         "value": 4
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 2
       }
     ],
     "unlocks": []
@@ -98,6 +103,11 @@
         "type": "attributeMultiplier",
         "destination": "military",
         "value": 2
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 3
       }
     ],
     "unlocks": []
@@ -114,13 +124,18 @@
     "enemyArmy": [
       {
         "unitId": "spearman_bronze",
-        "count": 30000,
-        "label": "30k Trojans"
+        "count": 25,
+        "label": "25 Trojan spearmen"
       },
       {
         "unitId": "bowman_bronze",
-        "count": 10000,
-        "label": "10k defenders"
+        "count": 15,
+        "label": "15 Trojan bowmen"
+      },
+      {
+        "unitId": "chariot_bronze",
+        "count": 5,
+        "label": "5 Trojan chariots"
       }
     ],
     "enemyBoosts": [],
@@ -238,8 +253,18 @@
     "enemyArmy": [
       {
         "unitId": "spearman_iron",
+        "count": 10,
+        "label": "10 sea peoples spearmen"
+      },
+      {
+        "unitId": "cavalry_iron",
         "count": 5,
-        "label": "40k sea peoples"
+        "label": "5 sea peoples cavalry"
+      },
+      {
+        "unitId": "elephant_iron",
+        "count": 2,
+        "label": "2 war elephants"
       }
     ],
     "enemyBoosts": [],

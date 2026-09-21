@@ -37,8 +37,13 @@ const winsWithStats = (
       stats: gameState.getUnitStats(unitId),
     }))
     .filter(
-      (stack): stack is { unitId: string; count: ExpNumber; stats: NonNullable<ReturnType<CivilizationState["getUnitStats"]>> } =>
-        stack.stats !== undefined,
+      (
+        stack,
+      ): stack is {
+        unitId: string;
+        count: ExpNumber;
+        stats: NonNullable<ReturnType<CivilizationState["getUnitStats"]>>;
+      } => stack.stats !== undefined,
     );
   const enemy = gameState.getEnemyStacks(battleId);
   if (stacks.length === 0 || enemy.length === 0) return false;
@@ -66,8 +71,17 @@ export default function BattleSimulatorPanel({
   );
 
   const selectBattle = (id: string): void => {
+    const selectedBattle = encounterDefinitions.find(({ key }) => key === id);
     setBattleId(id);
-    setSelected(new Set());
+    if (selectedBattle) {
+      const battleCandidates = simulatorCandidates(selectedBattle.age);
+      const unlockedUnits = battleCandidates
+        .filter((unit) => gameState.isUnitAvailable(unit.key))
+        .map((unit) => unit.key);
+      setSelected(new Set(unlockedUnits));
+    } else {
+      setSelected(new Set());
+    }
     setResult(null);
     setFailed(false);
   };
@@ -99,7 +113,8 @@ export default function BattleSimulatorPanel({
       const units = candidates.filter((unit) => selected.has(unit.key));
       const outcome = solveMinimumArmy(battle.key, units, {
         getCost: (unitId, count) => costFromScratch(gameState, unitId, count),
-        wins: (composition) => winsWithStats(gameState, battle.key, composition),
+        wins: (composition) =>
+          winsWithStats(gameState, battle.key, composition),
       });
       setResult(outcome);
       setFailed(outcome === null);
@@ -140,19 +155,25 @@ export default function BattleSimulatorPanel({
               .map((stack) => `${stack.unitId} ×${stack.count}`)
               .join(", ")}
           </p>
-          <div className="dev-tools-label">Units (none selected by default)</div>
+          <div className="dev-tools-label">
+            Units (unlocked selected by default)
+          </div>
           <div className="battle-simulator-units">
             {candidates.map((unit) => (
-              <label key={unit.key} className="battle-simulator-unit">
+              <div
+                key={unit.key}
+                className="battle-simulator-unit"
+                onClick={() => toggleUnit(unit.key)}
+              >
                 <input
                   type="checkbox"
                   checked={selected.has(unit.key)}
-                  onChange={() => toggleUnit(unit.key)}
+                  readOnly
                 />
                 <span>
                   {unit.name} <small>age {unit.age}</small>
                 </span>
-              </label>
+              </div>
             ))}
           </div>
           <div className="battle-simulator-actions">

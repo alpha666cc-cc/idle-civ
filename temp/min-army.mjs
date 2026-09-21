@@ -16,7 +16,7 @@ const units = readJson("src/game/data/units.json");
 const battles = readJson("src/game/data/encounters.json");
 const byId = new Map(units.map((u) => [u.id, u]));
 
-const candidatesForBattle = (battle, battleIndex) => {
+const candidatesForBattle = (battle, _battleIndex) => {
   const ageBattles = battles.filter(({ age }) => age === battle.age);
   const ordinal = ageBattles.findIndex(({ key }) => key === battle.key);
   const current = units.filter(

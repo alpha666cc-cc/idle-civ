@@ -91,7 +91,7 @@ const maximumUnitPurchase = 1_000_000;
  * costs on ResearchDefinition are not charged.
  */
 const researchFirstCost = ExpNumber.fromNumber(100);
-const researchCostGrowth = ExpNumber.fromNumber(10);
+const researchCostGrowth = ExpNumber.fromNumber(2.5);
 
 /**
  * Identity-keyed recompute caches. Every state array is replaced immutably and
