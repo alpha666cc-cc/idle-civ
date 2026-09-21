@@ -195,6 +195,27 @@ export const openEndedHoarderChains: OpenEndedHoarderChain[] = [
     exponentStep: 3,
     label: "Gold Hoarder",
   },
+  {
+    family: "science-hoarder",
+    resource: "science",
+    startExponent: 3,
+    exponentStep: 3,
+    label: "Science Hoarder",
+  },
+  {
+    family: "military-hoarder",
+    resource: "military",
+    startExponent: 3,
+    exponentStep: 3,
+    label: "Military Hoarder",
+  },
+  {
+    family: "metalwork-hoarder",
+    resource: "metalwork",
+    startExponent: 3,
+    exponentStep: 3,
+    label: "Metalwork Hoarder",
+  },
 ];
 
 const chainForId = (

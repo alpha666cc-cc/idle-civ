@@ -476,6 +476,18 @@ a new line for their content; closing braces/brackets go on their own line at th
 indentation of the opening line. This convention exists so that indentation is consistent
 across contributions and not every model changes it differently.
 
+**JSON compactness (mandatory):** Keep JSON data files compact unless an entry genuinely
+benefits from expansion. Small nested objects/arrays (e.g. a 2–3 field `requirement` or a
+single-element `bonuses` entry) stay on one line: `"requirement": { "type": "population", "amount": 25 }`.
+Expand only when a line would exceed ~100 characters or the structure is hard to read
+(e.g. a `bonuses` array with multiple elements). When adding new entries, follow the
+compact style already used by nearby entries — never run `JSON.stringify(data, null, 2)`
+over a file that already has mixed compact/expanded formatting, because that silently
+rewrites every short form into an expanded form and drowns the real diff. To rewrite a
+JSON file cleanly, use `node` with a format that preserves the existing compact style or
+hand-author each entry; do not use PowerShell `Set-Content` (it writes CRLF and corrupts
+line-ending-sensitive tools like `guids.mjs`).
+
 TypeScript hard requirements imposed by the tsconfigs:
 
 - `verbatimModuleSyntax: true` → use `import type { X }` for type-only imports (and
