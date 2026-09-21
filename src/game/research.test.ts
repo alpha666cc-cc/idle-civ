@@ -134,33 +134,42 @@ describe("research buying", () => {
     expect(bought.getResearchFailureReason(second.key)).toBe("resources");
   });
 
-  it("lets unlocked techs be bought in any order", () => {
+  it("requires prerequisites to be bought before child techs", () => {
     const child = researchDefinitions.find((r) => r.prerequisites.length > 0);
     expect(child).toBeDefined();
     if (!child) return;
     const state = stateWith(1e12, [`age-${child.age}`]).enterAge(
       `age-${child.age}`,
     );
-    expect(state.isResearchUnlocked(child.key)).toBe(true);
-    const bought = state.buyResearch(child.key);
-    expect(bought.isResearchBought(child.key)).toBe(true);
+    // Child tech should be locked until prerequisites are bought
+    expect(state.isResearchUnlocked(child.key)).toBe(false);
+    expect(state.getResearchFailureReason(child.key)).toBe("locked");
+    // Buy prerequisites first
+    let stateWithPrereqs = state;
     for (const prerequisite of child.prerequisites) {
-      expect(bought.isResearchBought(prerequisite)).toBe(false);
+      stateWithPrereqs = stateWithPrereqs.buyResearch(prerequisite);
+      expect(stateWithPrereqs.isResearchBought(prerequisite)).toBe(true);
     }
+    // Now child should be unlocked
+    expect(stateWithPrereqs.isResearchUnlocked(child.key)).toBe(true);
+    const bought = stateWithPrereqs.buyResearch(child.key);
+    expect(bought.isResearchBought(child.key)).toBe(true);
   });
 });
 
 describe("research unlocks units", () => {
   it("marks research-unlocked units available once bought", () => {
+    // Find a research that unlocks a unit and has no prerequisites
     const unlocker = researchDefinitions.find(
-      (research) => research.unlocks.length > 0,
+      (research) =>
+        research.unlocks.length > 0 && research.prerequisites.length === 0,
     );
     expect(unlocker).toBeDefined();
     if (!unlocker) return;
     const unitId = unlocker.unlocks[0];
     const unit = unitDefinitions.find((candidate) => candidate.key === unitId);
     expect(isBuyableUnit(unit!)).toBe(true);
-    // No prerequisite gate: the unlocker itself can be bought directly.
+    // The unlocker can be bought directly since it has no prerequisites
     const state = stateWith(1e30, [`age-${unlocker.age}`])
       .enterAge(`age-${unlocker.age}`)
       .buyResearch(unlocker.key);

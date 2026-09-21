@@ -519,12 +519,18 @@ export class CivilizationState {
     );
   }
 
-  /** The tech's age is entered — order is free; prerequisites are display data. */
+  /** The tech's age is entered and all prerequisites are bought. */
   isResearchUnlocked(researchId: string): boolean {
     const research = findResearchDefinition(researchId);
     if (!research) return false;
-    return (
-      research.age === 0 || this.enteredAges.includes(`age-${research.age}`)
+    if (
+      research.age !== 0 &&
+      !this.enteredAges.includes(`age-${research.age}`)
+    ) {
+      return false;
+    }
+    return research.prerequisites.every((prereq) =>
+      this.boughtResearch.includes(prereq),
     );
   }
 
@@ -1408,8 +1414,9 @@ export class CivilizationState {
         ExpNumber.fromNumber(count),
       );
     }
-    for (const effect of buildingDefinitions.find(({ key }) => key === buildingKey)
-      ?.effects.capacityProvided ?? []) {
+    for (const effect of buildingDefinitions.find(
+      ({ key }) => key === buildingKey,
+    )?.effects.capacityProvided ?? []) {
       const targetKey = capacityKey(effect.building);
       resources[targetKey] = resources[targetKey].add(
         effect.perBuilding.mul(ExpNumber.fromNumber(count)),
