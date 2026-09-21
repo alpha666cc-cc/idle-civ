@@ -263,6 +263,9 @@ const unitStatLabels: Record<string, string> = {
 
 const destinationLabel = (destination: string): string => {
   if (destination === "all-production") return "all production";
+  if (destination.endsWith("Capacity")) {
+    return `${buildingNames.get(destination.slice(0, -8) as BuildingKey) ?? destination.slice(0, -8)} capacity`;
+  }
   const named =
     buildingNames.get(destination as BuildingKey) ?? unitNames.get(destination);
   return named ?? destination;
@@ -353,6 +356,10 @@ const ResearchCard = ({
   const unlocks = research.unlocks.map(
     (unitId) => unitNames.get(unitId) ?? unitId,
   );
+  const conversions = research.conversions.map(
+    ({ from, to, ratio }) =>
+      `Converts ${unitNames.get(from) ?? from} → ${unitNames.get(to) ?? to} (${ratio}:1)`,
+  );
   const effects = [
     ...(unlocks.length > 0
       ? [
@@ -361,6 +368,7 @@ const ResearchCard = ({
           }`,
         ]
       : []),
+    ...conversions,
     ...describeEffects(research),
   ];
   const Icon: LucideIcon =

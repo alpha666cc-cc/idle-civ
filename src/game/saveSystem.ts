@@ -28,7 +28,7 @@ import { emptyStatistics, type Statistics } from "./statistics";
  */
 
 /** Bump when the shape changes; `migrateSaveData` handles older documents. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 /** How a save travels: the same document, three encodings. */
 export type SaveFormat = "base64" | "json" | "xml";
@@ -219,6 +219,13 @@ export const migrateSaveData = (data: SaveData): SaveData => {
   // v1 → v2: research did not exist, so every old document starts with none.
   if (data.version === 1) {
     return { ...data, version: SAVE_VERSION, boughtResearch: [] };
+  }
+  // v2 → v3: convert builtBuildings array to buildingCounts map
+  if (data.version === 2) {
+    const buildingCounts = data.builtBuildings
+      ? countBuildingsFromArray(data.builtBuildings)
+      : (data.buildingCounts ?? {});
+    return { ...data, version: SAVE_VERSION, buildingCounts };
   }
   return { ...data, version: SAVE_VERSION };
 };
@@ -474,6 +481,14 @@ export const findUnknownContentIds = (
 };
 
 const countBuildings = (
+  builtBuildings: Record<string, number>,
+): Record<string, string> => {
+  return Object.fromEntries(
+    Object.entries(builtBuildings).map(([key, count]) => [key, String(count)]),
+  );
+};
+
+const countBuildingsFromArray = (
   builtBuildings: readonly string[],
 ): Record<string, string> => {
   const counts: Record<string, number> = {};
@@ -485,13 +500,15 @@ const countBuildings = (
 
 const legacyBuildingCounts = (
   builtBuildings: readonly string[] | undefined,
-): Record<string, string> => countBuildings(builtBuildings ?? []);
+): Record<string, string> => countBuildingsFromArray(builtBuildings ?? []);
 
-const expandBuildingCounts = (counts: Record<string, string>): string[] => {
-  const buildings: string[] = [];
+const expandBuildingCounts = (
+  counts: Record<string, string>,
+): Record<string, number> => {
+  const buildings: Record<string, number> = {};
   for (const [key, rawCount] of Object.entries(counts)) {
     const count = Math.max(0, Math.floor(Number(rawCount)));
-    for (let index = 0; index < count; index += 1) buildings.push(key);
+    if (count > 0) buildings[key] = count;
   }
   return buildings;
 };

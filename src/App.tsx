@@ -39,7 +39,7 @@ import {
   type AchievementDefinition,
 } from "./game/achievements";
 import { ageDefinitions } from "./game/ages";
-import { buildingDefinitions } from "./game/buildings";
+import { buildingDefinitions, type BuildingKey } from "./game/buildings";
 import { researchDefinitions } from "./game/research";
 import type { Bonus } from "./game/bonus";
 import { CivilizationState } from "./game/civilizationState";
@@ -187,6 +187,7 @@ const summaryResources: SummaryResource[] = [
   { key: "science", label: "Science", icon: Sparkles, tone: "violet" },
   { key: "military", label: "Military", icon: Swords, tone: "blue" },
   { key: "metalwork", label: "Metalwork", icon: Hammer, tone: "orange" },
+  { key: "trade", label: "Trade", icon: Store, tone: "purple" },
 ];
 
 const numberFormatStorageKey = "idle-civ:number-format";
@@ -1896,7 +1897,14 @@ function App() {
                 </div>
                 <div className="stat-card">
                   <span>Buildings standing</span>
-                  <strong>{fmt(gameState.builtBuildings.length)}</strong>
+                  <strong>
+                    {fmt(
+                      Object.values(gameState.builtBuildings).reduce(
+                        (sum, count) => sum + count,
+                        0,
+                      ),
+                    )}
+                  </strong>
                 </div>
               </div>
               {builtByKeyRows.length > 0 && (
@@ -2066,15 +2074,18 @@ function App() {
         <div className="buildings-header">
           <h2>Build</h2>
           <span className="building-count">
-            {gameState.builtBuildings.length} built
+            {Object.values(gameState.builtBuildings).reduce(
+              (sum, count) => sum + count,
+              0,
+            )}{" "}
+            built
           </span>
         </div>
         <div className="building-grid">
           {buildings.map((building) => {
             const Icon = building.icon;
-            const buildingCount = gameState.builtBuildings.filter(
-              (builtKey) => builtKey === building.key,
-            ).length;
+            const buildingCount =
+              gameState.builtBuildings[building.key as BuildingKey] ?? 0;
             const atCapacity =
               gameState.isBuildingAvailable(building.key) &&
               gameState.isBuildingAtCapacity(building.key);

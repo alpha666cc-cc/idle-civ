@@ -1,25 +1,28 @@
-// Research-tree converter: `temp/tech tree-v2-effects.json` → `src/game/data/research.json`.
+// Research-tree converter: `temp/tech tree-v3-effects.json` → `src/game/data/research.json`.
 //
-// The v2 file is human-authored and not strict JSON (missing commas between
-// adjacent effect objects), so it is lenient-parsed with one regex repair.
-// Effect tiers use only "small" and "large" today; the medium tier is kept in
-// the mapping so a future v3 file can adopt it without changes here.
+// The source file is human-authored and not strict JSON: objects and array
+// elements are sometimes written without the separating comma, and some arrays
+// carry a trailing comma. `repairJson()` applies those repairs in a fixed order;
+// a structural check (unique ids, every tech with age/effects) then guards
+// against a garbled parse silently emitting a short file.
 //
 // Mapping (user ruling):
 //   cost small → ÷2, medium → ÷100, large/big → −0.01 cost scaling
-//   production small → ×2 (food ×4), medium → ×10 (food ×20), large → ×100 (×200)
+//   production small → ×2, medium → ×10, large → ×100 (no food doubling yet)
 //   unit_stat_boost small → ×1.25, large → ×1.5 (multiplier)
 //   unlock_unit → the definition's `unlocks` list (not a bonus)
-//   Capacity/unsupported types are kept per entry under `ignored` with a
-//   machine-readable reason — never silently dropped.
+//   convert_unit / unitConversions → the definition's `conversions` list, at
+//     CONVERSION_RATIO_DEFAULT (10:1) unless the override table names the pair
+//   Unsupported types are kept per entry under `ignored` with a machine-readable
+//   reason — never silently dropped.
 //
-// Costs are not taken from the v2 file: techs are ordered topologically
+// Costs are not taken from the source file: techs are ordered topologically
 // (prerequisites first, then source order) and cost 1K × 10^index science.
 //
 // Rerunnable: deterministic output; GUIDs are stamped afterwards by
 // `node tools/gen/guids.mjs` (which derives them from file name + key).
 //
-// Run: node tools/gen/techtree.mjs
+// Run: node tools/gen/techtree.mjs [--expect=N]
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,10 +30,21 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..");
 
-/** Point this at a future v3 file to regenerate the tree. */
-const sourcePath = path.join(root, "temp", "tech tree-v2-effects.json");
+/** Point this at a future v4 file to regenerate the tree. */
+const sourcePath = path.join(root, "temp", "tech tree-v3-effects.json");
 const outputPath = path.join(root, "src", "game", "data", "research.json");
 const reportPath = path.join(root, "temp", "techtree-flags.txt");
+
+/**
+ * Sanity guard: the tree is expected to hold this many techs. A short file means
+ * the parser lost entries — update the number deliberately when content changes.
+ * `--expect=N` overrides it for one-off experiments.
+ */
+const expectArg = process.argv.find((argument) => argument.startsWith("--expect="));
+const expectedTechCount = expectArg
+  ? Number(expectArg.split("=")[1])
+  : 172;
+
 
 // ---------------------------------------------------------------------------
 // Vocabulary read from the live game data
@@ -48,7 +62,7 @@ const buyableUnitIds = new Set(
 );
 const buildingKeys = new Set(buildings.map((building) => building.key));
 
-/** v2 production_multiplier target → engine resource key. */
+/** production_multiplier target → engine resource key (trade is a resource now). */
 const productionTargetResource = {
   food: "food",
   wood: "wood",
@@ -56,23 +70,52 @@ const productionTargetResource = {
   gold: "gold",
   science: "science",
   metalwork: "metalwork",
+  trade: "trade",
 };
+
+/**
+ * The source spells building targets both ways (`town_hall` and `town-hall`), so
+ * every building lookup goes through this normaliser.
+ */
+const canonicalBuilding = (target) => String(target).replaceAll("_", "-");
 
 /** Building key producing a resource (for production_multiplier targets). */
 const buildingResource = {
   farm: "food",
   "lumber-yard": "wood",
-  lumber_yard: "wood",
   quarry: "stone",
   "gold-mine": "gold",
-  gold_mine: "gold",
   market: "gold",
   smithy: "metalwork",
 };
 
-/** v2 unit-stat target → engine bonus destination grammar. */
+/** Capacity bonus tiers; a capacity multiplier is `attributeMultiplier` on `<key>Capacity`. */
+// Capacity tier magnitudes mirror the production-multiplier tiers (small ×2,
+// medium ×10, large ×100); a multiplier on a capacity resource is retroactive —
+// getBuildingMax() applies it on top of the stock granted at build time.
+const capacityTier = { x2: 2, small: 2, medium: 10, large: 100 };
+
+/** Cost-reduction group names, with and without the `_units` suffix. */
+const unitGroupIds = () => ({
+  all: [...buyableUnitIds],
+  military: [...buyableUnitIds],
+  ranged: units.filter((u) => u.tags.includes("ranged")).map((u) => u.id),
+  cavalry: units
+    .filter((u) => u.tags.includes("armored") && u.domain === "ground")
+    .map((u) => u.id),
+  naval: units
+    .filter((u) => u.tags.includes("naval") || u.domain === "naval")
+    .map((u) => u.id),
+  siege: units.filter((u) => u.tags.includes("anti-armor")).map((u) => u.id),
+});
+
+const lookupUnitGroup = (ids, target) =>
+  ids[target] ?? ids[String(target).replace(/_units$/, "")];
+
+/** Unit-stat target → engine bonus destination grammar. */
 const unitStatTargets = {
   infantry_hp: "tag.infantry.hp",
+  infantry_attack: "tag.infantry.attack",
   ranged_attack: "tag.ranged.attack",
   cavalry_attack: "tag.armored.attack",
   cavalry_speed: "tag.armored.speed",
@@ -81,24 +124,19 @@ const unitStatTargets = {
   melee_defense: "unitAll.hp",
   unit_hp: "unitAll.hp",
   army_defense: "unitAll.hp",
+  army_attack: "unitAll.attack",
   army_power: "unitAll.attack",
 };
 
-/** v2 cost-reduction group target → concrete buyable ids. */
-const groupTargets = () => ({
-  all: [...buildingKeys],
-  military_units: [...buyableUnitIds],
-  ranged_units: units.filter((u) => u.tags.includes("ranged")).map((u) => u.id),
-  cavalry_units: units
-    .filter((u) => u.tags.includes("armored") && u.domain === "ground")
-    .map((u) => u.id),
-  naval_units: units
-    .filter((u) => u.tags.includes("naval") || u.domain === "naval")
-    .map((u) => u.id),
-  siege_units: units.filter((u) => u.tags.includes("anti-armor")).map((u) => u.id),
-});
+/**
+ * Conversion rate: how many obsolete units buy one replacement. Flat for now —
+ * the future per-pair conversion table goes in `conversionRatioOverrides`, and
+ * the chosen number is written into the data so the engine never hardcodes it.
+ */
+const CONVERSION_RATIO_DEFAULT = 10;
+const conversionRatioOverrides = {};
 
-/** Tier values per effect type (user ruling; medium reserved for v3). */
+/** Tier values per effect type (user ruling; medium reserved for a future file). */
 const tierValue = {
   production_multiplier: { small: 2, medium: 10, large: 100 },
   cost_reduction: { small: 0.5, medium: 0.99, large: 0.01 },
@@ -112,22 +150,115 @@ const tierValue = {
 // Lenient parse
 // ---------------------------------------------------------------------------
 
-const raw = fs.readFileSync(sourcePath, "utf8");
-const fixed = raw.replace(/}\s*\n(\s*)\{/g, "},\n$1{");
-const techs = JSON.parse(fixed);
+/**
+ * Repairs the hand-authored source into strict JSON. Order matters: trailing
+ * commas are removed first, then each "value on one line, next value on the
+ * following line without a comma" pattern gets its comma. Anything still
+ * unparseable throws with the offending window printed.
+ */
+const repairJson = (text) => {
+  const repaired = text
+    // 1. `"x",` immediately before `}` or `]` — a trailing comma.
+    .replace(/,+(\s*[}\]])/g, "$1")
+    // 2. `}` then a newline then `{`.
+    .replace(/}\s*\n(\s*)\{/g, "},\n$1{")
+    // 3. `}` then a newline then a key.
+    .replace(/}\s*\n(\s*)"/g, '},\n$1"')
+    // 4. `]` then a newline then a key.
+    .replace(/](\s*)\n(\s*)"/g, '],\n$2"')
+    // 5. a scalar (string / number / boolean / null) then a newline then a key.
+    .replace(/([0-9"]|true|false|null)(\s*)\n(\s*)"/g, "$1,\n$3");
+  try {
+    return JSON.parse(repaired);
+  } catch (error) {
+    const position = /position (\d+)/.exec(error.message)?.[1];
+    const window = position
+      ? repaired.slice(Math.max(0, Number(position) - 160), Number(position) + 80)
+      : "(no position)";
+    throw new Error(
+      `Cannot parse ${path.basename(sourcePath)}: ${error.message}\n${window}`,
+    );
+  }
+};
+
+const techs = repairJson(fs.readFileSync(sourcePath, "utf8"));
 console.log(`parsed ${techs.length} techs from ${path.basename(sourcePath)}`);
+
+// Structural guard: a garbled parse must never silently ship a short tree.
+if (techs.length !== expectedTechCount) {
+  throw new Error(
+    `Expected ${expectedTechCount} techs, parsed ${techs.length} — ` +
+      `fix the source or pass --expect=<count> deliberately.`,
+  );
+}
+const seenTechIds = new Set();
+for (const tech of techs) {
+  if (typeof tech.id !== "string" || tech.id.length === 0) {
+    throw new Error("Parsed a tech without an id.");
+  }
+  if (seenTechIds.has(tech.id)) throw new Error(`Duplicate tech id: ${tech.id}`);
+  seenTechIds.add(tech.id);
+  if (typeof tech.age !== "number" || !Array.isArray(tech.effects)) {
+    throw new Error(`Tech ${tech.id} is missing its age or effects array.`);
+  }
+}
+
 
 
 // ---------------------------------------------------------------------------
 // Conversion
 // ---------------------------------------------------------------------------
 
-const groups = groupTargets();
+const unitGroups = unitGroupIds();
 const report = [];
 const flag = (tech, effect, reason) => {
   report.push(
     `${tech.id}: IGNORED ${effect.type} -> ${effect.target} (${effect.value}) — ${reason}`,
   );
+};
+
+/**
+ * Conversion pairs for one tech: the structured `unitConversions` array plus any
+ * `convert_unit` effect written as `target → value` unit ids, deduped. The rate
+ * is the flat default today and the future per-pair table plugs in here.
+ */
+const conversionsOf = (tech) => {
+  const pairs = [];
+  const add = (from, to) => {
+    if (!unitIds.has(from) || !unitIds.has(to) || from === to) return false;
+    if (pairs.some((pair) => pair.from === from && pair.to === to)) return true;
+    pairs.push({ from, to });
+    return true;
+  };
+  for (const conversion of tech.unitConversions ?? []) {
+    if (!add(conversion.fromUnitId, conversion.toUnitId)) {
+      flag(
+        tech,
+        {
+          type: "unitConversions",
+          target: String(conversion.fromUnitId),
+          value: String(conversion.toUnitId),
+        },
+        "unresolvable conversion pair",
+      );
+    }
+  }
+  for (const effect of tech.effects ?? []) {
+    if (effect.type !== "convert_unit") continue;
+    if (add(effect.target, effect.value)) continue;
+    // Legacy tier wording (`value: "small"`) — the structured array carries the pair.
+    const covered = (tech.unitConversions ?? []).some(
+      (conversion) => conversion.fromUnitId === effect.target,
+    );
+    if (!covered) flag(tech, effect, "unresolved conversion (no structured pair)");
+  }
+  return pairs.map((pair) => ({
+    from: pair.from,
+    to: pair.to,
+    ratio:
+      conversionRatioOverrides[`${pair.from}->${pair.to}`] ??
+      CONVERSION_RATIO_DEFAULT,
+  }));
 };
 
 const convertEffect = (tech, effect) => {
@@ -136,13 +267,12 @@ const convertEffect = (tech, effect) => {
     if (!unitIds.has(target)) flag(tech, effect, "unknown unit id");
     return null; // carried via `unlocks`, not a bonus
   }
-  if (type === "production_multiplier") {
+  if (type === "convert_unit") {
+    return null; // carried via `conversions`, not a bonus
+  }
+  if (type === "production_multiplier" || type === "global_production") {
     if (target === "house" || target === "town_hall") {
       flag(tech, effect, "capacity-adjacent — user review");
-      return null;
-    }
-    if (target === "trade") {
-      flag(tech, effect, "no trade system yet");
       return null;
     }
     if (target === "all") {
@@ -152,7 +282,9 @@ const convertEffect = (tech, effect) => {
         value: String(tierValue.production_multiplier[tier]),
       };
     }
-    const resource = productionTargetResource[target] ?? buildingResource[target];
+    const resource =
+      productionTargetResource[target] ??
+      buildingResource[canonicalBuilding(target)];
     if (!resource) {
       flag(tech, effect, "unmappable production target");
       return null;
@@ -163,16 +295,27 @@ const convertEffect = (tech, effect) => {
       value: String(tierValue.production_multiplier[tier]),
     };
   }
-  if (type === "global_production") {
-    if (target === "trade") {
-      flag(tech, effect, "no trade system yet");
+  if (type === "building_capacity") {
+    const value = capacityTier[tier];
+    if (value === undefined) {
+      flag(tech, effect, "capacity tier not defined (use x2)");
       return null;
     }
-    return {
+    const keys =
+      target === "all"
+        ? [...buildingKeys].map((key) => `${key}Capacity`)
+        : buildingKeys.has(canonicalBuilding(target))
+          ? [`${canonicalBuilding(target)}Capacity`]
+          : null;
+    if (!keys) {
+      flag(tech, effect, "unmappable capacity target");
+      return null;
+    }
+    return keys.map((destination) => ({
       type: "attributeMultiplier",
-      destination: "all-production",
-      value: String(tierValue.production_multiplier[tier]),
-    };
+      destination,
+      value: String(value),
+    }));
   }
   if (type === "cost_reduction" || type === "building_cost_reduction" || type === "unit_cost_reduction") {
     const value = tierValue[type][tier];
@@ -184,23 +327,27 @@ const convertEffect = (tech, effect) => {
           value: String(value),
         }));
       }
-      if (buildingKeys.has(target)) {
-        return { type: "costReductionPercent", destination: target, value: String(value) };
+      if (buildingKeys.has(canonicalBuilding(target))) {
+        return {
+          type: "costReductionPercent",
+          destination: canonicalBuilding(target),
+          value: String(value),
+        };
       }
       flag(tech, effect, "unmappable building target");
       return null;
     }
-    if (type === "cost_reduction") {
-      if (target === "dock" || target === "enhancers") {
-        flag(tech, effect, "no such buyable (dock / enhancer cost path)");
-        return null;
-      }
-      const ids = groups[target];
-      if (!ids) {
-        flag(tech, effect, "unknown cost group");
-        return null;
-      }
-      return ids.map((id) => ({ type: "costReductionPercent", destination: id, value: String(value) }));
+    if (target === "dock" || target === "enhancers") {
+      flag(tech, effect, "no such buyable (dock / enhancer cost path)");
+      return null;
+    }
+    const ids = lookupUnitGroup(unitGroups, target);
+    if (ids) {
+      return ids.map((id) => ({
+        type: "costReductionPercent",
+        destination: id,
+        value: String(value),
+      }));
     }
     if (!unitIds.has(target)) {
       flag(tech, effect, "unknown unit id");
@@ -230,8 +377,8 @@ const convertEffect = (tech, effect) => {
     flag(tech, effect, "unknown click_power target");
     return null;
   }
-  if (type === "building_capacity" || type === "resource_capacity") {
-    flag(tech, effect, "capacity — user review");
+  if (type === "resource_capacity") {
+    flag(tech, effect, "no resource storage cap");
     return null;
   }
   const noSystem = {
@@ -239,7 +386,6 @@ const convertEffect = (tech, effect) => {
     offline_cap: "offline tuning not research-driven",
     offline_efficiency: "offline tuning not research-driven",
     special_ability: "no such mechanic",
-    convert_unit: "unit conversion not implemented",
     upkeep_reduction: "no upkeep drain on population",
     population_growth: "population is derived from citizens",
     worker_efficiency: "no per-worker efficiency attribute",
@@ -254,31 +400,42 @@ const convertEffect = (tech, effect) => {
 };
 
 
-// Topological order: prerequisites first, then source order among the free.
-const byId = new Map(techs.map((tech) => [tech.id, tech]));
-const ordered = [];
-const done = new Set();
-const visit = (tech) => {
-  if (done.has(tech.id)) return;
+// Order and cost basis are deliberately the SOURCE order: it is verified to put
+// every prerequisite before its dependants, and costing by source index keeps
+// every existing tech's cost byte-identical when prerequisites are edited (a
+// topological re-sort would renumber the whole tail of the tree). The engine
+// prices research globally (`getResearchNextCost()`), so this array is a stable
+// record rather than a live price list.
+const sourceIndex = new Map(techs.map((tech, index) => [tech.id, index]));
+const orderViolations = [];
+for (const tech of techs) {
   for (const prerequisite of tech.prerequisites ?? []) {
-    const parent = byId.get(prerequisite);
-    if (parent && !done.has(parent.id)) visit(parent);
+    const parentIndex = sourceIndex.get(prerequisite);
+    if (parentIndex === undefined) {
+      orderViolations.push(`${tech.id} -> unknown prerequisite ${prerequisite}`);
+    } else if (parentIndex > sourceIndex.get(tech.id)) {
+      orderViolations.push(
+        `${tech.id} (position ${sourceIndex.get(tech.id)}) comes before its ` +
+          `prerequisite ${prerequisite} (position ${parentIndex})`,
+      );
+    }
   }
-  done.add(tech.id);
-  ordered.push(tech);
-};
-for (const tech of techs) visit(tech);
-if (ordered.length !== techs.length) {
-  throw new Error(`topological sort lost techs: ${techs.length - ordered.length}`);
+}
+if (orderViolations.length > 0) {
+  throw new Error(
+    `The source file must list prerequisites before their dependants:\n  ` +
+      orderViolations.join("\n  "),
+  );
 }
 
-const entries = ordered.map((tech, index) => {
+const entries = techs.map((tech, index) => {
   const bonuses = [];
   for (const effect of tech.effects ?? []) {
     const converted = convertEffect(tech, effect);
     if (Array.isArray(converted)) bonuses.push(...converted);
     else if (converted !== null) bonuses.push(converted);
   }
+  const conversions = conversionsOf(tech);
   const ignored = (tech.effects ?? [])
     .map((effect) => {
       const line = report.find(
@@ -315,6 +472,9 @@ const entries = ordered.map((tech, index) => {
     ],
     bonuses,
     unlocks: [...new Set(tech.unlockedUnits ?? [])],
+    // Only emitted when a tech converts something: an empty array on all 172
+    // entries is pure diff noise, and the loader defaults to `[]`.
+    ...(conversions.length > 0 ? { conversions } : {}),
     ignored,
   };
 });

@@ -1,0 +1,4302 @@
+[
+  {
+    "id": "agriculture",
+    "name": "Agriculture",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "100",
+    "prerequisites": [],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "farm",
+        "value": "small"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "farm",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "pottery",
+    "name": "Pottery",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "120",
+    "prerequisites": [
+      "agriculture"
+    ],
+    "effects": [
+      {
+        "type": "building_cost_reduction",
+        "target": "house",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "food",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "animal_husbandry",
+    "name": "Animal Husbandry",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "150",
+    "prerequisites": [
+      "agriculture"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "food",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "wood",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "sling_throwing",
+    "name": "Sling Throwing",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "180",
+    "prerequisites": [
+      "pottery"
+    ],
+	"unlockedUnits": [
+      "slinger"
+    ],
+    "effects": [
+	  {
+        "type": "unlock_unit",
+        "target": "slinger",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "food",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "mining",
+    "name": "Mining",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "200",
+    "prerequisites": [
+      "agriculture"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "stone",
+        "value": "small"
+      },
+	  {
+        "type": "production_multiplier",
+        "target": "gold",
+        "value": "small"
+      },
+    ]
+  },
+  {
+    "id": "stone_working",
+    "name": "Stone Working",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "250",
+    "prerequisites": [
+      "mining"
+    ],
+    "effects": [
+       {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "stone",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "forestry",
+    "name": "Forestry",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "220",
+    "prerequisites": [
+      "agriculture"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "wood",
+        "value": "small"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "weaving",
+    "name": "Weaving",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "300",
+    "prerequisites": [
+      "animal_husbandry"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "gold",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "food",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "writing",
+    "name": "Writing",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "400",
+    "prerequisites": [
+      "pottery"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "calendar",
+    "name": "Calendar",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "500",
+    "prerequisites": [
+      "writing"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "food",
+        "value": "small"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "city_planning",
+    "name": "City Planning",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "civilian",
+    "cost": "600",
+    "prerequisites": [
+      "stone_working",
+      "writing"
+    ],
+    "effects": [
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "tribal_organization",
+    "name": "Tribal Organization",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "100",
+    "prerequisites": [ "agriculture" ],
+    "unlockedUnits": [
+      "warrior"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_attack",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "small"
+      }
+    ]
+  },
+  {
+	"id": "archery_mechanics",
+    "name": "Archery Mechanics",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "120",
+    "prerequisites": [
+      "tribal_organization"
+    ],
+    "effects": [
+      {
+        "type": "unit_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "flint_knapping",
+    "name": "Flint Knapping",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "150",
+    "prerequisites": [
+      "sling_throwing",
+	  "archery_mechanics"
+    ],
+    "unlockedUnits": [
+      "archer_prehist"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "archer_prehist",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "domestication",
+    "name": "Domestication",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "180",
+    "prerequisites": [
+      "tribal_organization"
+    ],
+    "unlockedUnits": [
+      "wolf"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "food",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "trapping",
+    "name": "Trapping",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "220",
+    "prerequisites": [
+      "domestication"
+    ],
+    "unlockedUnits": [
+      "bear"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "food",
+        "value": "small"
+      },
+	{
+        "type": "production_multiplier",
+        "target": "gold",
+        "value": "small"
+      },
+      {
+        "type": "unit_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "woodcraft_hulls",
+    "name": "Woodcraft & Hulls",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "250",
+    "prerequisites": [
+      "tribal_organization"
+    ],
+    "unlockedUnits": [
+      "canoe"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "canoe",
+        "value": "small"
+      },
+      {
+        "type": "unit_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "bronze_smelting",
+    "name": "Bronze Smelting",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "350",
+    "prerequisites": [
+      "tribal_organization"
+    ],
+    "unlockedUnits": [
+      "spearman_bronze"
+    ],
+    "unitConversions": [
+      {
+        "fromUnitId": "warrior",
+        "toUnitId": "spearman_bronze"
+      }
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "spearman_bronze",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "bronze_casting",
+    "name": "Bronze Casting",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "450",
+    "prerequisites": [
+      "bronze_smelting"
+    ],
+    "unlockedUnits": [
+      "axeman_bronze"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "axeman_bronze",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "wheel_axle",
+    "name": "Wheel & Axle",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "550",
+    "prerequisites": [
+      "bronze_smelting"
+    ],
+    "unlockedUnits": [
+      "chariot_bronze"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "chariot_bronze",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "composite_bowcraft",
+    "name": "Composite Bowcraft",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "650",
+    "prerequisites": [
+      "flint_knapping",
+      "bronze_casting"
+    ],
+    "unlockedUnits": [
+      "bowman_bronze"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "bowman_bronze",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "galley_design",
+    "name": "Galley Design",
+    "age": 0,
+    "ageName": "Ancient",
+    "category": "military",
+    "cost": "800",
+    "prerequisites": [
+      "woodcraft_hulls",
+      "bronze_casting"
+    ],
+    "unlockedUnits": [
+      "trireme_bronze"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "trireme_bronze",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "iron_mining",
+    "name": "Iron Mining",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "1000",
+    "prerequisites": [
+      "stone_working",
+      "bronze_smelting"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "metalwork",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "currency",
+    "name": "Currency",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "1200",
+    "prerequisites": [
+      "writing"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "trade",
+        "value": "small"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "masonry",
+    "name": "Masonry",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "1500",
+    "prerequisites": [
+      "city_planning"
+    ],
+    "effects": [
+      {
+        "type": "building_capacity",
+        "target": "town_hall",
+        "value": "x2"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "town_hall",
+        "value": "small"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "house",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "trade_routes",
+    "name": "Trade Routes",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "1800",
+    "prerequisites": [
+      "currency"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "trade",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "mathematics",
+    "name": "Mathematics",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "2200",
+    "prerequisites": [
+      "currency"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "large"
+      },
+	  {
+        "type": "building_capacity",
+        "target": "university",
+        "value": "x2"
+      },
+    ]
+  },
+  {
+    "id": "alphabet",
+    "name": "Alphabet",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "2500",
+    "prerequisites": [
+      "writing"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "small"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "irrigation",
+    "name": "Irrigation",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "3000",
+    "prerequisites": [
+      "calendar"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "food",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "code_of_laws",
+    "name": "Code of Laws",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "3500",
+    "prerequisites": [
+      "alphabet"
+    ],
+    "effects": [
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "road_networks",
+    "name": "Road Networks",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "4200",
+    "prerequisites": [
+      "trade_routes",
+      "masonry"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "trade",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "metallurgy_prep",
+    "name": "Metallurgy Preparation",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "5000",
+    "prerequisites": [
+      "iron_mining"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "stone",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "gold",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "shipbuilding_principles",
+    "name": "Shipbuilding Principles",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "6000",
+    "prerequisites": [
+      "galley_design"
+    ],
+    "effects": [
+      {
+        "type": "unit_cost_reduction",
+        "target": "naval",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "trade",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "philosophy_fundamentals",
+    "name": "Philosophy Fundamentals",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "civilian",
+    "cost": "7500",
+    "prerequisites": [
+      "alphabet"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "torsion_physics",
+    "name": "Torsion Physics",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "1000",
+    "prerequisites": [
+      "wheel_axle"
+    ],
+    "unlockedUnits": [
+      "catapult_ancient"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "catapult_ancient",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "iron_working",
+    "name": "Iron Working",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "1200",
+    "prerequisites": [
+      "bronze_smelting",
+      "iron_mining"
+    ],
+    "unlockedUnits": [
+      "spearman_iron"
+    ],
+    "unitConversions": [
+      {
+        "fromUnitId": "spearman_bronze",
+        "toUnitId": "spearman_iron"
+      }
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "spearman_iron",
+        "value": "small"
+      },
+      {
+        "type": "convert_unit",
+        "target": "spearman_bronze",
+        "value": "spearman_iron"
+      },
+      {
+        "type": "convert_unit",
+        "target": "warrior",
+        "value": "spearman_iron"
+      }
+    ]
+  },
+  {
+    "id": "iron_forging",
+    "name": "Iron Forging",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "1500",
+    "prerequisites": [
+      "iron_working"
+    ],
+    "unlockedUnits": [
+      "swordsman_iron"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "swordsman_iron",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "small"
+      },
+	  {
+        "type": "convert_unit",
+        "target": "axeman_bronze",
+        "value": "swordsman_iron"
+      }
+    ]
+  },
+  {
+    "id": "iron_chariotry",
+    "name": "Iron Chariotry",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "1800",
+    "prerequisites": [
+      "wheel_axle",
+      "iron_working"
+    ],
+    "unlockedUnits": [
+      "chariot_iron"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "chariot_iron",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "cavalry_attack",
+        "value": "small"
+      },    
+	  {
+        "type": "convert_unit",
+        "target": "chariot_bronze",
+        "value": "chariot_iron"
+      },
+    ]
+  },
+  {
+    "id": "horsemanship",
+    "name": "Horsemanship",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "2200",
+    "prerequisites": [
+      "domestication"
+    ],
+    "unlockedUnits": [
+      "cavalry_iron"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "cavalry_iron",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "cavalry_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "ram_hulls",
+    "name": "Ram Hulls",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "2800",
+    "prerequisites": [
+      "galley_design"
+    ],
+    "unlockedUnits": [
+      "war_galley_iron"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "war_galley_iron",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "howdah_mounting",
+    "name": "Howdah Mounting",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "3500",
+    "prerequisites": [
+      "trapping",
+      "iron_working"
+    ],
+    "unlockedUnits": [
+      "elephant_iron"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "elephant_iron",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "cavalry_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "engineered_siegecraft",
+    "name": "Engineered Siegecraft",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "4200",
+    "prerequisites": [
+      "torsion_physics",
+      "mathematics"
+    ],
+    "unlockedUnits": [
+      "ballista"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "ballista",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "heavy_oar_arrays",
+    "name": "Heavy Oar Arrays",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "5000",
+    "prerequisites": [
+      "ram_hulls"
+    ],
+    "unlockedUnits": [
+      "quinquereme"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "quinquereme",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "iron_shielding",
+    "name": "Iron Shielding",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "6000",
+    "prerequisites": [
+      "iron_forging"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "melee_defense",
+        "value": "small"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "military_units",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "cavalry_formations",
+    "name": "Cavalry Formations",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "7000",
+    "prerequisites": [
+      "horsemanship"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "cavalry_attack",
+        "value": "small"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "cavalry_units",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "coastal_forts",
+    "name": "Coastal Forts",
+    "age": 1,
+    "ageName": "Iron Age",
+    "category": "military",
+    "cost": "8000",
+    "prerequisites": [
+      "heavy_oar_arrays",
+      "masonry"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "naval_defense",
+        "value": "small"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "naval_units",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "aqueducts",
+    "name": "Aqueducts",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "10000",
+    "prerequisites": [
+      "masonry",
+      "mathematics"
+    ],
+    "effects": [
+      {
+        "type": "building_capacity",
+        "target": "house",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "house",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "drama_poetry",
+    "name": "Drama & Poetry",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "12000",
+    "prerequisites": [
+      "alphabet"
+    ],
+    "effects": [
+      {
+        "type": "global_production",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "civil_service",
+    "name": "Civil Service",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "15000",
+    "prerequisites": [
+      "code_of_laws"
+    ],
+    "effects": [
+      {
+        "type": "worker_efficiency",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "logic",
+    "name": "Logic",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "18000",
+    "prerequisites": [
+      "philosophy_fundamentals"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "currency_standard",
+    "name": "Currency Standard",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "22000",
+    "prerequisites": [
+      "currency"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "gold_mine",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "surveying",
+    "name": "Surveying",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "28000",
+    "prerequisites": [
+      "mathematics"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "quarry",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "crop_rotation",
+    "name": "Crop Rotation",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "35000",
+    "prerequisites": [
+      "irrigation"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "farm",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "lumber_mills",
+    "name": "Lumber Mills",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "42000",
+    "prerequisites": [
+      "forestry",
+      "iron_mining"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "lumber_yard",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "architecture",
+    "name": "Architecture",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "50000",
+    "prerequisites": [
+      "aqueducts"
+    ],
+    "effects": [
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "banking_concepts",
+    "name": "Banking Concepts",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "60000",
+    "prerequisites": [
+      "currency_standard"
+    ],
+    "effects": [
+      {
+        "type": "resource_capacity",
+        "target": "gold",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "gold",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "aesthetics",
+    "name": "Aesthetics",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "75000",
+    "prerequisites": [
+      "drama_poetry",
+      "architecture"
+    ],
+    "effects": [
+      {
+        "type": "building_capacity",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "scholasticism",
+    "name": "Scholasticism",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "civilian",
+    "cost": "90000",
+    "prerequisites": [
+      "logic"
+    ],
+    "effects": [
+      {
+        "type": "research_speed",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "legion_discipline",
+    "name": "Legion Discipline",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "10000",
+    "prerequisites": [
+      "iron_forging"
+    ],
+    "unlockedUnits": [
+      "legionary"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "legionary",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "phalanx_doctrine",
+    "name": "Phalanx Doctrine",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "12000",
+    "prerequisites": [
+      "iron_working"
+    ],
+    "unlockedUnits": [
+      "hoplite"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "hoplite",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "shock_cavalry",
+    "name": "Shock Cavalry",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "15000",
+    "prerequisites": [
+      "horsemanship",
+      "cavalry_formations"
+    ],
+    "unlockedUnits": [
+      "companion"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "companion",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "cavalry_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "recurve_archery",
+    "name": "Recurve Archery",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "18000",
+    "prerequisites": [
+      "composite_bowcraft"
+    ],
+    "unlockedUnits": [
+      "archer_classical"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "archer_classical",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "heavy_counterweights",
+    "name": "Heavy Counterweights",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "22000",
+    "prerequisites": [
+      "engineered_siegecraft"
+    ],
+    "unlockedUnits": [
+      "onager"
+    ],
+    "specialAbilities": [
+      "hit_naval"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "onager",
+        "value": "small"
+      },
+      {
+        "type": "special_ability",
+        "target": "hit_naval",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "incendiary_weapons",
+    "name": "Incendiary Weapons",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "28000",
+    "prerequisites": [
+      "heavy_oar_arrays"
+    ],
+    "unlockedUnits": [
+      "fire_ship"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "fire_ship",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "subterfuge",
+    "name": "Subterfuge",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "35000",
+    "prerequisites": [
+      "code_of_laws"
+    ],
+    "unlockedUnits": [
+      "assassin"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "assassin",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "armed_merchant_navies",
+    "name": "Armed Merchant Navies",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "42000",
+    "prerequisites": [
+      "trade_routes",
+      "shipbuilding_principles"
+    ],
+    "unlockedUnits": [
+      "trader_classical"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "trader_classical",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "armor_layering",
+    "name": "Armor Layering",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "50000",
+    "prerequisites": [
+      "iron_shielding"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "small"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "military_units",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "siege_logistics",
+    "name": "Siege Logistics",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "60000",
+    "prerequisites": [
+      "engineered_siegecraft"
+    ],
+    "effects": [
+      {
+        "type": "cost_reduction",
+        "target": "siege_units",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "naval_ramming",
+    "name": "Naval Ramming",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "75000",
+    "prerequisites": [
+      "heavy_oar_arrays"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "small"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "naval_units",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "martival_drill",
+    "name": "Martial Drill",
+    "age": 2,
+    "ageName": "Classical",
+    "category": "military",
+    "cost": "90000",
+    "prerequisites": [
+      "legion_discipline",
+      "phalanx_doctrine"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "small"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "military_units",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "feudalism",
+    "name": "Feudalism",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "120000",
+    "prerequisites": [
+      "civil_service"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "farm",
+        "value": "large"
+      },
+      {
+        "type": "upkeep_reduction",
+        "target": "population",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "guilds",
+    "name": "Guilds",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "150000",
+    "prerequisites": [
+      "banking_concepts"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "gold_mine",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "windmills",
+    "name": "Windmills",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "180000",
+    "prerequisites": [
+      "feudalism"
+    ],
+    "effects": [
+      {
+        "type": "building_capacity",
+        "target": "farm",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "farm",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "water_power",
+    "name": "Water Power",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "220000",
+    "prerequisites": [
+      "lumber_mills"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "lumber_yard",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "gothic_architecture",
+    "name": "Gothic Architecture",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "280000",
+    "prerequisites": [
+      "architecture"
+    ],
+    "effects": [
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "cartography",
+    "name": "Cartography",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "350000",
+    "prerequisites": [
+      "trade_routes"
+    ],
+    "effects": [
+      {
+        "type": "global_production",
+        "target": "trade",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "universities",
+    "name": "Universities",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "450000",
+    "prerequisites": [
+      "scholasticism"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "patronage",
+    "name": "Patronage",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "550000",
+    "prerequisites": [
+      "guilds"
+    ],
+    "effects": [
+      {
+        "type": "cost_reduction",
+        "target": "enhancers",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "manorialism",
+    "name": "Manorialism",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "700000",
+    "prerequisites": [
+      "feudalism"
+    ],
+    "effects": [
+      {
+        "type": "building_capacity",
+        "target": "house",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "house",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "mining_shafts",
+    "name": "Mining Shafts",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "850000",
+    "prerequisites": [
+      "metallurgy_prep"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "quarry",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "craftsmanship",
+    "name": "Craftsmanship",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "1000000",
+    "prerequisites": [
+      "guilds"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "metalwork",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "almanacs",
+    "name": "Almanacs",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "civilian",
+    "cost": "1200000",
+    "prerequisites": [
+      "crop_rotation"
+    ],
+    "effects": [
+      {
+        "type": "offline_efficiency",
+        "target": "offline_progress",
+        "value": "small"
+      },
+      {
+        "type": "offline_cap",
+        "target": "hours",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "plate_armor",
+    "name": "Plate Armor",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "120000",
+    "prerequisites": [
+      "shock_cavalry",
+      "armor_layering"
+    ],
+    "unlockedUnits": [
+      "knight"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "knight",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "cavalry_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "yew_bowcraft",
+    "name": "Yew Bowcraft",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "150000",
+    "prerequisites": [
+      "recurve_archery"
+    ],
+    "unlockedUnits": [
+      "longbow"
+    ],
+    "unitConversions": [
+      {
+        "fromUnitId": "archer_classical",
+        "toUnitId": "longbow"
+      }
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "longbow",
+        "value": "small"
+      },
+      {
+        "type": "convert_unit",
+        "target": "archer_classical",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "steel_crossbows",
+    "name": "Steel Crossbows",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "180000",
+    "prerequisites": [
+      "recurve_archery"
+    ],
+    "unlockedUnits": [
+      "crossbow"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "crossbow",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "professional_men_at_arms",
+    "name": "Professional Men-at-Arms",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "220000",
+    "prerequisites": [
+      "legion_discipline"
+    ],
+    "unlockedUnits": [
+      "man_at_arms"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "man_at_arms",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "trebuchet_physics",
+    "name": "Trebuchet Physics",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "280000",
+    "prerequisites": [
+      "heavy_counterweights"
+    ],
+    "unlockedUnits": [
+      "trebuchet"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "trebuchet",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "clinker_building",
+    "name": "Clinker Building",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "350000",
+    "prerequisites": [
+      "shipbuilding_principles"
+    ],
+    "unlockedUnits": [
+      "cog"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "cog",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "raiding_vessels",
+    "name": "Raiding Vessels",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "450000",
+    "prerequisites": [
+      "clinker_building"
+    ],
+    "unlockedUnits": [
+      "longship"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "longship",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "early_black_powder",
+    "name": "Early Black Powder",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "550000",
+    "prerequisites": [
+      "trebuchet_physics"
+    ],
+    "unlockedUnits": [
+      "bombard"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "bombard",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "rigging_sails",
+    "name": "Rigging & Sails",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "700000",
+    "prerequisites": [
+      "clinker_building"
+    ],
+    "unlockedUnits": [
+      "caravel"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "caravel",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "castle_fortification",
+    "name": "Castle Fortification",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "850000",
+    "prerequisites": [
+      "gothic_architecture"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "army_defense",
+        "value": "small"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "military_units",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "crossbow_drills",
+    "name": "Crossbow Drills",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "1000000",
+    "prerequisites": [
+      "steel_crossbows"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "small"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "ranged_units",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "chivalric_code",
+    "name": "Chivalric Code",
+    "age": 3,
+    "ageName": "Middle Ages",
+    "category": "military",
+    "cost": "1200000",
+    "prerequisites": [
+      "plate_armor"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "cavalry_speed",
+        "value": "small"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "cavalry_units",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "printing_press",
+    "name": "Printing Press",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "1500000",
+    "prerequisites": [
+      "universities",
+      "craftsmanship"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "double_entry_bookkeeping",
+    "name": "Double-Entry Bookkeeping",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "2000000",
+    "prerequisites": [
+      "guilds"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "gold_mine",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "scientific_method",
+    "name": "Scientific Method",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "2500000",
+    "prerequisites": [
+      "printing_press"
+    ],
+    "effects": [
+      {
+        "type": "research_speed",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "humanism",
+    "name": "Humanism",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "3200000",
+    "prerequisites": [
+      "printing_press"
+    ],
+    "effects": [
+      {
+        "type": "global_production",
+        "target": "all",
+        "value": "small"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "metallurgy",
+    "name": "Metallurgy",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "4000000",
+    "prerequisites": [
+      "mining_shafts"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "smithy",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "perspective_drawing",
+    "name": "Perspective Drawing",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "5000000",
+    "prerequisites": [
+      "architecture"
+    ],
+    "effects": [
+      {
+        "type": "building_capacity",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "banking_houses",
+    "name": "Banking Houses",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "6500000",
+    "prerequisites": [
+      "double_entry_bookkeeping"
+    ],
+    "effects": [
+      {
+        "type": "resource_capacity",
+        "target": "gold",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "gold",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "enclosure_acts",
+    "name": "Enclosure Acts",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "8000000",
+    "prerequisites": [
+      "windmills"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "farm",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "naval_academies",
+    "name": "Naval Academies",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "10000000",
+    "prerequisites": [
+      "cartography"
+    ],
+    "effects": [
+      {
+        "type": "global_production",
+        "target": "trade",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "clockwork_mechanics",
+    "name": "Clockwork Mechanics",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "12500000",
+    "prerequisites": [
+      "scientific_method"
+    ],
+    "effects": [
+      {
+        "type": "click_power",
+        "target": "auto_click",
+        "value": "small"
+      },
+      {
+        "type": "global_production",
+        "target": "all",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "global_exploration",
+    "name": "Global Exploration",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "civilian",
+    "cost": "15000000",
+    "prerequisites": [
+      "naval_academies"
+    ],
+    "effects": [
+      {
+        "type": "offline_cap",
+        "target": "hours",
+        "value": "large"
+      },
+      {
+        "type": "offline_efficiency",
+        "target": "offline_progress",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "matchlock_mechanisms",
+    "name": "Matchlock Mechanisms",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "1500000",
+    "prerequisites": [
+      "early_black_powder",
+      "steel_crossbows"
+    ],
+    "unlockedUnits": [
+      "musketeer"
+    ],
+    "unitConversions": [
+      {
+        "fromUnitId": "crossbow",
+        "toUnitId": "musketeer"
+      }
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "musketeer",
+        "value": "small"
+      },
+      {
+        "type": "convert_unit",
+        "target": "crossbow",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "tercio_formations",
+    "name": "Tercio Formations",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "2000000",
+    "prerequisites": [
+      "professional_men_at_arms",
+      "matchlock_mechanisms"
+    ],
+    "unlockedUnits": [
+      "pikeman_ren"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "pikeman_ren",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "mounted_firearms",
+    "name": "Mounted Firearms",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "2500000",
+    "prerequisites": [
+      "matchlock_mechanisms",
+      "chivalric_code"
+    ],
+    "unlockedUnits": [
+      "dragoon_ren"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "dragoon_ren",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "heavy_cavalry_pistols",
+    "name": "Heavy Cavalry Pistols",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "3200000",
+    "prerequisites": [
+      "mounted_firearms"
+    ],
+    "unlockedUnits": [
+      "cuirassier"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "cuirassier",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "cast_bronze_cannon",
+    "name": "Cast Bronze Cannon",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "4000000",
+    "prerequisites": [
+      "early_black_powder",
+      "metallurgy"
+    ],
+    "unlockedUnits": [
+      "cannon"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "cannon",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "broadside_warfare",
+    "name": "Broadside Warfare",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "5000000",
+    "prerequisites": [
+      "rigging_sails",
+      "cast_bronze_cannon"
+    ],
+    "unlockedUnits": [
+      "galleon"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "galleon",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "sailing_rigging",
+    "name": "Sailing Rigging",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "6500000",
+    "prerequisites": [
+      "broadside_warfare"
+    ],
+    "unlockedUnits": [
+      "frigate_sail"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "frigate_sail",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "letters_of_marque",
+    "name": "Letters of Marque",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "8000000",
+    "prerequisites": [
+      "sailing_rigging"
+    ],
+    "unlockedUnits": [
+      "privateer"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "privateer",
+        "value": "small"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "gunpowder_standardization",
+    "name": "Gunpowder Standardization",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "10000000",
+    "prerequisites": [
+      "matchlock_mechanisms"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "large"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "ranged_units",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "star_fortresses",
+    "name": "Star Fortresses",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "12500000",
+    "prerequisites": [
+      "castle_fortification",
+      "cast_bronze_cannon"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "unit_hp",
+        "value": "small"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "military_units",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "naval_bombardment",
+    "name": "Naval Bombardment",
+    "age": 4,
+    "ageName": "Renaissance",
+    "category": "military",
+    "cost": "15000000",
+    "prerequisites": [
+      "broadside_warfare"
+    ],
+    "specialAbilities": [
+      "hit_land"
+    ],
+    "effects": [
+      {
+        "type": "special_ability",
+        "target": "hit_land",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "small"
+      }
+    ]
+  },
+  {
+    "id": "steam_engine",
+    "name": "Steam Engine",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "20000000",
+    "prerequisites": [
+      "clockwork_mechanics",
+      "metallurgy"
+    ],
+    "effects": [
+      {
+        "type": "global_production",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "industrialization",
+    "name": "Industrialization",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "28000000",
+    "prerequisites": [
+      "steam_engine"
+    ],
+    "effects": [
+      {
+        "type": "enhancer_scaling",
+        "target": "growth_factor",
+        "value": "small"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "assembly_line",
+    "name": "Assembly Line",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "38000000",
+    "prerequisites": [
+      "industrialization"
+    ],
+    "effects": [
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "electricity",
+    "name": "Electricity",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "50000000",
+    "prerequisites": [
+      "scientific_method"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "corporations",
+    "name": "Corporations",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "68000000",
+    "prerequisites": [
+      "banking_houses"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "gold_mine",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "railroads",
+    "name": "Railroads",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "90000000",
+    "prerequisites": [
+      "steam_engine",
+      "road_networks"
+    ],
+    "effects": [
+      {
+        "type": "click_power",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "global_production",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "telegraph",
+    "name": "Telegraph",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "120000000",
+    "prerequisites": [
+      "electricity"
+    ],
+    "effects": [
+      {
+        "type": "offline_efficiency",
+        "target": "offline_progress",
+        "value": "large"
+      },
+      {
+        "type": "offline_cap",
+        "target": "hours",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "internal_combustion",
+    "name": "Internal Combustion",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "160000000",
+    "prerequisites": [
+      "steam_engine"
+    ],
+    "effects": [
+      {
+        "type": "resource_capacity",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "synthetic_fertilizers",
+    "name": "Synthetic Fertilizers",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "220000000",
+    "prerequisites": [
+      "enclosure_acts"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "farm",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "refining",
+    "name": "Refining",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "280000000",
+    "prerequisites": [
+      "internal_combustion"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "stone",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "pharmaceuticals",
+    "name": "Pharmaceuticals",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "civilian",
+    "cost": "350000000",
+    "prerequisites": [
+      "refining"
+    ],
+    "effects": [
+      {
+        "type": "population_growth",
+        "target": "population",
+        "value": "large"
+      },
+      {
+        "type": "building_capacity",
+        "target": "house",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "rifled_barrels",
+    "name": "Rifled Barrels",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "20000000",
+    "prerequisites": [
+      "matchlock_mechanisms",
+      "gunpowder_standardization"
+    ],
+    "unlockedUnits": [
+      "line_infantry"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "line_infantry",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "minie_ball_ammunition",
+    "name": "Minie Ball Ammunition",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "28000000",
+    "prerequisites": [
+      "rifled_barrels"
+    ],
+    "unlockedUnits": [
+      "rifleman"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "rifleman",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "industrial_cavalry_tactics",
+    "name": "Industrial Cavalry Tactics",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "38000000",
+    "prerequisites": [
+      "mounted_firearms"
+    ],
+    "unlockedUnits": [
+      "dragoon_ind"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "dragoon_ind",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "lancer_charges",
+    "name": "Lancer Charges",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "50000000",
+    "prerequisites": [
+      "heavy_cavalry_pistols"
+    ],
+    "unlockedUnits": [
+      "lancer"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "lancer",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "cavalry_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "rapid_fire_mechanics",
+    "name": "Rapid Fire Mechanics",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "68000000",
+    "prerequisites": [
+      "minie_ball_ammunition"
+    ],
+    "unlockedUnits": [
+      "gatling"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "gatling",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "ironclad_armor",
+    "name": "Ironclad Armor",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "90000000",
+    "prerequisites": [
+      "broadside_warfare",
+      "steam_engine"
+    ],
+    "unlockedUnits": [
+      "ironclad"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "ironclad",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "lighter_than_air_flight",
+    "name": "Lighter-Than-Air Flight",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "120000000",
+    "prerequisites": [
+      "steam_engine"
+    ],
+    "unlockedUnits": [
+      "zeppelin"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "zeppelin",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "aeronautics",
+    "name": "Aeronautics",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "160000000",
+    "prerequisites": [
+      "internal_combustion",
+      "lighter_than_air_flight"
+    ],
+    "unlockedUnits": [
+      "biplane"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "biplane",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "heavy_rifled_artillery",
+    "name": "Heavy Rifled Artillery",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "220000000",
+    "prerequisites": [
+      "rifled_barrels",
+      "cast_bronze_cannon"
+    ],
+    "unlockedUnits": [
+      "howitzer_ind"
+    ],
+    "specialAbilities": [
+      "hit_flying"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "howitzer_ind",
+        "value": "large"
+      },
+      {
+        "type": "special_ability",
+        "target": "hit_flying",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "submersible_hulls",
+    "name": "Submersible Hulls",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "280000000",
+    "prerequisites": [
+      "ironclad_armor"
+    ],
+    "unlockedUnits": [
+      "sub_early"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "sub_early",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "trench_warfare",
+    "name": "Trench Warfare",
+    "age": 5,
+    "ageName": "Industrial",
+    "category": "military",
+    "cost": "350000000",
+    "prerequisites": [
+      "rapid_fire_mechanics"
+    ],
+    "effects": [
+      {
+        "type": "unit_stat_boost",
+        "target": "army_defense",
+        "value": "large"
+      },
+      {
+        "type": "cost_reduction",
+        "target": "military_units",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "computers",
+    "name": "Computers",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "500000000",
+    "prerequisites": [
+      "electricity"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "nuclear_fission",
+    "name": "Nuclear Fission",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "750000000",
+    "prerequisites": [
+      "computers"
+    ],
+    "effects": [
+      {
+        "type": "global_production",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "internet",
+    "name": "Internet",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "1000000000",
+    "prerequisites": [
+      "computers"
+    ],
+    "effects": [
+      {
+        "type": "research_speed",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "automation",
+    "name": "Automation",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "1500000000",
+    "prerequisites": [
+      "assembly_line",
+      "computers"
+    ],
+    "effects": [
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "genomics",
+    "name": "Genomics",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "2000000000",
+    "prerequisites": [
+      "pharmaceuticals"
+    ],
+    "effects": [
+      {
+        "type": "upkeep_reduction",
+        "target": "population",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "food",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "renewable_energy",
+    "name": "Renewable Energy",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "3000000000",
+    "prerequisites": [
+      "electricity"
+    ],
+    "effects": [
+      {
+        "type": "resource_capacity",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "globalization",
+    "name": "Globalization",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "4500000000",
+    "prerequisites": [
+      "internet",
+      "corporations"
+    ],
+    "effects": [
+      {
+        "type": "production_multiplier",
+        "target": "gold_mine",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "microprocessors",
+    "name": "Microprocessors",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "6000000000",
+    "prerequisites": [
+      "computers"
+    ],
+    "effects": [
+      {
+        "type": "click_power",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "global_production",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "spaceflight",
+    "name": "Spaceflight",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "10000000000",
+    "prerequisites": [
+      "nuclear_fission",
+      "microprocessors"
+    ],
+    "specialAbilities": [
+      "colony_ship"
+    ],
+    "effects": [
+      {
+        "type": "special_ability",
+        "target": "colony_ship",
+        "value": "large"
+      },
+      {
+        "type": "global_production",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "quantum_computing",
+    "name": "Quantum Computing",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "15000000000",
+    "prerequisites": [
+      "microprocessors"
+    ],
+    "effects": [
+      {
+        "type": "research_speed",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "production_multiplier",
+        "target": "science",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "nanotechnology",
+    "name": "Nanotechnology",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "civilian",
+    "cost": "25000000000",
+    "prerequisites": [
+      "quantum_computing",
+      "genomics"
+    ],
+    "effects": [
+      {
+        "type": "global_production",
+        "target": "all",
+        "value": "large"
+      },
+      {
+        "type": "building_cost_reduction",
+        "target": "all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "stormtrooper_tactics",
+    "name": "Stormtrooper Tactics",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "500000000",
+    "prerequisites": [
+      "trench_warfare"
+    ],
+    "unlockedUnits": [
+      "ww1_infantry"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "ww1_infantry",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "combined_arms_armor",
+    "name": "Combined Arms Armor",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "750000000",
+    "prerequisites": [
+      "stormtrooper_tactics"
+    ],
+    "unlockedUnits": [
+      "ww2_infantry"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "ww2_infantry",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "motorized_infantry",
+    "name": "Motorized Infantry",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "1000000000",
+    "prerequisites": [
+      "combined_arms_armor",
+      "internal_combustion"
+    ],
+    "unlockedUnits": [
+      "dragoon_mech"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "dragoon_mech",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "armored_warfare",
+    "name": "Armored Warfare",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "1500000000",
+    "prerequisites": [
+      "combined_arms_armor"
+    ],
+    "unlockedUnits": [
+      "tank_ww2"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "tank_ww2",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "cavalry_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "piston_engine_fighters",
+    "name": "Piston Engine Fighters",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "2000000000",
+    "prerequisites": [
+      "aeronautics"
+    ],
+    "unlockedUnits": [
+      "fighter_ww2"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "fighter_ww2",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "strategic_bombing",
+    "name": "Strategic Bombing",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "2800000000",
+    "prerequisites": [
+      "piston_engine_fighters"
+    ],
+    "unlockedUnits": [
+      "bomber_ww2"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "bomber_ww2",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "naval_aviation",
+    "name": "Naval Aviation",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "3800000000",
+    "prerequisites": [
+      "piston_engine_fighters"
+    ],
+    "unlockedUnits": [
+      "carrier_ww2"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "carrier_ww2",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "dreadnought_armor",
+    "name": "Dreadnought Armor",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "5000000000",
+    "prerequisites": [
+      "ironclad_armor"
+    ],
+    "unlockedUnits": [
+      "battleship"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "battleship",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "assault_rifles",
+    "name": "Assault Rifles",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "6800000000",
+    "prerequisites": [
+      "combined_arms_armor"
+    ],
+    "unlockedUnits": [
+      "soldier_modern"
+    ],
+    "unitConversions": [
+      {
+        "fromUnitId": "ww2_infantry",
+        "toUnitId": "soldier_modern"
+      }
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "soldier_modern",
+        "value": "large"
+      },
+      {
+        "type": "convert_unit",
+        "target": "ww2_infantry",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "composite_armor",
+    "name": "Composite Armor",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "8500000000",
+    "prerequisites": [
+      "armored_warfare"
+    ],
+    "unlockedUnits": [
+      "tank_abrams"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "tank_abrams",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "cavalry_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "stealth_technology",
+    "name": "Stealth Technology",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "10000000000",
+    "prerequisites": [
+      "piston_engine_fighters"
+    ],
+    "unlockedUnits": [
+      "fighter_jet"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "fighter_jet",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "guided_missiles",
+    "name": "Guided Missiles",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "12500000000",
+    "prerequisites": [
+      "dreadnought_armor",
+      "computers"
+    ],
+    "unlockedUnits": [
+      "destroyer_modern"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "destroyer_modern",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ship_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "armored_cavalry_doctrine",
+    "name": "Armored Cavalry Doctrine",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "15000000000",
+    "prerequisites": [
+      "motorized_infantry"
+    ],
+    "unlockedUnits": [
+      "dragoon_modern"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "dragoon_modern",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "unmanned_aerial_systems",
+    "name": "Unmanned Aerial Systems",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "18000000000",
+    "prerequisites": [
+      "stealth_technology",
+      "microprocessors"
+    ],
+    "unlockedUnits": [
+      "drone"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "drone",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "ranged_attack",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "helicopter_rotor_systems",
+    "name": "Helicopter Rotor Systems",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "22000000000",
+    "prerequisites": [
+      "piston_engine_fighters"
+    ],
+    "unlockedUnits": [
+      "attack_heli"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "attack_heli",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "rocket_artillery",
+    "name": "Rocket Artillery",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "28000000000",
+    "prerequisites": [
+      "heavy_rifled_artillery",
+      "guided_missiles"
+    ],
+    "unlockedUnits": [
+      "artillery_modern"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "artillery_modern",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "nuclear_propulsion",
+    "name": "Nuclear Propulsion",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "35000000000",
+    "prerequisites": [
+      "nuclear_fission",
+      "submersible_hulls"
+    ],
+    "unlockedUnits": [
+      "sub_nuclear",
+      "carrier_nuclear"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "sub_nuclear",
+        "value": "large"
+      },
+      {
+        "type": "unlock_unit",
+        "target": "carrier_nuclear",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "special_operations",
+    "name": "Special Operations",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "45000000000",
+    "prerequisites": [
+      "assault_rifles"
+    ],
+    "unlockedUnits": [
+      "special_forces"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "special_forces",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "radar_low_observability",
+    "name": "Radar Low Observability",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "60000000000",
+    "prerequisites": [
+      "strategic_bombing",
+      "stealth_technology"
+    ],
+    "unlockedUnits": [
+      "bomber_stealth"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "bomber_stealth",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "orbital_arrays",
+    "name": "Orbital Arrays",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "80000000000",
+    "prerequisites": [
+      "spaceflight"
+    ],
+    "unlockedUnits": [
+      "satellite"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "satellite",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "particle_beams",
+    "name": "Particle Beams",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "100000000000",
+    "prerequisites": [
+      "orbital_arrays"
+    ],
+    "unlockedUnits": [
+      "orbital_laser"
+    ],
+    "specialAbilities": [
+      "hit_all"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "orbital_laser",
+        "value": "large"
+      },
+      {
+        "type": "special_ability",
+        "target": "hit_all",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "exoskeletons",
+    "name": "Exoskeletons",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "150000000000",
+    "prerequisites": [
+      "special_operations",
+      "nanotechnology"
+    ],
+    "unlockedUnits": [
+      "mech_suit"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "mech_suit",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "army_power",
+        "value": "large"
+      }
+    ]
+  },
+  {
+    "id": "interstellar_infantry",
+    "name": "Interstellar Infantry",
+    "age": 6,
+    "ageName": "Modern / Space",
+    "category": "military",
+    "cost": "200000000000",
+    "prerequisites": [
+      "exoskeletons",
+      "spaceflight"
+    ],
+    "unlockedUnits": [
+      "starship"
+    ],
+    "effects": [
+      {
+        "type": "unlock_unit",
+        "target": "starship",
+        "value": "large"
+      },
+      {
+        "type": "unit_stat_boost",
+        "target": "infantry_hp",
+        "value": "large"
+      }
+    ]
+  }
+]

@@ -1,54 +1,31 @@
-techtree conversion report — 2026-09-19T16:14:02.969Z
-source: tech tree-v2-effects.json → src\game\data\research.json
-techs: 172, bonuses: 1210, ignored: 50
+techtree conversion report — 2026-09-21T20:04:28.555Z
+source: tech tree-v3-effects.json → src\game\data\research.json
+techs: 172, bonuses: 1500, ignored: 27
 
-stone_working: IGNORED resource_capacity -> stone (large) — capacity — user review
-weaving: IGNORED upkeep_reduction -> population (small) — no upkeep drain on population
-city_planning: IGNORED building_capacity -> house (small) — capacity — user review
-city_planning: IGNORED production_multiplier -> house (small) — capacity-adjacent — user review
-bronze_smelting: IGNORED convert_unit -> warrior (small) — unit conversion not implemented
-masonry: IGNORED building_capacity -> town_hall (large) — capacity — user review
-masonry: IGNORED production_multiplier -> town_hall (small) — capacity-adjacent — user review
-mathematics: IGNORED research_speed -> all (small) — research purchase is instant; no speed mechanic
-metallurgy_prep: IGNORED resource_capacity -> stone (small) — capacity — user review
-shipbuilding_principles: IGNORED cost_reduction -> dock (small) — no such buyable (dock / enhancer cost path)
-philosophy_fundamentals: IGNORED worker_efficiency -> science (small) — no per-worker efficiency attribute
-iron_working: IGNORED convert_unit -> spearman_bronze (small) — unit conversion not implemented
-aqueducts: IGNORED building_capacity -> house (large) — capacity — user review
 aqueducts: IGNORED production_multiplier -> house (small) — capacity-adjacent — user review
 civil_service: IGNORED worker_efficiency -> all (small) — no per-worker efficiency attribute
-banking_concepts: IGNORED resource_capacity -> gold (large) — capacity — user review
-aesthetics: IGNORED building_capacity -> all (small) — capacity — user review
+banking_concepts: IGNORED resource_capacity -> gold (large) — no resource storage cap
 scholasticism: IGNORED research_speed -> all (small) — research purchase is instant; no speed mechanic
 heavy_counterweights: IGNORED special_ability -> hit_naval (large) — no such mechanic
 feudalism: IGNORED upkeep_reduction -> population (small) — no upkeep drain on population
-windmills: IGNORED building_capacity -> farm (large) — capacity — user review
-cartography: IGNORED global_production -> trade (large) — no trade system yet
 patronage: IGNORED cost_reduction -> enhancers (small) — no such buyable (dock / enhancer cost path)
-manorialism: IGNORED building_capacity -> house (large) — capacity — user review
 manorialism: IGNORED production_multiplier -> house (small) — capacity-adjacent — user review
 almanacs: IGNORED offline_efficiency -> offline_progress (small) — offline tuning not research-driven
 almanacs: IGNORED offline_cap -> hours (small) — offline tuning not research-driven
-yew_bowcraft: IGNORED convert_unit -> archer_classical (small) — unit conversion not implemented
 scientific_method: IGNORED research_speed -> all (small) — research purchase is instant; no speed mechanic
-perspective_drawing: IGNORED building_capacity -> all (large) — capacity — user review
-banking_houses: IGNORED resource_capacity -> gold (large) — capacity — user review
-naval_academies: IGNORED global_production -> trade (large) — no trade system yet
+banking_houses: IGNORED resource_capacity -> gold (large) — no resource storage cap
 global_exploration: IGNORED offline_cap -> hours (large) — offline tuning not research-driven
 global_exploration: IGNORED offline_efficiency -> offline_progress (small) — offline tuning not research-driven
-matchlock_mechanisms: IGNORED convert_unit -> crossbow (small) — unit conversion not implemented
 naval_bombardment: IGNORED special_ability -> hit_land (large) — no such mechanic
 industrialization: IGNORED enhancer_scaling -> growth_factor (small) — enhancer cost path does not read reductions
 telegraph: IGNORED offline_efficiency -> offline_progress (large) — offline tuning not research-driven
 telegraph: IGNORED offline_cap -> hours (large) — offline tuning not research-driven
-internal_combustion: IGNORED resource_capacity -> all (large) — capacity — user review
+internal_combustion: IGNORED resource_capacity -> all (large) — no resource storage cap
 pharmaceuticals: IGNORED population_growth -> population (large) — population is derived from citizens
-pharmaceuticals: IGNORED building_capacity -> house (large) — capacity — user review
 heavy_rifled_artillery: IGNORED special_ability -> hit_flying (large) — no such mechanic
 internet: IGNORED research_speed -> all (large) — research purchase is instant; no speed mechanic
 genomics: IGNORED upkeep_reduction -> population (large) — no upkeep drain on population
-renewable_energy: IGNORED resource_capacity -> all (large) — capacity — user review
+renewable_energy: IGNORED resource_capacity -> all (large) — no resource storage cap
 spaceflight: IGNORED special_ability -> colony_ship (large) — no such mechanic
 quantum_computing: IGNORED research_speed -> all (large) — research purchase is instant; no speed mechanic
-assault_rifles: IGNORED convert_unit -> ww2_infantry (large) — unit conversion not implemented
 particle_beams: IGNORED special_ability -> hit_all (large) — no such mechanic

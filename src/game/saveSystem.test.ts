@@ -33,6 +33,7 @@ import {
   emptyResourceFactors,
   emptyWorkerAssignments,
 } from "./attributes";
+import { type BuildingKey } from "./buildings";
 import { entryGuidById, entryIdByGuid } from "./dataIds";
 import { ExpNumber } from "./expNumber";
 import { emptyStatistics } from "./statistics";
@@ -53,7 +54,7 @@ const sampleState = (): CivilizationState =>
   new CivilizationState(
     { ...emptyResourceAmounts(), food: ExpNumber.fromNumber(1e30) },
     { ...emptyWorkerAssignments(), food: ExpNumber.fromNumber(3) },
-    ["town-hall", "house", "farm", "farm", "people", "people"],
+    { "town-hall": 1, house: 1, farm: 2, people: 2 },
     emptyResourceFactors(),
     {},
     5,
@@ -162,7 +163,7 @@ describe("save document identity", () => {
     const state = new CivilizationState(
       emptyResourceAmounts(),
       emptyWorkerAssignments(),
-      Array.from({ length: 1_000_000 }, () => "farm"),
+      { farm: 1_000_000 },
     );
     const data = createSaveData(state, "compact-buildings", 1);
     expect(data.buildingCounts).toEqual({ farm: "1000000" });
@@ -314,7 +315,9 @@ describe("loading a state", () => {
 
   it("does not mutate the parsed document's arrays", () => {
     const data = sampleSave();
-    loadSaveData(data).builtBuildings.push("mutant");
+    // Try to mutate the loaded state's building counts
+    const loaded = loadSaveData(data);
+    loaded.builtBuildings["mutant" as BuildingKey] = 1;
     expect(data.buildingCounts).not.toHaveProperty("mutant");
   });
 });
@@ -504,7 +507,7 @@ describe("offline production", () => {
     const state = new CivilizationState(
       emptyResourceAmounts(),
       { ...emptyWorkerAssignments(), food: ExpNumber.ONE },
-      [],
+      {},
       emptyResourceFactors(),
       {},
       0,
@@ -544,7 +547,7 @@ describe("offline production", () => {
     const after = new CivilizationState(
       emptyResourceAmounts(),
       { ...emptyWorkerAssignments(), food: ExpNumber.ONE },
-      ["town-hall"],
+      { "town-hall": 1 },
       emptyResourceFactors(),
       {},
       0,

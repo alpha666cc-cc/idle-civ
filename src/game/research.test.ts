@@ -24,11 +24,12 @@ import { isBuyableUnit, unitDefinitions } from "./units";
 const stateWith = (
   science: number,
   enteredAges: string[] = [],
+  unitCounts: Record<string, ExpNumber> = {},
 ): CivilizationState =>
   new CivilizationState(
     { ...emptyResourceAmounts(), science: ExpNumber.fromNumber(science) },
     emptyWorkerAssignments(),
-    ["town-hall"],
+    { "town-hall": 1 },
     emptyResourceFactors(),
     {},
     0,
@@ -37,13 +38,28 @@ const stateWith = (
     enteredAges,
     [],
     emptyStatistics(),
-    {},
+    unitCounts,
     ExpNumber.ONE,
     false,
     false,
     false,
     [],
   );
+
+/** Buys a tech's full transitive prerequisite closure, deepest first. */
+const buyPrerequisiteClosure = (
+  state: CivilizationState,
+  key: string,
+): CivilizationState => {
+  const tech = findResearchDefinition(key);
+  if (!tech) return state;
+  let next = state;
+  for (const prerequisite of tech.prerequisites) {
+    next = buyPrerequisiteClosure(next, prerequisite);
+    next = next.buyResearch(prerequisite);
+  }
+  return next;
+};
 
 describe("research data integrity", () => {
   it("orders every tech after its prerequisites", () => {
@@ -83,16 +99,16 @@ describe("research buying", () => {
   const first = researchDefinitions[0];
   const second = researchDefinitions[1];
 
-  it("charges 100 science for the first tech, ×10 per purchase", () => {
+  it("charges 1K science for the first tech, ×10 per purchase", () => {
     const state = stateWith(1e6).enterAge(`age-${first.age}`);
     expect(state.getResearchNextCost()[0].resource).toBe("science");
-    expect(state.getResearchNextCost()[0].base.toString()).toBe("1e2");
+    expect(state.getResearchNextCost()[0].base.toString()).toBe("1e3");
     const afterFirst = state.buyResearch(first.key);
     expect(afterFirst.isResearchBought(first.key)).toBe(true);
-    expect(afterFirst.getResearchNextCost()[0].base.toString()).toBe("1e3");
+    expect(afterFirst.getResearchNextCost()[0].base.toString()).toBe("1e4");
     const afterSecond = afterFirst.buyResearch(second.key);
     expect(afterSecond.isResearchBought(second.key)).toBe(true);
-    expect(afterSecond.getResearchNextCost()[0].base.toString()).toBe("1e4");
+    expect(afterSecond.getResearchNextCost()[0].base.toString()).toBe("1e5");
   });
 
   it("makes age-0 research available from the start", () => {
@@ -105,8 +121,8 @@ describe("research buying", () => {
   });
 
   it("pays science and applies bonuses through the shared factor path", () => {
-    // Exactly the first tech's global price: 100 science.
-    const entered = stateWith(100, [`age-${first.age}`]).enterAge(
+    // Exactly the first tech's global price: 1K science.
+    const entered = stateWith(1000, [`age-${first.age}`]).enterAge(
       `age-${first.age}`,
     );
     const multiplier = first.bonuses.find(
@@ -124,7 +140,7 @@ describe("research buying", () => {
   });
 
   it("is idempotent and refuses an unaffordable purchase", () => {
-    const entered = stateWith(100, [`age-${first.age}`]).enterAge(
+    const entered = stateWith(1000, [`age-${first.age}`]).enterAge(
       `age-${first.age}`,
     );
     const bought = entered.buyResearch(first.key);
@@ -159,22 +175,60 @@ describe("research buying", () => {
 
 describe("research unlocks units", () => {
   it("marks research-unlocked units available once bought", () => {
-    // Find a research that unlocks a unit and has no prerequisites
+    // Find a research that unlocks a unit and buy its full prerequisite
+    // closure (v3 chains nest two levels deep: sling_throwing needs its
+    // direct prerequisite *and* that prerequisite's own prerequisite).
     const unlocker = researchDefinitions.find(
-      (research) =>
-        research.unlocks.length > 0 && research.prerequisites.length === 0,
+      (research) => research.unlocks.length > 0,
     );
     expect(unlocker).toBeDefined();
     if (!unlocker) return;
     const unitId = unlocker.unlocks[0];
     const unit = unitDefinitions.find((candidate) => candidate.key === unitId);
     expect(isBuyableUnit(unit!)).toBe(true);
-    // The unlocker can be bought directly since it has no prerequisites
-    const state = stateWith(1e30, [`age-${unlocker.age}`])
-      .enterAge(`age-${unlocker.age}`)
-      .buyResearch(unlocker.key);
+    let state = stateWith(1e30, [`age-${unlocker.age}`]).enterAge(
+      `age-${unlocker.age}`,
+    );
+    state = buyPrerequisiteClosure(state, unlocker.key);
+    state = state.buyResearch(unlocker.key);
     expect(state.isResearchBought(unlocker.key)).toBe(true);
     expect(state.isUnitAvailable(unitId)).toBe(true);
+  });
+});
+
+describe("research unit conversions", () => {
+  const conversion = researchDefinitions.find(
+    (research) => research.conversions.length > 0,
+  );
+  it("exists in the shipped data", () => {
+    expect(conversion).toBeDefined();
+  });
+  if (!conversion) return;
+  const { from, to, ratio } = conversion.conversions[0];
+  const pairKey = `age-${conversion.age}`;
+  const buyAt = (science: number, units: Record<string, ExpNumber> = {}) => {
+    let state = stateWith(science, [pairKey], units).enterAge(pairKey);
+    state = buyPrerequisiteClosure(state, conversion.key);
+    return state.buyResearch(conversion.key);
+  };
+
+  it("closes the source line once the tech is bought", () => {
+    const state = buyAt(1e30);
+    expect(state.isResearchBought(conversion.key)).toBe(true);
+    expect(state.isUnitAvailable(from)).toBe(false);
+    expect(state.isUnitAvailable(to)).toBe(true);
+  });
+
+  it("converts owned units at the ratio, keeping the remainder", () => {
+    const counts = buyAt(1e30, { [from]: ExpNumber.fromNumber(25) }).unitCounts;
+    expect(counts[from].toNumber()).toBe(25 % ratio);
+    expect(counts[to].toNumber()).toBe(Math.floor(25 / ratio));
+  });
+
+  it("is a no-op when the player owns none of the source unit", () => {
+    const counts = buyAt(1e30).unitCounts;
+    expect(counts[from]?.toNumber() ?? 0).toBe(0);
+    expect(counts[to]?.toNumber() ?? 0).toBe(0);
   });
 });
 

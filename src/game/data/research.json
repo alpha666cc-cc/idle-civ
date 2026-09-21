@@ -126,7 +126,7 @@
     "guid": "b54e4327-d715-5d88-93d0-75527cc231ec",
     "key": "mining",
     "name": "Mining",
-    "description": "production_multiplier quarry (small); building_cost_reduction all (small)",
+    "description": "production_multiplier stone (small); production_multiplier gold (small)",
     "age": 0,
     "category": "civilian",
     "prerequisites": [
@@ -145,6 +145,33 @@
         "destination": "stone",
         "value": "2"
       },
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": "2"
+      }
+    ],
+    "unlocks": [],
+    "ignored": []
+  },
+  {
+    "guid": "ef0a590d-ced5-5b84-85c8-c147756f98b8",
+    "key": "stone_working",
+    "name": "Stone Working",
+    "description": "building_cost_reduction all (small); production_multiplier stone (large)",
+    "age": 0,
+    "category": "civilian",
+    "prerequisites": [
+      "mining"
+    ],
+    "costs": [
+      {
+        "resource": "science",
+        "base": "1.0000000000e+8",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
       {
         "type": "costReductionPercent",
         "destination": "people",
@@ -199,50 +226,21 @@
         "type": "costReductionPercent",
         "destination": "market",
         "value": "0.5"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": "100"
       }
     ],
     "unlocks": [],
     "ignored": []
   },
   {
-    "guid": "ef0a590d-ced5-5b84-85c8-c147756f98b8",
-    "key": "stone_working",
-    "name": "Stone Working",
-    "description": "resource_capacity stone (large); production_multiplier stone (small)",
-    "age": 0,
-    "category": "civilian",
-    "prerequisites": [
-      "mining"
-    ],
-    "costs": [
-      {
-        "resource": "science",
-        "base": "1.0000000000e+8",
-        "factor": 1
-      }
-    ],
-    "bonuses": [
-      {
-        "type": "attributeMultiplier",
-        "destination": "stone",
-        "value": "2"
-      }
-    ],
-    "unlocks": [],
-    "ignored": [
-      {
-        "type": "resource_capacity",
-        "target": "stone",
-        "value": "large",
-        "reason": "capacity "
-      }
-    ]
-  },
-  {
     "guid": "b7e7b2e6-c2a2-5367-bf12-a9efa09526e4",
     "key": "forestry",
     "name": "Forestry",
-    "description": "production_multiplier lumber_yard (small); building_cost_reduction all (small)",
+    "description": "production_multiplier wood (small); building_cost_reduction all (small)",
     "age": 0,
     "category": "civilian",
     "prerequisites": [
@@ -324,7 +322,7 @@
     "guid": "155a01e0-5df2-50b8-bef6-a4747357aef1",
     "key": "weaving",
     "name": "Weaving",
-    "description": "upkeep_reduction population (small); production_multiplier food (small)",
+    "description": "production_multiplier gold (small); production_multiplier food (small)",
     "age": 0,
     "category": "civilian",
     "prerequisites": [
@@ -340,25 +338,23 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
         "destination": "food",
         "value": "2"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "upkeep_reduction",
-        "target": "population",
-        "value": "small",
-        "reason": "no upkeep drain on population"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "791e08e7-6d10-557a-b18e-50afc2d13d7f",
     "key": "writing",
     "name": "Writing",
-    "description": "production_multiplier science (small); building_cost_reduction all (small)",
+    "description": "production_multiplier science (large); building_cost_reduction all (small)",
     "age": 0,
     "category": "civilian",
     "prerequisites": [
@@ -375,7 +371,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "science",
-        "value": "2"
+        "value": "100"
       },
       {
         "type": "costReductionPercent",
@@ -522,7 +518,7 @@
     "guid": "5c2d74fb-f3ba-581c-899b-9a93c4b3ce66",
     "key": "city_planning",
     "name": "City Planning",
-    "description": "building_capacity house (small); production_multiplier house (small)",
+    "description": "building_cost_reduction all (small); production_multiplier all (small)",
     "age": 0,
     "category": "civilian",
     "prerequisites": [
@@ -536,31 +532,81 @@
         "factor": 1
       }
     ],
-    "bonuses": [],
-    "unlocks": [],
-    "ignored": [
+    "bonuses": [
       {
-        "type": "building_capacity",
-        "target": "house",
-        "value": "small",
-        "reason": "capacity "
+        "type": "costReductionPercent",
+        "destination": "people",
+        "value": "0.5"
       },
       {
-        "type": "production_multiplier",
-        "target": "house",
-        "value": "small",
-        "reason": "capacity-adjacent "
+        "type": "costReductionPercent",
+        "destination": "house",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "farm",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "lumber-yard",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "quarry",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "gold-mine",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "town-hall",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "barracks",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "university",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "smithy",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "market",
+        "value": "0.5"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "all-production",
+        "value": "2"
       }
-    ]
+    ],
+    "unlocks": [],
+    "ignored": []
   },
   {
     "guid": "3474c89b-9623-50ea-b770-2f939d6661ba",
     "key": "tribal_organization",
     "name": "Tribal Organization",
-    "description": "unlock_unit warrior (small); unit_stat_boost infantry_hp (small)",
+    "description": "unit_stat_boost infantry_attack (small); unit_stat_boost infantry_hp (small)",
     "age": 0,
     "category": "military",
-    "prerequisites": [],
+    "prerequisites": [
+      "agriculture"
+    ],
     "costs": [
       {
         "resource": "science",
@@ -569,6 +615,11 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.infantry.attack",
+        "value": "1.25"
+      },
       {
         "type": "attributeMultiplier",
         "destination": "tag.infantry.hp",
@@ -584,7 +635,7 @@
     "guid": "575387c6-8760-5d7d-99cb-738e4aa97417",
     "key": "archery_mechanics",
     "name": "Archery Mechanics",
-    "description": "unit_cost_reduction slinger (small); unit_stat_boost ranged_attack (small)",
+    "description": "unit_cost_reduction all (small); unit_stat_boost ranged_attack (small)",
     "age": 0,
     "category": "military",
     "prerequisites": [
@@ -600,7 +651,387 @@
     "bonuses": [
       {
         "type": "costReductionPercent",
+        "destination": "warrior",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
         "destination": "slinger",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "archer_prehist",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "canoe",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "spearman_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "axeman_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "chariot_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bowman_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trireme_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "catapult_ancient",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "spearman_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "swordsman_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "chariot_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cavalry_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "war_galley_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "elephant_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ballista",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "quinquereme",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "legionary",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "hoplite",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "companion",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "archer_classical",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "onager",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "fire_ship",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "assassin",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trader_classical",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "knight",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "longbow",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "crossbow",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "man_at_arms",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trebuchet",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cog",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "longship",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bombard",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "caravel",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "musketeer",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "pikeman_ren",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_ren",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cuirassier",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cannon",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "galleon",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "frigate_sail",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "privateer",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "line_infantry",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "rifleman",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_ind",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "lancer",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "gatling",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ironclad",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "zeppelin",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "biplane",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "howitzer_ind",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "sub_early",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ww1_infantry",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ww2_infantry",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_mech",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "tank_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "fighter_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bomber_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "battleship",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "carrier_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "soldier_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "tank_abrams",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "fighter_jet",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "destroyer_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "drone",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "attack_heli",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "artillery_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "sub_nuclear",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "carrier_nuclear",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "special_forces",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bomber_stealth",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "satellite",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "orbital_laser",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "mech_suit",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "starship",
         "value": "0.5"
       },
       {
@@ -620,7 +1051,8 @@
     "age": 0,
     "category": "military",
     "prerequisites": [
-      "sling_throwing"
+      "sling_throwing",
+      "archery_mechanics"
     ],
     "costs": [
       {
@@ -645,7 +1077,7 @@
     "guid": "89b4434c-7f59-5aa3-aebf-3539023fb73b",
     "key": "domestication",
     "name": "Domestication",
-    "description": "unlock_unit wolf (small); unit_stat_boost army_power (small)",
+    "description": "production_multiplier food (large); unit_stat_boost army_attack (small)",
     "age": 0,
     "category": "military",
     "prerequisites": [
@@ -661,6 +1093,11 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
+        "destination": "food",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
         "destination": "unitAll.attack",
         "value": "1.25"
       }
@@ -674,7 +1111,7 @@
     "guid": "2b825f0f-2eee-58a0-a2a5-3b96462e994d",
     "key": "trapping",
     "name": "Trapping",
-    "description": "unlock_unit bear (small); unit_stat_boost army_power (small)",
+    "description": "production_multiplier food (small); production_multiplier gold (small); unit_cost_reduction all (small)",
     "age": 0,
     "category": "military",
     "prerequisites": [
@@ -690,8 +1127,398 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "unitAll.attack",
-        "value": "1.25"
+        "destination": "food",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": "2"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "warrior",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "slinger",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "archer_prehist",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "canoe",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "spearman_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "axeman_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "chariot_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bowman_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trireme_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "catapult_ancient",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "spearman_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "swordsman_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "chariot_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cavalry_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "war_galley_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "elephant_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ballista",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "quinquereme",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "legionary",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "hoplite",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "companion",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "archer_classical",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "onager",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "fire_ship",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "assassin",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trader_classical",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "knight",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "longbow",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "crossbow",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "man_at_arms",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trebuchet",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cog",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "longship",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bombard",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "caravel",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "musketeer",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "pikeman_ren",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_ren",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cuirassier",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cannon",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "galleon",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "frigate_sail",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "privateer",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "line_infantry",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "rifleman",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_ind",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "lancer",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "gatling",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ironclad",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "zeppelin",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "biplane",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "howitzer_ind",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "sub_early",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ww1_infantry",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ww2_infantry",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_mech",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "tank_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "fighter_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bomber_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "battleship",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "carrier_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "soldier_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "tank_abrams",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "fighter_jet",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "destroyer_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "drone",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "attack_heli",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "artillery_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "sub_nuclear",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "carrier_nuclear",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "special_forces",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bomber_stealth",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "satellite",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "orbital_laser",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "mech_suit",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "starship",
+        "value": "0.5"
       }
     ],
     "unlocks": [
@@ -703,7 +1530,7 @@
     "guid": "22348063-dc7c-586c-bc63-a841fe8616bd",
     "key": "woodcraft_hulls",
     "name": "Woodcraft & Hulls",
-    "description": "unlock_unit canoe (small); unit_stat_boost ship_attack (small)",
+    "description": "unlock_unit canoe (small); unit_cost_reduction all (small)",
     "age": 0,
     "category": "military",
     "prerequisites": [
@@ -718,9 +1545,389 @@
     ],
     "bonuses": [
       {
-        "type": "attributeMultiplier",
-        "destination": "tag.naval.attack",
-        "value": "1.25"
+        "type": "costReductionPercent",
+        "destination": "warrior",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "slinger",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "archer_prehist",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "canoe",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "spearman_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "axeman_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "chariot_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bowman_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trireme_bronze",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "catapult_ancient",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "spearman_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "swordsman_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "chariot_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cavalry_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "war_galley_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "elephant_iron",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ballista",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "quinquereme",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "legionary",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "hoplite",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "companion",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "archer_classical",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "onager",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "fire_ship",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "assassin",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trader_classical",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "knight",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "longbow",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "crossbow",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "man_at_arms",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trebuchet",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cog",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "longship",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bombard",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "caravel",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "musketeer",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "pikeman_ren",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_ren",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cuirassier",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cannon",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "galleon",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "frigate_sail",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "privateer",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "line_infantry",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "rifleman",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_ind",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "lancer",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "gatling",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ironclad",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "zeppelin",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "biplane",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "howitzer_ind",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "sub_early",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ww1_infantry",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ww2_infantry",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_mech",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "tank_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "fighter_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bomber_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "battleship",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "carrier_ww2",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "soldier_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "tank_abrams",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "fighter_jet",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "destroyer_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "dragoon_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "drone",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "attack_heli",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "artillery_modern",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "sub_nuclear",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "carrier_nuclear",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "special_forces",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "bomber_stealth",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "satellite",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "orbital_laser",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "mech_suit",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "starship",
+        "value": "0.5"
       }
     ],
     "unlocks": [
@@ -732,7 +1939,7 @@
     "guid": "6349fca8-e46b-5d65-8564-66d9903678e1",
     "key": "bronze_smelting",
     "name": "Bronze Smelting",
-    "description": "unlock_unit spearman_bronze (small); convert_unit warrior (small)",
+    "description": "unlock_unit spearman_bronze (small); unit_stat_boost infantry_attack (small)",
     "age": 0,
     "category": "military",
     "prerequisites": [
@@ -745,18 +1952,24 @@
         "factor": 1
       }
     ],
-    "bonuses": [],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.infantry.attack",
+        "value": "1.25"
+      }
+    ],
     "unlocks": [
       "spearman_bronze"
     ],
-    "ignored": [
+    "conversions": [
       {
-        "type": "convert_unit",
-        "target": "warrior",
-        "value": "small",
-        "reason": "unit conversion not implemented"
+        "from": "warrior",
+        "to": "spearman_bronze",
+        "ratio": 10
       }
-    ]
+    ],
+    "ignored": []
   },
   {
     "guid": "efdbb1e4-0e71-5255-aa2f-b646847d1e11",
@@ -791,7 +2004,7 @@
     "guid": "af6f6d64-835a-56a6-9780-873fd89c87f9",
     "key": "wheel_axle",
     "name": "Wheel & Axle",
-    "description": "unlock_unit chariot_bronze (small); unit_stat_boost cavalry_attack (small)",
+    "description": "unlock_unit chariot_bronze (small); unit_stat_boost army_attack (small)",
     "age": 0,
     "category": "military",
     "prerequisites": [
@@ -807,7 +2020,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "tag.armored.attack",
+        "destination": "unitAll.attack",
         "value": "1.25"
       }
     ],
@@ -820,7 +2033,7 @@
     "guid": "8808702f-0884-533a-8e0b-37a55e3fc446",
     "key": "composite_bowcraft",
     "name": "Composite Bowcraft",
-    "description": "unlock_unit bowman_bronze (small); unit_stat_boost ranged_attack (small)",
+    "description": "unlock_unit bowman_bronze (small); unit_stat_boost ranged_attack (large)",
     "age": 0,
     "category": "military",
     "prerequisites": [
@@ -838,7 +2051,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.ranged.attack",
-        "value": "1.25"
+        "value": "1.5"
       }
     ],
     "unlocks": [
@@ -880,7 +2093,7 @@
     "guid": "d2072461-6728-5e32-8a00-1681ab4f76ec",
     "key": "iron_mining",
     "name": "Iron Mining",
-    "description": "production_multiplier smithy (large); building_cost_reduction all (small)",
+    "description": "production_multiplier metalwork (large); building_cost_reduction all (small)",
     "age": 1,
     "category": "civilian",
     "prerequisites": [
@@ -963,7 +2176,7 @@
     "guid": "2c90d6ae-2fb0-5968-b27a-5899517e72b8",
     "key": "currency",
     "name": "Currency",
-    "description": "production_multiplier market (small); building_cost_reduction all (small)",
+    "description": "production_multiplier trade (small); building_cost_reduction all (small)",
     "age": 1,
     "category": "civilian",
     "prerequisites": [
@@ -979,7 +2192,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "gold",
+        "destination": "trade",
         "value": "2"
       },
       {
@@ -1045,7 +2258,7 @@
     "guid": "644c5231-abbd-561b-aefe-3452efb3f58d",
     "key": "masonry",
     "name": "Masonry",
-    "description": "building_capacity town_hall (large); production_multiplier town_hall (small)",
+    "description": "building_capacity town_hall (x2); building_cost_reduction town_hall (small); building_cost_reduction house (small)",
     "age": 1,
     "category": "civilian",
     "prerequisites": [
@@ -1058,28 +2271,31 @@
         "factor": 1
       }
     ],
-    "bonuses": [],
-    "unlocks": [],
-    "ignored": [
+    "bonuses": [
       {
-        "type": "building_capacity",
-        "target": "town_hall",
-        "value": "large",
-        "reason": "capacity "
+        "type": "attributeMultiplier",
+        "destination": "town-hallCapacity",
+        "value": "2"
       },
       {
-        "type": "production_multiplier",
-        "target": "town_hall",
-        "value": "small",
-        "reason": "capacity-adjacent "
+        "type": "costReductionPercent",
+        "destination": "town-hall",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "house",
+        "value": "0.5"
       }
-    ]
+    ],
+    "unlocks": [],
+    "ignored": []
   },
   {
     "guid": "94fef7ab-7531-5ad3-b2ee-f50a2dbf0d9d",
     "key": "trade_routes",
     "name": "Trade Routes",
-    "description": "global_production all (small); building_cost_reduction all (small)",
+    "description": "production_multiplier trade (large); production_multiplier all (small)",
     "age": 1,
     "category": "civilian",
     "prerequisites": [
@@ -1095,63 +2311,13 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
         "destination": "all-production",
         "value": "2"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "people",
-        "value": "0.5"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "house",
-        "value": "0.5"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "farm",
-        "value": "0.5"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "lumber-yard",
-        "value": "0.5"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "quarry",
-        "value": "0.5"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "gold-mine",
-        "value": "0.5"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "town-hall",
-        "value": "0.5"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "barracks",
-        "value": "0.5"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "university",
-        "value": "0.5"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "smithy",
-        "value": "0.5"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "market",
-        "value": "0.5"
       }
     ],
     "unlocks": [],
@@ -1161,7 +2327,7 @@
     "guid": "11b3eefe-f636-5832-b253-dd5e4ca236f0",
     "key": "mathematics",
     "name": "Mathematics",
-    "description": "research_speed all (small); production_multiplier science (small)",
+    "description": "production_multiplier science (large); building_capacity university (x2)",
     "age": 1,
     "category": "civilian",
     "prerequisites": [
@@ -1178,18 +2344,16 @@
       {
         "type": "attributeMultiplier",
         "destination": "science",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "universityCapacity",
         "value": "2"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "research_speed",
-        "target": "all",
-        "value": "small",
-        "reason": "research purchase is instant; no speed mechanic"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "ab5ecdd8-498d-5c5a-8539-9e2705a6c6e1",
@@ -1277,7 +2441,7 @@
     "guid": "c06a83d2-ee0f-5991-9dae-98391adb307e",
     "key": "irrigation",
     "name": "Irrigation",
-    "description": "production_multiplier farm (large); building_cost_reduction all (small)",
+    "description": "production_multiplier food (large); building_cost_reduction all (small)",
     "age": 1,
     "category": "civilian",
     "prerequisites": [
@@ -1441,7 +2605,7 @@
     "guid": "df7d928f-932e-5cea-a1f4-06398817caf5",
     "key": "road_networks",
     "name": "Road Networks",
-    "description": "click_power all (small); global_production all (small)",
+    "description": "production_multiplier trade (large); production_multiplier all (small)",
     "age": 1,
     "category": "civilian",
     "prerequisites": [
@@ -1457,9 +2621,9 @@
     ],
     "bonuses": [
       {
-        "type": "attributeFlat",
-        "destination": "clickPower",
-        "value": "1"
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": "100"
       },
       {
         "type": "attributeMultiplier",
@@ -1474,7 +2638,7 @@
     "guid": "72e6a498-f3d4-576f-bd17-69092e29d44d",
     "key": "metallurgy_prep",
     "name": "Metallurgy Preparation",
-    "description": "resource_capacity stone (small); production_multiplier stone (small)",
+    "description": "production_multiplier stone (large); production_multiplier gold (small)",
     "age": 1,
     "category": "civilian",
     "prerequisites": [
@@ -1491,24 +2655,22 @@
       {
         "type": "attributeMultiplier",
         "destination": "stone",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold",
         "value": "2"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "resource_capacity",
-        "target": "stone",
-        "value": "small",
-        "reason": "capacity "
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "27846ec3-06ac-53a6-902d-c228f5e83fc5",
     "key": "shipbuilding_principles",
     "name": "Shipbuilding Principles",
-    "description": "cost_reduction dock (small); production_multiplier all (small)",
+    "description": "unit_cost_reduction naval (large); production_multiplier trade (small)",
     "age": 1,
     "category": "civilian",
     "prerequisites": [
@@ -1523,26 +2685,114 @@
     ],
     "bonuses": [
       {
+        "type": "costReductionPercent",
+        "destination": "canoe",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trireme_bronze",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "war_galley_iron",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "quinquereme",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "fire_ship",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "trader_classical",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "cog",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "longship",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "caravel",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "galleon",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "frigate_sail",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "privateer",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "ironclad",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "sub_early",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "battleship",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "carrier_ww2",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "destroyer_modern",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "sub_nuclear",
+        "value": "0.01"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "carrier_nuclear",
+        "value": "0.01"
+      },
+      {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "trade",
         "value": "2"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "cost_reduction",
-        "target": "dock",
-        "value": "small",
-        "reason": "no such buyable (dock / enhancer cost path)"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "132cbe74-5ee3-5c2c-9036-12139734f94a",
     "key": "philosophy_fundamentals",
     "name": "Philosophy Fundamentals",
-    "description": "worker_efficiency science (small); production_multiplier all (small)",
+    "description": "production_multiplier science (small); production_multiplier all (small)",
     "age": 1,
     "category": "civilian",
     "prerequisites": [
@@ -1558,19 +2808,17 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
+        "destination": "science",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
         "destination": "all-production",
         "value": "2"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "worker_efficiency",
-        "target": "science",
-        "value": "small",
-        "reason": "no per-worker efficiency attribute"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "58aeb247-9bd9-5d76-a244-071d2d1c093f",
@@ -1605,7 +2853,7 @@
     "guid": "99a6e062-2654-53fb-8171-f9e00188f2cc",
     "key": "iron_working",
     "name": "Iron Working",
-    "description": "unlock_unit spearman_iron (small); convert_unit spearman_bronze (small)",
+    "description": "unlock_unit spearman_iron (small); convert_unit spearman_bronze (spearman_iron); convert_unit warrior (spearman_iron)",
     "age": 1,
     "category": "military",
     "prerequisites": [
@@ -1623,20 +2871,25 @@
     "unlocks": [
       "spearman_iron"
     ],
-    "ignored": [
+    "conversions": [
       {
-        "type": "convert_unit",
-        "target": "spearman_bronze",
-        "value": "small",
-        "reason": "unit conversion not implemented"
+        "from": "spearman_bronze",
+        "to": "spearman_iron",
+        "ratio": 10
+      },
+      {
+        "from": "warrior",
+        "to": "spearman_iron",
+        "ratio": 10
       }
-    ]
+    ],
+    "ignored": []
   },
   {
     "guid": "65c81b5d-d7c7-5d34-8e4d-cca4e41d086c",
     "key": "iron_forging",
     "name": "Iron Forging",
-    "description": "unlock_unit swordsman_iron (small); unit_stat_boost infantry_hp (small)",
+    "description": "unlock_unit swordsman_iron (small); unit_stat_boost infantry_hp (small); convert_unit axeman_bronze (swordsman_iron)",
     "age": 1,
     "category": "military",
     "prerequisites": [
@@ -1659,13 +2912,20 @@
     "unlocks": [
       "swordsman_iron"
     ],
+    "conversions": [
+      {
+        "from": "axeman_bronze",
+        "to": "swordsman_iron",
+        "ratio": 10
+      }
+    ],
     "ignored": []
   },
   {
     "guid": "9f59aadc-5360-5826-bdfa-ca23fa65dca4",
     "key": "iron_chariotry",
     "name": "Iron Chariotry",
-    "description": "unlock_unit chariot_iron (small); unit_stat_boost cavalry_attack (small)",
+    "description": "unlock_unit chariot_iron (small); unit_stat_boost cavalry_attack (small); convert_unit chariot_bronze (chariot_iron)",
     "age": 1,
     "category": "military",
     "prerequisites": [
@@ -1688,6 +2948,13 @@
     ],
     "unlocks": [
       "chariot_iron"
+    ],
+    "conversions": [
+      {
+        "from": "chariot_bronze",
+        "to": "chariot_iron",
+        "ratio": 10
+      }
     ],
     "ignored": []
   },
@@ -1753,7 +3020,7 @@
     "guid": "1d4db275-9122-5507-9195-f6bba4d72832",
     "key": "howdah_mounting",
     "name": "Howdah Mounting",
-    "description": "unlock_unit elephant_iron (small); unit_stat_boost cavalry_attack (small)",
+    "description": "unlock_unit elephant_iron (small); unit_stat_boost cavalry_attack (large)",
     "age": 1,
     "category": "military",
     "prerequisites": [
@@ -1771,7 +3038,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.armored.attack",
-        "value": "1.25"
+        "value": "1.5"
       }
     ],
     "unlocks": [
@@ -2254,7 +3521,7 @@
     "guid": "1ff11c59-4e8f-5475-85eb-93257f06d79e",
     "key": "cavalry_formations",
     "name": "Cavalry Formations",
-    "description": "unit_stat_boost cavalry_attack (small); cost_reduction cavalry_units (small)",
+    "description": "unit_stat_boost cavalry_attack (small); cost_reduction cavalry_units (large)",
     "age": 1,
     "category": "military",
     "prerequisites": [
@@ -2276,92 +3543,92 @@
       {
         "type": "costReductionPercent",
         "destination": "chariot_bronze",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "chariot_iron",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "cavalry_iron",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "elephant_iron",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "legionary",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "hoplite",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "companion",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "knight",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "man_at_arms",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "dragoon_ren",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "cuirassier",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "dragoon_ind",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "lancer",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "dragoon_mech",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "tank_ww2",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "tank_abrams",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "dragoon_modern",
-        "value": "0.5"
+        "value": "0.01"
       },
       {
         "type": "costReductionPercent",
         "destination": "mech_suit",
-        "value": "0.5"
+        "value": "0.01"
       }
     ],
     "unlocks": [],
@@ -2508,15 +3775,15 @@
         "factor": 1
       }
     ],
-    "bonuses": [],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "houseCapacity",
+        "value": "100"
+      }
+    ],
     "unlocks": [],
     "ignored": [
-      {
-        "type": "building_capacity",
-        "target": "house",
-        "value": "large",
-        "reason": "capacity "
-      },
       {
         "type": "production_multiplier",
         "target": "house",
@@ -3164,7 +4431,7 @@
         "type": "resource_capacity",
         "target": "gold",
         "value": "large",
-        "reason": "capacity "
+        "reason": "no resource storage cap"
       }
     ]
   },
@@ -3189,19 +4456,67 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
+        "destination": "peopleCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "houseCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "farmCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "lumber-yardCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "quarryCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold-mineCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "town-hallCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "barracksCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "universityCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "smithyCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "marketCapacity",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
         "destination": "all-production",
         "value": "2"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "building_capacity",
-        "target": "all",
-        "value": "small",
-        "reason": "capacity "
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "24505587-63c0-5d9f-98ab-224a83c60c06",
@@ -4692,19 +6007,17 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
+        "destination": "farmCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
         "destination": "food",
         "value": "2"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "building_capacity",
-        "target": "farm",
-        "value": "large",
-        "reason": "capacity "
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "868747a6-c4e4-54c7-ab7b-3a70a2ae9348",
@@ -4889,6 +6202,11 @@
     ],
     "bonuses": [
       {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": "100"
+      },
+      {
         "type": "costReductionPercent",
         "destination": "people",
         "value": "0.5"
@@ -4945,14 +6263,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "global_production",
-        "target": "trade",
-        "value": "large",
-        "reason": "no trade system yet"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "b4e4a084-fd55-5a11-804d-58f4bfb5db8d",
@@ -5087,15 +6398,15 @@
         "factor": 1
       }
     ],
-    "bonuses": [],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "houseCapacity",
+        "value": "100"
+      }
+    ],
     "unlocks": [],
     "ignored": [
-      {
-        "type": "building_capacity",
-        "target": "house",
-        "value": "large",
-        "reason": "capacity "
-      },
       {
         "type": "production_multiplier",
         "target": "house",
@@ -5353,14 +6664,14 @@
     "unlocks": [
       "longbow"
     ],
-    "ignored": [
+    "conversions": [
       {
-        "type": "convert_unit",
-        "target": "archer_classical",
-        "value": "small",
-        "reason": "unit conversion not implemented"
+        "from": "archer_classical",
+        "to": "longbow",
+        "ratio": 10
       }
-    ]
+    ],
+    "ignored": []
   },
   {
     "guid": "5c69ba8b-6c6d-5055-9cc8-f5e02703e306",
@@ -6604,19 +7915,67 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
+        "destination": "peopleCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "houseCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "farmCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "lumber-yardCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "quarryCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "gold-mineCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "town-hallCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "barracksCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "universityCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "smithyCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "marketCapacity",
+        "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
         "destination": "all-production",
         "value": "2"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "building_capacity",
-        "target": "all",
-        "value": "large",
-        "reason": "capacity "
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "eaba986f-36c9-5151-b1b9-16215c95bffe",
@@ -6648,7 +8007,7 @@
         "type": "resource_capacity",
         "target": "gold",
         "value": "large",
-        "reason": "capacity "
+        "reason": "no resource storage cap"
       }
     ]
   },
@@ -6753,6 +8112,11 @@
     ],
     "bonuses": [
       {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": "100"
+      },
+      {
         "type": "costReductionPercent",
         "destination": "people",
         "value": "0.5"
@@ -6809,14 +8173,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "global_production",
-        "target": "trade",
-        "value": "large",
-        "reason": "no trade system yet"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "1b65c06d-a734-598b-90b6-87785ad21c95",
@@ -6906,14 +8263,14 @@
     "unlocks": [
       "musketeer"
     ],
-    "ignored": [
+    "conversions": [
       {
-        "type": "convert_unit",
-        "target": "crossbow",
-        "value": "small",
-        "reason": "unit conversion not implemented"
+        "from": "crossbow",
+        "to": "musketeer",
+        "ratio": 10
       }
-    ]
+    ],
+    "ignored": []
   },
   {
     "guid": "97a82acb-997e-5d5d-acb5-b25b0b59d14e",
@@ -8156,7 +9513,7 @@
         "type": "resource_capacity",
         "target": "all",
         "value": "large",
-        "reason": "capacity "
+        "reason": "no resource storage cap"
       }
     ]
   },
@@ -8341,7 +9698,13 @@
         "factor": 1
       }
     ],
-    "bonuses": [],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "houseCapacity",
+        "value": "100"
+      }
+    ],
     "unlocks": [],
     "ignored": [
       {
@@ -8349,12 +9712,6 @@
         "target": "population",
         "value": "large",
         "reason": "population is derived from citizens"
-      },
-      {
-        "type": "building_capacity",
-        "target": "house",
-        "value": "large",
-        "reason": "capacity "
       }
     ]
   },
@@ -9410,7 +10767,7 @@
         "type": "resource_capacity",
         "target": "all",
         "value": "large",
-        "reason": "capacity "
+        "reason": "no resource storage cap"
       }
     ]
   },
@@ -9935,14 +11292,14 @@
     "unlocks": [
       "soldier_modern"
     ],
-    "ignored": [
+    "conversions": [
       {
-        "type": "convert_unit",
-        "target": "ww2_infantry",
-        "value": "large",
-        "reason": "unit conversion not implemented"
+        "from": "ww2_infantry",
+        "to": "soldier_modern",
+        "ratio": 10
       }
-    ]
+    ],
+    "ignored": []
   },
   {
     "guid": "537b457d-176a-5c9f-90b1-c32265a00966",

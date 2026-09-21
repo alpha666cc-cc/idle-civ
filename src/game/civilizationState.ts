@@ -60,7 +60,11 @@ import {
   type EncounterDefinition,
 } from "./encounters";
 import { ExpNumber } from "./expNumber";
-import { findResearchDefinition, researchesUnlockingUnit } from "./research";
+import {
+  findResearchDefinition,
+  researchesClosingUnit,
+  researchesUnlockingUnit,
+} from "./research";
 import {
   emptyStatistics,
   tickMilliseconds,
@@ -98,8 +102,8 @@ const maximumUnitPurchase = 1_000_000;
  * purchase costs ×10 the previous one, whichever tech is bought. The JSON
  * costs on ResearchDefinition are not charged.
  */
-const researchFirstCost = ExpNumber.fromNumber(100);
-const researchCostGrowth = ExpNumber.fromNumber(2.5);
+const researchFirstCost = ExpNumber.fromNumber(1_000);
+const researchCostGrowth = ExpNumber.fromNumber(10);
 
 /**
  * Identity-keyed recompute caches. Every state array is replaced immutably and
@@ -108,10 +112,6 @@ const researchCostGrowth = ExpNumber.fromNumber(2.5);
  * change (a build, purchase, victory or earn) rebuilds once. This keeps tick
  * cost independent of building count and earned-achievement count.
  */
-const buildingCountCaches = new WeakMap<
-  readonly string[],
-  Map<string, number>
->();
 const earnedAchievementSets = new WeakMap<readonly string[], Set<string>>();
 
 /** Cached activeBonuses(), keyed on the identity tuple of the source lists. */
@@ -241,7 +241,7 @@ const applyRate = (amount: ExpNumber, rate: ExpNumber): ExpNumber => {
 export class CivilizationState {
   readonly resources: ResourceAmounts;
   readonly workers: WorkerAssignments;
-  readonly builtBuildings: string[];
+  readonly builtBuildings: Partial<Record<BuildingKey, number>>;
   readonly resourceFactors: ResourceFactorMap;
   readonly buildingCostOverrides: BuildingCostOverrides;
   readonly autoClicksPerSecond: number;
@@ -263,7 +263,7 @@ export class CivilizationState {
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
     workers: WorkerAssignments = emptyWorkerAssignments(),
-    builtBuildings: string[] = ["town-hall"],
+    builtBuildings: Partial<Record<BuildingKey, number>> = { "town-hall": 1 },
     resourceFactors: ResourceFactorMap = emptyResourceFactors(),
     buildingCostOverrides: BuildingCostOverrides = {},
     autoClicksPerSecond = 0,
@@ -549,7 +549,7 @@ export class CivilizationState {
 
   /**
    * The cost of the next research purchase, global across the whole tree: the
-   * first tech costs 100 science and every later purchase costs ×10 the
+   * first tech costs 1K science and every later purchase costs ×10 the
    * previous one, whichever tech is bought.
    */
   getResearchNextCost(): BuildingCost[] {
@@ -583,9 +583,21 @@ export class CivilizationState {
   buyResearch(researchId: string): CivilizationState {
     if (this.boughtResearch.includes(researchId)) return this;
     if (!this.canBuyResearch(researchId)) return this;
+    const research = findResearchDefinition(researchId);
     const resources = { ...this.resources };
     for (const { resource, base } of this.getResearchNextCost()) {
       resources[resource] = resources[resource].sub(base);
+    }
+    // Apply the tech's unit conversions: every `ratio` owned units of `from`
+    // become one unit of `to`; the remainder stays on the (now closed) line.
+    let unitCounts = this.unitCounts;
+    for (const { from, to, ratio } of research?.conversions ?? []) {
+      const owned = unitCounts[from] ?? ExpNumber.ZERO;
+      const converted = owned.div(ExpNumber.fromNumber(ratio)).floor();
+      if (converted.lte(ExpNumber.ZERO)) continue;
+      if (unitCounts === this.unitCounts) unitCounts = { ...this.unitCounts };
+      unitCounts[from] = owned.sub(converted.mul(ExpNumber.fromNumber(ratio)));
+      unitCounts[to] = (unitCounts[to] ?? ExpNumber.ZERO).add(converted);
     }
     return this.withState(
       resources,
@@ -597,7 +609,7 @@ export class CivilizationState {
       this.enteredAges,
       this.earnedAchievements,
       this.statistics,
-      this.unitCounts,
+      unitCounts,
       this.devProductionMultiplier,
       this.freeBuildings,
       this.freeUnits,
@@ -707,12 +719,21 @@ export class CivilizationState {
 
   getFactors(resourceKey: ResourceKey): ResourceFactors {
     const factors = this.resourceFactors[resourceKey];
-    // `workers` only ever holds the four production keys, so membership is the
-    // honest "is this a production resource?" test (AGENTS.md §9 guard).
+    // Production resources include worker-assignable resources (food, wood, stone, gold)
+    // and building-generated resources (military, science, metalwork, trade)
     const isProductionKey = resourceKey in this.workers;
-    const workerProduction = this.getWorkerProduction(
-      resourceKey as ProductionResourceKey,
-    );
+    const resourceLabels: Record<string, string> = {
+      military: "Military",
+      science: "Science",
+      metalwork: "Metalwork",
+      trade: "Trade",
+    };
+    const workerProduction = isProductionKey
+      ? this.getWorkerProduction(resourceKey as ProductionResourceKey)
+      : new WorkerProduction(
+          resourceKey as ProductionResourceKey,
+          resourceLabels[resourceKey] || resourceKey,
+        );
     const buildingFactors: ResourceFactors = {
       additional: [],
       multiplicative: [],
@@ -1441,10 +1462,9 @@ export class CivilizationState {
       );
     }
 
-    const newBuildings = [...this.builtBuildings];
-    for (let i = 0; i < count; i++) {
-      newBuildings.push(buildingKey);
-    }
+    const newBuildings = { ...this.builtBuildings };
+    newBuildings[buildingKey as BuildingKey] =
+      (newBuildings[buildingKey as BuildingKey] ?? 0) + count;
 
     return this.withState(
       resources,
@@ -1478,17 +1498,7 @@ export class CivilizationState {
   }
 
   private buildingCount(buildingKey: string): number {
-    // O(1) per call: the per-key map rebuilds once per builtBuildings identity
-    // (i.e. once per actual construction), never per tick or per query.
-    let counts = buildingCountCaches.get(this.builtBuildings);
-    if (!counts) {
-      counts = new Map<string, number>();
-      for (const key of this.builtBuildings) {
-        counts.set(key, (counts.get(key) ?? 0) + 1);
-      }
-      buildingCountCaches.set(this.builtBuildings, counts);
-    }
-    return counts.get(buildingKey) ?? 0;
+    return this.builtBuildings[buildingKey as BuildingKey] ?? 0;
   }
 
   /** Bonuses from bought upgrades, paired with the upgrade id as the factor source. */
@@ -1647,10 +1657,18 @@ export class CivilizationState {
     return set;
   }
 
-  /** Can the player buy this unit: base-available, or unlocked by a won battle. */
+  /** Can the player buy this unit: base-available, unlocked by a won battle or
+   *  a bought research — minus lines a bought research has closed. */
   isUnitAvailable(unitId: string): boolean {
     const unit = findUnitDefinition(unitId);
     if (!unit || !isBuyableUnit(unit)) return false;
+    if (
+      researchesClosingUnit(unitId).some((research) =>
+        this.boughtResearch.includes(research.key),
+      )
+    ) {
+      return false;
+    }
     if (unit.available) return true;
     if (
       researchesUnlockingUnit(unitId).some((research) =>
@@ -2381,7 +2399,10 @@ export class CivilizationState {
   getAgeBuildingProgress(): [number, number] {
     const age = this.getCurrentAge();
     if (!age) return [0, 0];
-    const buildings = this.builtBuildings.length;
+    const buildings = Object.values(this.builtBuildings).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
     const target = this.getAgeBuildingTarget(age);
     return [buildings, target];
   }
@@ -2410,7 +2431,11 @@ export class CivilizationState {
 
     // Check buildings: total buildings ≥ 125% of the age's pop max
     const target = this.getAgeBuildingTarget(age);
-    if (this.builtBuildings.length < target) return false;
+    const totalBuildings = Object.values(this.builtBuildings).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
+    if (totalBuildings < target) return false;
 
     return true;
   }
