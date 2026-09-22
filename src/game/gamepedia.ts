@@ -254,7 +254,6 @@ for (const encounter of encounterDefinitions) {
 for (const research of researchDefinitions) {
   const relatedIds = [
     ...research.prerequisites,
-    ...research.costs.map(({ resource }) => resource),
     ...research.bonuses.map(
       ({ destination }) => String(destination).split(".")[0],
     ),

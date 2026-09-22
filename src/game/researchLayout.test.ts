@@ -83,11 +83,65 @@ describe("research tree layout", () => {
     expect(clashes).toEqual([]);
   });
 
-  it("keeps every prerequisite left of its dependant", () => {
-    const backwards = edges
-      .filter(({ parent, child }) => parent.col >= child.col)
+  it("keeps every prerequisite left of, or a full row above, its dependant", () => {
+    // A prerequisite sits in an earlier column, or — for a vertical chain —
+    // in the same column with at least one empty row between the two cards, so
+    // the arrow can drop from the parent's bottom edge into the child's top
+    // edge. A card directly below its prerequisite has no room for that drop.
+    const misplaced = edges
+      .filter(
+        ({ parent, child }) =>
+          parent.col > child.col ||
+          (parent.col === child.col && child.row - parent.row < 2),
+      )
       .map(({ key }) => key);
-    expect(backwards).toEqual([]);
+    expect(misplaced).toEqual([]);
+  });
+
+  it("drops same-column arrows from the parent's bottom to the child's top", () => {
+    const vertical = edges.filter(
+      ({ parent, child }) =>
+        parent.col === child.col && child.row - parent.row >= 2,
+    );
+    expect(vertical.length).toBeGreaterThan(0);
+    for (const { key, parent, child } of vertical) {
+      const route = routeTechEdge(parent, child, nodes);
+      const parentRect = techRect(parent);
+      const childRect = techRect(child);
+      const [start, end] = pathSegments(route.path)[0];
+      expect(start, `${key} start`).toEqual({
+        x: (parentRect.left + parentRect.right) / 2,
+        y: parentRect.bottom,
+      });
+      expect(end, `${key} end`).toEqual({
+        x: (childRect.left + childRect.right) / 2,
+        y: childRect.top,
+      });
+    }
+  });
+
+  it("refuses the vertical drop when the space below the parent is taken", () => {
+    const parent: TechPlacement = { col: 0, row: 0, age: 0 };
+    const below: TechPlacement = { col: 0, row: 1, age: 0 };
+    const lowerChild: TechPlacement = { col: 0, row: 2, age: 0 };
+    const parentRect = techRect(parent);
+    const bottomCentre = (parentRect.left + parentRect.right) / 2;
+
+    // A card directly below the parent leaves no room for the arrow, so the
+    // route keeps the sideways anchors instead of the bottom-centre drop.
+    const adjacent = pathSegments(
+      routeTechEdge(parent, below, [parent, below]).path,
+    )[0];
+    expect(adjacent[0]).toEqual({
+      x: parentRect.right,
+      y: (parentRect.top + parentRect.bottom) / 2,
+    });
+
+    // A card occupying the row between the two cards blocks the run as well.
+    const obstructed = pathSegments(
+      routeTechEdge(parent, lowerChild, [parent, lowerChild, below]).path,
+    )[0];
+    expect(obstructed[0].x).not.toBe(bottomCentre);
   });
 
   it("keeps age bands ascending and non-overlapping", () => {
@@ -124,8 +178,10 @@ describe("research tree layout", () => {
       .filter(({ parent, child }) => parent.age === child.age)
       .filter(({ parent, child }) => !routeTechEdge(parent, child, nodes).straight)
       .map(({ key }) => key);
-    // The generator leaves a few structurally forced detours; a rise here means
-    // the layout needs regenerating with `node tools/gen/researchLayout.mjs`.
-    expect(elbows.length).toBeLessThanOrEqual(6);
+    // The layout is hand-authored and mixes vertical chains with long fan-out
+    // arrows; the fan-outs are structurally forced, because a straight line
+    // across several columns must clear every card it passes. A rise here means
+    // the layout drifted — nudge the offending card instead of adding cards.
+    expect(elbows.length).toBeLessThanOrEqual(8);
   });
 });

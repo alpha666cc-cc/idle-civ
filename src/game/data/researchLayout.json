@@ -1,82 +1,82 @@
 {
   "agriculture": {
     "column": 0,
-    "row": 0
+    "row": 2
   },
   "pottery": {
-    "column": 3,
-    "row": 0
+    "column": 1,
+    "row": 1
   },
   "animal_husbandry": {
+    "column": 0,
+    "row": 4
+  },
+  "sling_throwing": {
+    "column": 6,
+    "row": 1
+  },
+  "mining": {
     "column": 1,
     "row": 3
   },
-  "sling_throwing": {
-    "column": 5,
-    "row": 3
-  },
-  "mining": {
-    "column": 5,
-    "row": 1
-  },
   "stone_working": {
-    "column": 6,
-    "row": 0
+    "column": 2,
+    "row": 4
   },
   "forestry": {
     "column": 1,
-    "row": 2
-  },
-  "weaving": {
-    "column": 2,
-    "row": 2
-  },
-  "writing": {
-    "column": 6,
-    "row": 3
-  },
-  "calendar": {
-    "column": 7,
-    "row": 3
-  },
-  "city_planning": {
-    "column": 7,
-    "row": 0
-  },
-  "tribal_organization": {
-    "column": 2,
-    "row": 1
-  },
-  "archery_mechanics": {
-    "column": 5,
-    "row": 0
-  },
-  "flint_knapping": {
-    "column": 6,
     "row": 4
   },
-  "domestication": {
+  "weaving": {
+    "column": 1,
+    "row": 0
+  },
+  "writing": {
+    "column": 2,
+    "row": 0
+  },
+  "calendar": {
+    "column": 3,
+    "row": 0
+  },
+  "city_planning": {
     "column": 3,
     "row": 4
   },
-  "trapping": {
+  "tribal_organization": {
+    "column": 4,
+    "row": 2
+  },
+  "archery_mechanics": {
+    "column": 6,
+    "row": 0
+  },
+  "flint_knapping": {
+    "column": 7,
+    "row": 0
+  },
+  "domestication": {
     "column": 4,
     "row": 4
   },
+  "trapping": {
+    "column": 5,
+    "row": 4
+  },
   "woodcraft_hulls": {
-    "column": 6,
+    "column": 5,
     "row": 2
   },
   "bronze_smelting": {
-    "column": 4,
+    "column": 5,
     "row": 3
   },
   "bronze_casting": {
     "column": 6,
-    "row": 1
+    "row": 2
   },
   "wheel_axle": {
-    "column": 5,
+    "column": 6,
     "row": 4
   },
   "composite_bowcraft": {
@@ -85,7 +85,7 @@
   },
   "galley_design": {
     "column": 7,
-    "row": 1
+    "row": 4
   },
   "iron_mining": {
     "column": 8,
@@ -93,35 +93,35 @@
   },
   "currency": {
     "column": 12,
-    "row": 2
+    "row": 4
   },
   "masonry": {
     "column": 13,
-    "row": 2
+    "row": 1
   },
   "trade_routes": {
     "column": 13,
-    "row": 1
+    "row": 3
   },
   "mathematics": {
     "column": 13,
     "row": 4
   },
   "alphabet": {
-    "column": 9,
-    "row": 2
+    "column": 11,
+    "row": 4
   },
   "irrigation": {
     "column": 8,
     "row": 4
   },
   "code_of_laws": {
-    "column": 10,
-    "row": 2
+    "column": 12,
+    "row": 0
   },
   "road_networks": {
     "column": 14,
-    "row": 2
+    "row": 1
   },
   "metallurgy_prep": {
     "column": 9,
@@ -132,36 +132,36 @@
     "row": 0
   },
   "philosophy_fundamentals": {
-    "column": 11,
-    "row": 4
-  },
-  "torsion_physics": {
-    "column": 13,
+    "column": 12,
     "row": 3
   },
+  "torsion_physics": {
+    "column": 14,
+    "row": 2
+  },
   "iron_working": {
-    "column": 10,
+    "column": 9,
     "row": 1
   },
   "iron_forging": {
     "column": 11,
-    "row": 0
+    "row": 1
   },
   "iron_chariotry": {
     "column": 11,
-    "row": 3
+    "row": 0
   },
   "horsemanship": {
-    "column": 11,
-    "row": 2
+    "column": 9,
+    "row": 3
   },
   "ram_hulls": {
     "column": 12,
     "row": 1
   },
   "howdah_mounting": {
-    "column": 11,
-    "row": 1
+    "column": 10,
+    "row": 2
   },
   "engineered_siegecraft": {
     "column": 14,
@@ -172,24 +172,24 @@
     "row": 0
   },
   "iron_shielding": {
-    "column": 12,
-    "row": 0
+    "column": 11,
+    "row": 3
   },
   "cavalry_formations": {
-    "column": 12,
-    "row": 4
+    "column": 10,
+    "row": 3
   },
   "coastal_forts": {
     "column": 14,
-    "row": 1
+    "row": 0
   },
   "aqueducts": {
     "column": 19,
-    "row": 1
+    "row": 0
   },
   "drama_poetry": {
     "column": 20,
-    "row": 1
+    "row": 4
   },
   "civil_service": {
     "column": 15,
@@ -200,8 +200,8 @@
     "row": 4
   },
   "currency_standard": {
-    "column": 19,
-    "row": 2
+    "column": 20,
+    "row": 0
   },
   "surveying": {
     "column": 16,
@@ -217,27 +217,27 @@
   },
   "architecture": {
     "column": 20,
-    "row": 0
+    "row": 2
   },
   "banking_concepts": {
-    "column": 20,
-    "row": 4
-  },
-  "aesthetics": {
     "column": 21,
     "row": 0
   },
+  "aesthetics": {
+    "column": 21,
+    "row": 4
+  },
   "scholasticism": {
     "column": 19,
-    "row": 0
+    "row": 3
   },
   "legion_discipline": {
-    "column": 20,
-    "row": 2
+    "column": 21,
+    "row": 1
   },
   "phalanx_doctrine": {
     "column": 20,
-    "row": 3
+    "row": 1
   },
   "shock_cavalry": {
     "column": 17,
@@ -277,18 +277,18 @@
   },
   "martival_drill": {
     "column": 21,
-    "row": 2
+    "row": 3
   },
   "feudalism": {
-    "column": 27,
-    "row": 0
+    "column": 24,
+    "row": 2
   },
   "guilds": {
-    "column": 26,
+    "column": 25,
     "row": 2
   },
   "windmills": {
-    "column": 28,
+    "column": 25,
     "row": 1
   },
   "water_power": {
@@ -296,8 +296,8 @@
     "row": 2
   },
   "gothic_architecture": {
-    "column": 25,
-    "row": 2
+    "column": 22,
+    "row": 3
   },
   "cartography": {
     "column": 22,
@@ -308,11 +308,11 @@
     "row": 0
   },
   "patronage": {
-    "column": 28,
-    "row": 4
+    "column": 26,
+    "row": 1
   },
   "manorialism": {
-    "column": 28,
+    "column": 25,
     "row": 0
   },
   "mining_shafts": {
@@ -320,264 +320,264 @@
     "row": 1
   },
   "craftsmanship": {
-    "column": 27,
-    "row": 4
+    "column": 26,
+    "row": 2
   },
   "almanacs": {
     "column": 23,
     "row": 2
   },
   "plate_armor": {
-    "column": 27,
-    "row": 1
+    "column": 26,
+    "row": 0
   },
   "yew_bowcraft": {
     "column": 23,
     "row": 4
   },
   "steel_crossbows": {
-    "column": 25,
-    "row": 3
+    "column": 27,
+    "row": 1
   },
   "professional_men_at_arms": {
     "column": 24,
     "row": 1
   },
   "trebuchet_physics": {
-    "column": 24,
-    "row": 3
+    "column": 27,
+    "row": 0
   },
   "clinker_building": {
-    "column": 24,
-    "row": 2
+    "column": 27,
+    "row": 4
   },
   "raiding_vessels": {
-    "column": 25,
-    "row": 0
-  },
-  "early_black_powder": {
-    "column": 25,
-    "row": 4
-  },
-  "rigging_sails": {
-    "column": 26,
-    "row": 0
-  },
-  "castle_fortification": {
-    "column": 26,
-    "row": 3
-  },
-  "crossbow_drills": {
-    "column": 26,
-    "row": 4
-  },
-  "chivalric_code": {
     "column": 28,
     "row": 3
   },
+  "early_black_powder": {
+    "column": 28,
+    "row": 0
+  },
+  "rigging_sails": {
+    "column": 28,
+    "row": 4
+  },
+  "castle_fortification": {
+    "column": 25,
+    "row": 3
+  },
+  "crossbow_drills": {
+    "column": 28,
+    "row": 1
+  },
+  "chivalric_code": {
+    "column": 27,
+    "row": 2
+  },
   "printing_press": {
-    "column": 30,
+    "column": 32,
     "row": 3
   },
   "double_entry_bookkeeping": {
-    "column": 35,
-    "row": 3
+    "column": 33,
+    "row": 4
   },
   "scientific_method": {
-    "column": 31,
-    "row": 0
+    "column": 33,
+    "row": 1
   },
   "humanism": {
-    "column": 31,
+    "column": 33,
     "row": 2
   },
   "metallurgy": {
-    "column": 32,
-    "row": 3
+    "column": 29,
+    "row": 1
   },
   "perspective_drawing": {
     "column": 29,
     "row": 3
   },
   "banking_houses": {
-    "column": 36,
-    "row": 1
+    "column": 34,
+    "row": 4
   },
   "enclosure_acts": {
     "column": 29,
     "row": 4
   },
   "naval_academies": {
-    "column": 35,
-    "row": 2
+    "column": 34,
+    "row": 0
   },
   "clockwork_mechanics": {
-    "column": 32,
-    "row": 1
+    "column": 34,
+    "row": 3
   },
   "global_exploration": {
-    "column": 36,
+    "column": 35,
     "row": 0
   },
   "matchlock_mechanisms": {
+    "column": 29,
+    "row": 2
+  },
+  "tercio_formations": {
+    "column": 30,
+    "row": 3
+  },
+  "mounted_firearms": {
+    "column": 30,
+    "row": 4
+  },
+  "heavy_cavalry_pistols": {
+    "column": 31,
+    "row": 4
+  },
+  "cast_bronze_cannon": {
+    "column": 30,
+    "row": 1
+  },
+  "broadside_warfare": {
+    "column": 31,
+    "row": 0
+  },
+  "sailing_rigging": {
+    "column": 33,
+    "row": 0
+  },
+  "letters_of_marque": {
+    "column": 35,
+    "row": 2
+  },
+  "gunpowder_standardization": {
+    "column": 30,
+    "row": 2
+  },
+  "star_fortresses": {
+    "column": 31,
+    "row": 1
+  },
+  "naval_bombardment": {
     "column": 32,
     "row": 4
   },
-  "tercio_formations": {
-    "column": 33,
-    "row": 4
-  },
-  "mounted_firearms": {
-    "column": 33,
-    "row": 1
-  },
-  "heavy_cavalry_pistols": {
-    "column": 34,
-    "row": 2
-  },
-  "cast_bronze_cannon": {
-    "column": 33,
-    "row": 0
-  },
-  "broadside_warfare": {
-    "column": 34,
-    "row": 1
-  },
-  "sailing_rigging": {
-    "column": 35,
-    "row": 4
-  },
-  "letters_of_marque": {
-    "column": 36,
-    "row": 3
-  },
-  "gunpowder_standardization": {
-    "column": 33,
-    "row": 3
-  },
-  "star_fortresses": {
-    "column": 35,
-    "row": 0
-  },
-  "naval_bombardment": {
-    "column": 35,
-    "row": 1
-  },
   "steam_engine": {
-    "column": 38,
-    "row": 2
+    "column": 39,
+    "row": 1
   },
   "industrialization": {
-    "column": 39,
+    "column": 40,
     "row": 3
   },
   "assembly_line": {
-    "column": 40,
-    "row": 3
+    "column": 41,
+    "row": 2
   },
   "electricity": {
-    "column": 42,
-    "row": 4
+    "column": 38,
+    "row": 0
   },
   "corporations": {
-    "column": 37,
+    "column": 36,
     "row": 2
   },
   "railroads": {
+    "column": 40,
+    "row": 2
+  },
+  "telegraph": {
     "column": 39,
     "row": 0
   },
-  "telegraph": {
-    "column": 43,
-    "row": 4
-  },
   "internal_combustion": {
-    "column": 41,
+    "column": 40,
     "row": 1
   },
   "synthetic_fertilizers": {
-    "column": 37,
+    "column": 36,
     "row": 3
   },
   "refining": {
+    "column": 41,
+    "row": 1
+  },
+  "pharmaceuticals": {
     "column": 42,
     "row": 0
   },
-  "pharmaceuticals": {
-    "column": 43,
-    "row": 2
-  },
   "rifled_barrels": {
-    "column": 40,
-    "row": 4
+    "column": 36,
+    "row": 1
   },
   "minie_ball_ammunition": {
-    "column": 41,
-    "row": 4
+    "column": 37,
+    "row": 3
   },
   "industrial_cavalry_tactics": {
-    "column": 38,
+    "column": 37,
     "row": 0
   },
   "lancer_charges": {
-    "column": 38,
+    "column": 37,
     "row": 1
   },
   "rapid_fire_mechanics": {
-    "column": 42,
-    "row": 2
+    "column": 38,
+    "row": 1
   },
   "ironclad_armor": {
     "column": 40,
-    "row": 0
+    "row": 4
   },
   "lighter_than_air_flight": {
-    "column": 41,
-    "row": 2
+    "column": 40,
+    "row": 0
   },
   "aeronautics": {
-    "column": 42,
-    "row": 1
+    "column": 41,
+    "row": 0
   },
   "heavy_rifled_artillery": {
-    "column": 41,
-    "row": 3
+    "column": 37,
+    "row": 2
   },
   "submersible_hulls": {
     "column": 41,
-    "row": 0
+    "row": 3
   },
   "trench_warfare": {
-    "column": 43,
+    "column": 39,
     "row": 3
   },
   "computers": {
-    "column": 44,
-    "row": 1
+    "column": 45,
+    "row": 2
   },
   "nuclear_fission": {
     "column": 50,
-    "row": 2
+    "row": 4
   },
   "internet": {
     "column": 45,
-    "row": 3
+    "row": 4
   },
   "automation": {
-    "column": 45,
-    "row": 4
+    "column": 46,
+    "row": 0
   },
   "genomics": {
     "column": 49,
-    "row": 3
+    "row": 0
   },
   "renewable_energy": {
-    "column": 44,
+    "column": 43,
     "row": 2
   },
   "globalization": {
-    "column": 47,
-    "row": 3
+    "column": 46,
+    "row": 4
   },
   "microprocessors": {
     "column": 48,
@@ -585,87 +585,87 @@
   },
   "spaceflight": {
     "column": 51,
-    "row": 4
+    "row": 2
   },
   "quantum_computing": {
     "column": 49,
-    "row": 1
+    "row": 2
   },
   "nanotechnology": {
     "column": 50,
     "row": 1
   },
   "stormtrooper_tactics": {
-    "column": 48,
-    "row": 3
-  },
-  "combined_arms_armor": {
-    "column": 49,
-    "row": 4
-  },
-  "motorized_infantry": {
-    "column": 52,
-    "row": 1
-  },
-  "armored_warfare": {
-    "column": 50,
-    "row": 4
-  },
-  "piston_engine_fighters": {
-    "column": 45,
-    "row": 2
-  },
-  "strategic_bombing": {
     "column": 47,
     "row": 4
   },
-  "naval_aviation": {
-    "column": 46,
+  "combined_arms_armor": {
+    "column": 48,
+    "row": 0
+  },
+  "motorized_infantry": {
+    "column": 51,
     "row": 4
   },
-  "dreadnought_armor": {
+  "armored_warfare": {
     "column": 51,
+    "row": 3
+  },
+  "piston_engine_fighters": {
+    "column": 43,
+    "row": 4
+  },
+  "strategic_bombing": {
+    "column": 45,
+    "row": 1
+  },
+  "naval_aviation": {
+    "column": 44,
+    "row": 0
+  },
+  "dreadnought_armor": {
+    "column": 45,
     "row": 0
   },
   "assault_rifles": {
-    "column": 50,
-    "row": 0
+    "column": 49,
+    "row": 3
   },
   "composite_armor": {
     "column": 52,
-    "row": 4
+    "row": 3
   },
   "stealth_technology": {
     "column": 47,
-    "row": 0
+    "row": 2
   },
   "guided_missiles": {
-    "column": 52,
-    "row": 2
+    "column": 46,
+    "row": 1
   },
   "armored_cavalry_doctrine": {
-    "column": 53,
-    "row": 2
+    "column": 52,
+    "row": 4
   },
   "unmanned_aerial_systems": {
-    "column": 49,
-    "row": 0
+    "column": 48,
+    "row": 3
   },
   "helicopter_rotor_systems": {
-    "column": 46,
-    "row": 2
+    "column": 44,
+    "row": 1
   },
   "rocket_artillery": {
-    "column": 53,
-    "row": 3
+    "column": 47,
+    "row": 0
   },
   "nuclear_propulsion": {
     "column": 51,
-    "row": 3
+    "row": 0
   },
   "special_operations": {
-    "column": 51,
-    "row": 1
+    "column": 50,
+    "row": 0
   },
   "radar_low_observability": {
     "column": 48,
@@ -673,18 +673,18 @@
   },
   "orbital_arrays": {
     "column": 52,
-    "row": 0
+    "row": 1
   },
   "particle_beams": {
     "column": 53,
     "row": 1
   },
   "exoskeletons": {
-    "column": 52,
-    "row": 3
+    "column": 51,
+    "row": 1
   },
   "interstellar_infantry": {
-    "column": 53,
-    "row": 4
+    "column": 52,
+    "row": 0
   }
 }

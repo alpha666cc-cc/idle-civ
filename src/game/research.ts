@@ -1,9 +1,9 @@
 import researchData from "./data/research.json";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
-import { buildingDefinitions, type BuildingCost } from "./buildings";
+import { buildingDefinitions } from "./buildings";
 import { parseBonusType, type Bonus } from "./bonus";
-import { findAttributeDefinition, type ResourceKey } from "./attributes";
+import { findAttributeDefinition } from "./attributes";
 import { findUnitDefinition, parseUnitStatTarget } from "./units";
 
 /**
@@ -33,7 +33,6 @@ export class ResearchDefinition extends GameObject {
   readonly age: number;
   readonly category: string;
   readonly prerequisites: readonly string[];
-  readonly costs: BuildingCost[];
   readonly bonuses: Bonus[];
   readonly unlocks: readonly string[];
   readonly conversions: readonly UnitConversion[];
@@ -51,7 +50,6 @@ export class ResearchDefinition extends GameObject {
     age: number,
     category: string,
     prerequisites: readonly string[],
-    costs: BuildingCost[],
     bonuses: Bonus[],
     unlocks: readonly string[],
     conversions: readonly UnitConversion[],
@@ -68,7 +66,6 @@ export class ResearchDefinition extends GameObject {
     this.age = age;
     this.category = category;
     this.prerequisites = prerequisites;
-    this.costs = costs;
     this.bonuses = bonuses;
     this.unlocks = unlocks;
     this.conversions = conversions;
@@ -83,7 +80,6 @@ type ResearchData = {
   age: number;
   category: string;
   prerequisites: string[];
-  costs: { resource: ResourceKey; base: number | string; factor: number }[];
   bonuses: { type: string; destination: string; value: number | string }[];
   unlocks?: string[];
   conversions?: { from: string; to: string; ratio?: number }[];
@@ -106,11 +102,6 @@ const toResearchDefinition = (data: ResearchData): ResearchDefinition =>
     data.age,
     data.category,
     [...(data.prerequisites ?? [])],
-    (data.costs ?? []).map(({ resource, base, factor }) => ({
-      resource,
-      base: ExpNumber.from(base),
-      factor,
-    })),
     (data.bonuses ?? []).map(({ type, destination, value }) => ({
       type: parseBonusType(type),
       destination,
@@ -244,6 +235,12 @@ for (const research of researchDefinitions) {
     if (parseUnitStatTarget(destination)) continue;
     if (findAttributeDefinition(destination)) continue;
     if (buildingDefinitions.some(({ key }) => key === destination)) continue;
+    if (
+      destination === "all-buildings" ||
+      destination === "all-units" ||
+      destination.startsWith("tag.")
+    )
+      continue;
     // Cost reductions may target a unit id (§13.3: units are buyables).
     if (findUnitDefinition(destination)) continue;
     throw new Error(

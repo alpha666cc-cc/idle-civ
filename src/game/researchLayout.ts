@@ -63,6 +63,18 @@ export const techEntry = ({ col, row }: TechPlacement): Point => ({
   y: AGE_HEADER_H + row * ROW_H + CARD_H / 2,
 });
 
+/** Bottom-edge anchor of a card: where an outgoing downward arrow starts. */
+export const techBottomExit = ({ col, row }: TechPlacement): Point => ({
+  x: col * COL_W + AGE_INSET + CARD_W / 2,
+  y: AGE_HEADER_H + row * ROW_H + CARD_H,
+});
+
+/** Top-edge anchor of a card: where an incoming downward arrow ends. */
+export const techTopEntry = ({ col, row }: TechPlacement): Point => ({
+  x: col * COL_W + AGE_INSET + CARD_W / 2,
+  y: AGE_HEADER_H + row * ROW_H,
+});
+
 /**
  * Centre of the empty corridor below card row `rowIndex`. Corridors are the
  * 20px bands between two rows (plus the 20px band under the last row), so a
@@ -133,9 +145,31 @@ export const routeTechEdge = (
   child: TechPlacement,
   placements: readonly TechPlacement[],
 ): TechEdgeRoute => {
+  const crossAge = parent.age !== child.age;
+  // Same column, parent above child: the arrow runs straight down from the
+  // parent's bottom-centre to the child's top-centre — but only when the space
+  // below the parent is empty for a full card row. Adjacent cards (child at
+  // parent.row + 1) would leave a 20px stub wedged in the row corridor, and a
+  // card sitting between the two blocks the run outright; both keep the
+  // sideways routing instead.
+  if (parent.col === child.col && child.row - parent.row >= 2) {
+    const from = techBottomExit(parent);
+    const to = techTopEntry(child);
+    const blocked = placements.some(
+      (candidate) =>
+        candidate !== parent &&
+        candidate !== child &&
+        segmentHitsCard(from, to, techRect(candidate)),
+    );
+    if (!blocked)
+      return {
+        path: `M ${from.x} ${from.y} L ${to.x} ${to.y}`,
+        crossAge,
+        straight: true,
+      };
+  }
   const start = techExit(parent);
   const end = techEntry(child);
-  const crossAge = parent.age !== child.age;
   const blocked = placements.some(
     (candidate) =>
       candidate !== parent &&

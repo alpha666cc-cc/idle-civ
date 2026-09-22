@@ -77,6 +77,7 @@ export const solveMinimumArmy = (
   battleId: string,
   candidates: readonly UnitDefinition[],
   context: BattleSimulatorContext,
+  requireMixed = false,
 ): SimulatorResult | null => {
   const battle = encounterDefinitions.find(({ key }) => key === battleId);
   if (!battle) return null;
@@ -102,6 +103,36 @@ export const solveMinimumArmy = (
       best = composition;
       bestCost = cost;
     }
+  }
+  // Some battles require complementary roles: neither the siege unit nor the
+  // naval unit can win alone, but their combination can. Seed the hill-climb
+  // with bounded power-of-two pair searches so those armies are discoverable.
+  if (requireMixed && !best) {
+      const powers = Array.from({ length: 24 }, (_, index) => 2 ** index);
+      for (let leftIndex = 0; leftIndex < candidates.length; leftIndex += 1) {
+        for (
+          let rightIndex = leftIndex + 1;
+          rightIndex < candidates.length;
+          rightIndex += 1
+        ) {
+          const left = candidates[leftIndex];
+          const right = candidates[rightIndex];
+          for (const leftCount of powers) {
+            for (const rightCount of powers) {
+              const composition = new Map([
+                [left.key, leftCount],
+                [right.key, rightCount],
+              ]);
+              if (!context.wins(composition, battle.key)) continue;
+              const cost = compositionCost(composition, context);
+              if (cost.lt(bestCost)) {
+                best = composition;
+                bestCost = cost;
+              }
+            }
+          }
+        }
+      }
   }
   if (!best) return null;
   const ids = candidates.map((unit) => unit.key);

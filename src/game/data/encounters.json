@@ -47,13 +47,13 @@
     "enemyArmy": [
       {
         "unitId": "wolf",
-        "count": 20,
-        "label": "20 wolves"
+        "count": 35,
+        "label": "35 wolves"
       },
       {
         "unitId": "bear",
-        "count": 3,
-        "label": "3 bears"
+        "count": 8,
+        "label": "8 bears"
       }
     ],
     "enemyBoosts": [],
@@ -93,8 +93,8 @@
     "enemyArmy": [
       {
         "unitId": "axeman_bronze",
-        "count": 150,
-        "label": "150 axemen"
+        "count": 200,
+        "label": "200 axemen"
       }
     ],
     "enemyBoosts": [],
@@ -124,18 +124,23 @@
     "enemyArmy": [
       {
         "unitId": "spearman_bronze",
-        "count": 25,
-        "label": "25 Trojan spearmen"
+        "count": 80,
+        "label": "80 Trojan spearmen"
       },
       {
         "unitId": "bowman_bronze",
-        "count": 15,
-        "label": "15 Trojan bowmen"
+        "count": 120,
+        "label": "120 Trojan bowmen"
       },
       {
         "unitId": "chariot_bronze",
+        "count": 20,
+        "label": "20 Trojan chariots"
+      },
+      {
+        "unitId": "trireme_bronze",
         "count": 5,
-        "label": "5 Trojan chariots"
+        "label": "5 bronze galleys"
       }
     ],
     "enemyBoosts": [],

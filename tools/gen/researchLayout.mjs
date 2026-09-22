@@ -15,15 +15,19 @@
 //   secondary fewest arrow/arrow crossings, then fewest columns (compactness)
 //
 // Per age the search is a simulated annealing over each tech's card cell
-// (column + row). Columns are seeded from prerequisite depth (a prerequisite is
-// always left of its dependants) with a small column budget of slack so the
-// search can pull a tech next to the card that needs it. Rows are free, but a
-// column holds at most AGE_CARD_ROWS cards.
+// (column + row). Columns are seeded from prerequisite depth (a prerequisite
+// starts left of its dependants) with a small column budget of slack so the
+// search can pull a tech next to the card that needs it — one column left, or
+// into the dependant's own column a full row above it, which the panel draws as
+// a straight vertical drop. Rows are free, but a column holds at most
+// AGE_CARD_ROWS cards.
 //
 // Output invariants (the tool throws if they break):
 //   - every research has a placement
 //   - no two cards share a cell
-//   - every same-age prerequisite sits in a strictly earlier column
+//   - every same-age prerequisite sits either in a strictly earlier column, or
+//     in the same column with VERTICAL_DROP_ROWS empty rows below it (and no
+//     card sitting in the space the drop runs through)
 //   - ages occupy disjoint, ascending column bands
 //
 // Run: node tools/gen/researchLayout.mjs            (rewrite the layout file)
@@ -146,6 +150,12 @@ const segmentHitsCard = (start, end, card) => {
   return false;
 };
 
+/**
+ * Rows a vertical drop needs between parent and child: the panel only draws the
+ * bottom-edge → top-edge arrow when a full empty row separates the two cards.
+ */
+const VERTICAL_DROP_ROWS = 2;
+
 /** Arrow anchors: a card's right edge (out) and its left edge (in). */
 const exitOf = (col, row) => ({
   x: col * COL_W + AGE_INSET + CARD_W,
@@ -155,13 +165,39 @@ const entryOf = (col, row) => ({
   x: col * COL_W + AGE_INSET,
   y: AGE_HEADER_H + row * ROW_H + CARD_H / 2,
 });
+/** Arrow anchors for a downward run: bottom edge (out) and top edge (in). */
+const bottomExitOf = (col, row) => ({
+  x: col * COL_W + AGE_INSET + CARD_W / 2,
+  y: AGE_HEADER_H + row * ROW_H + CARD_H,
+});
+const topEntryOf = (col, row) => ({
+  x: col * COL_W + AGE_INSET + CARD_W / 2,
+  y: AGE_HEADER_H + row * ROW_H,
+});
+
+/**
+ * Anchor pair of one edge's straight run. Mirrors `routeTechEdge()` in
+ * `src/game/researchLayout.ts`: a parent and a child in the same column
+ * VERTICAL_DROP_ROWS or more rows apart connect bottom-centre to top-centre;
+ * every other pair connects the parent's right edge to the child's left edge.
+ * Obstruction is not tested here — the cost function counts it as a hit, which
+ * is what pushes the search to keep the space below the parent clear.
+ */
+const anchorsOf = (col, row, edge) => {
+  const parentCol = col[edge.from];
+  const parentRow = row[edge.from];
+  const childCol = col[edge.to];
+  const childRow = row[edge.to];
+  if (parentCol === childCol && childRow - parentRow >= VERTICAL_DROP_ROWS)
+    return [bottomExitOf(parentCol, parentRow), topEntryOf(childCol, childRow)];
+  return [exitOf(parentCol, parentRow), entryOf(childCol, childRow)];
+};
 
 // --- cost -------------------------------------------------------------------
 
 /** How many cards the straight arrow of one edge would cut. */
 const edgeHitCount = (graph, col, row, edge) => {
-  const start = exitOf(col[edge.from], row[edge.from]);
-  const end = entryOf(col[edge.to], row[edge.to]);
+  const [start, end] = anchorsOf(col, row, edge);
   let hits = 0;
   for (let node = 0; node < graph.techs.length; node += 1) {
     if (node === edge.from || node === edge.to) continue;
@@ -171,10 +207,7 @@ const edgeHitCount = (graph, col, row, edge) => {
 };
 
 const edgeCrossingCount = (col, row, edges) => {
-  const segments = edges.map((edge) => [
-    exitOf(col[edge.from], row[edge.from]),
-    entryOf(col[edge.to], row[edge.to]),
-  ]);
+  const segments = edges.map((edge) => anchorsOf(col, row, edge));
   let crossings = 0;
   for (let a = 0; a < segments.length; a += 1) {
     for (let b = a + 1; b < segments.length; b += 1) {
@@ -268,11 +301,25 @@ const searchAge = (graph, rand, iterations, columnSlack) => {
       cell.set(`${snapshot.col}:${snapshot.row}`, node);
       hitCounts.splice(0, hitCounts.length, ...snapshot.hits);
     };
-    const fitsColumn = (targetCol) =>
-      graph.parents[node].every((parent) => col[parent] < targetCol) &&
-      graph.children[node].every((child) => col[child] > targetCol);
+    // A prerequisite may sit in a later column, or share its dependant's column
+    // as long as the vertical drop keeps its empty rows underneath; a dependant
+    // may sit in an earlier column, or share the card's column below it.
+    const fitsColumn = (targetCol, targetRow) =>
+      graph.parents[node].every(
+        (parent) =>
+          col[parent] < targetCol ||
+          (col[parent] === targetCol &&
+            targetRow - row[parent] >= VERTICAL_DROP_ROWS),
+      ) &&
+      graph.children[node].every(
+        (child) =>
+          col[child] > targetCol ||
+          (col[child] === targetCol &&
+            row[child] - targetRow >= VERTICAL_DROP_ROWS),
+      );
     const moveTo = (targetCol, targetRow) => {
-      if (!fitsColumn(targetCol)) return false;
+      if (targetRow < 0 || targetRow >= AGE_CARD_ROWS) return false;
+      if (!fitsColumn(targetCol, targetRow)) return false;
       if (cell.has(`${targetCol}:${targetRow}`)) return false;
       cell.delete(`${col[node]}:${row[node]}`);
       col[node] = targetCol;
@@ -290,22 +337,28 @@ const searchAge = (graph, rand, iterations, columnSlack) => {
       if (targetCol >= 0 && targetCol <= columnLimit)
         moved = moveTo(targetCol, snapshot.row);
     } else if (kind < 0.7) {
-      // Pull the tech into the column just left of one of its dependants: a
-      // one-column arrow can never cut a card.
+      // Pull the tech next to one of its dependants: either one column left —
+      // a one-column arrow can never cut a card — or, half the time, into the
+      // dependant's own column VERTICAL_DROP_ROWS above it, the shape the panel
+      // draws as a straight vertical drop.
       if (graph.children[node].length > 0) {
         const child =
           graph.children[node][
             Math.floor(rand() * graph.children[node].length)
           ];
-        const targetCol = col[child] - 1;
-        if (targetCol >= 0 && targetCol <= columnLimit) {
-          let targetRow = 0;
-          while (
-            targetRow < AGE_CARD_ROWS &&
-            cell.has(`${targetCol}:${targetRow}`)
-          )
-            targetRow += 1;
-          if (targetRow < AGE_CARD_ROWS) moved = moveTo(targetCol, targetRow);
+        if (rand() < 0.5) {
+          moved = moveTo(col[child], row[child] - VERTICAL_DROP_ROWS);
+        } else {
+          const targetCol = col[child] - 1;
+          if (targetCol >= 0 && targetCol <= columnLimit) {
+            let targetRow = 0;
+            while (
+              targetRow < AGE_CARD_ROWS &&
+              cell.has(`${targetCol}:${targetRow}`)
+            )
+              targetRow += 1;
+            if (targetRow < AGE_CARD_ROWS) moved = moveTo(targetCol, targetRow);
+          }
         }
       }
     } else {
@@ -383,6 +436,18 @@ for (const age of ages) {
   cursor += width;
 }
 report.push(`total: ${research.length} cards, ${cursor} columns`);
+/** Prerequisite pairs that share a column: drawn as straight vertical drops. */
+const verticalDrops = research.reduce((count, tech) => {
+  const child = layout.get(tech.key);
+  return (
+    count +
+    tech.prerequisites.filter((prerequisiteId) => {
+      const parent = layout.get(prerequisiteId);
+      return parent && parent.column === child.column;
+    }).length
+  );
+}, 0);
+report.push(`${verticalDrops} vertical drops`);
 
 // --- validate ---------------------------------------------------------------
 
@@ -399,15 +464,42 @@ for (const [key, placement] of layout) {
   if (placement.row < 0 || placement.row >= AGE_CARD_ROWS)
     problems.push(`${key} row ${placement.row} is outside the age band`);
 }
+const cardsByColumn = new Map();
+for (const [key, placement] of layout) {
+  const cards = cardsByColumn.get(placement.column) ?? [];
+  cards.push({ key, row: placement.row });
+  cardsByColumn.set(placement.column, cards);
+}
 for (const tech of research) {
   const child = layout.get(tech.key);
   for (const prerequisiteId of tech.prerequisites) {
     const parent = layout.get(prerequisiteId);
     if (!parent) continue;
-    if (parent.column >= child.column)
+    if (parent.column > child.column) {
       problems.push(
         `${prerequisiteId} (col ${parent.column}) is not left of ` +
           `${tech.key} (col ${child.column})`,
+      );
+      continue;
+    }
+    if (parent.column !== child.column) continue;
+    // Same column: legal as a vertical chain, but the drop needs its empty rows
+    // and nothing sitting in the space it runs through.
+    if (child.row - parent.row < VERTICAL_DROP_ROWS) {
+      problems.push(
+        `${prerequisiteId} (row ${parent.row}) sits ${child.row - parent.row} ` +
+          `row(s) above ${tech.key} (row ${child.row}) in column ` +
+          `${child.column}; the vertical drop needs ${VERTICAL_DROP_ROWS}`,
+      );
+      continue;
+    }
+    const between = (cardsByColumn.get(child.column) ?? []).filter(
+      (card) => card.row > parent.row && card.row < child.row,
+    );
+    if (between.length > 0)
+      problems.push(
+        `${between.map((card) => card.key).join(", ")} sits between ` +
+          `${prerequisiteId} and ${tech.key} in column ${child.column}`,
       );
   }
 }

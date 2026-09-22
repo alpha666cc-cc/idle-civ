@@ -14,12 +14,20 @@
     "armor": 0.1,
     "range": 1,
     "speed": 5,
-    "accuracy": 0.95,
+    "accuracy": 0.9,
     "available": true,
     "tier": 1,
     "costs": [
-      { "resource": "military", "base": 200, "factor": 1.2 },
-      { "resource": "food", "base": 10000, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 200,
+        "factor": 1.15
+      },
+      {
+        "resource": "food",
+        "base": 10000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -37,12 +45,20 @@
     "armor": 0,
     "range": 4,
     "speed": 7,
-    "accuracy": 0.9,
+    "accuracy": 0.8,
     "available": false,
     "tier": 2,
     "costs": [
-      { "resource": "military", "base": 500, "factor": 1.2 },
-      { "resource": "stone", "base": 20000, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 500,
+        "factor": 1.15
+      },
+      {
+        "resource": "stone",
+        "base": 20000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -64,8 +80,16 @@
     "available": false,
     "tier": 3,
     "costs": [
-      { "resource": "military", "base": 2000, "factor": 1.2 },
-      { "resource": "wood", "base": 100000, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 2000,
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": 100000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -125,8 +149,16 @@
     "available": false,
     "tier": 4,
     "costs": [
-      { "resource": "military", "base": 50000, "factor": 1.2 },
-      { "resource": "wood", "base": 1.0e7, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 50000,
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": 10000000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -148,8 +180,16 @@
     "available": false,
     "tier": 5,
     "costs": [
-      { "resource": "military", "base": 1.0e6, "factor": 1.2 },
-      { "resource": "metalwork", "base": 10000, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 1000000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 10000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -171,8 +211,16 @@
     "available": false,
     "tier": 6,
     "costs": [
-      { "resource": "military", "base": 2.0278e6, "factor": 1.2 },
-      { "resource": "metalwork", "base": 202779.47253007605, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 2027800,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 202779.47253007605,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -182,7 +230,7 @@
     "description": "Two horses, a driver and a fighting platform. Terrifying in the open, useless in a bog.",
     "age": 0,
     "domain": "ground",
-    "tags": ["armored"],
+    "tags": ["armored", "cavalry"],
     "canHit": ["ground"],
     "bonusVs": [],
     "hp": 180,
@@ -194,8 +242,16 @@
     "available": false,
     "tier": 7,
     "costs": [
-      { "resource": "military", "base": 4.112e6, "factor": 1.2 },
-      { "resource": "metalwork", "base": 411195.1447957586, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 4112000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 411195.1447957586,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -208,17 +264,25 @@
     "tags": ["ranged"],
     "canHit": ["ground", "air", "naval"],
     "bonusVs": [],
-    "hp": 60,
-    "attack": 16,
+    "hp": 80,
+    "attack": 35,
     "armor": 0.05,
     "range": 5,
     "speed": 6,
-    "accuracy": 0.7,
+    "accuracy": 0.8,
     "available": false,
     "tier": 8,
     "costs": [
-      { "resource": "military", "base": 8.3382e6, "factor": 1.2 },
-      { "resource": "metalwork", "base": 833819.3456861217, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 8338200,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 833819.3456861217,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -240,9 +304,21 @@
     "available": false,
     "tier": 9,
     "costs": [
-      { "resource": "military", "base": 1.6908e7, "factor": 1.2 },
-      { "resource": "metalwork", "base": 1.6908e6, "factor": 1.2 },
-      { "resource": "wood", "base": 3.3816e7, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 16908000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 1690800,
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": 33816000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -252,8 +328,8 @@
     "description": "Torsion artillery that lobs stones over a wall and through a shield line.",
     "age": 0,
     "domain": "ground",
-    "tags": ["anti-armor"],
-    "canHit": ["ground", "naval"],
+    "tags": ["anti-armor", "siege"],
+    "canHit": ["ground"],
     "bonusVs": ["armored"],
     "hp": 100,
     "attack": 50,
@@ -264,8 +340,16 @@
     "available": false,
     "tier": 10,
     "costs": [
-      { "resource": "military", "base": 3.4286e7, "factor": 1.2 },
-      { "resource": "metalwork", "base": 3.4286e6, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 34286000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 3428600,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -287,8 +371,16 @@
     "available": false,
     "tier": 11,
     "costs": [
-      { "resource": "military", "base": 6.9525e7, "factor": 1.2 },
-      { "resource": "metalwork", "base": 6.9525e6, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 69525000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 6952500,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -310,8 +402,16 @@
     "available": false,
     "tier": 12,
     "costs": [
-      { "resource": "military", "base": 1.4098e8, "factor": 1.2 },
-      { "resource": "metalwork", "base": 1.4098e7, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 140980000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 14098000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -321,7 +421,7 @@
     "description": "An iron-age chariot with a heavier crew and a longer reach than its bronze ancestor.",
     "age": 1,
     "domain": "ground",
-    "tags": ["armored"],
+    "tags": ["armored", "cavalry"],
     "canHit": ["ground"],
     "bonusVs": [],
     "hp": 1600,
@@ -333,8 +433,16 @@
     "available": false,
     "tier": 13,
     "costs": [
-      { "resource": "military", "base": 2.8589e8, "factor": 1.2 },
-      { "resource": "metalwork", "base": 2.8589e7, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 285890000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 28589000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -344,7 +452,7 @@
     "description": "Riders who fight from the saddle rather than riding to the fight. Speed is the armour.",
     "age": 1,
     "domain": "ground",
-    "tags": ["armored"],
+    "tags": ["armored", "cavalry"],
     "canHit": ["ground"],
     "bonusVs": [],
     "hp": 1440,
@@ -356,8 +464,16 @@
     "available": false,
     "tier": 14,
     "costs": [
-      { "resource": "military", "base": 5.7972e8, "factor": 1.2 },
-      { "resource": "metalwork", "base": 5.7972e7, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 579720000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 57972000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -379,9 +495,21 @@
     "available": false,
     "tier": 15,
     "costs": [
-      { "resource": "military", "base": 1.1755e9, "factor": 1.2 },
-      { "resource": "metalwork", "base": 1.1755e8, "factor": 1.2 },
-      { "resource": "wood", "base": 2.3511e9, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 1175500000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 117550000,
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": 2351100000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -391,7 +519,7 @@
     "description": "A war elephant with a howdah on its back. Breaks a line by weight alone.",
     "age": 1,
     "domain": "ground",
-    "tags": ["armored"],
+    "tags": ["armored", "cavalry"],
     "canHit": ["ground"],
     "bonusVs": [],
     "hp": 2800,
@@ -403,9 +531,21 @@
     "available": false,
     "tier": 16,
     "costs": [
-      { "resource": "military", "base": 2.3838e9, "factor": 1.2 },
-      { "resource": "metalwork", "base": 2.3838e8, "factor": 1.2 },
-      { "resource": "food", "base": 1.1919e10, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 2383800000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 238380000,
+        "factor": 1.15
+      },
+      {
+        "resource": "food",
+        "base": 11919000000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -415,7 +555,7 @@
     "description": "Bolt-throwing engine on a wooden frame. Long range, slow to reload, indifferent to arrows.",
     "age": 1,
     "domain": "ground",
-    "tags": ["anti-armor", "ranged"],
+    "tags": ["anti-armor", "ranged", "siege"],
     "canHit": ["ground", "naval", "air"],
     "bonusVs": ["armored", "air"],
     "hp": 880,
@@ -427,8 +567,16 @@
     "available": false,
     "tier": 17,
     "costs": [
-      { "resource": "military", "base": 4.8338e9, "factor": 1.2 },
-      { "resource": "metalwork", "base": 4.8338e8, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 4833800000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 483380000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -450,9 +598,21 @@
     "available": false,
     "tier": 18,
     "costs": [
-      { "resource": "military", "base": 9.8019e9, "factor": 1.2 },
-      { "resource": "metalwork", "base": 9.8019e8, "factor": 1.2 },
-      { "resource": "wood", "base": 1.9604e10, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 9801900000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 980190000,
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": 19604000000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -474,8 +634,16 @@
     "available": false,
     "tier": 19,
     "costs": [
-      { "resource": "military", "base": 1.9876e10, "factor": 1.2 },
-      { "resource": "metalwork", "base": 1.9876e9, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 19876000000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 1987600000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -497,8 +665,16 @@
     "available": false,
     "tier": 20,
     "costs": [
-      { "resource": "military", "base": 2.3062e12, "factor": 1.2 },
-      { "resource": "metalwork", "base": 2.3062e11, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 2306200000000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 230620000000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -508,7 +684,7 @@
     "description": "Companion cavalry: the decisive shock charge aimed at a gap, not the front.",
     "age": 2,
     "domain": "ground",
-    "tags": ["armored"],
+    "tags": ["armored", "cavalry"],
     "canHit": ["ground"],
     "bonusVs": [],
     "hp": 12800,
@@ -520,8 +696,16 @@
     "available": false,
     "tier": 21,
     "costs": [
-      { "resource": "military", "base": 1.0423e15, "factor": 1.2 },
-      { "resource": "metalwork", "base": 1.0423e14, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 1042300000000000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 104230000000000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -543,8 +727,16 @@
     "available": false,
     "tier": 22,
     "costs": [
-      { "resource": "military", "base": 1.2732e18, "factor": 1.2 },
-      { "resource": "metalwork", "base": 1.2732e17, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 1273200000000000000,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 127320000000000000,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -554,7 +746,7 @@
     "description": "Arm-throwing engine that arcs a stone into a fortified position.",
     "age": 2,
     "domain": "ground",
-    "tags": ["anti-armor"],
+    "tags": ["anti-armor", "siege"],
     "canHit": ["ground", "naval"],
     "bonusVs": ["armored"],
     "hp": 7680,
@@ -566,8 +758,16 @@
     "available": false,
     "tier": 23,
     "costs": [
-      { "resource": "military", "base": 2.9144e22, "factor": 1.2 },
-      { "resource": "metalwork", "base": 2.9144e21, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 2.9144e22,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 2.9144e21,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -589,9 +789,21 @@
     "available": false,
     "tier": 24,
     "costs": [
-      { "resource": "military", "base": 3.9718e27, "factor": 1.2 },
-      { "resource": "metalwork", "base": 3.9718e26, "factor": 1.2 },
-      { "resource": "wood", "base": 7.9436e26, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 3.9718e27,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 3.9718e26,
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": 7.9436e26,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -613,8 +825,16 @@
     "available": false,
     "tier": 25,
     "costs": [
-      { "resource": "military", "base": 7.9057e33, "factor": 1.2 },
-      { "resource": "metalwork", "base": 7.9057e32, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 7.9057e33,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 7.9057e32,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -636,9 +856,21 @@
     "available": false,
     "tier": 26,
     "costs": [
-      { "resource": "military", "base": 4.87e41, "factor": 1.2 },
-      { "resource": "metalwork", "base": 4.87e40, "factor": 1.2 },
-      { "resource": "wood", "base": 9.7401e40, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 4.87e41,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 4.87e40,
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": 9.7401e40,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -648,7 +880,7 @@
     "description": "Plate armour, a lance and a destrier. The dominant shock arm of its age.",
     "age": 3,
     "domain": "ground",
-    "tags": ["armored"],
+    "tags": ["armored", "cavalry"],
     "canHit": ["ground"],
     "bonusVs": [],
     "hp": 112640,
@@ -660,8 +892,16 @@
     "available": false,
     "tier": 27,
     "costs": [
-      { "resource": "military", "base": 4.9332e81, "factor": 1.2 },
-      { "resource": "metalwork", "base": 4.9332e80, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 4.9332e81,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 4.9332e80,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -683,8 +923,16 @@
     "available": false,
     "tier": 28,
     "costs": [
-      { "resource": "military", "base": 1.609e99, "factor": 1.2 },
-      { "resource": "metalwork", "base": 1.609e98, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 1.609e99,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 1.609e98,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -706,8 +954,16 @@
     "available": false,
     "tier": 29,
     "costs": [
-      { "resource": "military", "base": 6.585e120, "factor": 1.2 },
-      { "resource": "metalwork", "base": 6.585e119, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 6.585e120,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 6.585e119,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -729,8 +985,16 @@
     "available": false,
     "tier": 30,
     "costs": [
-      { "resource": "military", "base": 1.6924e147, "factor": 1.2 },
-      { "resource": "metalwork", "base": 1.6924e146, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 1.6924e147,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 1.6924e146,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -740,7 +1004,7 @@
     "description": "Counterweight engine that drops a stone onto a wall from far beyond bowshot.",
     "age": 3,
     "domain": "ground",
-    "tags": ["anti-armor"],
+    "tags": ["anti-armor", "siege"],
     "canHit": ["ground", "naval"],
     "bonusVs": ["armored"],
     "hp": 66560,
@@ -752,8 +1016,16 @@
     "available": false,
     "tier": 31,
     "costs": [
-      { "resource": "military", "base": 5.6705e179, "factor": 1.2 },
-      { "resource": "metalwork", "base": 5.6705e178, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 5.6705e179,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 5.6705e178,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -775,9 +1047,21 @@
     "available": false,
     "tier": 32,
     "costs": [
-      { "resource": "military", "base": 7.2861e218, "factor": 1.2 },
-      { "resource": "metalwork", "base": 7.2861e217, "factor": 1.2 },
-      { "resource": "wood", "base": 1.4572e218, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 7.2861e218,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 7.2861e217,
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": 1.4572e218,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -799,9 +1083,21 @@
     "available": false,
     "tier": 33,
     "costs": [
-      { "resource": "military", "base": 1.5768e267, "factor": 1.2 },
-      { "resource": "metalwork", "base": 1.5768e266, "factor": 1.2 },
-      { "resource": "wood", "base": 3.1537e266, "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": 1.5768e267,
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": 1.5768e266,
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": 3.1537e266,
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -811,7 +1107,7 @@
     "description": "Early gunpowder artillery, enormous and slow, built to break stone gates.",
     "age": 3,
     "domain": "ground",
-    "tags": ["anti-armor"],
+    "tags": ["anti-armor", "siege"],
     "canHit": ["ground", "naval"],
     "bonusVs": ["armored"],
     "hp": 71680,
@@ -823,8 +1119,16 @@
     "available": false,
     "tier": 34,
     "costs": [
-      { "resource": "military", "base": "2.5801e326", "factor": 1.2 },
-      { "resource": "metalwork", "base": "2.5801e325", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "2.5801e326",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "2.5801e325",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -846,9 +1150,21 @@
     "available": false,
     "tier": 35,
     "costs": [
-      { "resource": "military", "base": "2.0145e398", "factor": 1.2 },
-      { "resource": "metalwork", "base": "2.0145e397", "factor": 1.2 },
-      { "resource": "wood", "base": "4.0290e397", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "2.0145e398",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "2.0145e397",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "4.0290e397",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -870,8 +1186,16 @@
     "available": false,
     "tier": 36,
     "costs": [
-      { "resource": "military", "base": "2.4350e794", "factor": 1.2 },
-      { "resource": "metalwork", "base": "2.4350e793", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "2.4350e794",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "2.4350e793",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -893,8 +1217,16 @@
     "available": false,
     "tier": 37,
     "costs": [
-      { "resource": "military", "base": "7.8179e998", "factor": 1.2 },
-      { "resource": "metalwork", "base": "7.8179e997", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "7.8179e998",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "7.8179e997",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -904,7 +1236,7 @@
     "description": "Mounted infantry who ride to the fight and shoot from the ground on arrival.",
     "age": 4,
     "domain": "ground",
-    "tags": ["ranged", "armored"],
+    "tags": ["ranged", "armored", "cavalry"],
     "canHit": ["ground", "air"],
     "bonusVs": [],
     "hp": 737280,
@@ -916,8 +1248,16 @@
     "available": false,
     "tier": 38,
     "costs": [
-      { "resource": "military", "base": "3.7972e1256", "factor": 1.2 },
-      { "resource": "metalwork", "base": "3.7972e1255", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "3.7972e1256",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "3.7972e1255",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -927,7 +1267,7 @@
     "description": "Heavy cavalry in steel breastplates, charging home in a single mass.",
     "age": 4,
     "domain": "ground",
-    "tags": ["armored"],
+    "tags": ["armored", "cavalry"],
     "canHit": ["ground"],
     "bonusVs": [],
     "hp": 983040,
@@ -939,8 +1279,16 @@
     "available": false,
     "tier": 39,
     "costs": [
-      { "resource": "military", "base": "6.4957e1580", "factor": 1.2 },
-      { "resource": "metalwork", "base": "6.4957e1579", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "6.4957e1580",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "6.4957e1579",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -950,7 +1298,7 @@
     "description": "Mobile field gun with an iron barrel. Shreds formations and siege works alike.",
     "age": 4,
     "domain": "ground",
-    "tags": ["anti-armor"],
+    "tags": ["anti-armor", "siege"],
     "canHit": ["ground", "naval"],
     "bonusVs": ["armored"],
     "hp": 614400,
@@ -962,8 +1310,16 @@
     "available": false,
     "tier": 40,
     "costs": [
-      { "resource": "military", "base": "9.3215e1988", "factor": 1.2 },
-      { "resource": "metalwork", "base": "9.3215e1987", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "9.3215e1988",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "9.3215e1987",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -985,9 +1341,21 @@
     "available": false,
     "tier": 41,
     "costs": [
-      { "resource": "military", "base": "1.7249e2502", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.7249e2501", "factor": 1.2 },
-      { "resource": "wood", "base": "3.4498e2501", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.7249e2502",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.7249e2501",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "3.4498e2501",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1009,9 +1377,21 @@
     "available": false,
     "tier": 42,
     "costs": [
-      { "resource": "military", "base": "2.3578e3148", "factor": 1.2 },
-      { "resource": "metalwork", "base": "2.3578e3147", "factor": 1.2 },
-      { "resource": "wood", "base": "4.7157e3147", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "2.3578e3148",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "2.3578e3147",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "4.7157e3147",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1033,9 +1413,21 @@
     "available": false,
     "tier": 43,
     "costs": [
-      { "resource": "military", "base": "3.4628e3961", "factor": 1.2 },
-      { "resource": "metalwork", "base": "3.4628e3960", "factor": 1.2 },
-      { "resource": "wood", "base": "6.9255e3960", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "3.4628e3961",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "3.4628e3960",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "6.9255e3960",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1057,9 +1449,21 @@
     "available": false,
     "tier": 44,
     "costs": [
-      { "resource": "military", "base": "3.9969e7920", "factor": 1.2 },
-      { "resource": "metalwork", "base": "3.9969e7919", "factor": 1.2 },
-      { "resource": "science", "base": "1.9985e7920", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "3.9969e7920",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "3.9969e7919",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "1.9985e7920",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1081,9 +1485,21 @@
     "available": false,
     "tier": 45,
     "costs": [
-      { "resource": "military", "base": "1.2871e9471", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.2871e9470", "factor": 1.2 },
-      { "resource": "science", "base": "6.4354e9470", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.2871e9471",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.2871e9470",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "6.4354e9470",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1093,7 +1509,7 @@
     "description": "Mounted infantry with modern carbines: mobility plus firepower.",
     "age": 5,
     "domain": "ground",
-    "tags": ["ranged", "armored"],
+    "tags": ["ranged", "armored", "cavalry"],
     "canHit": ["ground", "air"],
     "bonusVs": [],
     "hp": 6225920,
@@ -1105,9 +1521,21 @@
     "available": false,
     "tier": 46,
     "costs": [
-      { "resource": "military", "base": "1.6046e11325", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.6046e11324", "factor": 1.2 },
-      { "resource": "science", "base": "8.0232e11324", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.6046e11325",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.6046e11324",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "8.0232e11324",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1117,7 +1545,7 @@
     "description": "Horse cavalry with a long lance, still useful in the charge's last decades.",
     "age": 5,
     "domain": "ground",
-    "tags": ["armored"],
+    "tags": ["armored", "cavalry"],
     "canHit": ["ground"],
     "bonusVs": [],
     "hp": 6553600,
@@ -1129,9 +1557,21 @@
     "available": false,
     "tier": 47,
     "costs": [
-      { "resource": "military", "base": "2.1582e13542", "factor": 1.2 },
-      { "resource": "metalwork", "base": "2.1582e13541", "factor": 1.2 },
-      { "resource": "science", "base": "1.0791e13542", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "2.1582e13542",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "2.1582e13541",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "1.0791e13542",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1153,9 +1593,21 @@
     "available": false,
     "tier": 48,
     "costs": [
-      { "resource": "military", "base": "4.7469e16193", "factor": 1.2 },
-      { "resource": "metalwork", "base": "4.7469e16192", "factor": 1.2 },
-      { "resource": "science", "base": "2.3734e16193", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "4.7469e16193",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "4.7469e16192",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "2.3734e16193",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1177,10 +1629,26 @@
     "available": false,
     "tier": 49,
     "costs": [
-      { "resource": "military", "base": "1.4231e19364", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.4231e19363", "factor": 1.2 },
-      { "resource": "wood", "base": "2.8462e19363", "factor": 1.2 },
-      { "resource": "science", "base": "7.1154e19363", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.4231e19364",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.4231e19363",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "2.8462e19363",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "7.1154e19363",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1202,9 +1670,21 @@
     "available": false,
     "tier": 50,
     "costs": [
-      { "resource": "military", "base": "2.1820e23155", "factor": 1.2 },
-      { "resource": "metalwork", "base": "2.1820e23154", "factor": 1.2 },
-      { "resource": "science", "base": "1.0910e23155", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "2.1820e23155",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "2.1820e23154",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "1.0910e23155",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1226,9 +1706,21 @@
     "available": false,
     "tier": 51,
     "costs": [
-      { "resource": "military", "base": "7.7939e27688", "factor": 1.2 },
-      { "resource": "metalwork", "base": "7.7939e27687", "factor": 1.2 },
-      { "resource": "science", "base": "3.8970e27688", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "7.7939e27688",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "7.7939e27687",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "3.8970e27688",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1238,7 +1730,7 @@
     "description": "Indirect-fire artillery that drops shells into trenches behind a ridge.",
     "age": 5,
     "domain": "ground",
-    "tags": ["anti-armor"],
+    "tags": ["anti-armor", "siege"],
     "canHit": ["ground", "naval"],
     "bonusVs": ["armored"],
     "hp": 5242880,
@@ -1250,9 +1742,21 @@
     "available": false,
     "tier": 52,
     "costs": [
-      { "resource": "military", "base": "2.8773e33110", "factor": 1.2 },
-      { "resource": "metalwork", "base": "2.8773e33109", "factor": 1.2 },
-      { "resource": "science", "base": "1.4387e33110", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "2.8773e33110",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "2.8773e33109",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "1.4387e33110",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1274,10 +1778,26 @@
     "available": false,
     "tier": 53,
     "costs": [
-      { "resource": "military", "base": "1.7841e39593", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.7841e39592", "factor": 1.2 },
-      { "resource": "wood", "base": "3.5681e39592", "factor": 1.2 },
-      { "resource": "science", "base": "8.9204e39592", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.7841e39593",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.7841e39592",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "3.5681e39592",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "8.9204e39592",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1299,9 +1819,21 @@
     "available": false,
     "tier": 54,
     "costs": [
-      { "resource": "military", "base": "4.8460e79183", "factor": 1.2 },
-      { "resource": "metalwork", "base": "4.8460e79182", "factor": 1.2 },
-      { "resource": "science", "base": "2.4230e79183", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "4.8460e79183",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "4.8460e79182",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "2.4230e79183",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1323,9 +1855,21 @@
     "available": false,
     "tier": 55,
     "costs": [
-      { "resource": "military", "base": "8.9164e84922", "factor": 1.2 },
-      { "resource": "metalwork", "base": "8.9164e84921", "factor": 1.2 },
-      { "resource": "science", "base": "4.4582e84922", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "8.9164e84922",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "8.9164e84921",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "4.4582e84922",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1335,7 +1879,7 @@
     "description": "Halftrack-borne infantry: they arrive with the armour and fight with it.",
     "age": 6,
     "domain": "ground",
-    "tags": ["ranged", "armored"],
+    "tags": ["ranged", "armored", "cavalry"],
     "canHit": ["ground", "air"],
     "bonusVs": [],
     "hp": 57671680,
@@ -1347,9 +1891,21 @@
     "available": false,
     "tier": 56,
     "costs": [
-      { "resource": "military", "base": "1.7183e91078", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.7183e91077", "factor": 1.2 },
-      { "resource": "science", "base": "8.5913e91077", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.7183e91078",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.7183e91077",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "8.5913e91077",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1359,7 +1915,7 @@
     "description": "Medium tank with an all-round turret; armour becomes an arm of decision, not infantry support.",
     "age": 6,
     "domain": "ground",
-    "tags": ["armored", "anti-armor"],
+    "tags": ["armored", "anti-armor", "cavalry"],
     "canHit": ["ground", "naval"],
     "bonusVs": ["armored"],
     "hp": 117964800,
@@ -1371,9 +1927,21 @@
     "available": false,
     "tier": 57,
     "costs": [
-      { "resource": "military", "base": "6.5674e97679", "factor": 1.2 },
-      { "resource": "metalwork", "base": "6.5674e97678", "factor": 1.2 },
-      { "resource": "science", "base": "3.2837e97679", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "6.5674e97679",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "6.5674e97678",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "3.2837e97679",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1395,9 +1963,21 @@
     "available": false,
     "tier": 58,
     "costs": [
-      { "resource": "military", "base": "3.0165e104759", "factor": 1.2 },
-      { "resource": "metalwork", "base": "3.0165e104758", "factor": 1.2 },
-      { "resource": "science", "base": "1.5082e104759", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "3.0165e104759",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "3.0165e104758",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "1.5082e104759",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1419,9 +1999,21 @@
     "available": false,
     "tier": 59,
     "costs": [
-      { "resource": "military", "base": "5.4569e112352", "factor": 1.2 },
-      { "resource": "metalwork", "base": "5.4569e112351", "factor": 1.2 },
-      { "resource": "science", "base": "2.7285e112352", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "5.4569e112352",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "5.4569e112351",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "2.7285e112352",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1443,10 +2035,26 @@
     "available": false,
     "tier": 60,
     "costs": [
-      { "resource": "military", "base": "1.3900e120496", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.3900e120495", "factor": 1.2 },
-      { "resource": "wood", "base": "2.7800e120495", "factor": 1.2 },
-      { "resource": "science", "base": "6.9501e120495", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.3900e120496",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.3900e120495",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "2.7800e120495",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "6.9501e120495",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1468,10 +2076,26 @@
     "available": false,
     "tier": 61,
     "costs": [
-      { "resource": "military", "base": "1.3227e129229", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.3227e129228", "factor": 1.2 },
-      { "resource": "wood", "base": "2.6454e129228", "factor": 1.2 },
-      { "resource": "science", "base": "6.6134e129228", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.3227e129229",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.3227e129228",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "2.6454e129228",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "6.6134e129228",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1493,9 +2117,21 @@
     "available": false,
     "tier": 62,
     "costs": [
-      { "resource": "military", "base": "7.2882e138595", "factor": 1.2 },
-      { "resource": "metalwork", "base": "7.2882e138594", "factor": 1.2 },
-      { "resource": "science", "base": "3.6441e138595", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "7.2882e138595",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "7.2882e138594",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "3.6441e138595",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1505,7 +2141,7 @@
     "description": "Composite-armour main battle tank with a stabilised gun that hits on the move.",
     "age": 6,
     "domain": "ground",
-    "tags": ["armored", "anti-armor"],
+    "tags": ["armored", "anti-armor", "cavalry"],
     "canHit": ["ground", "naval"],
     "bonusVs": ["armored"],
     "hp": 183500800,
@@ -1517,9 +2153,21 @@
     "available": false,
     "tier": 63,
     "costs": [
-      { "resource": "military", "base": "6.3561e148641", "factor": 1.2 },
-      { "resource": "metalwork", "base": "6.3561e148640", "factor": 1.2 },
-      { "resource": "science", "base": "3.1780e148641", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "6.3561e148641",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "6.3561e148640",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "3.1780e148641",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1541,10 +2189,26 @@
     "available": false,
     "tier": 64,
     "costs": [
-      { "resource": "military", "base": "1.9888e159415", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.9888e159414", "factor": 1.2 },
-      { "resource": "science", "base": "9.9442e159414", "factor": 1.2 },
-      { "resource": "gold", "base": "4.9721e159414", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.9888e159415",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.9888e159414",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "9.9442e159414",
+        "factor": 1.15
+      },
+      {
+        "resource": "gold",
+        "base": "4.9721e159414",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1566,11 +2230,31 @@
     "available": false,
     "tier": 65,
     "costs": [
-      { "resource": "military", "base": "8.3164e170969", "factor": 1.2 },
-      { "resource": "metalwork", "base": "8.3164e170968", "factor": 1.2 },
-      { "resource": "wood", "base": "1.6633e170969", "factor": 1.2 },
-      { "resource": "science", "base": "4.1582e170969", "factor": 1.2 },
-      { "resource": "gold", "base": "2.0791e170969", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "8.3164e170969",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "8.3164e170968",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "1.6633e170969",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "4.1582e170969",
+        "factor": 1.15
+      },
+      {
+        "resource": "gold",
+        "base": "2.0791e170969",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1580,7 +2264,7 @@
     "description": "Armoured cavalry with thermal sights: scouts, screens and flank guards for the tank force.",
     "age": 6,
     "domain": "ground",
-    "tags": ["armored", "ranged"],
+    "tags": ["armored", "ranged", "cavalry"],
     "canHit": ["ground", "air", "naval"],
     "bonusVs": [],
     "hp": 104857600,
@@ -1592,9 +2276,21 @@
     "available": false,
     "tier": 66,
     "costs": [
-      { "resource": "military", "base": "4.9707e183361", "factor": 1.2 },
-      { "resource": "metalwork", "base": "4.9707e183360", "factor": 1.2 },
-      { "resource": "science", "base": "2.4853e183361", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "4.9707e183361",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "4.9707e183360",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "2.4853e183361",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1616,10 +2312,26 @@
     "available": false,
     "tier": 67,
     "costs": [
-      { "resource": "military", "base": "1.0196e196652", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.0196e196651", "factor": 1.2 },
-      { "resource": "science", "base": "5.0978e196651", "factor": 1.2 },
-      { "resource": "gold", "base": "2.5489e196651", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.0196e196652",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.0196e196651",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "5.0978e196651",
+        "factor": 1.15
+      },
+      {
+        "resource": "gold",
+        "base": "2.5489e196651",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1641,9 +2353,21 @@
     "available": false,
     "tier": 68,
     "costs": [
-      { "resource": "military", "base": "4.3621e210905", "factor": 1.2 },
-      { "resource": "metalwork", "base": "4.3621e210904", "factor": 1.2 },
-      { "resource": "science", "base": "2.1810e210905", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "4.3621e210905",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "4.3621e210904",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "2.1810e210905",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1653,7 +2377,7 @@
     "description": "Multiple-launch rocket system. One salvo covers a grid square, and then it moves.",
     "age": 6,
     "domain": "ground",
-    "tags": ["anti-armor"],
+    "tags": ["anti-armor", "siege"],
     "canHit": ["ground", "naval"],
     "bonusVs": [],
     "hp": 65536000,
@@ -1665,9 +2389,21 @@
     "available": false,
     "tier": 69,
     "costs": [
-      { "resource": "military", "base": "2.9243e226192", "factor": 1.2 },
-      { "resource": "metalwork", "base": "2.9243e226191", "factor": 1.2 },
-      { "resource": "science", "base": "1.4621e226192", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "2.9243e226192",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "2.9243e226191",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "1.4621e226192",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1689,11 +2425,31 @@
     "available": false,
     "tier": 70,
     "costs": [
-      { "resource": "military", "base": "1.1372e242587", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.1372e242586", "factor": 1.2 },
-      { "resource": "wood", "base": "2.2745e242586", "factor": 1.2 },
-      { "resource": "science", "base": "5.6862e242586", "factor": 1.2 },
-      { "resource": "gold", "base": "2.8431e242586", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.1372e242587",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.1372e242586",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "2.2745e242586",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "5.6862e242586",
+        "factor": 1.15
+      },
+      {
+        "resource": "gold",
+        "base": "2.8431e242586",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1715,10 +2471,26 @@
     "available": false,
     "tier": 71,
     "costs": [
-      { "resource": "military", "base": "4.1638e260169", "factor": 1.2 },
-      { "resource": "metalwork", "base": "4.1638e260168", "factor": 1.2 },
-      { "resource": "wood", "base": "8.3277e260168", "factor": 1.2 },
-      { "resource": "science", "base": "2.0819e260169", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "4.1638e260169",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "4.1638e260168",
+        "factor": 1.15
+      },
+      {
+        "resource": "wood",
+        "base": "8.3277e260168",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "2.0819e260169",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1740,9 +2512,21 @@
     "available": false,
     "tier": 72,
     "costs": [
-      { "resource": "military", "base": "1.3373e279027", "factor": 1.2 },
-      { "resource": "metalwork", "base": "1.3373e279026", "factor": 1.2 },
-      { "resource": "science", "base": "6.6865e279026", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "1.3373e279027",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "1.3373e279026",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "6.6865e279026",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1764,10 +2548,26 @@
     "available": false,
     "tier": 73,
     "costs": [
-      { "resource": "military", "base": "6.6462e299251", "factor": 1.2 },
-      { "resource": "metalwork", "base": "6.6462e299250", "factor": 1.2 },
-      { "resource": "science", "base": "3.3231e299251", "factor": 1.2 },
-      { "resource": "gold", "base": "1.6616e299251", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "6.6462e299251",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "6.6462e299250",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "3.3231e299251",
+        "factor": 1.15
+      },
+      {
+        "resource": "gold",
+        "base": "1.6616e299251",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1789,10 +2589,26 @@
     "available": false,
     "tier": 74,
     "costs": [
-      { "resource": "military", "base": "7.6231e320940", "factor": 1.2 },
-      { "resource": "metalwork", "base": "7.6231e320939", "factor": 1.2 },
-      { "resource": "science", "base": "3.8115e320940", "factor": 1.2 },
-      { "resource": "gold", "base": "1.9058e320940", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "7.6231e320940",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "7.6231e320939",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "3.8115e320940",
+        "factor": 1.15
+      },
+      {
+        "resource": "gold",
+        "base": "1.9058e320940",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1802,7 +2618,7 @@
     "description": "Orbital beam platform. Reaches anything on the far side of the planet.",
     "age": 6,
     "domain": "air",
-    "tags": ["air", "anti-armor"],
+    "tags": ["air", "anti-armor", "siege"],
     "canHit": ["ground", "naval"],
     "bonusVs": [],
     "hp": 131072000,
@@ -1814,10 +2630,26 @@
     "available": false,
     "tier": 75,
     "costs": [
-      { "resource": "military", "base": "2.3388e344204", "factor": 1.2 },
-      { "resource": "metalwork", "base": "2.3388e344203", "factor": 1.2 },
-      { "resource": "science", "base": "1.1694e344204", "factor": 1.2 },
-      { "resource": "gold", "base": "5.8470e344203", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "2.3388e344204",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "2.3388e344203",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "1.1694e344204",
+        "factor": 1.15
+      },
+      {
+        "resource": "gold",
+        "base": "5.8470e344203",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1827,7 +2659,7 @@
     "description": "One pilot in layered armour carrying a cannon. Walks through whatever it is aimed at.",
     "age": 6,
     "domain": "ground",
-    "tags": ["armored", "anti-armor"],
+    "tags": ["armored", "anti-armor", "cavalry"],
     "canHit": ["ground", "air", "naval"],
     "bonusVs": [],
     "hp": 209715200,
@@ -1839,10 +2671,26 @@
     "available": false,
     "tier": 76,
     "costs": [
-      { "resource": "military", "base": "3.4972e369152", "factor": 1.2 },
-      { "resource": "metalwork", "base": "3.4972e369151", "factor": 1.2 },
-      { "resource": "science", "base": "1.7486e369152", "factor": 1.2 },
-      { "resource": "gold", "base": "8.7430e369151", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "3.4972e369152",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "3.4972e369151",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "1.7486e369152",
+        "factor": 1.15
+      },
+      {
+        "resource": "gold",
+        "base": "8.7430e369151",
+        "factor": 1.15
+      }
     ]
   },
   {
@@ -1864,10 +2712,26 @@
     "available": false,
     "tier": 77,
     "costs": [
-      { "resource": "military", "base": "2.2939e395909", "factor": 1.2 },
-      { "resource": "metalwork", "base": "2.2939e395908", "factor": 1.2 },
-      { "resource": "science", "base": "1.1469e395909", "factor": 1.2 },
-      { "resource": "gold", "base": "5.7347e395908", "factor": 1.2 }
+      {
+        "resource": "military",
+        "base": "2.2939e395909",
+        "factor": 1.15
+      },
+      {
+        "resource": "metalwork",
+        "base": "2.2939e395908",
+        "factor": 1.15
+      },
+      {
+        "resource": "science",
+        "base": "1.1469e395909",
+        "factor": 1.15
+      },
+      {
+        "resource": "gold",
+        "base": "5.7347e395908",
+        "factor": 1.15
+      }
     ]
   }
 ]

@@ -101,11 +101,10 @@ const maximumUnitPurchase = 1_000_000;
 
 /**
  * Global research pricing: the first tech costs 100 science and every later
- * purchase costs ×10 the previous one, whichever tech is bought. The JSON
- * costs on ResearchDefinition are not charged.
+ * purchase costs ×2.5 the previous one, whichever tech is bought.
  */
-const researchFirstCost = ExpNumber.fromNumber(1_000);
-const researchCostGrowth = ExpNumber.fromNumber(10);
+const researchFirstCost = ExpNumber.fromNumber(100);
+const researchCostGrowth = ExpNumber.fromNumber(2.5);
 
 /**
  * Identity-keyed recompute caches. Every state array is replaced immutably and
@@ -1036,10 +1035,21 @@ export class CivilizationState {
 
   /** Cost-reduction bonuses targeting one buyable, folded the §13.1 way. */
   private costReductionsFor(buyableId: string) {
+    const isBuilding = buildingDefinitions.some(({ key }) => key === buyableId);
+    const unit = findUnitDefinition(buyableId);
+    const targetMatches = (destination: string): boolean => {
+      if (destination === buyableId) return true;
+      if (isBuilding) return destination === "all-buildings";
+      if (!unit) return destination === "all-units";
+      if (destination === "all-units") return true;
+      return (
+        destination.startsWith("tag.") &&
+        unit.tags.includes(destination.slice(4))
+      );
+    };
     const sources = this.activeBonuses().filter(
       ([, bonus]) =>
-        (bonus.destination === buyableId ||
-          bonus.destination === "all-buildings") &&
+        targetMatches(String(bonus.destination)) &&
         bonus.type.startsWith("costReduction"),
     );
     return {

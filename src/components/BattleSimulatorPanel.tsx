@@ -120,7 +120,7 @@ export default function BattleSimulatorPanel({
         getCost: (unitId, count) => costFromScratch(gameState, unitId, count),
         wins: (composition) =>
           winsWithStats(gameState, battle.key, composition),
-      });
+      }, selected.size >= 2);
       setResult(outcome);
       setFailed(outcome === null);
       setRunning(false);

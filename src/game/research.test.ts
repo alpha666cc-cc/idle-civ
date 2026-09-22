@@ -110,16 +110,16 @@ describe("research buying", () => {
   const first = researchDefinitions[0];
   const second = researchDefinitions[1];
 
-  it("charges 1K science for the first tech, ×10 per purchase", () => {
-    const state = stateWith(1e6).enterAge(`age-${first.age}`);
+  it("charges 100 science for the first tech, ×2.5 per purchase", () => {
+    const state = stateWith(1e5).enterAge(`age-${first.age}`);
     expect(state.getResearchNextCost()[0].resource).toBe("science");
-    expect(state.getResearchNextCost()[0].base.toString()).toBe("1e3");
+    expect(state.getResearchNextCost()[0].base.toString()).toBe("1e2");
     const afterFirst = state.buyResearch(first.key);
     expect(afterFirst.isResearchBought(first.key)).toBe(true);
-    expect(afterFirst.getResearchNextCost()[0].base.toString()).toBe("1e4");
+    expect(afterFirst.getResearchNextCost()[0].base.toString()).toBe("2.5e2");
     const afterSecond = afterFirst.buyResearch(second.key);
     expect(afterSecond.isResearchBought(second.key)).toBe(true);
-    expect(afterSecond.getResearchNextCost()[0].base.toString()).toBe("1e5");
+    expect(afterSecond.getResearchNextCost()[0].base.toString()).toBe("6.25e2");
   });
 
   it("makes age-0 research available from the start", () => {
@@ -132,8 +132,8 @@ describe("research buying", () => {
   });
 
   it("pays science and applies bonuses through the shared factor path", () => {
-    // Exactly the first tech's global price: 1K science.
-    const entered = stateWith(1000, [`age-${first.age}`]).enterAge(
+    // Exactly the first tech's global price: 100 science.
+    const entered = stateWith(100, [`age-${first.age}`]).enterAge(
       `age-${first.age}`,
     );
     const multiplier = first.bonuses.find(
@@ -151,13 +151,13 @@ describe("research buying", () => {
   });
 
   it("is idempotent and refuses an unaffordable purchase", () => {
-    const entered = stateWith(1000, [`age-${first.age}`]).enterAge(
+    const entered = stateWith(100, [`age-${first.age}`]).enterAge(
       `age-${first.age}`,
     );
     const bought = entered.buyResearch(first.key);
     expect(bought.buyResearch(first.key)).toBe(bought);
     expect(bought.canBuyResearch(first.key)).toBe(false);
-    // The global price has escalated ×10, and the science is spent.
+    // The global price has escalated ×2.5, and the science is spent.
     expect(bought.getResearchFailureReason(second.key)).toBe("resources");
   });
 
@@ -181,6 +181,22 @@ describe("research buying", () => {
     expect(stateWithPrereqs.isResearchUnlocked(child.key)).toBe(true);
     const bought = stateWithPrereqs.buyResearch(child.key);
     expect(bought.isResearchBought(child.key)).toBe(true);
+  });
+
+  it("keeps all-unit and all-building cost targets separate", () => {
+    const state = stateWith(0);
+    expect(state.getBuildingCostModifiers("farm").sources).not.toContainEqual(
+      expect.arrayContaining([
+        expect.anything(),
+        expect.objectContaining({ destination: "all-units" }),
+      ]),
+    );
+    expect(state.getUnitCostModifiers("warrior").sources).not.toContainEqual(
+      expect.arrayContaining([
+        expect.anything(),
+        expect.objectContaining({ destination: "all-buildings" }),
+      ]),
+    );
   });
 });
 
