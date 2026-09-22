@@ -14,7 +14,37 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const readJson = (p) => JSON.parse(readFileSync(join(root, p), "utf8"));
 const units = readJson("src/game/data/units.json");
 const battles = readJson("src/game/data/encounters.json");
+const research = readJson("src/game/data/research.json");
 const byId = new Map(units.map((u) => [u.id, u]));
+const researchById = new Map(research.map((r) => [r.key, r]));
+
+const researchClosure = (researchId, seen = new Set()) => {
+  if (seen.has(researchId)) return [];
+  const tech = researchById.get(researchId);
+  if (!tech) return [];
+  seen.add(researchId);
+  return [
+    ...(tech.prerequisites ?? []).flatMap((id) => researchClosure(id, seen)),
+    researchId,
+  ];
+};
+
+const researchIdsForBattle = (battle, unitIds) => {
+  const ids = new Set(
+    research.filter((tech) => tech.age < battle.age).map((tech) => tech.key),
+  );
+  for (const unitId of unitIds) {
+    const unlockers = research.filter((tech) =>
+      (tech.unlocks ?? []).includes(unitId),
+    );
+    const shortest =
+      unlockers
+        .map((tech) => researchClosure(tech.key))
+        .sort((left, right) => left.length - right.length)[0] ?? [];
+    shortest.forEach((id) => ids.add(id));
+  }
+  return research.filter((tech) => ids.has(tech.key));
+};
 
 const candidatesForBattle = (battle, _battleIndex) => {
   const ageBattles = battles.filter(({ age }) => age === battle.age);
@@ -108,20 +138,42 @@ const hitChance = (att, distance) =>
 const boosted = (unit, boosts) => {
   let hp = unit.hp;
   let attack = unit.attack;
+  let armor = unit.armor;
+  let range = unit.range;
+  let speed = unit.speed;
+  let accuracy = unit.accuracy;
   for (const b of boosts ?? []) {
-    if (b.type !== "attributeMultiplier") continue;
-    const [target, stat] = b.destination.split(".");
-    if (target !== unit.id) continue;
-    if (stat === "hp") hp *= b.value;
-    if (stat === "attack") attack *= b.value;
+    if (b.type !== "attributeMultiplier" && b.type !== "attributeFlat")
+      continue;
+    const parts = b.destination.split(".");
+    const target = parts.length === 3 ? parts.slice(0, 2).join(".") : parts[0];
+    const stat = parts.at(-1);
+    const matches =
+      target === unit.id ||
+      target === "unitAll" ||
+      (target.startsWith("tag.") && unit.tags?.includes(target.slice(4)));
+    if (
+      !matches ||
+      !["hp", "attack", "armor", "range", "speed", "accuracy"].includes(stat)
+    )
+      continue;
+    const value = Number(b.value);
+    const apply = (current) =>
+      b.type === "attributeFlat" ? current + value : current * value;
+    if (stat === "hp") hp = apply(hp);
+    if (stat === "attack") attack = apply(attack);
+    if (stat === "armor") armor = apply(armor);
+    if (stat === "range") range = apply(range);
+    if (stat === "speed") speed = apply(speed);
+    if (stat === "accuracy") accuracy = apply(accuracy);
   }
-  return { ...unit, hp, attack };
+  return { ...unit, hp, attack, armor, range, speed, accuracy };
 };
-const simulate = (composition, enemyStacks, boosts) => {
+const simulate = (composition, enemyStacks, boosts, playerBoosts = []) => {
   const player = [...composition.entries()]
     .filter(([, n]) => n > 0)
     .map(([id, n]) => {
-      const def = scaledUnit(byId.get(id));
+      const def = boosted(scaledUnit(byId.get(id)), playerBoosts);
       return { def, count: n, pool: effHp(def) * n };
     });
   const enemy = enemyStacks.map((s) => {
@@ -204,8 +256,8 @@ const fmtNum = (n) => {
   }
   return `${Math.ceil(n.toNumber())}`;
 };
-const wins = (composition, enemy, boosts) =>
-  simulate(composition, enemy, boosts) === "player";
+const wins = (composition, enemy, boosts, playerBoosts) =>
+  simulate(composition, enemy, boosts, playerBoosts) === "player";
 // Search: cheapest solo winner per unit (binary search), then mixed
 // hill-climb (swap expensive units for cheap ones), then trim each stack.
 const solve = (
@@ -215,19 +267,26 @@ const solve = (
   onProgress,
   requireMixed = false,
   requiredUnitId,
+  battleAge,
 ) => {
+  const battleWins = (composition) => {
+    const playerBoosts = researchIdsForBattle({ age: battleAge }, [
+      ...composition.keys(),
+    ]).flatMap((tech) => tech.bonuses ?? []);
+    return wins(composition, enemy, boosts, playerBoosts);
+  };
   let best = null;
   for (const unit of candidates) {
     let lo = 1;
     let hi = 1;
-    while (!wins(new Map([[unit.id, hi]]), enemy, boosts)) {
+    while (!battleWins(new Map([[unit.id, hi]]))) {
       hi *= 2;
       if (hi > 1e7) break;
     }
     if (hi > 1e7) continue;
     while (lo < hi) {
       const mid = Math.floor((lo + hi) / 2);
-      if (wins(new Map([[unit.id, mid]]), enemy, boosts)) hi = mid;
+      if (battleWins(new Map([[unit.id, mid]]))) hi = mid;
       else lo = mid + 1;
     }
     const comp = new Map([[unit.id, lo]]);
@@ -245,14 +304,14 @@ const solve = (
     for (const unit of anchors) {
       let lo = 1;
       let hi = 1;
-      while (!wins(new Map([[unit.id, hi]]), enemy, boosts)) {
+      while (!battleWins(new Map([[unit.id, hi]]))) {
         hi *= 2;
         if (hi > 1e7) break;
       }
       if (hi > 1e7) continue;
       while (lo < hi) {
         const mid = Math.floor((lo + hi) / 2);
-        if (wins(new Map([[unit.id, mid]]), enemy, boosts)) hi = mid;
+        if (battleWins(new Map([[unit.id, mid]]))) hi = mid;
         else lo = mid + 1;
       }
       for (const other of candidates) {
@@ -262,7 +321,7 @@ const solve = (
         while (add <= 1e7) {
           const trial = new Map(base);
           trial.set(other.id, add);
-          if (wins(trial, enemy, boosts)) {
+          if (battleWins(trial)) {
             const candidate = {
               composition: trial,
               military: militaryCost(trial),
@@ -293,7 +352,7 @@ const solve = (
         while (add <= 1e7) {
           const trial = new Map(base);
           trial.set(other, (trial.get(other) ?? 0) + add);
-          if (wins(trial, enemy, boosts)) {
+          if (battleWins(trial)) {
             found = true;
             break;
           }
@@ -306,7 +365,7 @@ const solve = (
           const mid = Math.floor((lo + hi) / 2);
           const t2 = new Map(base);
           t2.set(other, (base.get(other) ?? 0) + mid);
-          if (wins(t2, enemy, boosts)) hi = mid;
+          if (battleWins(t2)) hi = mid;
           else lo = mid + 1;
         }
         const next = new Map(base);
@@ -314,7 +373,7 @@ const solve = (
         if (
           next.size >= (requireMixed ? 2 : 1) &&
           militaryCost(next).lt(best.military) &&
-          wins(next, enemy, boosts)
+          battleWins(next)
         ) {
           best = { composition: next, military: militaryCost(next) };
           improved = true;
@@ -331,7 +390,7 @@ const solve = (
       const t = new Map(best.composition);
       if (mid <= 0) t.delete(id);
       else t.set(id, mid);
-      if (wins(t, enemy, boosts)) hi = mid;
+      if (battleWins(t)) hi = mid;
       else lo = mid + 1;
     }
     if (lo <= 0) {
@@ -405,19 +464,27 @@ const main = async () => {
   }
   rl?.close();
   console.log(`\nSearching over ${allowed.length} units...`);
+  const enemyResearchBoosts = researchIdsForBattle(
+    battle,
+    battle.enemyArmy.map((stack) => stack.unitId),
+  ).flatMap((tech) => tech.bonuses ?? []);
   const result = solve(
     allowed,
     battle.enemyArmy,
-    battle.enemyBoosts ?? [],
+    [...enemyResearchBoosts, ...(battle.enemyBoosts ?? [])],
     (l) => console.log(`  ${l}`),
     args[2] === "mixed",
     battle.isBoss ? latestCombatUnitId(battle) : undefined,
+    battle.age,
   );
   if (!result) {
     console.log("\nNo winning army found with these units.");
     return;
   }
   const full = armyCost(result.composition);
+  const requiredResearch = researchIdsForBattle(battle, [
+    ...result.composition.keys(),
+  ]);
   console.log(`\n=== Minimum army to defeat ${battle.name} ===`);
   for (const [id, n] of result.composition) {
     const u = byId.get(id);
@@ -427,6 +494,8 @@ const main = async () => {
   for (const [resource, amount] of Object.entries(full)) {
     console.log(`  ${resource}: ${fmtNum(amount)}`);
   }
+  console.log(`\nRequired research (${requiredResearch.length}):`);
+  console.log(`  ${requiredResearch.join(", ") || "none"}`);
   console.log(`\nMilitary (optimized): ${fmtNum(result.military)}`);
 };
 

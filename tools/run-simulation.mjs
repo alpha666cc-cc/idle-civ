@@ -1,13 +1,13 @@
 /**
  * CLI runner for game simulations.
  * Usage: node tools/run-simulation.mjs [options]
- * 
+ *
  * Options:
  *   --strategy <name>      Strategy to use (balanced, production, military, fast-age, economy)
  *   --objective <type>     Objective type (buildingCount, ageReach, battleVictory, timeLimit)
  *   --target <value>       Target value for objective
  *   --building <key>       Building key for buildingCount objective
- *   --age <id>             Age ID for ageReach objective  
+ *   --age <id>             Age ID for ageReach objective
  *   --battle <id>          Encounter ID for battleVictory objective
  *   --max-time <seconds>   Maximum simulation time (default: 3600)
  *   --seed <number>        Random seed (default: 42)
@@ -168,7 +168,7 @@ function buildObjective(options) {
 
 async function main() {
   const options = parseArgs();
-  
+
   // Validate strategy
   const strategy = getStrategy(options.strategy);
   if (!strategy) {
@@ -204,7 +204,9 @@ async function main() {
   console.log("=== Simulation Results ===");
   console.log(`Success: ${result.success}`);
   console.log(`Objective Reached: ${result.objectiveReached}`);
-  console.log(`Game Time: ${result.gameTime}s (${(result.gameTime / 60).toFixed(1)} minutes)`);
+  console.log(
+    `Game Time: ${result.gameTime}s (${(result.gameTime / 60).toFixed(1)} minutes)`,
+  );
   console.log(`Real Time: ${((endTime - startTime) / 1000).toFixed(2)}s`);
   console.log(`Termination Reason: ${result.terminationReason}`);
   console.log(`Objective Met: ${result.objectiveMet || "None"}`);
@@ -219,11 +221,13 @@ async function main() {
       console.log(`  Age: ${snapshot.age}`);
       console.log(`  Population: ${snapshot.population}`);
       const buildingList = snapshot.buildings
-        .map((b) => `${b.building} ×${b.count}`)
+        .map((b) => `${b.building} x${b.count}`)
         .join(", ");
-      console.log(`  Buildings: [${buildingList}] (${snapshot.totalBuildings} total)`);
+      console.log(
+        `  Buildings: [${buildingList}] (${snapshot.totalBuildings} total)`,
+      );
       const unitList = snapshot.units
-        .map((u) => `${u.unit} ×${u.count}`)
+        .map((u) => `${u.unit} x${u.count}`)
         .join(", ");
       console.log(`  Units: [${unitList || "none"}]`);
       console.log(`  Battles Won: ${snapshot.battlesWon}`);
@@ -252,4 +256,6 @@ async function main() {
   process.exit(result.success ? 0 : 1);
 }
 
-(async () => { await main(); })();
+(async () => {
+  await main();
+})();

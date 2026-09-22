@@ -60,6 +60,7 @@ export class UnitDefinition extends GameObject {
   readonly key: string;
   readonly name: string;
   readonly age: number;
+  readonly tier: number;
   readonly domain: UnitDomain;
   readonly tags: readonly string[];
   readonly canHit: readonly UnitDomain[];
@@ -74,6 +75,7 @@ export class UnitDefinition extends GameObject {
     name: string,
     description: string,
     age: number,
+    tier: number,
     domain: UnitDomain,
     tags: readonly string[],
     canHit: readonly UnitDomain[],
@@ -86,6 +88,7 @@ export class UnitDefinition extends GameObject {
     this.key = key;
     this.name = name;
     this.age = age;
+    this.tier = tier;
     this.domain = domain;
     this.tags = tags;
     this.canHit = canHit;
@@ -113,6 +116,7 @@ type UnitData = {
   name: string;
   description: string;
   age: number;
+  tier?: number;
   domain: UnitDomain;
   tags: string[];
   canHit: UnitDomain[];
@@ -133,6 +137,7 @@ const toUnitDefinition = (data: UnitData): UnitDefinition =>
     data.name,
     data.description,
     data.age,
+    data.tier ?? 0,
     data.domain,
     data.tags,
     data.canHit,

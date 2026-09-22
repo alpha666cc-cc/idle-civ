@@ -8,6 +8,7 @@ import { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
 import { type BuildingKey } from "../src/game/buildings.js";
 import { encounterDefinitions } from "../src/game/encounters.js";
+import { researchDefinitions } from "../src/game/research.js";
 import {
   type SimulationStrategy,
   type SimulationAction,
@@ -19,6 +20,7 @@ import {
   producerResourceKeys,
   type ProductionResourceKey,
 } from "../src/game/attributes.js";
+import { isBuyableUnit, unitDefinitions } from "../src/game/units.js";
 
 /**
  * Worker assignment ratios for different strategies.
@@ -78,6 +80,56 @@ abstract class BaseStrategy implements SimulationStrategy {
 
   protected shouldLaunchBattle(_state: CivilizationState): boolean {
     return false;
+  }
+
+  private researchLeadsToUnit(
+    researchId: string,
+    unitId: string,
+    visited = new Set<string>(),
+  ): boolean {
+    if (visited.has(researchId)) return false;
+    visited.add(researchId);
+    const research = researchDefinitions.find(({ key }) => key === researchId);
+    if (!research) return false;
+    if (research.unlocks.includes(unitId)) return true;
+    return researchDefinitions.some(
+      (candidate) =>
+        candidate.prerequisites.includes(researchId) &&
+        this.researchLeadsToUnit(candidate.key, unitId, new Set(visited)),
+    );
+  }
+
+  protected getResearchAction(
+    state: CivilizationState,
+  ): SimulationAction | null {
+    const nextBattle = state.getNextBattle();
+    const targetUnit = nextBattle
+      ? unitDefinitions.find(
+          (unit) =>
+            isBuyableUnit(unit) &&
+            unit.age === nextBattle.age &&
+            !state.isUnitAvailable(unit.key),
+        )
+      : undefined;
+    const research = researchDefinitions.find(
+      ({ key }) =>
+        !state.isResearchBought(key) &&
+        state.canBuyResearch(key) &&
+        (!targetUnit || this.researchLeadsToUnit(key, targetUnit.key)),
+    );
+    return research ? { type: "buyResearch", researchId: research.key } : null;
+  }
+
+  protected getUnitAction(state: CivilizationState): SimulationAction | null {
+    const unit = [...state.getRosterUnits()]
+      .sort((left, right) => right.tier - left.tier)
+      .find(({ key }) => state.getMaxAffordableUnits(key) > 0);
+    if (!unit) return null;
+    return {
+      type: "buyUnit",
+      unitId: unit.key,
+      count: Math.min(state.getMaxAffordableUnits(unit.key), 100),
+    };
   }
 
   /**
@@ -165,26 +217,37 @@ abstract class BaseStrategy implements SimulationStrategy {
     state: CivilizationState,
     _context: SimulationContext,
   ): SimulationAction | null {
-    // Priority 1: Launch battle if ready
+    // Priority 1: Buy the next combat-path research before spending on units.
+    const researchAction = this.getResearchAction(state);
+    if (researchAction) return researchAction;
+
+    // Priority 2: Grow the army before attempting the next battle.
+    const unitAction = this.getUnitAction(state);
+    if (unitAction) return unitAction;
+
+    // Priority 3: Launch battle if ready
     if (this.shouldLaunchBattle(state)) {
       const nextBattle = state.getNextBattle();
-      if (nextBattle) {
+      if (
+        nextBattle &&
+        state.simulateEncounter(nextBattle.key)?.outcome === "player"
+      ) {
         return { type: "launchBattle", encounterId: nextBattle.key };
       }
     }
 
-    // Priority 2: Buy affordable unlocked upgrades
+    // Priority 4: Buy affordable unlocked upgrades
     const upgradeAction = this.getBestUpgrade(state);
     if (upgradeAction) return upgradeAction;
 
-    // Priority 3: Assign workers
+    // Priority 5: Assign workers
     const workerAction = this.assignWorkersByRatio(
       state,
       this.getWorkerRatios(),
     );
     if (workerAction) return workerAction;
 
-    // Priority 4: Build buildings (try to build multiple if affordable)
+    // Priority 6: Build buildings (try to build multiple if affordable)
     const building = this.findBestBuilding(state, this.getBuildingPriority());
     if (building) {
       // Check how many we can afford
@@ -195,7 +258,7 @@ abstract class BaseStrategy implements SimulationStrategy {
       }
     }
 
-    // Priority 5: Gather resources
+    // Priority 7: Gather resources
     const resourceToGather = this.getResourceToGather(state);
     if (resourceToGather) {
       return { type: "gather", resource: resourceToGather };
@@ -276,6 +339,7 @@ export class BalancedStrategy extends BaseStrategy {
       { building: "quarry", weight: 6 },
       { building: "gold-mine", weight: 5 },
       { building: "barracks", weight: 4, targetCount: 3 },
+      { building: "university", weight: 3, targetCount: 3 },
       { building: "smithy", weight: 3, targetCount: 2 },
       { building: "market", weight: 2 },
       { building: "town-hall", weight: 1 },
@@ -357,6 +421,7 @@ export class MilitaryStrategy extends BaseStrategy {
       { building: "lumber-yard", weight: 6 },
       { building: "quarry", weight: 6 },
       { building: "barracks", weight: 8, targetCount: 5 },
+      { building: "university", weight: 7, targetCount: 3 },
       { building: "smithy", weight: 7, targetCount: 3 },
       { building: "gold-mine", weight: 5 },
       { building: "market", weight: 3 },

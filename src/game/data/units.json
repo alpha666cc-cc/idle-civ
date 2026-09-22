@@ -33,11 +33,11 @@
     "canHit": ["ground", "air"],
     "bonusVs": [],
     "hp": 60,
-    "attack": 20,
+    "attack": 30,
     "armor": 0,
     "range": 4,
     "speed": 7,
-    "accuracy": 0.8,
+    "accuracy": 0.9,
     "available": false,
     "tier": 2,
     "costs": [

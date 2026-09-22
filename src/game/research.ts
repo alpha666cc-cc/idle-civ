@@ -3,10 +3,7 @@ import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 import { buildingDefinitions, type BuildingCost } from "./buildings";
 import { parseBonusType, type Bonus } from "./bonus";
-import {
-  findAttributeDefinition,
-  type ResourceKey,
-} from "./attributes";
+import { findAttributeDefinition, type ResourceKey } from "./attributes";
 import { findUnitDefinition, parseUnitStatTarget } from "./units";
 
 /**
@@ -147,6 +144,62 @@ export const researchesClosingUnit = (unitId: string): ResearchDefinition[] =>
     research.conversions.some((conversion) => conversion.from === unitId),
   );
 
+const prerequisiteClosure = (
+  researchId: string,
+  seen = new Set<string>(),
+): string[] => {
+  if (seen.has(researchId)) return [];
+  const research = findResearchDefinition(researchId);
+  if (!research) return [];
+  seen.add(researchId);
+  return [
+    ...research.prerequisites.flatMap((prerequisite) =>
+      prerequisiteClosure(prerequisite, seen),
+    ),
+    researchId,
+  ];
+};
+
+const shortestUnlockClosure = (unitId: string): string[] => {
+  const paths = researchesUnlockingUnit(unitId).map((research) =>
+    prerequisiteClosure(research.key),
+  );
+  return paths.sort((left, right) => left.length - right.length)[0] ?? [];
+};
+
+/**
+ * Research applied to an encounter's army: every completed research from an
+ * earlier age, plus the shortest prerequisite path needed to unlock each unit
+ * in the army. The result is deterministic and contains no duplicate ids.
+ */
+export const researchIdsForBattle = (
+  battleAge: number,
+  unitIds: readonly string[],
+): string[] => {
+  const ids = new Set(
+    researchDefinitions
+      .filter((research) => research.age < battleAge)
+      .map((research) => research.key),
+  );
+  for (const unitId of unitIds) {
+    for (const researchId of shortestUnlockClosure(unitId)) {
+      ids.add(researchId);
+    }
+  }
+  return researchDefinitions
+    .filter((research) => ids.has(research.key))
+    .map((research) => research.key);
+};
+
+export const researchBonusesForIds = (
+  researchIds: readonly string[],
+): [researchId: string, bonus: Bonus][] =>
+  researchIds.flatMap((researchId) =>
+    (findResearchDefinition(researchId)?.bonuses ?? []).map(
+      (bonus) => [researchId, bonus] as [string, Bonus],
+    ),
+  );
+
 // Module-load validation: a stale id in the JSON would otherwise no-op
 // silently at purchase/reveal time. Fail loudly instead.
 const researchIds = new Set(researchDefinitions.map(({ key }) => key));
@@ -160,7 +213,9 @@ for (const research of researchDefinitions) {
   }
   for (const unitId of research.unlocks) {
     if (!findUnitDefinition(unitId)) {
-      throw new Error(`Unknown research unit unlock: ${research.key} → ${unitId}`);
+      throw new Error(
+        `Unknown research unit unlock: ${research.key} → ${unitId}`,
+      );
     }
   }
   for (const conversion of research.conversions) {

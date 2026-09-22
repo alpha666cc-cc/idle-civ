@@ -62,6 +62,8 @@ import {
 import { ExpNumber } from "./expNumber";
 import {
   findResearchDefinition,
+  researchBonusesForIds,
+  researchIdsForBattle,
   researchesClosingUnit,
   researchesUnlockingUnit,
 } from "./research";
@@ -1828,21 +1830,45 @@ export class CivilizationState {
 
   /** Effective stats of one unit, with every active bonus applied. */
   getUnitStats(unitId: string): UnitStats | undefined {
+    return this.getUnitStatsWithResearch(unitId, []);
+  }
+
+  getUnitStatsWithResearch(
+    unitId: string,
+    researchIds: readonly string[],
+  ): UnitStats | undefined {
     const unit = findUnitDefinition(unitId);
     if (!unit) return undefined;
+    const researchSources = researchBonusesForIds(
+      researchIds.filter((id) => !this.boughtResearch.includes(id)),
+    );
     return this.unitStatsFromFactors(
       unit,
-      this.collectUnitStatFactors(unit, this.activeBonuses()),
+      this.collectUnitStatFactors(unit, [
+        ...this.activeBonuses(),
+        ...researchSources,
+      ]),
     );
   }
 
-  /** One enemy army, with the battle's "fake research" boosts applied. */
-  getEnemyStacks(encounterId: string): ArmyStack[] {
+  /** Enemy armies receive historical research plus encounter-specific boosts. */
+  getEnemyStacks(
+    encounterId: string,
+    additionalResearchIds: readonly string[] = [],
+  ): ArmyStack[] {
     const encounter = findEncounterDefinition(encounterId);
     if (!encounter) return [];
-    const boosts = encounter.enemyBoosts.map(
-      (bonus) => [encounter.key, bonus] as const,
-    );
+    const researchIds = [
+      ...researchIdsForBattle(
+        encounter.age,
+        encounter.enemyArmy.map(({ unitId }) => unitId),
+      ),
+      ...additionalResearchIds,
+    ];
+    const boosts = [
+      ...researchBonusesForIds(researchIds),
+      ...encounter.enemyBoosts.map((bonus) => [encounter.key, bonus] as const),
+    ];
     const stacks: ArmyStack[] = [];
     for (const { unitId, count } of encounter.enemyArmy) {
       const unit = findUnitDefinition(unitId);

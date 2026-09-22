@@ -71,6 +71,8 @@ export type SimulationAction =
   | { type: "unassignWorker"; resource: ProductionResourceKey; count: number }
   | { type: "build"; building: BuildingKey; count: number }
   | { type: "buyUpgrade"; upgradeId: string }
+  | { type: "buyResearch"; researchId: string }
+  | { type: "buyUnit"; unitId: string; count: number }
   | { type: "launchBattle"; encounterId: string }
   | { type: "wait"; seconds: number };
 
@@ -293,6 +295,26 @@ export class GameSimulation {
         this.log(
           `buyUpgrade ${action.upgradeId}`,
           bought ? "bought" : "not affordable or locked (skipped)",
+        );
+        break;
+      }
+      case "buyResearch": {
+        const before = this.state.boughtResearch.length;
+        this.state = this.state.buyResearch(action.researchId);
+        const bought = this.state.boughtResearch.length > before;
+        this.log(
+          `buyResearch ${action.researchId}`,
+          bought ? "bought" : "not affordable or locked (skipped)",
+        );
+        break;
+      }
+      case "buyUnit": {
+        const before = this.state.getUnitCount(action.unitId);
+        this.state = this.state.buyUnit(action.unitId, action.count);
+        const bought = this.state.getUnitCount(action.unitId).sub(before);
+        this.log(
+          `buyUnit ${action.unitId}`,
+          `bought ${bought.toString()}/${action.count}`,
         );
         break;
       }

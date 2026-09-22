@@ -8,6 +8,7 @@ import {
 } from "../game/battleSimulator";
 import { encounterDefinitions } from "../game/encounters";
 import { findUnitDefinition } from "../game/units";
+import { researchIdsForBattle } from "../game/research";
 import type { BuildingCost } from "../game/buildings";
 import { ExpNumber } from "../game/expNumber";
 
@@ -29,12 +30,16 @@ const winsWithStats = (
   battleId: string,
   composition: SimulatorArmy,
 ): boolean => {
+  const researchIds = researchIdsForBattle(
+    encounterDefinitions.find(({ key }) => key === battleId)?.age ?? 0,
+    [...composition.keys()],
+  );
   const stacks = [...composition.entries()]
     .filter(([, count]) => count > 0)
     .map(([unitId, count]) => ({
       unitId,
       count: ExpNumber.fromNumber(count),
-      stats: gameState.getUnitStats(unitId),
+      stats: gameState.getUnitStatsWithResearch(unitId, researchIds),
     }))
     .filter(
       (
@@ -128,7 +133,8 @@ export default function BattleSimulatorPanel({
         <h3>Battle simulator</h3>
         <p className="dev-tools-copy">
           Minimum-military-cost winning army for one battle. Player units use
-          base stats with your cost reductions; the enemy uses its boosts.
+          current and required research bonuses with your cost reductions; the
+          enemy uses prior-age and unlock research plus its encounter boosts.
         </p>
       </div>
       <label className="dev-tools-label" htmlFor="battle-simulator-battle">
@@ -156,7 +162,8 @@ export default function BattleSimulatorPanel({
               .join(", ")}
           </p>
           <div className="dev-tools-label">
-            Units (unlocked selected by default)
+            Units (unlocked selected by default; added units receive required
+            research)
           </div>
           <div className="battle-simulator-units">
             {candidates.map((unit) => (

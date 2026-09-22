@@ -10,6 +10,7 @@ import { ExpNumber } from "./expNumber";
 import {
   findResearchDefinition,
   researchDefinitions,
+  researchIdsForBattle,
   researchesUnlockingUnit,
 } from "./research";
 import {
@@ -62,6 +63,16 @@ const buyPrerequisiteClosure = (
 };
 
 describe("research data integrity", () => {
+  it("builds battle research from prior ages and unit prerequisites", () => {
+    const ids = researchIdsForBattle(1, ["spearman_bronze"]);
+    expect(ids).toContain("agriculture");
+    expect(ids).toContain("bronze_smelting");
+    expect(ids.indexOf("tribal_organization")).toBeLessThan(
+      ids.indexOf("bronze_smelting"),
+    );
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("orders every tech after its prerequisites", () => {
     const positions = new Map(
       researchDefinitions.map((research, index) => [research.key, index]),
