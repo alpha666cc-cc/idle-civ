@@ -211,7 +211,7 @@ export const emptyResourceAmounts = (): ResourceAmounts => ({
   metalwork: ExpNumber.ZERO,
   trade: ExpNumber.ZERO,
   peopleCapacity: ExpNumber.ZERO,
-  houseCapacity: ExpNumber.fromNumber(10),
+  houseCapacity: ExpNumber.ZERO,
   farmCapacity: ExpNumber.fromNumber(10),
   "lumber-yardCapacity": ExpNumber.fromNumber(10),
   quarryCapacity: ExpNumber.fromNumber(10),

@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "preview": "vite preview",
     "simulate:battle": "node --experimental-strip-types temp/min-army.mjs",
-    "helper:battle": "node helper/serve-battle-simulator.mjs"
+    "helper:battle": "node helper/serve-battle-simulator.mjs",
+    "simulate": "node tools/run-simulation.mjs",
+    "simulate:compare": "node tools/compare-strategies.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

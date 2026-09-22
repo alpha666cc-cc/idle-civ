@@ -297,18 +297,6 @@ export class CivilizationState {
     this.freeUnits = freeUnits;
     this.freeUpgrades = freeUpgrades;
 
-    const houses = this.buildingCount("house");
-    const townHalls = this.buildingCount("town-hall");
-    const peopleFloor = ExpNumber.fromNumber(houses * 10);
-    this.resources.peopleCapacity = this.resources.peopleCapacity.gte(
-      peopleFloor,
-    )
-      ? this.resources.peopleCapacity
-      : peopleFloor;
-    const houseFloor = ExpNumber.fromNumber(townHalls * 10);
-    this.resources.houseCapacity = this.resources.houseCapacity.gte(houseFloor)
-      ? this.resources.houseCapacity
-      : houseFloor;
     this.resources.population = ExpNumber.fromNumber(
       this.buildingCount("people"),
     );
