@@ -20,6 +20,7 @@ export interface SimulationSnapshot {
   age: string;
   population: number;
   resources: Record<string, string>; // ExpNumber as string for serialization
+  researches: string[];
   buildings: { building: BuildingKey; count: number }[];
   units: { unit: string; count: string }[]; // ExpNumber counts as strings
   productionRates: Record<string, string>; // per-second rates
@@ -492,6 +493,7 @@ export class GameSimulation {
           (v as ExpNumber).toString(),
         ]),
       ) as Record<string, string>,
+      researches: [...this.state.boughtResearch],
       buildings: Object.entries(this.state.builtBuildings).map(
         ([building, count]) => ({
           building: building as BuildingKey,

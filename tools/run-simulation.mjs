@@ -28,7 +28,7 @@ function parseArgs() {
     building: null,
     age: null,
     battle: null,
-    maxTime: "3600",
+    maxTime: "36000",
     seed: "42",
     output: null,
     snapshots: true,
@@ -220,6 +220,14 @@ async function main() {
       console.log(`  Time: ${snapshot.timestamp}s`);
       console.log(`  Age: ${snapshot.age}`);
       console.log(`  Population: ${snapshot.population}`);
+      const researchList = snapshot.researches?.length
+        ? snapshot.researches.join(", ")
+        : "none";
+      console.log(`  Researches: [${researchList}]`);
+      const resourceList = Object.entries(snapshot.resources ?? {})
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(", ");
+      console.log(`  Resources: { ${resourceList || "none"} }`);
       const buildingList = snapshot.buildings
         .map((b) => `${b.building} x${b.count}`)
         .join(", ");
