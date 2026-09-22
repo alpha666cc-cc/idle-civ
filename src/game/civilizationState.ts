@@ -1502,6 +1502,7 @@ export class CivilizationState {
   }
 
   canBuild(buildingKey: string, count: number = 1): boolean {
+    if (!this.isBuildingAvailable(buildingKey)) return false;
     if (this.isBuildingAtCapacity(buildingKey)) return false;
     if (!this.hasResourcesForBuilding(buildingKey, count)) return false;
     return true;

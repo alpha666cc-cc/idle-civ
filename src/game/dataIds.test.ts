@@ -137,6 +137,46 @@ describe("static content guids", () => {
     expect(after.getBuildingMax("barracks").toNumber()).toBeCloseTo(11, 9);
     expect(after.getBuildingMax("university").toNumber()).toBeCloseTo(11, 9);
   });
+
+  it("locks barracks until 90 citizens", () => {
+    const stateAt89 = new CivilizationState(
+      { ...emptyResourceAmounts(), food: ExpNumber.fromNumber(1e12) },
+      emptyWorkerAssignments(),
+      { "town-hall": 1, people: 89 },
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      [],
+      emptyStatistics(),
+      {},
+      ExpNumber.ONE,
+      true,
+    );
+    const stateAt90 = new CivilizationState(
+      { ...emptyResourceAmounts(), food: ExpNumber.fromNumber(1e12) },
+      emptyWorkerAssignments(),
+      { "town-hall": 1, people: 90 },
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      [],
+      emptyStatistics(),
+      {},
+      ExpNumber.ONE,
+      true,
+    );
+
+    expect(stateAt89.isBuildingAvailable("barracks")).toBe(false);
+    expect(stateAt89.canBuild("barracks")).toBe(false);
+    expect(stateAt90.isBuildingAvailable("barracks")).toBe(true);
+    expect(stateAt90.canBuild("barracks")).toBe(true);
+  });
 });
 
 describe("a fresh save survives a data-edit cycle", () => {
