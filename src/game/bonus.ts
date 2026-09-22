@@ -80,6 +80,20 @@ export const parseBonusType = (type: string): BonusType => {
   throw new Error(`Unknown bonus type: ${type}`);
 };
 
+/** Parses a bonus from JSON data (AGENTS.md §13.5: one file per type). Definition
+ * payloads are `as`-cast, so a stale type string would otherwise match no engine branch
+ * and silently no-op; this fails loudly instead. Numeric `value` strings use scientific
+ * notation for |value| > 1,000,000 (AGENTS.md §4.3). */
+export const parseBonus = (
+  type: string,
+  destination: string,
+  value: number | string,
+): Bonus => ({
+  type: parseBonusType(type),
+  destination,
+  value: ExpNumber.from(value),
+});
+
 /** The four cost-reduction types folded into per-unit adjustments (§13.1). */
 export type CostReductions = {
   /**

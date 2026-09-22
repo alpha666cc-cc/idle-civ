@@ -114,13 +114,14 @@ const researchCostGrowth = ExpNumber.fromNumber(10);
  */
 const earnedAchievementSets = new WeakMap<readonly string[], Set<string>>();
 
-/** Cached activeBonuses(), keyed on the identity tuple of the source lists. */
+/** Cached activeBonuses(), keyed on the identity tuple of the four source lists
+ * (upgrades, encounters, achievements, research, ages). */
 type ActiveBonusList = [sourceId: string, bonus: Bonus][];
 const activeBonusCaches = new WeakMap<
   readonly string[],
   WeakMap<
     readonly string[],
-    WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>
+    WeakMap<readonly string[], WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>>
   >
 >();
 
@@ -1558,40 +1559,51 @@ export class CivilizationState {
   /**
    * Every bonus currently in force, paired with its source id. One seam for all
    * bonus sources keeps capacities, costs and stats on the same application path.
-   * Cached on the identity of the three source id lists: rebuilt once per real
-   * change, reused by every query in between (see the module cache note).
+   * Cached on the identity of the four source id lists: rebuilt once per real
+   * change, reused by every query in between (see the module cache note). Age bonuses
+   * are derived from `enteredAges` (permanent entries) the same way research/encounters
+   * derive from their bought/defeated lists.
    */
   private activeBonuses(): [sourceId: string, bonus: Bonus][] {
-    let byEncounters = activeBonusCaches.get(this.boughtUpgrades);
+    let byUpgrades = activeBonusCaches.get(this.boughtUpgrades);
+    if (!byUpgrades) {
+      byUpgrades = new WeakMap<
+        readonly string[],
+        WeakMap<readonly string[], WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>>
+      >();
+      activeBonusCaches.set(this.boughtUpgrades, byUpgrades);
+    }
+    let byEncounters = byUpgrades.get(this.defeatedEncounters);
     if (!byEncounters) {
       byEncounters = new WeakMap<
         readonly string[],
         WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>
       >();
-      activeBonusCaches.set(this.boughtUpgrades, byEncounters);
+      byUpgrades.set(this.defeatedEncounters, byEncounters);
     }
-    let byAchievements = byEncounters.get(this.defeatedEncounters);
+    let byAchievements = byEncounters.get(this.earnedAchievements);
     if (!byAchievements) {
       byAchievements = new WeakMap<
         readonly string[],
         WeakMap<readonly string[], ActiveBonusList>
       >();
-      byEncounters.set(this.defeatedEncounters, byAchievements);
+      byEncounters.set(this.earnedAchievements, byAchievements);
     }
-    let byResearch = byAchievements.get(this.earnedAchievements);
+    let byResearch = byAchievements.get(this.boughtResearch);
     if (!byResearch) {
       byResearch = new WeakMap<readonly string[], ActiveBonusList>();
-      byAchievements.set(this.earnedAchievements, byResearch);
+      byAchievements.set(this.boughtResearch, byResearch);
     }
-    const cached = byResearch.get(this.boughtResearch);
+    const cached = byResearch.get(this.enteredAges);
     if (cached) return cached;
-    const computed = [
+    const computed: [sourceId: string, bonus: Bonus][] = [
       ...this.boughtUpgradeBonuses(),
       ...this.defeatedEncounterBonuses(),
       ...this.earnedAchievementBonuses(),
       ...this.boughtResearchBonuses(),
+      ...this.enteredAgeBonuses(),
     ];
-    byResearch.set(this.boughtResearch, computed);
+    byResearch.set(this.enteredAges, computed);
     return computed;
   }
 
@@ -1605,6 +1617,50 @@ export class CivilizationState {
       const definition = findResearchDefinition(researchId);
       for (const bonus of definition?.bonuses ?? []) {
         results.push([researchId, bonus]);
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Apply a batch of attribute bonuses (flat/multiplier/drain) to the resource factor
+   * model, threading the accumulator through addFactor() calls. Used by enterAge() so age
+   * bonuses flow into getFactors()/getBuildingMax() via activeBonuses() without aliasing
+   * `this` (which the lint config forbids).
+   */
+  private applyAttributeBonuses(
+    bonuses: readonly Bonus[],
+    sourceId: string,
+    state: CivilizationState,
+  ): CivilizationState {
+    let acc = state;
+    for (const bonus of bonuses) {
+      const factorType =
+        bonus.type === "attributeFlat"
+          ? "additional"
+          : bonus.type === "attributeMultiplier"
+            ? "multiplicative"
+            : "drain";
+      acc = acc.addFactor(
+        bonus.destination as Parameters<typeof acc.addFactor>[0],
+        factorType,
+        [sourceId, bonus.value],
+      );
+    }
+    return acc;
+  }
+
+  /**
+   * Bonuses from entered ages, paired with the age id as the source.
+   * Derived from the entered id list, never stored as applied values (§13.4).
+   * Ages are permanent entries, so these persist for the life of the state.
+   */
+  private enteredAgeBonuses(): [ageId: string, bonus: Bonus][] {
+    const results: [ageId: string, bonus: Bonus][] = [];
+    for (const ageId of this.enteredAges) {
+      const age = findAgeDefinition(ageId);
+      for (const bonus of age?.bonuses ?? []) {
+        results.push([ageId, bonus]);
       }
     }
     return results;
@@ -2324,26 +2380,29 @@ export class CivilizationState {
       }
     }
 
-    // Multiply town hall capacity by 10
-    const resources = { ...this.resources };
-    const townHallCapacity = resources["town-hallCapacity"];
-    resources["town-hallCapacity"] = townHallCapacity.mul(
-      ExpNumber.fromNumber(10),
-    );
+    // Apply age bonuses (data-driven path: ages.json → AgeDefinition.bonuses → engine).
+    // Attribute-targeted bonuses fold into the existing factor model via addFactor(); they
+    // are then re-derived from enteredAges inside activeBonuses() so getBuildingMax() /
+    // getFactors() / etc. pick them up. This replaces the old hardcoded "×10 town-hall
+    // capacity" with a data-driven path.
+    const afterBonuses = this.applyAttributeBonuses(age.bonuses, ageId, this);
 
-    return this.withState(
-      resources,
-      this.buildingCostOverrides,
-      this.builtBuildings,
-      this.autoClicksPerSecond,
-      this.boughtUpgrades,
-      this.defeatedEncounters,
-      [...this.enteredAges, ageId],
-      this.earnedAchievements,
+    return afterBonuses.withState(
+      afterBonuses.resources,
+      afterBonuses.buildingCostOverrides,
+      afterBonuses.builtBuildings,
+      afterBonuses.autoClicksPerSecond,
+      afterBonuses.boughtUpgrades,
+      afterBonuses.defeatedEncounters,
+      [...afterBonuses.enteredAges, ageId],
+      afterBonuses.earnedAchievements,
       {
-        ...this.statistics,
-        fastestAgeMs: this.recordFastest(this.statistics.fastestAgeMs, ageId),
-        wastedResources: this.statistics.wastedResources.add(wasted),
+        ...afterBonuses.statistics,
+        fastestAgeMs: afterBonuses.recordFastest(
+          afterBonuses.statistics.fastestAgeMs,
+          ageId,
+        ),
+        wastedResources: afterBonuses.statistics.wastedResources.add(wasted),
       },
       newUnitCounts,
     );

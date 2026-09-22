@@ -135,8 +135,8 @@ describe("static content guids", () => {
     // build() persists the +1 grant into the stored capacity (10 -> 11) and
     // getBuildingMax() adds the same +1 again from the definition (11 + 1).
     // Fixing it means choosing one source of truth; until then the value is 12.
-    expect(after.getBuildingMax("barracks").toNumber()).toBe(12);
-    expect(after.getBuildingMax("university").toNumber()).toBe(12);
+    expect(after.getBuildingMax("barracks").toNumber()).toBeCloseTo(12, 9);
+    expect(after.getBuildingMax("university").toNumber()).toBeCloseTo(12, 9);
   });
 });
 

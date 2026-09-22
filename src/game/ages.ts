@@ -1,13 +1,19 @@
 import ageData from "./data/ages.json";
 import { GameObject } from "./gameObject";
+import { parseBonus, type Bonus } from "./bonus";
 
-/** One age in the campaign: a population band with a name and optional unlocks. */
+/** One age in the campaign: a population band with a name, optional unlocks, and
+ * optional data-driven bonuses applied on entry (AGENTS.md §13.4). Bonuses reuse the
+ * existing factor model (`attributeFlat`/`attributeMultiplier`/`attributeDrain`) and the
+ * cost-reduction pipeline, so age awards are just another bonus source alongside upgrades,
+ * encounters, research and achievements. */
 export class AgeDefinition extends GameObject {
   readonly key: string;
   readonly name: string;
   readonly description: string;
   readonly populationThreshold: number;
   readonly unlocks: readonly string[];
+  readonly bonuses: readonly Bonus[];
 
   constructor(
     key: string,
@@ -15,6 +21,7 @@ export class AgeDefinition extends GameObject {
     description: string,
     populationThreshold: number,
     unlocks: readonly string[] = [],
+    bonuses: readonly Bonus[] = [],
   ) {
     super(key, description);
     this.key = key;
@@ -22,6 +29,7 @@ export class AgeDefinition extends GameObject {
     this.description = description;
     this.populationThreshold = populationThreshold;
     this.unlocks = unlocks;
+    this.bonuses = bonuses;
   }
 }
 
@@ -31,6 +39,11 @@ type AgeData = {
   description: string;
   populationThreshold: number;
   unlocks?: string[];
+  bonuses?: {
+    type: string;
+    destination: string;
+    value: number | string;
+  }[];
 };
 
 const toAgeDefinition = (data: AgeData): AgeDefinition =>
@@ -40,6 +53,7 @@ const toAgeDefinition = (data: AgeData): AgeDefinition =>
     data.description,
     data.populationThreshold,
     data.unlocks ?? [],
+    (data.bonuses ?? []).map((b) => parseBonus(b.type, b.destination, b.value)),
   );
 
 export const ageDefinitions: AgeDefinition[] = ageData.map(toAgeDefinition);

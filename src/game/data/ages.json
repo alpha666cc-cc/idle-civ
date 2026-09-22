@@ -5,7 +5,8 @@
     "name": "Ancient",
     "description": "The first settlements rise from scattered families into a village. Fire, bronze, and the first walls.",
     "populationThreshold": 0,
-    "unlocks": []
+    "unlocks": [],
+    "bonuses": []
   },
   {
     "guid": "bebcccf5-2532-52b6-91f9-110c6790e9fb",
@@ -13,7 +14,14 @@
     "name": "Iron Age",
     "description": "Iron replaces bronze. Empires rise on chariots and disciplined spearmen.",
     "populationThreshold": 1000,
-    "unlocks": []
+    "unlocks": [],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "town-hallCapacity",
+        "value": "1e1"
+      }
+    ]
   },
   {
     "guid": "1ddd7e6b-e76f-54c0-b668-bbdef695ed27",
@@ -21,7 +29,8 @@
     "name": "Classical",
     "description": "City-states and legions. The old units fall, and a new order takes the field.",
     "populationThreshold": 10000,
-    "unlocks": []
+    "unlocks": [],
+    "bonuses": []
   },
   {
     "guid": "022fdd7f-90ae-59d4-8ae2-db1bfb59672b",
@@ -29,7 +38,8 @@
     "name": "Middle Ages",
     "description": "Knights and castles. Feudal lords gather wealth across continents.",
     "populationThreshold": 1000000,
-    "unlocks": []
+    "unlocks": [],
+    "bonuses": []
   },
   {
     "guid": "dffc22da-5653-5989-8c2a-8373473a01de",
@@ -37,7 +47,8 @@
     "name": "Renaissance",
     "description": "Artillery and exploration. The world grows smaller as empires reach across the sea.",
     "populationThreshold": 100000000,
-    "unlocks": []
+    "unlocks": [],
+    "bonuses": []
   },
   {
     "guid": "6240726e-eaaf-5eac-aab8-f1ac16cabe24",
@@ -45,7 +56,8 @@
     "name": "Industrial",
     "description": "Railways, factories, and mass armies. The scale of war changes forever.",
     "populationThreshold": 1000000000,
-    "unlocks": []
+    "unlocks": [],
+    "bonuses": []
   },
   {
     "guid": "fac02a8c-a66b-5bad-b864-2bca5cebc4be",
@@ -53,6 +65,7 @@
     "name": "Modern / Space",
     "description": "Tanks, aircraft, and orbital weapons. The final age before the stars.",
     "populationThreshold": 10000000000,
-    "unlocks": []
+    "unlocks": [],
+    "bonuses": []
   }
 ]
