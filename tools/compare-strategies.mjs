@@ -9,8 +9,6 @@
  *   --building <key>         Building key for buildingCount objective
  *   --age <id>               Age ID for ageReach objective
  *   --battle <id>            Encounter ID for battleVictory objective
- *   --actions <rate>         Actions per second (default: 10)
- *   --skip <seconds>         Skip interval in seconds (default: 60)
  *   --max-time <seconds>     Maximum simulation time (default: 3600)
  *   --seed <number>          Random seed (default: 42)
  *   --output <file>          Output file for results (JSON)
@@ -36,8 +34,6 @@ function parseArgs() {
     building: null,
     age: null,
     battle: null,
-    actions: "10",
-    skip: "60",
     maxTime: "3600",
     seed: "42",
     output: null,
@@ -66,12 +62,6 @@ function parseArgs() {
         break;
       case "--battle":
         options.battle = args[++i];
-        break;
-      case "--actions":
-        options.actions = args[++i];
-        break;
-      case "--skip":
-        options.skip = args[++i];
         break;
       case "--max-time":
         options.maxTime = args[++i];
@@ -121,8 +111,6 @@ Options:
   --building <key>         Building key for buildingCount objective
   --age <id>               Age ID for ageReach objective (e.g., age-1)
   --battle <id>            Encounter ID for battleVictory objective
-  --actions <rate>         Actions per second (default: 10)
-  --skip <seconds>         Skip interval in seconds (default: 60)
   --max-time <seconds>     Maximum simulation time (default: 3600)
   --seed <number>          Random seed (default: 42)
   --output <file>          Output file for results (JSON)
@@ -214,8 +202,7 @@ async function main() {
   const config = {
     seed: parseInt(options.seed, 10),
     objective,
-    actionRate: parseInt(options.actions, 10),
-    skipInterval: parseInt(options.skip, 10),
+    gatherClicksPerAction: 10,
     maxGameTime: parseInt(options.maxTime, 10),
     recordSnapshots: options.snapshots,
   };

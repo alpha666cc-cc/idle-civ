@@ -280,7 +280,13 @@ export class CivilizationState {
     freeUpgrades = false,
     boughtResearch: readonly string[] = [],
   ) {
-    this.resources = resources;
+    // Apply building capacity effects for initial buildings (don't mutate input)
+    const adjustedResources = this.applyBuildingCapacityEffects(
+      { ...resources },
+      builtBuildings,
+    );
+
+    this.resources = adjustedResources;
     this.workers = workers;
     this.builtBuildings = builtBuildings;
     this.resourceFactors = resourceFactors;
@@ -298,9 +304,36 @@ export class CivilizationState {
     this.freeUnits = freeUnits;
     this.freeUpgrades = freeUpgrades;
 
+    // Set population based on people buildings (derived from buildings, not stored)
     this.resources.population = ExpNumber.fromNumber(
       this.buildingCount("people"),
     );
+  }
+
+  /**
+   * Apply capacity-providing building effects for the given building counts.
+   * This ensures the initial state has correct capacities based on starting buildings.
+   */
+  private applyBuildingCapacityEffects(
+    resources: ResourceAmounts,
+    builtBuildings: Partial<Record<BuildingKey, number>>,
+  ): ResourceAmounts {
+    for (const [buildingKey, count] of Object.entries(builtBuildings)) {
+      if (count === 0) continue;
+
+      const building = buildingDefinitions.find(
+        ({ key }) => key === buildingKey,
+      );
+      if (!building || !building.effects?.capacityProvided) continue;
+
+      for (const effect of building.effects.capacityProvided) {
+        const targetKey = capacityKey(effect.building);
+        resources[targetKey] = resources[targetKey].add(
+          effect.perBuilding.mul(ExpNumber.fromNumber(count)),
+        );
+      }
+    }
+    return resources;
   }
 
   get population(): ExpNumber {

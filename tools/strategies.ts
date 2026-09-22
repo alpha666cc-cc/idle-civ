@@ -88,39 +88,50 @@ abstract class BaseStrategy implements SimulationStrategy {
   ): SimulationAction | null {
     const total = Object.values(ratios).reduce((sum, r) => sum + r, 0);
     const available = state.availableWorkers;
+    const assigned = state.assignedWorkers;
 
     if (available <= 0 || total === 0) return null;
 
     // Calculate target assignments for all production resources
     const targets: Record<ProductionResourceKey, number> = {
-      food: Math.floor((ratios.food / total) * available),
-      wood: Math.floor((ratios.wood / total) * available),
-      stone: Math.floor((ratios.stone / total) * available),
-      gold: Math.floor((ratios.gold / total) * available),
-      military: Math.floor((ratios.military / total) * available),
-      science: Math.floor((ratios.science / total) * available),
-      metalwork: Math.floor((ratios.metalwork / total) * available),
-      trade: Math.floor((ratios.trade / total) * available),
+      food: Math.floor((ratios.food / total) * (assigned + available)),
+      wood: Math.floor((ratios.wood / total) * (assigned + available)),
+      stone: Math.floor((ratios.stone / total) * (assigned + available)),
+      gold: Math.floor((ratios.gold / total) * (assigned + available)),
+      military: Math.floor((ratios.military / total) * (assigned + available)),
+      science: Math.floor((ratios.science / total) * (assigned + available)),
+      metalwork: Math.floor((ratios.metalwork / total) * (assigned + available)),
+      trade: Math.floor((ratios.trade / total) * (assigned + available)),
     };
 
     // Distribute remainder to food
-    const assigned = Object.values(targets).reduce((sum, t) => sum + t, 0);
-    targets.food += available - assigned;
+    const targetAssigned = Object.values(targets).reduce((sum, t) => sum + t, 0);
+    targets.food += (assigned + available) - targetAssigned;
 
-    // Find resource needing most adjustment
+    // Find resource needing most adjustment (only assign, don't unassign during initial setup)
+    // This prevents oscillation when we have few workers
+    let bestResource: ProductionResourceKey = "food";
+    let bestDiff = 0;
+
     for (const resource of producerResourceKeys as ProductionResourceKey[]) {
       const current = state.workers[resource]?.toNumber() || 0;
       const target = targets[resource] || 0;
       const diff = target - current;
 
-      if (diff > 0) {
-        return { type: "assignWorker", resource, count: diff };
-      } else if (diff < 0) {
-        return { type: "unassignWorker", resource, count: -diff };
+      // Prioritize assigning workers (positive diff) over unassigning (negative diff)
+      // This prevents oscillation when we have limited workers
+      if (diff > 0 && diff > bestDiff) {
+        bestDiff = diff;
+        bestResource = resource;
       }
     }
 
-    return null;
+    // If no resources need workers, don't unassign anyone (prevents oscillation)
+    if (bestDiff <= 0) {
+      return null;
+    }
+
+    return { type: "assignWorker", resource: bestResource, count: bestDiff };
   }
 
   /**
@@ -166,10 +177,15 @@ abstract class BaseStrategy implements SimulationStrategy {
     );
     if (workerAction) return workerAction;
 
-    // Priority 3: Build buildings
+    // Priority 3: Build buildings (try to build multiple if affordable)
     const building = this.findBestBuilding(state, this.getBuildingPriority());
     if (building) {
-      return { type: "build", building, count: 1 };
+      // Check how many we can afford
+      const maxAffordable = state.getMaxAffordableBuildings(building);
+      const count = Math.min(maxAffordable, 5); // Build up to 5 at a time
+      if (count > 0) {
+        return { type: "build", building, count };
+      }
     }
 
     // Priority 4: Gather resources

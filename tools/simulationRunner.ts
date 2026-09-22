@@ -39,8 +39,7 @@ export function runSimulation(
   const defaultConfig: SimulationConfig = {
     seed: 42,
     objective: { type: "timeLimit", seconds: 3600 },
-    actionRate: 10,
-    skipInterval: 60,
+    gatherClicksPerAction: 10,
     maxGameTime: 3600,
     recordSnapshots: true,
   };

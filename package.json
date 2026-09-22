@@ -13,8 +13,8 @@
     "preview": "vite preview",
     "simulate:battle": "node --experimental-strip-types temp/min-army.mjs",
     "helper:battle": "node helper/serve-battle-simulator.mjs",
-    "simulate": "node tools/run-simulation.mjs",
-    "simulate:compare": "node tools/compare-strategies.mjs"
+    "simulate": "tsx tools/run-simulation.mjs",
+    "simulate:compare": "tsx tools/compare-strategies.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -27,8 +27,10 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"
   }
 }
+

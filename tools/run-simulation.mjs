@@ -9,8 +9,6 @@
  *   --building <key>       Building key for buildingCount objective
  *   --age <id>             Age ID for ageReach objective  
  *   --battle <id>          Encounter ID for battleVictory objective
- *   --actions <rate>       Actions per second (default: 10)
- *   --skip <seconds>       Skip interval in seconds (default: 60)
  *   --max-time <seconds>   Maximum simulation time (default: 3600)
  *   --seed <number>        Random seed (default: 42)
  *   --output <file>        Output file for results (JSON)
@@ -30,12 +28,11 @@ function parseArgs() {
     building: null,
     age: null,
     battle: null,
-    actions: "10",
-    skip: "60",
     maxTime: "3600",
     seed: "42",
     output: null,
     snapshots: true,
+    verbose: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -59,12 +56,6 @@ function parseArgs() {
       case "--battle":
         options.battle = args[++i];
         break;
-      case "--actions":
-        options.actions = args[++i];
-        break;
-      case "--skip":
-        options.skip = args[++i];
-        break;
       case "--max-time":
         options.maxTime = args[++i];
         break;
@@ -76,6 +67,9 @@ function parseArgs() {
         break;
       case "--no-snapshots":
         options.snapshots = false;
+        break;
+      case "--verbose":
+        options.verbose = true;
         break;
       case "--help":
         showHelp();
@@ -107,12 +101,11 @@ Options:
   --building <key>       Building key for buildingCount objective
   --age <id>             Age ID for ageReach objective (e.g., age-1)
   --battle <id>          Encounter ID for battleVictory objective
-  --actions <rate>       Actions per second (default: 10)
-  --skip <seconds>       Skip interval in seconds (default: 60)
   --max-time <seconds>   Maximum simulation time (default: 3600)
   --seed <number>        Random seed (default: 42)
   --output <file>        Output file for results (JSON)
   --no-snapshots         Disable snapshot recording
+  --verbose              Enable verbose debug output
   --help                 Show this help
 
 Examples:
@@ -173,7 +166,7 @@ function buildObjective(options) {
   }
 }
 
-function main() {
+async function main() {
   const options = parseArgs();
   
   // Validate strategy
@@ -191,10 +184,10 @@ function main() {
   const config = {
     seed: parseInt(options.seed, 10),
     objective,
-    actionRate: parseInt(options.actions, 10),
-    skipInterval: parseInt(options.skip, 10),
+    gatherClicksPerAction: 10,
     maxGameTime: parseInt(options.maxTime, 10),
     recordSnapshots: options.snapshots,
+    verbose: options.verbose,
   };
 
   console.log(`Starting simulation with strategy: ${strategy.name}`);
@@ -225,7 +218,14 @@ function main() {
       console.log(`  Time: ${snapshot.timestamp}s`);
       console.log(`  Age: ${snapshot.age}`);
       console.log(`  Population: ${snapshot.population}`);
-      console.log(`  Buildings: ${snapshot.totalBuildings}`);
+      const buildingList = snapshot.buildings
+        .map((b) => `${b.building} ×${b.count}`)
+        .join(", ");
+      console.log(`  Buildings: [${buildingList}] (${snapshot.totalBuildings} total)`);
+      const unitList = snapshot.units
+        .map((u) => `${u.unit} ×${u.count}`)
+        .join(", ");
+      console.log(`  Units: [${unitList || "none"}]`);
       console.log(`  Battles Won: ${snapshot.battlesWon}`);
       if (snapshot.militaryPower) {
         console.log(`  Military Power: ${snapshot.militaryPower}`);
@@ -252,4 +252,4 @@ function main() {
   process.exit(result.success ? 0 : 1);
 }
 
-main();
+(async () => { await main(); })();

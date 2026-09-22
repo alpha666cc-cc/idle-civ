@@ -4,6 +4,7 @@
  */
 
 import { CivilizationState } from "../src/game/civilizationState.js";
+import { ExpNumber } from "../src/game/expNumber.js";
 import { type BuildingKey } from "../src/game/buildings.js";
 import { encounterDefinitions } from "../src/game/encounters.js";
 import {
@@ -19,7 +20,8 @@ export interface SimulationSnapshot {
   age: string;
   population: number;
   resources: Record<string, string>; // ExpNumber as string for serialization
-  buildings: Record<BuildingKey, number>;
+  buildings: { building: BuildingKey; count: number }[];
+  units: { unit: string; count: string }[]; // ExpNumber counts as strings
   productionRates: Record<string, string>; // per-second rates
   battlesWon: number;
   totalBuildings: number;
@@ -41,10 +43,10 @@ export type SimulationObjective =
 export interface SimulationConfig {
   seed: number;
   objective: SimulationObjective;
-  actionRate: number; // actions per second
-  skipInterval: number; // seconds to skip between action phases
+  gatherClicksPerAction: number; // clicks each gather action models (default 10)
   maxGameTime: number; // maximum simulation time in seconds
   recordSnapshots: boolean;
+  verbose?: boolean; // enable debug output
 }
 
 /**
@@ -99,8 +101,6 @@ export interface SimulationStrategy {
  */
 export interface SimulationContext {
   gameTime: number;
-  actionsThisPhase: number;
-  currentPhase: "action" | "skip";
   snapshots: SimulationSnapshot[];
 }
 
@@ -121,8 +121,6 @@ export class GameSimulation {
   private strategy: SimulationStrategy;
   private snapshots: SimulationSnapshot[] = [];
   private gameTime = 0;
-  private actionsThisPhase = 0;
-  private currentPhase: "action" | "skip" = "action";
 
   constructor(
     initialState: CivilizationState,
@@ -134,39 +132,74 @@ export class GameSimulation {
     this.config = config;
   }
 
+  /** Log a message if verbose mode is enabled. */
+  private log(...args: any[]): void {
+    if (this.config.verbose) {
+      console.log(...args);
+    }
+  }
+
   /**
    * Run the full simulation to completion.
    */
   run(): SimulationResult {
+    // Initial burst: gather wood and build a house, then gather food and build people
+    // This sets up the initial population and workers
+
+    this.log("Initial houseCapacity:", this.state.resources.houseCapacity.toString());
+    this.log("Initial peopleCapacity:", this.state.resources.peopleCapacity.toString());
+    this.log("Initial canBuild house?", this.state.canBuild("house"));
+    this.log("Initial canBuild people?", this.state.canBuild("people"));
+
+    // Step 1: Gather wood until we can build a house (one 10-click action/sec)
+    while (!this.state.canBuild("house") && this.state.resources.wood.lt(ExpNumber.fromNumber(10))) {
+      this.executeAction({ type: "gather", resource: "wood" });
+      this.gameTime += 1;
+    }
+
+    this.log("After wood gather - houseCapacity:", this.state.resources.houseCapacity.toString());
+    this.log("After wood gather - canBuild house?", this.state.canBuild("house"));
+
+    // Step 2: Build a house
+    if (this.state.canBuild("house")) {
+      this.state = this.state.build("house");
+      this.log("Built a house, houseCapacity now:", this.state.resources.houseCapacity.toString());
+    }
+
+    // Step 3: Gather food until we can build a person (one 10-click action/sec)
+    while (!this.state.canBuild("people") && this.state.resources.food.lt(ExpNumber.fromNumber(10))) {
+      this.executeAction({ type: "gather", resource: "food" });
+      this.gameTime += 1;
+    }
+
+    // Step 4: Build as many people as we can afford
+    if (this.state.canBuild("people")) {
+      const { state: newState, count } = this.buildMaxBuilding("people");
+      if (count > 0) {
+        this.state = newState;
+        this.log(`Built ${count} people, population now:`, this.state.population.toString());
+      }
+    }
+
     while (this.gameTime < this.config.maxGameTime) {
       // Check objective completion
       if (this.checkObjective()) {
         return this.createResult(true, "Objective reached");
       }
 
-      // Execute strategy decision
+      // Execute strategy decision — one action per second, then one tick
       const action = this.strategy.decideAction(this.state, {
         gameTime: this.gameTime,
-        actionsThisPhase: this.actionsThisPhase,
-        currentPhase: this.currentPhase,
         snapshots: this.snapshots,
       });
 
       if (action) {
         this.executeAction(action);
-        this.actionsThisPhase++;
-
-        // Switch to skip phase after action rate limit
-        if (this.actionsThisPhase >= this.config.actionRate) {
-          this.currentPhase = "skip";
-          this.actionsThisPhase = 0;
-        }
-      } else {
-        // No action requested - skip time
-        this.skipTime(this.config.skipInterval);
-        this.currentPhase = "action";
-        this.actionsThisPhase = 0;
       }
+
+      // Advance one tick of production, achievement checks, etc.
+      this.state = this.state.tick();
+      this.gameTime += 1;
 
       // Check for milestones and record snapshots
       this.checkMilestones();
@@ -176,43 +209,95 @@ export class GameSimulation {
   }
 
   /**
-   * Execute a single simulation action.
+   * Execute a single simulation action. One action per second; each gather
+   * action models `gatherClicksPerAction` production clicks and reports the
+   * amount gathered.
    */
   private executeAction(action: SimulationAction): void {
     switch (action.type) {
-      case "gather":
-        this.state = this.state.gather(action.resource as any);
+      case "gather": {
+        const clicks = this.config.gatherClicksPerAction;
+        const resource = action.resource as ProductionResourceKey;
+        const before = this.state.resources[resource];
+        let next = this.state;
+        for (let i = 0; i < clicks; i++) {
+          next = next.gather(resource);
+        }
+        this.state = next;
+        const gathered = next.resources[resource].sub(before);
+        this.log(
+          `gather ${resource}`,
+          `gathered ${gathered.toString()} (${clicks} clicks)`,
+        );
         break;
-      case "assignWorker":
+      }
+      case "assignWorker": {
+        const assignedBefore = this.state.workers[action.resource]?.toString() ?? "0";
         this.state = this.state.assignWorker(action.resource, action.count);
+        this.log(
+          `assign ${action.count} workers to ${action.resource}`,
+          `(before: ${assignedBefore}, now: ${this.state.workers[action.resource]?.toString() ?? "0"})`,
+        );
         break;
-      case "unassignWorker":
+      }
+      case "unassignWorker": {
+        const assignedBefore = this.state.workers[action.resource]?.toString() ?? "0";
         this.state = this.state.unassignWorker(action.resource, action.count);
+        this.log(
+          `unassign ${action.count} workers from ${action.resource}`,
+          `(before: ${assignedBefore}, now: ${this.state.workers[action.resource]?.toString() ?? "0"})`,
+        );
         break;
-      case "build":
+      }
+      case "build": {
+        const before = this.state.builtBuildings[action.building] || 0;
         this.state = this.buildBuilding(action.building, action.count);
+        const built = (this.state.builtBuildings[action.building] || 0) - before;
+        this.log(
+          `build ${action.building}`,
+          `built ${built}/${action.count} (total ${this.state.builtBuildings[action.building] || 0})`,
+        );
         break;
+      }
       case "buyUpgrade":
-        // Upgrade purchasing not yet implemented in engine
+        this.log(`buyUpgrade ${action.upgradeId} (not implemented in engine)`);
         break;
-      case "launchBattle":
+      case "launchBattle": {
+        const battlesBefore = this.state.defeatedEncounters.length;
         this.state = this.launchBattle(action.encounterId);
+        const won = this.state.defeatedEncounters.length > battlesBefore;
+        this.log(
+          `battle ${action.encounterId}`,
+          won ? "won" : "lost or unwinnable (skipped)",
+        );
         break;
+      }
       case "wait":
+        this.log(`wait ${action.seconds}s`);
         this.skipTime(action.seconds);
         break;
     }
-
-    this.gameTime += 1 / this.config.actionRate; // Each action takes time
   }
 
   /**
    * Skip forward in time (simulate idle production).
+   * Calls tick() for each second to process production, age checks, etc.
    */
   private skipTime(seconds: number): void {
-    for (let i = 0; i < seconds; i++) {
-      this.state = this.state.tick();
-      this.gameTime += 1;
+    // Batch ticks for performance - process in chunks
+    const chunkSize = Math.min(seconds, 60); // Process up to 60 seconds at a time
+    let remaining = seconds;
+
+    while (remaining > 0) {
+      const batch = Math.min(remaining, chunkSize);
+      for (let i = 0; i < batch; i++) {
+        this.state = this.state.tick();
+        this.gameTime += 1;
+      }
+      remaining -= batch;
+
+      // Check milestones after each batch
+      this.checkMilestones();
     }
   }
 
@@ -232,6 +317,23 @@ export class GameSimulation {
       }
     }
     return state;
+  }
+
+  /**
+   * Build as many of a building as possible right now.
+   * Returns the new state and how many were actually built.
+   */
+  private buildMaxBuilding(building: BuildingKey): { state: CivilizationState; count: number } {
+    let state = this.state;
+    let count = 0;
+
+    while (state.canBuild(building)) {
+      state = state.build(building);
+      count++;
+      if (count >= 100) break; // Safety limit
+    }
+
+    return { state, count };
   }
 
   /**
@@ -326,12 +428,20 @@ export class GameSimulation {
       age: currentAge?.key || "unknown",
       population: this.state.population.toNumber(),
       resources: Object.fromEntries(
-        Object.entries(this.state.resources).map(([k, v]) => [k, v.toString()]),
+        Object.entries(this.state.resources).map(([k, v]) => [
+          k,
+          (v as ExpNumber).toString(),
+        ]),
       ) as Record<string, string>,
-      buildings: { ...this.state.builtBuildings } as Record<
-        BuildingKey,
-        number
-      >,
+      buildings: Object.entries(this.state.builtBuildings).map(
+        ([building, count]) => ({
+          building: building as BuildingKey,
+          count: count ?? 0,
+        }),
+      ),
+      units: Object.entries(this.state.unitCounts)
+        .filter(([, count]) => count.gt(ExpNumber.ZERO))
+        .map(([unit, count]) => ({ unit, count: count.toString() })),
       productionRates: Object.fromEntries(
         producerResourceKeys.map((key) => [
           key,
@@ -340,7 +450,7 @@ export class GameSimulation {
       ) as Record<string, string>,
       battlesWon: this.state.defeatedEncounters.length,
       totalBuildings: Object.values(this.state.builtBuildings).reduce(
-        (sum, count) => sum + count,
+        (sum, count) => sum + (count ?? 0),
         0,
       ),
       militaryPower: this.state.getArmyPower().toNumber(),

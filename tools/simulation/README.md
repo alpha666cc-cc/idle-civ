@@ -70,12 +70,11 @@ npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
 - `--building <key>`: Building key for buildingCount objective
 - `--age <id>`: Age ID for ageReach objective (e.g., age-1)
 - `--battle <id>`: Encounter ID for battleVictory objective
-- `--actions <rate>`: Actions per second (default: 10)
-- `--skip <seconds>`: Skip interval in seconds (default: 60)
 - `--max-time <seconds>`: Maximum simulation time (default: 3600)
 - `--seed <number>`: Random seed (default: 42)
 - `--output <file>`: Output file for results (JSON)
 - `--no-snapshots`: Disable snapshot recording
+- `--verbose`: Enable verbose per-action logging (gathered amounts, builds, worker moves, battles)
 
 #### Strategy Comparison (`npm run simulate:compare`)
 
@@ -85,9 +84,7 @@ npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
 - `--building <key>`: Building key for buildingCount objective
 - `--age <id>`: Age ID for ageReach objective
 - `--battle <id>`: Encounter ID for battleVictory objective
-- `--actions <rate>`: Actions per second (default: 10)
-- `--skip <seconds>`: Skip interval in seconds (default: 60)
-- `----max-time <seconds>`: Maximum simulation time (default: 3600)
+- `--max-time <seconds>`: Maximum simulation time (default: 3600)
 - `--seed <number>`: Random seed (default: 42)
 - `--output <file>`: Output file for results (JSON)
 - `--generations <number>`: Number of evolutionary generations (default: 1)
@@ -98,8 +95,12 @@ npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
 
 ### Action Model
 
-- **First age**: 10 actions/second (granular decisions)
-- **Later ages**: Batch actions → skip 1 minute → repeat
+- **One action per second, then one tick** — each loop iteration executes at most
+  one strategy action, then advances the game by one `tick()` (one second).
+- **Gather actions model 10 clicks** — one gather action loops the engine's
+  `gather(resource)` `gatherClicksPerAction` times (default 10), adding ten
+  `computeClickGain()` amounts and counting ten production clicks (toward click
+  achievements, e.g. the 100-click milestone); the gathered amount is logged.
 - **Actions include**: gather resources, assign workers, build buildings, launch battles
 
 ### Milestones
@@ -129,8 +130,7 @@ const strategy = getStrategy("balanced");
 const result = runSimulation(strategy, {
   seed: 42,
   objective: { type: "timeLimit", seconds: 3600 },
-  actionRate: 10,
-  skipInterval: 60,
+  gatherClicksPerAction: 10,
   maxGameTime: 3600,
   recordSnapshots: true,
 });

@@ -13,8 +13,7 @@ const strategy1 = getStrategy("balanced");
 const result1 = runSimulation(strategy1, {
   seed: 42,
   objective: { type: "timeLimit", seconds: 60 },
-  actionRate: 10,
-  skipInterval: 10,
+  gatherClicksPerAction: 10,
   maxGameTime: 60,
   recordSnapshots: true,
 });
@@ -31,8 +30,7 @@ const strategy2 = getStrategy("production");
 const result2 = runSimulation(strategy2, {
   seed: 42,
   objective: { type: "timeLimit", seconds: 30 },
-  actionRate: 10,
-  skipInterval: 10,
+  gatherClicksPerAction: 10,
   maxGameTime: 30,
   recordSnapshots: false,
 });
