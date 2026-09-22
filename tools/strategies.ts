@@ -13,6 +13,7 @@ import {
   type SimulationAction,
   type SimulationContext,
   type MilestoneEvent,
+  isResourceGatherable,
 } from "./simulation.js";
 import {
   producerResourceKeys,
@@ -87,50 +88,52 @@ abstract class BaseStrategy implements SimulationStrategy {
     ratios: WorkerRatios,
   ): SimulationAction | null {
     const total = Object.values(ratios).reduce((sum, r) => sum + r, 0);
-    const available = state.availableWorkers;
-    const assigned = state.assignedWorkers;
+    const available = state.availableWorkers; // always integer from engine
+    const assigned = state.assignedWorkers; // always integer from engine
 
     if (available <= 0 || total === 0) return null;
 
-    // Calculate target assignments for all production resources
+    const totalWorkers = assigned + available;
+
+    // Calculate target assignments for all production resources (integer floors)
     const targets: Record<ProductionResourceKey, number> = {
-      food: Math.floor((ratios.food / total) * (assigned + available)),
-      wood: Math.floor((ratios.wood / total) * (assigned + available)),
-      stone: Math.floor((ratios.stone / total) * (assigned + available)),
-      gold: Math.floor((ratios.gold / total) * (assigned + available)),
-      military: Math.floor((ratios.military / total) * (assigned + available)),
-      science: Math.floor((ratios.science / total) * (assigned + available)),
-      metalwork: Math.floor((ratios.metalwork / total) * (assigned + available)),
-      trade: Math.floor((ratios.trade / total) * (assigned + available)),
+      food: Math.floor((ratios.food / total) * totalWorkers),
+      wood: Math.floor((ratios.wood / total) * totalWorkers),
+      stone: Math.floor((ratios.stone / total) * totalWorkers),
+      gold: Math.floor((ratios.gold / total) * totalWorkers),
+      military: Math.floor((ratios.military / total) * totalWorkers),
+      science: Math.floor((ratios.science / total) * totalWorkers),
+      metalwork: Math.floor((ratios.metalwork / total) * totalWorkers),
+      trade: Math.floor((ratios.trade / total) * totalWorkers),
     };
 
     // Distribute remainder to food
-    const targetAssigned = Object.values(targets).reduce((sum, t) => sum + t, 0);
-    targets.food += (assigned + available) - targetAssigned;
+    const targetAssigned = Object.values(targets).reduce(
+      (sum, t) => sum + t,
+      0,
+    );
+    targets.food += totalWorkers - targetAssigned;
 
-    // Find resource needing most adjustment (only assign, don't unassign during initial setup)
-    // This prevents oscillation when we have few workers
+    // Find resource needing most workers (only assign, don't unassign — prevents oscillation)
     let bestResource: ProductionResourceKey = "food";
     let bestDiff = 0;
 
     for (const resource of producerResourceKeys as ProductionResourceKey[]) {
-      const current = state.workers[resource]?.toNumber() || 0;
+      const current = Math.round(state.workers[resource]?.toNumber() || 0);
       const target = targets[resource] || 0;
       const diff = target - current;
 
-      // Prioritize assigning workers (positive diff) over unassigning (negative diff)
-      // This prevents oscillation when we have limited workers
       if (diff > 0 && diff > bestDiff) {
         bestDiff = diff;
         bestResource = resource;
       }
     }
 
-    // If no resources need workers, don't unassign anyone (prevents oscillation)
     if (bestDiff <= 0) {
       return null;
     }
 
+    // bestDiff is already an integer (integer target minus integer current)
     return { type: "assignWorker", resource: bestResource, count: bestDiff };
   }
 
@@ -170,14 +173,18 @@ abstract class BaseStrategy implements SimulationStrategy {
       }
     }
 
-    // Priority 2: Assign workers
+    // Priority 2: Buy affordable unlocked upgrades
+    const upgradeAction = this.getBestUpgrade(state);
+    if (upgradeAction) return upgradeAction;
+
+    // Priority 3: Assign workers
     const workerAction = this.assignWorkersByRatio(
       state,
       this.getWorkerRatios(),
     );
     if (workerAction) return workerAction;
 
-    // Priority 3: Build buildings (try to build multiple if affordable)
+    // Priority 4: Build buildings (try to build multiple if affordable)
     const building = this.findBestBuilding(state, this.getBuildingPriority());
     if (building) {
       // Check how many we can afford
@@ -188,7 +195,7 @@ abstract class BaseStrategy implements SimulationStrategy {
       }
     }
 
-    // Priority 4: Gather resources
+    // Priority 5: Gather resources
     const resourceToGather = this.getResourceToGather(state);
     if (resourceToGather) {
       return { type: "gather", resource: resourceToGather };
@@ -198,12 +205,33 @@ abstract class BaseStrategy implements SimulationStrategy {
     return null;
   }
 
-  protected getResourceToGather(state: CivilizationState): string | null {
-    // Gather the resource with lowest production rate
-    let lowestResource: ProductionResourceKey = "food";
-    let lowestRate = state.computeResourceRate("food");
+  /**
+   * Find the cheapest affordable unlocked upgrade.
+   */
+  protected getBestUpgrade(state: CivilizationState): SimulationAction | null {
+    // upgradeDefinitions is not directly accessible here — we use state methods
+    // Try to buy the cheapest affordable upgrade by scanning known upgrade ids
+    // We rely on state.getUpgradeFailureReason being null for buyable ones
+    const candidates = state.getAffordableUpgrades?.() ?? [];
+    if (candidates.length > 0) {
+      return { type: "buyUpgrade", upgradeId: candidates[0] };
+    }
+    return null;
+  }
 
-    for (const resource of producerResourceKeys as ProductionResourceKey[]) {
+  protected getResourceToGather(state: CivilizationState): string | null {
+    // Only consider resources that are currently unlocked
+    const available = (producerResourceKeys as ProductionResourceKey[]).filter(
+      (key) => isResourceGatherable(state, key),
+    );
+
+    if (available.length === 0) return "food";
+
+    // Gather the unlocked resource with lowest production rate
+    let lowestResource = available[0];
+    let lowestRate = state.computeResourceRate(lowestResource);
+
+    for (const resource of available) {
       const rate = state.computeResourceRate(resource);
       if (rate.lt(lowestRate)) {
         lowestRate = rate;

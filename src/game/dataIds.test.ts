@@ -109,6 +109,9 @@ describe("static content guids", () => {
   });
 
   it("applies town hall capacity grants to other building capacities", () => {
+    const fresh = new CivilizationState();
+    expect(fresh.getBuildingMax("house").toNumber()).toBeCloseTo(10, 9);
+
     const state = new CivilizationState(
       {
         ...emptyResourceAmounts(),
@@ -131,12 +134,8 @@ describe("static content guids", () => {
     );
 
     const after = state.build("town-hall", 1);
-    // Pre-existing double count (kept, not introduced, by this milestone):
-    // build() persists the +1 grant into the stored capacity (10 -> 11) and
-    // getBuildingMax() adds the same +1 again from the definition (11 + 1).
-    // Fixing it means choosing one source of truth; until then the value is 12.
-    expect(after.getBuildingMax("barracks").toNumber()).toBeCloseTo(12, 9);
-    expect(after.getBuildingMax("university").toNumber()).toBeCloseTo(12, 9);
+    expect(after.getBuildingMax("barracks").toNumber()).toBeCloseTo(11, 9);
+    expect(after.getBuildingMax("university").toNumber()).toBeCloseTo(11, 9);
   });
 });
 

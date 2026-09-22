@@ -884,6 +884,9 @@ function App() {
       gameState.isUpgradeUnlocked(upgrade.key) &&
       !gameState.isUpgradeBought(upgrade.key),
   );
+  const boughtUpgrades = upgradeDefinitions.filter((upgrade) =>
+    gameState.isUpgradeBought(upgrade.key),
+  );
   const hasAffordableUpgrade = unlockedUpgrades.some((upgrade) =>
     gameState.hasResourcesForUpgrade(upgrade.key),
   );
@@ -1472,46 +1475,66 @@ function App() {
                       return gameState.getBuildingCount("market") > 0;
                     return true;
                   })
-                  .map(({ key, label, icon: Icon, tone }) => (
-                    <div className="gather-card" key={key}>
-                      <button
-                        className={`gather-button ${tone}`}
-                        data-production-click
-                        onClick={() => gatherResource(key)}
-                      >
-                        <span className="gather-card-icon">
-                          <Icon size={18} strokeWidth={1.8} />
-                        </span>
-                        <span>
-                          <strong>{label}</strong>
-                          <small>{fmt(resourceAmounts[key])} stored</small>
-                        </span>
-                        <span className="gather-action">
-                          +{fmt(gameState.computeClickGain(key))}
-                        </span>
-                      </button>
-                      <div
-                        className="worker-controls"
-                        aria-label={`${label} workers`}
-                      >
-                        <button
-                          onClick={() => changeWorkers(key, -1)}
-                          disabled={workers[key] === ExpNumber.ZERO}
-                          aria-label={`Remove ${label} worker`}
-                        >
-                          −
-                        </button>
-                        <span>{fmt(workers[key])}</span>
-                        <button
-                          onClick={() => changeWorkers(key, 1)}
-                          disabled={availableWorkers === 0}
-                          aria-label={`Assign ${label} worker`}
-                        >
-                          +
-                        </button>
+                  .map(({ key, label, icon: Icon, tone }) => {
+                    const canGather = key in workers;
+                    return (
+                      <div className="gather-card" key={key}>
+                        {canGather ? (
+                          <button
+                            className={`gather-button ${tone}`}
+                            data-production-click
+                            onClick={() => gatherResource(key)}
+                          >
+                            <span className="gather-card-icon">
+                              <Icon size={18} strokeWidth={1.8} />
+                            </span>
+                            <span>
+                              <strong>{label}</strong>
+                              <small>{fmt(resourceAmounts[key])} stored</small>
+                            </span>
+                            <span className="gather-action">
+                              +{fmt(gameState.computeClickGain(key))}
+                            </span>
+                          </button>
+                        ) : (
+                          <div className={`gather-button ${tone}`}>
+                            <span className="gather-card-icon">
+                              <Icon size={18} strokeWidth={1.8} />
+                            </span>
+                            <span>
+                              <strong>{label}</strong>
+                              <small>{fmt(resourceAmounts[key])} stored</small>
+                            </span>
+                            <span className="gather-action">
+                              {formatResourceRate(key)}
+                            </span>
+                          </div>
+                        )}
+                        {canGather && (
+                          <div
+                            className="worker-controls"
+                            aria-label={`${label} workers`}
+                          >
+                            <button
+                              onClick={() => changeWorkers(key, -1)}
+                              disabled={workers[key] === ExpNumber.ZERO}
+                              aria-label={`Remove ${label} worker`}
+                            >
+                              −
+                            </button>
+                            <span>{fmt(workers[key])}</span>
+                            <button
+                              onClick={() => changeWorkers(key, 1)}
+                              disabled={availableWorkers === 0}
+                              aria-label={`Assign ${label} worker`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </section>
           )}
@@ -1525,10 +1548,12 @@ function App() {
                 </div>
               </div>
               {unlockedUpgrades.length === 0 ? (
-                <p className="tab-placeholder-copy">
-                  Building upgrades and capacity expansions will unlock as your
-                  settlement advances.
-                </p>
+                boughtUpgrades.length === 0 && (
+                  <p className="tab-placeholder-copy">
+                    Building upgrades and capacity expansions will unlock as
+                    your settlement advances.
+                  </p>
+                )
               ) : (
                 <div className="upgrade-grid">
                   {unlockedUpgrades.map((upgrade) => (
@@ -1565,6 +1590,36 @@ function App() {
                     </div>
                   ))}
                 </div>
+              )}
+              {boughtUpgrades.length > 0 && (
+                <>
+                  <div className="workbench-heading upgrade-history-heading">
+                    <div>
+                      <p className="eyebrow">Permanent improvements</p>
+                      <h4>Adopted upgrades</h4>
+                    </div>
+                    <span>{boughtUpgrades.length} bought</span>
+                  </div>
+                  <div className="upgrade-grid">
+                    {boughtUpgrades.map((upgrade) => (
+                      <div
+                        className="upgrade-card upgrade-card-bought"
+                        key={upgrade.key}
+                      >
+                        <div className="upgrade-heading">
+                          <strong>{upgrade.name}</strong>
+                          <small>{upgrade.description}</small>
+                        </div>
+                        <ul className="upgrade-effects">
+                          {upgrade.bonuses.map((bonus, index) => (
+                            <li key={index}>{describeUpgradeBonus(bonus)}</li>
+                          ))}
+                        </ul>
+                        <span className="upgrade-status">Adopted</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </section>
           )}

@@ -146,28 +146,49 @@ export class GameSimulation {
     // Initial burst: gather wood and build a house, then gather food and build people
     // This sets up the initial population and workers
 
-    this.log("Initial houseCapacity:", this.state.resources.houseCapacity.toString());
-    this.log("Initial peopleCapacity:", this.state.resources.peopleCapacity.toString());
+    this.log(
+      "Initial houseCapacity:",
+      this.state.resources.houseCapacity.toString(),
+    );
+    this.log(
+      "Initial peopleCapacity:",
+      this.state.resources.peopleCapacity.toString(),
+    );
     this.log("Initial canBuild house?", this.state.canBuild("house"));
     this.log("Initial canBuild people?", this.state.canBuild("people"));
 
     // Step 1: Gather wood until we can build a house (one 10-click action/sec)
-    while (!this.state.canBuild("house") && this.state.resources.wood.lt(ExpNumber.fromNumber(10))) {
+    while (
+      !this.state.canBuild("house") &&
+      this.state.resources.wood.lt(ExpNumber.fromNumber(10))
+    ) {
       this.executeAction({ type: "gather", resource: "wood" });
       this.gameTime += 1;
     }
 
-    this.log("After wood gather - houseCapacity:", this.state.resources.houseCapacity.toString());
-    this.log("After wood gather - canBuild house?", this.state.canBuild("house"));
+    this.log(
+      "After wood gather - houseCapacity:",
+      this.state.resources.houseCapacity.toString(),
+    );
+    this.log(
+      "After wood gather - canBuild house?",
+      this.state.canBuild("house"),
+    );
 
     // Step 2: Build a house
     if (this.state.canBuild("house")) {
       this.state = this.state.build("house");
-      this.log("Built a house, houseCapacity now:", this.state.resources.houseCapacity.toString());
+      this.log(
+        "Built a house, houseCapacity now:",
+        this.state.resources.houseCapacity.toString(),
+      );
     }
 
     // Step 3: Gather food until we can build a person (one 10-click action/sec)
-    while (!this.state.canBuild("people") && this.state.resources.food.lt(ExpNumber.fromNumber(10))) {
+    while (
+      !this.state.canBuild("people") &&
+      this.state.resources.food.lt(ExpNumber.fromNumber(10))
+    ) {
       this.executeAction({ type: "gather", resource: "food" });
       this.gameTime += 1;
     }
@@ -177,7 +198,10 @@ export class GameSimulation {
       const { state: newState, count } = this.buildMaxBuilding("people");
       if (count > 0) {
         this.state = newState;
-        this.log(`Built ${count} people, population now:`, this.state.population.toString());
+        this.log(
+          `Built ${count} people, population now:`,
+          this.state.population.toString(),
+        );
       }
     }
 
@@ -232,7 +256,8 @@ export class GameSimulation {
         break;
       }
       case "assignWorker": {
-        const assignedBefore = this.state.workers[action.resource]?.toString() ?? "0";
+        const assignedBefore =
+          this.state.workers[action.resource]?.toString() ?? "0";
         this.state = this.state.assignWorker(action.resource, action.count);
         this.log(
           `assign ${action.count} workers to ${action.resource}`,
@@ -241,7 +266,8 @@ export class GameSimulation {
         break;
       }
       case "unassignWorker": {
-        const assignedBefore = this.state.workers[action.resource]?.toString() ?? "0";
+        const assignedBefore =
+          this.state.workers[action.resource]?.toString() ?? "0";
         this.state = this.state.unassignWorker(action.resource, action.count);
         this.log(
           `unassign ${action.count} workers from ${action.resource}`,
@@ -252,16 +278,24 @@ export class GameSimulation {
       case "build": {
         const before = this.state.builtBuildings[action.building] || 0;
         this.state = this.buildBuilding(action.building, action.count);
-        const built = (this.state.builtBuildings[action.building] || 0) - before;
+        const built =
+          (this.state.builtBuildings[action.building] || 0) - before;
         this.log(
           `build ${action.building}`,
           `built ${built}/${action.count} (total ${this.state.builtBuildings[action.building] || 0})`,
         );
         break;
       }
-      case "buyUpgrade":
-        this.log(`buyUpgrade ${action.upgradeId} (not implemented in engine)`);
+      case "buyUpgrade": {
+        const before = this.state.boughtUpgrades.length;
+        this.state = this.state.buyUpgrade(action.upgradeId);
+        const bought = this.state.boughtUpgrades.length > before;
+        this.log(
+          `buyUpgrade ${action.upgradeId}`,
+          bought ? "bought" : "not affordable or locked (skipped)",
+        );
         break;
+      }
       case "launchBattle": {
         const battlesBefore = this.state.defeatedEncounters.length;
         this.state = this.launchBattle(action.encounterId);
@@ -323,7 +357,10 @@ export class GameSimulation {
    * Build as many of a building as possible right now.
    * Returns the new state and how many were actually built.
    */
-  private buildMaxBuilding(building: BuildingKey): { state: CivilizationState; count: number } {
+  private buildMaxBuilding(building: BuildingKey): {
+    state: CivilizationState;
+    count: number;
+  } {
     let state = this.state;
     let count = 0;
 
@@ -514,4 +551,27 @@ export class GameSimulation {
  */
 export function createInitialState(): CivilizationState {
   return new CivilizationState();
+}
+
+/**
+ * Returns true only if the given production resource is currently unlocked
+ * (i.e. the player has built at least one of the required building).
+ * Mirrors the filter in App.tsx's gather-grid.
+ */
+export function isResourceGatherable(
+  state: CivilizationState,
+  key: string,
+): boolean {
+  switch (key) {
+    case "military":
+      return state.getBuildingCount("barracks") > 0;
+    case "science":
+      return state.getBuildingCount("university") > 0;
+    case "metalwork":
+      return state.getBuildingCount("smithy") > 0;
+    case "trade":
+      return state.getBuildingCount("market") > 0;
+    default:
+      return true; // food, wood, stone, gold always available
+  }
 }

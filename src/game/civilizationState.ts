@@ -121,7 +121,10 @@ const activeBonusCaches = new WeakMap<
   readonly string[],
   WeakMap<
     readonly string[],
-    WeakMap<readonly string[], WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>>
+    WeakMap<
+      readonly string[],
+      WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>
+    >
   >
 >();
 
@@ -280,13 +283,7 @@ export class CivilizationState {
     freeUpgrades = false,
     boughtResearch: readonly string[] = [],
   ) {
-    // Apply building capacity effects for initial buildings (don't mutate input)
-    const adjustedResources = this.applyBuildingCapacityEffects(
-      { ...resources },
-      builtBuildings,
-    );
-
-    this.resources = adjustedResources;
+    this.resources = resources;
     this.workers = workers;
     this.builtBuildings = builtBuildings;
     this.resourceFactors = resourceFactors;
@@ -308,32 +305,20 @@ export class CivilizationState {
     this.resources.population = ExpNumber.fromNumber(
       this.buildingCount("people"),
     );
-  }
 
-  /**
-   * Apply capacity-providing building effects for the given building counts.
-   * This ensures the initial state has correct capacities based on starting buildings.
-   */
-  private applyBuildingCapacityEffects(
-    resources: ResourceAmounts,
-    builtBuildings: Partial<Record<BuildingKey, number>>,
-  ): ResourceAmounts {
-    for (const [buildingKey, count] of Object.entries(builtBuildings)) {
-      if (count === 0) continue;
-
-      const building = buildingDefinitions.find(
-        ({ key }) => key === buildingKey,
-      );
-      if (!building || !building.effects?.capacityProvided) continue;
-
-      for (const effect of building.effects.capacityProvided) {
+    // Fresh states start with their default town hall's capacity grants.
+    if (this.buildingCount("town-hall") > 0) {
+      for (const effect of buildingDefinitions.find(
+        ({ key }) => key === "town-hall",
+      )?.effects.capacityProvided ?? []) {
         const targetKey = capacityKey(effect.building);
-        resources[targetKey] = resources[targetKey].add(
-          effect.perBuilding.mul(ExpNumber.fromNumber(count)),
-        );
+        if (this.resources[targetKey].isZero) {
+          this.resources[targetKey] = effect.perBuilding.mul(
+            ExpNumber.fromNumber(this.buildingCount("town-hall")),
+          );
+        }
       }
     }
-    return resources;
   }
 
   get population(): ExpNumber {
@@ -350,13 +335,16 @@ export class CivilizationState {
 
   get assignedWorkers(): number {
     return Object.values(this.workers).reduce(
-      (total, count) => total + count.toNumber(),
+      (total, count) => total + Math.round(count.toNumber()),
       0,
     );
   }
 
   get availableWorkers(): number {
-    return Math.floor(this.population.toNumber()) - this.assignedWorkers;
+    return Math.max(
+      0,
+      Math.floor(this.population.toNumber()) - this.assignedWorkers,
+    );
   }
 
   getWorkerProduction(resourceKey: ProductionResourceKey): WorkerProduction {
@@ -376,7 +364,8 @@ export class CivilizationState {
   }
 
   gather(resourceKey: ResourceKey): CivilizationState {
-    if (!(resourceKey in this.resources)) return this;
+    if (!(resourceKey in this.resources) || !(resourceKey in this.workers))
+      return this;
     const amount = this.computeClickGain(resourceKey);
     return this.withStatistics({
       ...this.statistics,
@@ -404,7 +393,7 @@ export class CivilizationState {
   ): CivilizationState {
     if (!(resourceKey in this.workers) || this.availableWorkers <= 0)
       return this;
-    const actualCount = Math.min(count, this.availableWorkers);
+    const actualCount = Math.min(Math.floor(count), this.availableWorkers);
     if (actualCount <= 0) return this;
     return this.withWorkers({
       ...this.workers,
@@ -423,7 +412,10 @@ export class CivilizationState {
       this.workers[resourceKey].lte(ExpNumber.ZERO)
     )
       return this;
-    const actualCount = Math.min(count, this.workers[resourceKey].toNumber());
+    const actualCount = Math.min(
+      Math.floor(count),
+      Math.round(this.workers[resourceKey].toNumber()),
+    );
     if (actualCount <= 0) return this;
     return this.withWorkers({
       ...this.workers,
@@ -443,8 +435,8 @@ export class CivilizationState {
       Object.keys(this.workers) as ProductionResourceKey[]
     ).filter((key) => key !== "food");
     let workers = { ...this.workers };
-    let available = this.availableWorkers;
-    let remaining = count;
+    let available = this.availableWorkers; // already an integer (Math.max(0, Math.floor(...)))
+    let remaining = Math.floor(count === Infinity ? available : count);
 
     while (available > 0 && remaining > 0) {
       if (others.length === 0) {
@@ -456,16 +448,17 @@ export class CivilizationState {
 
       // Find the other resource with the minimum workers to keep others equalized
       let targetOther = others[0];
-      let minOtherCount = workers[targetOther].toNumber();
+      let minOtherCount = Math.round(workers[targetOther].toNumber());
       for (const key of others) {
-        if (workers[key].toNumber() < minOtherCount) {
-          minOtherCount = workers[key].toNumber();
+        const cnt = Math.round(workers[key].toNumber());
+        if (cnt < minOtherCount) {
+          minOtherCount = cnt;
           targetOther = key;
         }
       }
 
-      // Start with food (first 10), then ensure food is roughly 10x the next tier of other resources
-      if (workers.food.toNumber() < 10 * (minOtherCount + 1)) {
+      // Maintain food at ~10× each other resource
+      if (Math.round(workers.food.toNumber()) < 10 * (minOtherCount + 1)) {
         workers.food = workers.food.add(ExpNumber.ONE);
       } else {
         workers[targetOther] = workers[targetOther].add(ExpNumber.ONE);
@@ -525,6 +518,13 @@ export class CivilizationState {
     if (!this.freeUpgrades && !this.hasResourcesForUpgrade(upgradeId))
       return "resources";
     return null;
+  }
+
+  /** Returns ids of every upgrade that is unlocked and currently affordable, in definition order. */
+  getAffordableUpgrades(): string[] {
+    return upgradeDefinitions
+      .filter(({ key }) => this.getUpgradeFailureReason(key) === null)
+      .map(({ key }) => key);
   }
 
   /**
@@ -874,6 +874,7 @@ export class CivilizationState {
   }
 
   computeClickGain(resourceKey: ResourceKey): ExpNumber {
+    if (!(resourceKey in this.workers)) return ExpNumber.ZERO;
     const factors = this.getProductionFactors(resourceKey);
     const definition = productionDefinitions.find(
       ({ key }) => key === resourceKey,
@@ -965,19 +966,6 @@ export class CivilizationState {
     // Effective capacity: the stored base amount plus capacity provided by other buildings,
     // then multiplied by every capacity multiplier in force (§13.7 decision 3).
     let max = this.resources[capacity];
-
-    // Add capacity provided by other buildings
-    for (const otherBuilding of buildingDefinitions) {
-      if (otherBuilding.key === buildingKey) continue;
-      const otherCount = this.buildingCount(otherBuilding.key);
-      if (otherCount === 0) continue;
-      const effects = this.getBuildingEffects(otherBuilding.key, otherCount);
-      for (const capacityProvided of effects.capacityProvided ?? []) {
-        if (capacityProvided.building === buildingKey) {
-          max = max.add(capacityProvided.perBuilding);
-        }
-      }
-    }
 
     // Apply capacity multipliers
     for (const [, bonus] of this.activeBonuses()) {
@@ -1602,7 +1590,13 @@ export class CivilizationState {
     if (!byUpgrades) {
       byUpgrades = new WeakMap<
         readonly string[],
-        WeakMap<readonly string[], WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>>
+        WeakMap<
+          readonly string[],
+          WeakMap<
+            readonly string[],
+            WeakMap<readonly string[], ActiveBonusList>
+          >
+        >
       >();
       activeBonusCaches.set(this.boughtUpgrades, byUpgrades);
     }
