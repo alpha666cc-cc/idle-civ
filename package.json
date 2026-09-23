@@ -11,6 +11,7 @@
     "test:cross-language": "python tools/tests/offline_gain_test.py",
     "test:watch": "vitest",
     "preview": "vite preview",
+    "gen:balance": "tsx tools/gen/balanceSheet.ts",
     "simulate:battle": "node --experimental-strip-types temp/min-army.mjs",
     "helper:battle": "node helper/serve-battle-simulator.mjs",
     "simulate": "tsx tools/run-simulation.mjs",

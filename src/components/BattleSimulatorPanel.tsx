@@ -116,11 +116,16 @@ export default function BattleSimulatorPanel({
     // Let the button paint before the synchronous search blocks the thread.
     window.setTimeout(() => {
       const units = candidates.filter((unit) => selected.has(unit.key));
-      const outcome = solveMinimumArmy(battle.key, units, {
-        getCost: (unitId, count) => costFromScratch(gameState, unitId, count),
-        wins: (composition) =>
-          winsWithStats(gameState, battle.key, composition),
-      }, selected.size >= 2);
+      const outcome = solveMinimumArmy(
+        battle.key,
+        units,
+        {
+          getCost: (unitId, count) => costFromScratch(gameState, unitId, count),
+          wins: (composition) =>
+            winsWithStats(gameState, battle.key, composition),
+        },
+        selected.size >= 2,
+      );
       setResult(outcome);
       setFailed(outcome === null);
       setRunning(false);
