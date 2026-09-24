@@ -28,6 +28,12 @@ describe("ExpNumber cancellation", () => {
     expect(huge.toNumber()).toBe(Infinity);
   });
 
+  it("rounds to the nearest whole number", () => {
+    expect(ExpNumber.fromNumber(10.4).round().toNumber()).toBe(10);
+    expect(ExpNumber.fromNumber(10.6).round().toNumber()).toBe(11);
+    expect(ExpNumber.fromNumber(240.0000000009).round().toNumber()).toBe(240);
+  });
+
   it("never turns a non-zero result into zero", () => {
     const tiny = ExpNumber.from("1e-30").sub(ExpNumber.from("9e-31"));
     expect(tiny.gt(ExpNumber.ZERO)).toBe(true);

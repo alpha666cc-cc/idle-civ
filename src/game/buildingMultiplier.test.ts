@@ -167,6 +167,13 @@ describe("building resource bonuses", () => {
     expect(bought.getAttributeValue("farmCapacity").toNumber()).toBe(10);
   });
 
+  it("keeps fractional capacity grants internal to whole build limits", () => {
+    const state = richState({ farm: 9 }).upgradeBuildingLimit("farm", 0.75);
+
+    expect(state.resources.farmCapacity.toNumber()).toBe(10.75);
+    expect(state.getBuildingMax("farm").toNumber()).toBe(10);
+  });
+
   it("raises power by +1 per enhancer upgrade and x2 when the first age ends", () => {
     // Each farm-enhancer-N upgrade grants +1 farmPower (a flat on the power
     // stat); the age-1 transition grants a global buildingPower x2 that folds

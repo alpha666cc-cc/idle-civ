@@ -60,9 +60,10 @@ export const goldToResource = (
  * Formula: 1 + log₁₀(trade + 1)
  */
 export const calculateTradeMultiplier = (tradePower: ExpNumber): ExpNumber => {
-  return ExpNumber.ONE.add(
-    ExpNumber.fromNumber(Math.log10(tradePower.toNumber() + 1)),
-  );
+  // Keep the logarithm in ExpNumber space; toNumber() would overflow to Infinity
+  // for valid values above the JavaScript double range.
+  const logarithm = tradePower.add(ExpNumber.ONE).log10();
+  return ExpNumber.ONE.add(ExpNumber.fromNumber(logarithm));
 };
 
 /**

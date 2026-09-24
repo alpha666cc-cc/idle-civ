@@ -20,7 +20,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "military",
-        "value": 1.05
+        "value": 1.5
       },
       {
         "type": "attributeMultiplier",
@@ -70,7 +70,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "farmPower",
+        "destination": "wood",
         "value": 4
       },
       {

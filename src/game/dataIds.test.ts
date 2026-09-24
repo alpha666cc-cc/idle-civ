@@ -99,6 +99,13 @@ describe("static content guids", () => {
     expect(snapshotGuids([])).toEqual({});
   });
 
+  it("uses factor 8 for every unit cost entry", () => {
+    const factors = unitDefinitions.flatMap(({ costs }) =>
+      costs.map(({ factor }) => factor),
+    );
+    expect([...new Set(factors)]).toEqual([8]);
+  });
+
   it("keeps multiple capacity effect entries instead of overwriting them", () => {
     const townHall = buildingDefinitions.find(({ key }) => key === "town-hall");
     expect(townHall).toBeDefined();

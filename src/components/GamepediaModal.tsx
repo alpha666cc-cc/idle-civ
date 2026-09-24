@@ -43,7 +43,11 @@ import {
   type ResourceKey,
 } from "../game/attributes";
 import { ExpNumber } from "../game/expNumber";
-import { formatNumber, type NumberFormat } from "../game/numberFormat";
+import {
+  formatNumber,
+  formatWholeNumber,
+  type NumberFormat,
+} from "../game/numberFormat";
 
 type GamepediaModalProps = {
   gameState: CivilizationState;
@@ -209,6 +213,8 @@ export default function GamepediaModal({
 }: GamepediaModalProps) {
   const formatAmount = (amount: ExpNumber | number): string =>
     formatNumber(amount, numberFormat);
+  const formatCount = (amount: ExpNumber | number): string =>
+    formatWholeNumber(amount, numberFormat);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] =
     useState<GamepediaCategory>("resource");
@@ -459,13 +465,13 @@ export default function GamepediaModal({
               <div className="gamepedia-effect-copy">
                 {renderReference(effect.building)}
                 <span className="gamepedia-effect-meta">
-                  +{formatAmount(effect.perBuilding)}{" "}
+                  +{formatCount(effect.perBuilding)}{" "}
                   {capacityLabel(effect.building)} per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
                 +
-                {formatAmount(
+                {formatCount(
                   totalEffects.capacityProvided?.[index]?.perBuilding ??
                     effect.perBuilding,
                 )}{" "}
@@ -485,7 +491,7 @@ export default function GamepediaModal({
               </span>
             </div>
             <strong className="gamepedia-effect-total">
-              {count} / {formatAmount(gameState.getBuildingMax(building.key))}
+              {count} / {formatCount(gameState.getBuildingMax(building.key))}
             </strong>
           </div>
         </div>
@@ -575,7 +581,7 @@ export default function GamepediaModal({
               </div>
               <div className="gamepedia-stat">
                 <span>Worker capacity</span>
-                <strong>{formatAmount(gameState.maximumPopulation)}</strong>
+                <strong>{formatCount(gameState.maximumPopulation)}</strong>
               </div>
             </div>
           </>
@@ -600,7 +606,7 @@ export default function GamepediaModal({
                 <div className="gamepedia-stat">
                   <span>Workers</span>
                   <strong>
-                    {formatNumber(workerProduction.workers, numberFormat)}
+                    {formatCount(workerProduction.workers)}
                   </strong>
                 </div>
               )}
@@ -707,7 +713,7 @@ export default function GamepediaModal({
         <div className="gamepedia-stats">
           <div className="gamepedia-stat">
             <span>Current</span>
-            <strong>{formatAmount(resources[entry.object.id] ?? 0)}</strong>
+            <strong>{formatCount(resources[entry.object.id] ?? 0)}</strong>
           </div>
         </div>
         {renderRelated(entry)}

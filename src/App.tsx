@@ -56,6 +56,7 @@ import { encounterDefinitions } from "./game/encounters";
 import {
   formatDuration,
   formatNumber,
+  formatWholeNumber,
   type NumberFormat,
 } from "./game/numberFormat";
 import {
@@ -400,6 +401,8 @@ function App() {
     .filter((entry): entry is AchievementDefinition => entry !== undefined);
 
   const fmt = (n: ExpNumber | number) => formatNumber(n, numberFormat);
+  const fmtCount = (n: ExpNumber | number) =>
+    formatWholeNumber(n, numberFormat);
   const fmtSummary = (n: ExpNumber | number): string => fmt(n);
   const formatResourceRate = (key: ResourceKey): string => {
     const rate = gameState.computeResourceRate(key);
@@ -1165,12 +1168,12 @@ function App() {
                   <span>{label}</span>
                   <strong>
                     {key === "population"
-                      ? `${fmtSummary(availableWorkers)}/${fmtSummary(population)}`
+                      ? `${fmtCount(availableWorkers)}/${fmtCount(population)}`
                       : fmtSummary(resourceAmounts[key])}
                   </strong>
                   {key === "population" ? (
                     <small className="resource-note">
-                      capacity {fmtSummary(maximumPopulation)}
+                      capacity {fmtCount(maximumPopulation)}
                     </small>
                   ) : (
                     <small className={`resource-rate ${resourceRateTone(key)}`}>
@@ -1467,7 +1470,7 @@ function App() {
                   <h3>Produce resources</h3>
                 </div>
                 <span>
-                  <Users size={14} /> {fmt(availableWorkers)} workers available
+                  <Users size={14} /> {fmtCount(availableWorkers)} workers available
                 </span>
               </div>
               <div className="gather-grid">
@@ -1530,7 +1533,7 @@ function App() {
                             >
                               −
                             </button>
-                            <span>{fmt(workers[key])}</span>
+                            <span>{fmtCount(workers[key])}</span>
                             <button
                               onClick={() => changeWorkers(key, 1)}
                               disabled={availableWorkers === 0}
@@ -1774,7 +1777,7 @@ function App() {
                 <div className="trade-metric">
                   <span className="metric-label">Trade Multiplier</span>
                   <span className="metric-value">
-                    ×{fmt(gameState.getTradeMultiplier().toNumber())}
+                    ×{fmt(gameState.getTradeMultiplier())}
                   </span>
                 </div>
                 <div className="trade-metric">
@@ -1956,12 +1959,12 @@ function App() {
               <div className="stat-grid">
                 <div className="stat-card">
                   <span>Buildings built (all time)</span>
-                  <strong>{fmt(statistics.buildingsBuilt)}</strong>
+                  <strong>{fmtCount(statistics.buildingsBuilt)}</strong>
                 </div>
                 <div className="stat-card">
                   <span>Buildings standing</span>
                   <strong>
-                    {fmt(
+                    {fmtCount(
                       Object.values(gameState.builtBuildings).reduce(
                         (sum, count) => sum + count,
                         0,
@@ -1975,7 +1978,7 @@ function App() {
                   {builtByKeyRows.map(({ key, name, count }) => (
                     <div className="stat-row" key={key}>
                       <span>{name}</span>
-                      <strong>{fmt(count)}</strong>
+                      <strong>{fmtCount(count)}</strong>
                     </div>
                   ))}
                 </div>
@@ -2179,8 +2182,8 @@ function App() {
                           atCapacity ? "Maximum capacity reached" : undefined
                         }
                       >
-                        {buildingCount}/
-                        {fmt(gameState.getBuildingMax(building.key))}
+                        {fmtCount(buildingCount)}/
+                        {fmtCount(gameState.getBuildingMax(building.key))}
                       </span>
                     </span>
                     <em>

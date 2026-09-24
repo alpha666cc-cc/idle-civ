@@ -385,7 +385,7 @@ export class CivilizationState {
   }
 
   get maximumPopulation(): ExpNumber {
-    return this.resources.peopleCapacity;
+    return this.resources.peopleCapacity.floor();
   }
 
   get housingCapacity(): ExpNumber {
@@ -1051,7 +1051,7 @@ export class CivilizationState {
         max = max.mul(bonus.value);
       }
     }
-    return max;
+    return max.floor();
   }
 
   /** Shared production/stat recap; the base remains distinct from bonus additions. */

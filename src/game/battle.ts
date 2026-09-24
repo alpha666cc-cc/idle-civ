@@ -148,8 +148,9 @@ const matchupMultiplier = (attacker: Fighter, target: Fighter): number => {
     multiplier *= bonusVsMultiplier;
   }
   if (attacker.domain === "air" && target.domain === "naval") multiplier *= 1.2;
-  if (attacker.domain === "naval" && target.domain === "ground")
-    multiplier *= 0.8;
+  if (attacker.domain === "naval" && target.domain === "ground") {
+    multiplier *= attacker.stats.range / 10;
+  }
   if (target.domain === "air" && attacker.stats.range <= 1) multiplier *= 0.3;
   return multiplier;
 };

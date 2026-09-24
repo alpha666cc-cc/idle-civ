@@ -275,6 +275,11 @@ export class ExpNumber {
     return ExpNumber.fromNumber(Math.ceil(this.toNumber()));
   }
 
+  round(): ExpNumber {
+    if (this.isZero || !this.isFinite || this.exponent > 308) return this;
+    return ExpNumber.fromNumber(Math.round(this.toNumber()));
+  }
+
   eq(other: ExpNumber): boolean {
     return this.compareTo(other) === 0;
   }

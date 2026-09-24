@@ -271,10 +271,10 @@ const destinationLabel = (destination: string): string => {
   return named ?? destination;
 };
 
-const describeBonus = (bonus: Bonus): string => {
+const describeBonus = (bonus: Bonus, fmt: Props["fmt"]): string => {
   const destination = String(bonus.destination);
   const stat = unitStatLabels[destination];
-  const value = bonus.value.toNumber();
+  const value = fmt(bonus.value);
   if (stat) {
     return bonus.type === "attributeMultiplier"
       ? `×${value} ${stat}`
@@ -286,12 +286,18 @@ const describeBonus = (bonus: Bonus): string => {
       return `×${value} ${label}`;
     case "attributeFlat":
       return `+${value} ${label}`;
-    case "costReductionPercent":
-      return `${Math.round(value * 100)}% cheaper ${label}`;
+    case "costReductionPercent": {
+      const percent = fmt(bonus.value.mul(ExpNumber.fromNumber(100)));
+      return `${percent}% cheaper ${label}`;
+    }
     case "costReductionFactor":
       return `${label} cost scaling −${value}`;
-    case "costReductionBase":
-      return `${label} base cost ÷${Math.round(1 / Math.max(value, 1e-9))}`;
+    case "costReductionBase": {
+      const divisor = ExpNumber.ONE.div(
+        ExpNumber.max(bonus.value, ExpNumber.fromNumber(1e-9)),
+      );
+      return `${label} base cost ÷${fmt(divisor)}`;
+    }
     case "costReductionFlat":
       return `${label} cost −${value}`;
     case "attributeDrain":
@@ -301,7 +307,10 @@ const describeBonus = (bonus: Bonus): string => {
   }
 };
 
-const describeEffects = (research: ResearchDefinition): string[] => {
+const describeEffects = (
+  research: ResearchDefinition,
+  fmt: Props["fmt"],
+): string[] => {
   const buildingReductions = research.bonuses.filter(
     (bonus) =>
       bonus.type.startsWith("costReduction") &&
@@ -309,7 +318,7 @@ const describeEffects = (research: ResearchDefinition): string[] => {
   );
   const effects = research.bonuses
     .filter((bonus) => !buildingReductions.includes(bonus))
-    .map(describeBonus);
+    .map((bonus) => describeBonus(bonus, fmt));
   if (buildingReductions.length === 0) return effects;
   const coversEveryBuilding = buildingReductions.length === buildingNames.size;
   const firstReduction = buildingReductions[0];
@@ -320,7 +329,9 @@ const describeEffects = (research: ResearchDefinition): string[] => {
   );
   const summary =
     coversEveryBuilding && samePercent
-      ? `All building costs −${firstReduction.value.toNumber() * 100}%`
+      ? `All building costs −${fmt(
+          firstReduction.value.mul(ExpNumber.fromNumber(100)),
+        )}%`
       : "Building costs reduced";
   return [summary, ...effects];
 };
@@ -330,6 +341,7 @@ const ResearchCard = ({
   research,
   gameState,
   setGameState,
+  fmt,
   onOpenGamepedia,
   highlighted,
   selected,
@@ -338,6 +350,7 @@ const ResearchCard = ({
   research: ResearchDefinition;
   gameState: CivilizationState;
   setGameState: Props["setGameState"];
+  fmt: Props["fmt"];
   onOpenGamepedia: Props["onOpenGamepedia"];
   highlighted: boolean;
   selected: boolean;
@@ -369,7 +382,7 @@ const ResearchCard = ({
         ]
       : []),
     ...conversions,
-    ...describeEffects(research),
+    ...describeEffects(research, fmt),
   ];
   const Icon: LucideIcon =
     research.category === "military" ? Castle : FlaskConical;
@@ -591,6 +604,7 @@ export default function ResearchPanel({
                 research={research}
                 gameState={gameState}
                 setGameState={setGameState}
+                fmt={fmt}
                 onOpenGamepedia={onOpenGamepedia}
                 highlighted={!selectedKey || relatedKeys.has(research.key)}
                 selected={selectedKey === research.key}

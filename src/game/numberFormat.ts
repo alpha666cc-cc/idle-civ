@@ -166,6 +166,14 @@ function parseBase(numericPart: string): ExpNumber | null {
   }
 }
 
+/** Formats a count-like value with no fractional part. */
+export function formatWholeNumber(
+  value: ExpNumber | number,
+  format: NumberFormat,
+): string {
+  return formatNumber(ExpNumber.from(value).round(), format);
+}
+
 /**
  * Formats an ExpNumber or a plain number. When the value fits in a double
  * the output matches the historical number-only behavior; beyond that range
