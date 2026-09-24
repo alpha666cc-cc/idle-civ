@@ -61,6 +61,37 @@ export interface SimulationResult {
   snapshots: SimulationSnapshot[];
   objectiveMet?: string;
   terminationReason: string;
+  events: SimulationEvent[];
+  finalProductionRates: Record<string, string>;
+  tickTiming: TickTiming;
+}
+
+/**
+ * A timestamped record of a major progression event, logged at the game-second
+ * it first occurred. Used to build the end-of-run timeline.
+ */
+export type SimulationEventType =
+  | "age"
+  | "upgrade"
+  | "achievement"
+  | "battle"
+  | "research";
+
+export interface SimulationEvent {
+  time: number; // game time in seconds
+  type: SimulationEventType;
+  id: string;
+}
+
+/**
+ * Aggregated wall-clock statistics for every state.tick() call made during
+ * the simulation.
+ */
+export interface TickTiming {
+  ticks: number;
+  totalMs: number;
+  meanMs: number;
+  maxMs: number;
 }
 
 /**
@@ -124,6 +155,11 @@ export class GameSimulation {
   private strategy: SimulationStrategy;
   private snapshots: SimulationSnapshot[] = [];
   private gameTime = 0;
+  private events: SimulationEvent[] = [];
+  private seenEvents = new Set<string>();
+  private tickCount = 0;
+  private tickTotalMs = 0;
+  private tickMaxMs = 0;
 
   constructor(
     initialState: CivilizationState,
@@ -140,6 +176,56 @@ export class GameSimulation {
     if (this.config.verbose) {
       console.log(...args);
     }
+  }
+
+  /**
+   * Advance the simulation by one game-second, timing the domain tick and
+   * diffing the state's progression id lists to build the event timeline.
+   */
+  private tick(): void {
+    const startedAt = performance.now();
+    this.state = this.state.tick();
+    const elapsed = performance.now() - startedAt;
+
+    this.tickCount += 1;
+    this.tickTotalMs += elapsed;
+    this.tickMaxMs = Math.max(this.tickMaxMs, elapsed);
+
+    this.gameTime += 1;
+    this.recordEvents();
+  }
+
+  /**
+   * Log any progression ids that appeared since the last call, stamped with the
+   * current game time. Diffing the whole state keeps this free of per-content
+   * conditionals — new event types only need a field on the state.
+   */
+  private recordEvents(): void {
+    this.recordNewEvents("age", this.state.enteredAges);
+    this.recordNewEvents("upgrade", this.state.boughtUpgrades);
+    this.recordNewEvents("achievement", this.state.earnedAchievements);
+    this.recordNewEvents("battle", this.state.defeatedEncounters);
+    this.recordNewEvents("research", this.state.boughtResearch);
+  }
+
+  private recordNewEvents(type: SimulationEventType, ids: readonly string[]): void {
+    for (const id of ids) {
+      const key = `${type}:${id}`;
+      if (this.seenEvents.has(key)) continue;
+      this.seenEvents.add(key);
+      this.events.push({ time: this.gameTime, type, id });
+      this.log(`event ${key} at ${this.gameTime}s`);
+    }
+  }
+
+  /** Current per-second production for every production resource. */
+  private computeProductionRates(): Record<string, string> {
+    return Object.fromEntries(
+      producerResourceKeys.map((key) => [
+        key,
+        this.state.computeResourceRate(key).toString(),
+      ]),
+    );
   }
 
   /**
@@ -225,8 +311,7 @@ export class GameSimulation {
       }
 
       // Advance one tick of production, achievement checks, etc.
-      this.state = this.state.tick();
-      this.gameTime += 1;
+      this.tick();
 
       // Check for milestones and record snapshots
       this.checkMilestones();
@@ -348,8 +433,7 @@ export class GameSimulation {
     while (remaining > 0) {
       const batch = Math.min(remaining, chunkSize);
       for (let i = 0; i < batch; i++) {
-        this.state = this.state.tick();
-        this.gameTime += 1;
+        this.tick();
       }
       remaining -= batch;
 
@@ -503,12 +587,7 @@ export class GameSimulation {
       units: Object.entries(this.state.unitCounts)
         .filter(([, count]) => count.gt(ExpNumber.ZERO))
         .map(([unit, count]) => ({ unit, count: count.toString() })),
-      productionRates: Object.fromEntries(
-        producerResourceKeys.map((key) => [
-          key,
-          this.state.computeResourceRate(key).toString(),
-        ]),
-      ) as Record<string, string>,
+      productionRates: this.computeProductionRates(),
       battlesWon: this.state.defeatedEncounters.length,
       totalBuildings: Object.values(this.state.builtBuildings).reduce(
         (sum, count) => sum + (count ?? 0),
@@ -532,6 +611,14 @@ export class GameSimulation {
       snapshots: this.snapshots,
       objectiveMet: this.getObjectiveMet(),
       terminationReason: reason,
+      events: this.events,
+      finalProductionRates: this.computeProductionRates(),
+      tickTiming: {
+        ticks: this.tickCount,
+        totalMs: this.tickTotalMs,
+        meanMs: this.tickCount === 0 ? 0 : this.tickTotalMs / this.tickCount,
+        maxMs: this.tickMaxMs,
+      },
     };
   }
 

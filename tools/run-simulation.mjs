@@ -166,6 +166,21 @@ function buildObjective(options) {
   }
 }
 
+/** Render a game-second count as `1h 02m 03s` (or `12m 03s` / `03s`). */
+function formatGameTime(seconds) {
+  const total = Math.floor(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours > 0) {
+    return `${hours}h ${String(minutes).padStart(2, "0")}m ${String(secs).padStart(2, "0")}s`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${String(secs).padStart(2, "0")}s`;
+  }
+  return `${secs}s`;
+}
+
 async function main() {
   const options = parseArgs();
 
@@ -212,6 +227,31 @@ async function main() {
   console.log(`Objective Met: ${result.objectiveMet || "None"}`);
   console.log(`Snapshots Recorded: ${result.snapshots.length}`);
 
+  const finalProductionList = Object.entries(result.finalProductionRates ?? {})
+    .map(([key, value]) => `${key}: ${value}/s`)
+    .join(", ");
+  console.log(`Final Production: { ${finalProductionList || "none"} }`);
+
+  console.log("");
+  console.log("=== Major Events ===");
+  if (result.events?.length) {
+    result.events.forEach((event) => {
+      console.log(
+        `  [${formatGameTime(event.time)}] ${event.type}: ${event.id}`,
+      );
+    });
+  } else {
+    console.log("  none");
+  }
+
+  const tickTiming = result.tickTiming ?? { ticks: 0, totalMs: 0, meanMs: 0, maxMs: 0 };
+  console.log("");
+  console.log("=== Tick Timing ===");
+  console.log(`  Ticks: ${tickTiming.ticks}`);
+  console.log(`  Total: ${tickTiming.totalMs.toFixed(2)}ms`);
+  console.log(`  Mean: ${tickTiming.meanMs.toFixed(4)}ms`);
+  console.log(`  Max: ${tickTiming.maxMs.toFixed(2)}ms`);
+
   if (result.snapshots.length > 0) {
     console.log("");
     console.log("=== Milestone Snapshots ===");
@@ -228,6 +268,10 @@ async function main() {
         .map(([key, value]) => `${key}: ${value}`)
         .join(", ");
       console.log(`  Resources: { ${resourceList || "none"} }`);
+      const productionList = Object.entries(snapshot.productionRates ?? {})
+        .map(([key, value]) => `${key}: ${value}/s`)
+        .join(", ");
+      console.log(`  Production: { ${productionList || "none"} }`);
       const buildingList = snapshot.buildings
         .map((b) => `${b.building} x${b.count}`)
         .join(", ");
