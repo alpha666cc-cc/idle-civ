@@ -93,8 +93,13 @@
     "enemyArmy": [
       {
         "unitId": "axeman_bronze",
-        "count": 200,
-        "label": "200 axemen"
+        "count": 150,
+        "label": "150 axemen"
+      },
+      {
+        "unitId": "slinger",
+        "count": 50,
+        "label": "50 slingers"
       }
     ],
     "enemyBoosts": [],
@@ -182,6 +187,11 @@
         "unitId": "spearman_bronze",
         "count": 3,
         "label": "10k bronze"
+      },
+      {
+        "unitId": "bowman_bronze",
+        "count": 2,
+        "label": "2k bowmen"
       }
     ],
     "enemyBoosts": [
@@ -270,6 +280,11 @@
         "unitId": "elephant_iron",
         "count": 2,
         "label": "2 war elephants"
+      },
+      {
+        "unitId": "bowman_bronze",
+        "count": 3,
+        "label": "3k bowmen"
       }
     ],
     "enemyBoosts": [],

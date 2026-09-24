@@ -58,8 +58,6 @@ export type BattleSimulation = {
 export const initialDistance = 20;
 /** A battle that has not resolved by then is a stalemate (counted as a loss). */
 export const maximumRounds = 200;
-/** Below this range, land and sea units cannot reach each other at all. */
-const shoreRange = 7;
 /** Bonus damage against a tagged target (`bonusVs`), as in the prototype. */
 const bonusVsMultiplier = 1.5;
 
@@ -106,9 +104,7 @@ const buildFighters = (
     const definition = findUnitDefinition(stack.unitId);
     if (!definition || stack.count.lte(ExpNumber.ZERO)) return [];
     const hitPoints = stack.stats.hp.div(
-      ExpNumber.ONE.sub(
-        ExpNumber.fromNumber(Math.min(stack.stats.armor, 0.9)),
-      ),
+      ExpNumber.ONE.sub(ExpNumber.fromNumber(Math.min(stack.stats.armor, 0.9))),
     );
     return [
       {
@@ -135,12 +131,13 @@ const canReach = (
   if (!attacker.canHit.includes(target.domain)) return false;
   if (distance > attacker.stats.range) return false;
   if (target.domain === "air" && attacker.stats.range <= 1) return false;
+  // Ground melee units cannot hit naval units unless they have sufficient range
   if (
-    (attacker.domain === "naval" && target.domain === "ground") ||
-    (attacker.domain === "ground" && target.domain === "naval")
-  ) {
-    return attacker.stats.range >= shoreRange;
-  }
+    attacker.domain === "ground" &&
+    target.domain === "naval" &&
+    attacker.stats.range <= 3
+  )
+    return false;
   return true;
 };
 
@@ -151,7 +148,8 @@ const matchupMultiplier = (attacker: Fighter, target: Fighter): number => {
     multiplier *= bonusVsMultiplier;
   }
   if (attacker.domain === "air" && target.domain === "naval") multiplier *= 1.2;
-  if (attacker.domain === "naval" && target.domain === "ground") multiplier *= 0.8;
+  if (attacker.domain === "naval" && target.domain === "ground")
+    multiplier *= 0.8;
   if (target.domain === "air" && attacker.stats.range <= 1) multiplier *= 0.3;
   return multiplier;
 };
@@ -163,7 +161,10 @@ export const armyPower = (stacks: readonly ArmyStack[]): ExpNumber =>
     ExpNumber.ZERO,
   );
 
-const armySignature = (side: BattleSide, stacks: readonly ArmyStack[]): string =>
+const armySignature = (
+  side: BattleSide,
+  stacks: readonly ArmyStack[],
+): string =>
   stacks
     .map(
       (stack) =>
@@ -278,10 +279,7 @@ export const simulateBattle = (
             hitChance * variance * matchupMultiplier(attacker, target),
           ),
         );
-      target.hpPool = ExpNumber.max(
-        ExpNumber.ZERO,
-        target.hpPool.sub(damage),
-      );
+      target.hpPool = ExpNumber.max(ExpNumber.ZERO, target.hpPool.sub(damage));
     }
 
     const fastest = order.reduce(

@@ -156,7 +156,7 @@
       },
       {
         "resource": "wood",
-        "base": 10000000,
+        "base": 1000000,
         "factor": 10
       }
     ]

@@ -126,7 +126,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "stone",
-        "value": "100"
+        "value": "10"
       }
     ],
     "unlocks": [],
@@ -190,7 +190,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "science",
-        "value": "100"
+        "value": "10"
       },
       {
         "type": "costReductionPercent",
@@ -333,7 +333,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "food",
-        "value": "100"
+        "value": "10"
       },
       {
         "type": "attributeMultiplier",

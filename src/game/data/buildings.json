@@ -234,7 +234,7 @@
     "costs": [
       {
         "resource": "wood",
-        "base": 15000,
+        "base": 10000,
         "factor": 10
       },
       {
@@ -244,7 +244,7 @@
       },
       {
         "resource": "gold",
-        "base": 10000,
+        "base": 7500,
         "factor": 10
       }
     ],
