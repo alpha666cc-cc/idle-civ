@@ -111,6 +111,7 @@ export type SimulationAction =
   | { type: "buyResearch"; researchId: string }
   | { type: "buyUnit"; unitId: string; count: number }
   | { type: "launchBattle"; encounterId: string }
+  | { type: "enterAge"; ageId: string }
   | { type: "wait"; seconds: number };
 
 /**
@@ -449,6 +450,20 @@ export class GameSimulation {
         );
         break;
       }
+      case "enterAge": {
+        if (!this.state.canEnterAge(action.ageId)) {
+          this.log(`enterAge ${action.ageId}`, "requirements not met (skipped)");
+          break;
+        }
+        const agesBefore = this.state.enteredAges.length;
+        this.state = this.state.enterAge(action.ageId);
+        const entered = this.state.enteredAges.length > agesBefore;
+        this.log(
+          `enterAge ${action.ageId}`,
+          entered ? "entered" : "already entered (skipped)",
+        );
+        break;
+      }
       case "wait":
         this.log(`wait ${action.seconds}s`);
         this.skipTime(action.seconds);
@@ -548,7 +563,7 @@ export class GameSimulation {
           objective.target
         );
       case "ageReach":
-        return this.state.enteredAges.includes(objective.ageId);
+        return this.state.getCurrentAge()?.key === objective.ageId;
       case "battleVictory":
         return this.state.defeatedEncounters.includes(objective.encounterId);
       case "timeLimit":
@@ -668,7 +683,7 @@ export class GameSimulation {
         }
         break;
       case "ageReach":
-        if (this.state.enteredAges.includes(objective.ageId)) {
+        if (this.state.getCurrentAge()?.key === objective.ageId) {
           return `age ${objective.ageId}`;
         }
         break;

@@ -8,6 +8,7 @@ import { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
 import { type BuildingKey } from "../src/game/buildings.js";
 import { encounterDefinitions } from "../src/game/encounters.js";
+import { ageDefinitions } from "../src/game/ages.js";
 import { researchDefinitions } from "../src/game/research.js";
 import {
   type SimulationStrategy,
@@ -20,7 +21,11 @@ import {
   producerResourceKeys,
   type ProductionResourceKey,
 } from "../src/game/attributes.js";
-import { isBuyableUnit, unitDefinitions } from "../src/game/units.js";
+import {
+  isBuyableUnit,
+  unitDefinitions,
+  type UnitDefinition,
+} from "../src/game/units.js";
 
 /**
  * Worker assignment ratios for different strategies.
@@ -44,6 +49,163 @@ type BuildingPriority = {
   weight: number;
   targetCount?: number;
 }[];
+
+/**
+ * The first unwon encounter in the current age. Encounter order is the
+ * progression data; this helper only exposes it to simulation strategies.
+ */
+export const getRequiredBattle = (state: CivilizationState) =>
+  state.getNextBattle();
+
+/**
+ * Buyable player units named directly by the next encounter. Encounter data is
+ * the source of truth; the strategy does not maintain a parallel battle table.
+ */
+export const getRequiredBattleUnitTargets = (
+  state: CivilizationState,
+): UnitDefinition[] => {
+  const battle = getRequiredBattle(state);
+  if (!battle) return [];
+  const enemyUnitIds = new Set(
+    battle.enemyArmy.map(({ unitId }) => unitId),
+  );
+  const directDefinitions = unitDefinitions.filter(
+    (unit) => isBuyableUnit(unit) && unit.age === battle.age && enemyUnitIds.has(unit.key),
+  );
+  if (directDefinitions.length > 0) {
+    return directDefinitions.filter((unit) => !state.isUnitAvailable(unit.key));
+  }
+
+  // Beast-only encounters have no buyable player counterpart in the data.
+  // Pick the lowest locked unit in the encounter's domain instead of adding
+  // a second encounter-specific unit table to the simulation.
+  const enemyDomains = new Set(
+    battle.enemyArmy
+      .map(({ unitId }) => unitDefinitions.find(({ key }) => key === unitId)?.domain)
+      .filter((domain): domain is UnitDefinition["domain"] => domain !== undefined),
+  );
+  return unitDefinitions
+    .filter(
+      (unit) =>
+        isBuyableUnit(unit) &&
+        unit.age === battle.age &&
+        !state.isUnitAvailable(unit.key) &&
+        enemyDomains.has(unit.domain),
+    )
+    .sort((left, right) => left.tier - right.tier)
+    .slice(0, 1);
+};
+
+/** How well a buyable unit matches the next encounter's enemy force. */
+const battleUnitMatchScore = (
+  unit: UnitDefinition,
+  battle: ReturnType<typeof getRequiredBattle>,
+): number => {
+  if (!battle) return 0;
+  const enemyUnits = battle.enemyArmy
+    .map(({ unitId }) => unitDefinitions.find(({ key }) => key === unitId))
+    .filter((enemy): enemy is UnitDefinition => enemy !== undefined);
+  return enemyUnits.reduce((score, enemy) => {
+    let next = score;
+    if (unit.key === enemy.key) next = Math.max(next, 3);
+    if (unit.domain === enemy.domain) next = Math.max(next, 2);
+    if (unit.tags.some((tag) => enemy.tags.includes(tag))) {
+      next = Math.max(next, 1);
+    }
+    if (unit.bonusVs.some((tag) => enemy.tags.includes(tag))) {
+      next = Math.max(next, 1);
+    }
+    return next;
+  }, 0);
+};
+
+const getBattleUnitCandidates = (state: CivilizationState): UnitDefinition[] => {
+  const battle = getRequiredBattle(state);
+  if (!battle) return [];
+  return state
+    .getRosterUnits()
+    .map((unit) => ({ unit, score: battleUnitMatchScore(unit, battle) }))
+    .filter(({ score }) => score > 0)
+    .sort(
+      (left, right) =>
+        right.score - left.score || right.unit.tier - left.unit.tier,
+    )
+    .map(({ unit }) => unit);
+};
+
+const getRequiredBattleResourceToGather = (
+  state: CivilizationState,
+): ProductionResourceKey | null => {
+  const unit = getBattleUnitCandidates(state)[0];
+  if (!unit) return null;
+  const missing = state
+    .getUnitCost(unit.key, 1)
+    .filter(({ resource }) => isResourceGatherable(state, resource))
+    .filter(({ resource, base }) => state.resources[resource].lt(base))
+    .sort((left, right) => {
+      const leftDeficit = left.base.sub(state.resources[left.resource]);
+      const rightDeficit = right.base.sub(state.resources[right.resource]);
+      return rightDeficit.gt(leftDeficit) ? -1 : leftDeficit.gt(rightDeficit) ? 1 : 0;
+    });
+  const resource = missing[0]?.resource;
+  if (!resource || !producerResourceKeys.includes(resource as ProductionResourceKey)) {
+    return null;
+  }
+  return resource as ProductionResourceKey;
+};
+
+/** Launch the required battle when the current army can win it. */
+export const getRequiredBattleAction = (
+  state: CivilizationState,
+): SimulationAction | null => {
+  const nextBattle = getRequiredBattle(state);
+  if (!nextBattle) return null;
+  if (state.simulateEncounter(nextBattle.key)?.outcome !== "player") return null;
+  return { type: "launchBattle", encounterId: nextBattle.key };
+};
+
+/** Advanced production buildings that support the current battle chain. */
+const requiredBattleBuildings: readonly BuildingKey[] = [
+  "barracks",
+  "university",
+  "smithy",
+];
+
+/**
+ * Prepares the next required battle when its progression building is now
+ * available. This is strategy policy only; `canBuild()` remains the game rule.
+ */
+export const getRequiredBattlePreparationAction = (
+  state: CivilizationState,
+): SimulationAction | null => {
+  const requiredBattle = getRequiredBattle(state);
+  if (!requiredBattle) return null;
+  for (const building of requiredBattleBuildings) {
+    if (state.getBuildingCount(building) === 0 && state.canBuild(building)) {
+      return { type: "build", building, count: 1 };
+    }
+  }
+  return null;
+};
+
+/**
+ * Returns the age transition action once the current age's data-defined
+ * population threshold, battles, and building target are all satisfied.
+ */
+export const getRequiredAgeAction = (
+  state: CivilizationState,
+): SimulationAction | null => {
+  const currentAge = state.getCurrentAge();
+  if (!currentAge) return null;
+  const ageIndex = ageDefinitions.findIndex(({ key }) => key === currentAge.key);
+  const nextAge = ageDefinitions[ageIndex + 1];
+  if (!nextAge || state.population.toNumber() < nextAge.populationThreshold) {
+    return null;
+  }
+  return state.canEnterAge(currentAge.key)
+    ? { type: "enterAge", ageId: currentAge.key }
+    : null;
+};
 
 /**
  * Base strategy class with common utilities.
@@ -102,28 +264,27 @@ abstract class BaseStrategy implements SimulationStrategy {
   protected getResearchAction(
     state: CivilizationState,
   ): SimulationAction | null {
-    const nextBattle = state.getNextBattle();
-    const targetUnit = nextBattle
-      ? unitDefinitions.find(
-          (unit) =>
-            isBuyableUnit(unit) &&
-            unit.age === nextBattle.age &&
-            !state.isUnitAvailable(unit.key),
-        )
-      : undefined;
+    const targetUnits = getRequiredBattleUnitTargets(state);
+    if (targetUnits.length === 0) return null;
     const research = researchDefinitions.find(
       ({ key }) =>
         !state.isResearchBought(key) &&
         state.canBuyResearch(key) &&
-        (!targetUnit || this.researchLeadsToUnit(key, targetUnit.key)),
+        targetUnits.some((unit) => this.researchLeadsToUnit(key, unit.key)),
     );
     return research ? { type: "buyResearch", researchId: research.key } : null;
   }
 
   protected getUnitAction(state: CivilizationState): SimulationAction | null {
-    const unit = [...state.getRosterUnits()]
-      .sort((left, right) => right.tier - left.tier)
-      .find(({ key }) => state.getMaxAffordableUnits(key) > 0);
+    const nextBattle = getRequiredBattle(state);
+    const candidates = nextBattle
+      ? getBattleUnitCandidates(state)
+      : [...state.getRosterUnits()].sort(
+          (left, right) => right.tier - left.tier,
+        );
+    const unit = candidates.find(
+      (candidate) => state.getMaxAffordableUnits(candidate.key) > 0,
+    );
     if (!unit) return null;
     return {
       type: "buyUnit",
@@ -217,6 +378,15 @@ abstract class BaseStrategy implements SimulationStrategy {
     state: CivilizationState,
     _context: SimulationContext,
   ): SimulationAction | null {
+    const requiredAgeAction = getRequiredAgeAction(state);
+    if (requiredAgeAction) return requiredAgeAction;
+
+    const requiredBattleAction = getRequiredBattleAction(state);
+    if (requiredBattleAction) return requiredBattleAction;
+
+    const requiredPreparationAction = getRequiredBattlePreparationAction(state);
+    if (requiredPreparationAction) return requiredPreparationAction;
+
     // Priority 1: Buy the next combat-path research before spending on units.
     const researchAction = this.getResearchAction(state);
     if (researchAction) return researchAction;
@@ -283,6 +453,9 @@ abstract class BaseStrategy implements SimulationStrategy {
   }
 
   protected getResourceToGather(state: CivilizationState): string | null {
+    const requiredBattleResource = getRequiredBattleResourceToGather(state);
+    if (requiredBattleResource) return requiredBattleResource;
+
     // Only consider resources that are currently unlocked
     const available = (producerResourceKeys as ProductionResourceKey[]).filter(
       (key) => isResourceGatherable(state, key),
