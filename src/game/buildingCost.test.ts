@@ -61,8 +61,8 @@ describe("the square-root building cost curve", () => {
   });
 
   it("totals base x factor^(sqrt(n) - 1)", () => {
-    // Farm: base 10, factor 10, so T(4) = 10 x 10^(2 - 1) = 100.
-    expect(farmCost(stateWith(), 0, 4)).toBe(100);
+    // Farm: base 10, factor 8, so T(4) = 10 x 8^(2 - 1) = 80.
+    expect(farmCost(stateWith(), 0, 4)).toBe(80);
   });
 
   it("prices the first unit at exactly the base cost", () => {
@@ -73,9 +73,9 @@ describe("the square-root building cost curve", () => {
 
   it("never lets a later unit cost less than the first", () => {
     const state = stateWith();
-    // Farm (factor 10) rises from the first unit.
+    // Farm (factor 8) rises from the first unit.
     expect(farmCost(state, 1)).toBeGreaterThan(farmCost(state, 0));
-    // Citizen (factor 2.5) sits on the linear floor, rising from base.
+    // Citizen (factor 8) sits on the linear floor, rising from base.
     const first = citizenCost(state, 0);
     expect(citizenCost(state, 1)).toBeGreaterThanOrEqual(first);
     expect(citizenCost(state, 3)).toBeGreaterThanOrEqual(first);

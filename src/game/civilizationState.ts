@@ -152,11 +152,12 @@ const crossoverToSqrt = (
 };
 
 /**
- * Global research pricing: the first tech costs 100 science and every later
- * purchase costs ×2.5 the previous one, whichever tech is bought.
+ * Global research pricing: the first tech costs 100 science and later purchases
+ * follow the shared square-root curve, `100 × 8^(√n − 1)`, where n is the
+ * purchase ordinal.
  */
 const researchFirstCost = ExpNumber.fromNumber(100);
-const researchCostGrowth = ExpNumber.fromNumber(2.5);
+const researchCostFactor = ExpNumber.fromNumber(8);
 
 /**
  * Identity-keyed recompute caches. Every state array is replaced immutably and
@@ -629,16 +630,17 @@ export class CivilizationState {
   }
 
   /**
-   * The cost of the next research purchase, global across the whole tree: the
-   * first tech costs 1K science and every later purchase costs ×10 the
-   * previous one, whichever tech is bought.
+   * The cost of the next research purchase, global across the whole tree. The
+   * purchase ordinal starts at 1, so the first tech still costs 100 science and
+   * later purchases use `100 × 8^(√n − 1)`.
    */
   getResearchNextCost(): BuildingCost[] {
+    const purchaseNumber = this.boughtResearch.length + 1;
     return [
       {
         resource: "science",
         base: researchFirstCost.mul(
-          researchCostGrowth.pow(this.boughtResearch.length),
+          researchCostFactor.pow(Math.sqrt(purchaseNumber) - 1),
         ),
         factor: 1,
       },

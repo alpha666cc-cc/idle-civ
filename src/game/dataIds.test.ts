@@ -99,11 +99,15 @@ describe("static content guids", () => {
     expect(snapshotGuids([])).toEqual({});
   });
 
-  it("uses factor 8 for every unit cost entry", () => {
-    const factors = unitDefinitions.flatMap(({ costs }) =>
+  it("uses factor 8 for building costs and factor 5 for unit costs", () => {
+    const buildingFactors = buildingDefinitions.flatMap(({ costs }) =>
       costs.map(({ factor }) => factor),
     );
-    expect([...new Set(factors)]).toEqual([8]);
+    const unitFactors = unitDefinitions.flatMap(({ costs }) =>
+      costs.map(({ factor }) => factor),
+    );
+    expect([...new Set(buildingFactors)]).toEqual([8]);
+    expect([...new Set(unitFactors)]).toEqual([5]);
   });
 
   it("keeps multiple capacity effect entries instead of overwriting them", () => {
@@ -122,8 +126,8 @@ describe("static content guids", () => {
     const state = new CivilizationState(
       {
         ...emptyResourceAmounts(),
-        // The first town-hall costs 480k wood, 360k stone and 600k gold
-        // (base x 24 at factor 25) — stock enough to actually build it.
+        // The first town-hall uses the current factor-8 building cost curve;
+        // stock enough to actually build it.
         wood: ExpNumber.fromNumber(1_000_000),
         stone: ExpNumber.fromNumber(1_000_000),
         gold: ExpNumber.fromNumber(1_000_000),
