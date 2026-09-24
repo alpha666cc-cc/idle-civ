@@ -6,6 +6,7 @@ import { buildingDefinitions, type BuildingKey } from "./buildings";
 import { encounterDefinitions } from "./encounters";
 import { findAttributeDefinition, type ResourceKey } from "./attributes";
 import { formatNumber } from "./numberFormat";
+import { unitDomainLabels, type UnitDomain } from "./units";
 
 /**
  * Achievement requirements are data-driven and evaluated by the engine
@@ -20,9 +21,20 @@ export type AchievementRequirement =
   | { type: "building-count"; building: BuildingKey; count: number }
   | { type: "buildings-total"; count: number }
   | { type: "encounter"; encounterId: string }
+  | { type: "battle"; encounterId: string; unitDomain: UnitDomain }
   | { type: "upgrade-count"; count: number }
   | { type: "offline-time"; amount: number }
   | { type: "active-time"; amount: number };
+
+/**
+ * The player units still alive in the final round of a resolved battle.
+ * Historical army-shape requirements are evaluated from that result, not from
+ * the opening army or the army left owned later.
+ */
+export type BattleAchievementContext = {
+  readonly encounterId: string;
+  readonly survivingPlayerUnitIds: readonly string[];
+};
 
 /**
  * An achievement is a permanent record, but it may still carry a **reward**: a
@@ -65,6 +77,7 @@ type AchievementRequirementData =
   | { type: "building-count"; building: BuildingKey; count: number }
   | { type: "buildings-total"; count: number }
   | { type: "encounter"; encounterId: string }
+  | { type: "battle"; encounterId: string; unitDomain: UnitDomain }
   | { type: "upgrade-count"; count: number }
   | { type: "offline-time"; amount: number }
   | { type: "active-time"; amount: number };
@@ -103,6 +116,12 @@ const toRequirement = (
       return { type: "buildings-total", count: data.count };
     case "encounter":
       return { type: "encounter", encounterId: data.encounterId };
+    case "battle":
+      return {
+        type: "battle",
+        encounterId: data.encounterId,
+        unitDomain: data.unitDomain,
+      };
     case "upgrade-count":
       return { type: "upgrade-count", count: data.count };
     case "offline-time":
@@ -121,11 +140,19 @@ for (const data of achievementData as AchievementData[]) {
     throw new Error(`Unknown achievement building: ${requirement.building}`);
   }
   if (
-    requirement.type === "encounter" &&
+    (requirement.type === "encounter" || requirement.type === "battle") &&
     !encounterDefinitions.some(({ key }) => key === requirement.encounterId)
   ) {
     throw new Error(
       `Unknown achievement encounter: ${requirement.encounterId}`,
+    );
+  }
+  if (
+    requirement.type === "battle" &&
+    !Object.hasOwn(unitDomainLabels, requirement.unitDomain)
+  ) {
+    throw new Error(
+      `Unknown achievement unit domain: ${requirement.unitDomain}`,
     );
   }
 }

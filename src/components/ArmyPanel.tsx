@@ -6,7 +6,11 @@ import {
   type BattleSimulation,
   type StackSnapshot,
 } from "../game/battle";
-import { findUnitDefinition, unitStatKeys, unitStatLabels } from "../game/units";
+import {
+  findUnitDefinition,
+  unitStatKeys,
+  unitStatLabels,
+} from "../game/units";
 import type { ExpNumber } from "../game/expNumber";
 import { unitIcon, unitTone } from "./unitIcons";
 
@@ -97,6 +101,7 @@ export default function ArmyPanel({
   const [active, setActive] = useState<{
     battleId: string;
     sim: BattleSimulation;
+    startTime: number;
   } | null>(null);
   const [roundIndex, setRoundIndex] = useState(0);
 
@@ -121,22 +126,38 @@ export default function ArmyPanel({
     if (sim !== null && sim.outcome === "player") return;
     const result = gameState.simulateEncounter(battle.key);
     if (!result) return;
+    // oxlint-disable-next-line react/purity
+    const startTime = Date.now();
     setRoundIndex(0);
-    setActive({ battleId: battle.key, sim: result });
+    setActive({ battleId: battle.key, sim: result, startTime });
   };
 
   // One round per second; the win is recorded when the final round ends.
+  // Uses time-based advancement to continue even when tab is inactive.
   useEffect(() => {
     if (active === null || sim === null) return;
     if (roundIndex >= sim.rounds.length) return;
-    const timer = window.setTimeout(() => {
-      const next = roundIndex + 1;
-      setRoundIndex(next);
-      if (next >= sim.rounds.length && sim.outcome === "player") {
-        setGameState((current) => current.resolveBattle(active.battleId, sim));
+
+    const startTime = active.startTime;
+
+    const timer = window.setInterval(() => {
+      const elapsedMs = Date.now() - startTime;
+      const targetRound = Math.min(
+        Math.floor(elapsedMs / 1000),
+        sim.rounds.length,
+      );
+
+      if (targetRound > roundIndex) {
+        setRoundIndex(targetRound);
+        if (targetRound >= sim.rounds.length && sim.outcome === "player") {
+          setGameState((current) =>
+            current.resolveBattle(active.battleId, sim),
+          );
+        }
       }
-    }, 1000);
-    return () => window.clearTimeout(timer);
+    }, 100); // Check every 100ms to catch up if tab was inactive
+
+    return () => window.clearInterval(timer);
   }, [sim, active, roundIndex, setGameState]);
 
   return (
@@ -305,4 +326,3 @@ export default function ArmyPanel({
     </div>
   );
 }
-

@@ -68,7 +68,12 @@ import {
 import ArmyPanel from "./components/ArmyPanel";
 import ResearchPanel from "./components/ResearchPanel";
 import BattleSimulatorPanel from "./components/BattleSimulatorPanel";
-import { isBuyableUnit, unitDefinitions } from "./game/units";
+import {
+  isBuyableUnit,
+  parseUnitStatTarget,
+  unitDefinitions,
+  unitStatTargetLabel,
+} from "./game/units";
 import {
   MAX_OFFLINE_MS,
   SaveFormatError,
@@ -950,9 +955,12 @@ function App() {
     const definition = entry?.object as
       | { name?: string; label?: string; id: string }
       | undefined;
-    const target = definition
-      ? (definition.name ?? definition.label ?? definition.id)
-      : String(bonus.destination);
+    const unitTarget = parseUnitStatTarget(String(bonus.destination));
+    const target = unitTarget
+      ? unitStatTargetLabel(unitTarget)
+      : definition
+        ? (definition.name ?? definition.label ?? definition.id)
+        : String(bonus.destination);
     if (bonus.type === "attributeMultiplier") {
       if (
         bonus.destination === "buildingCostMultiplier" &&

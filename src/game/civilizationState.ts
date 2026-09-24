@@ -6,6 +6,7 @@ import {
   nextHoarderExponent,
   openEndedHoarderChains,
   type AchievementRequirement,
+  type BattleAchievementContext,
 } from "./achievements";
 import { ageDefinitions, findAgeDefinition, type AgeDefinition } from "./ages";
 import {
@@ -114,10 +115,8 @@ const flatClampWindow = 256;
  * old `base x (factor - 1)` first-unit inflation) and floors the factor<e dip
  * so a purchase never gets cheaper (§4.4).
  */
-const linearSlope = (
-  unitBase: ExpNumber,
-  unitFactor: ExpNumber,
-): ExpNumber => unitBase.mul(unitFactor).div(ExpNumber.fromNumber(25));
+const linearSlope = (unitBase: ExpNumber, unitFactor: ExpNumber): ExpNumber =>
+  unitBase.mul(unitFactor).div(ExpNumber.fromNumber(25));
 
 /**
  * Corrected cumulative sqrt curve: T(n) = base x factor^(sqrt(n) - 1), so the
@@ -1354,7 +1353,9 @@ export class CivilizationState {
               ),
             );
       const unitPrice = (n: number): ExpNumber =>
-        cumulative(n).sub(cumulative(n - 1)).mul(reductions.percent);
+        cumulative(n)
+          .sub(cumulative(n - 1))
+          .mul(reductions.percent);
 
       // Leading units the flat reduction absorbs entirely are free; scan a
       // bounded window for them.
@@ -1381,12 +1382,13 @@ export class CivilizationState {
       // would bump up a whole unit. Genuine fractions stay put (their residue
       // dwarfs the epsilon) and large magnitudes carry zero residue.
       const floored = payable.floor();
-      const snapped =
-        payable
-          .sub(floored)
-          .lte(ExpNumber.max(payable, ExpNumber.ONE).mul(ExpNumber.fromNumber(1e-9)))
-          ? floored
-          : payable;
+      const snapped = payable
+        .sub(floored)
+        .lte(
+          ExpNumber.max(payable, ExpNumber.ONE).mul(ExpNumber.fromNumber(1e-9)),
+        )
+        ? floored
+        : payable;
       return { ...cost, base: snapped.ceil() };
     });
   }
@@ -2069,7 +2071,14 @@ export class CivilizationState {
     if (encounter.age !== currentAgeIndex) return this;
     const result = simulation ?? this.simulateEncounter(encounterId);
     if (!result || result.outcome !== "player") return this;
-    return this.defeatEncounter(encounterId);
+    const finalRound = result.rounds[result.rounds.length - 1];
+    const survivingPlayerUnitIds = (finalRound?.player ?? [])
+      .filter(({ count }) => count.gt(ExpNumber.ZERO))
+      .map(({ unitId }) => unitId);
+    return this.defeatEncounter(encounterId).checkAchievements({
+      encounterId,
+      survivingPlayerUnitIds,
+    });
   }
 
   /**
@@ -2125,12 +2134,17 @@ export class CivilizationState {
         return this.defeatedEncounters.includes(requirement.encounterId)
           ? ExpNumber.ONE
           : ExpNumber.ZERO;
+      case "battle":
+        // A battle-shape condition is historical, not a live resource reading.
+        return ExpNumber.ZERO;
       case "upgrade-count":
         return ExpNumber.fromNumber(this.boughtUpgrades.length);
       case "offline-time":
         return ExpNumber.fromNumber(this.statistics.longestOfflineMs);
       case "active-time":
         return ExpNumber.fromNumber(this.statistics.longestActiveMs);
+      default:
+        return ExpNumber.ZERO;
     }
   }
 
@@ -2144,12 +2158,15 @@ export class CivilizationState {
       case "buildings-total":
         return ExpNumber.fromNumber(requirement.count);
       case "encounter":
+      case "battle":
         return ExpNumber.ONE;
       case "upgrade-count":
         return ExpNumber.fromNumber(requirement.count);
       case "offline-time":
       case "active-time":
         return ExpNumber.fromNumber(requirement.amount);
+      default:
+        return ExpNumber.ZERO;
     }
   }
 
@@ -2221,7 +2238,10 @@ export class CivilizationState {
     return newlyEarned;
   }
 
-  private meetsRequirement(requirement: AchievementRequirement): boolean {
+  private meetsRequirement(
+    requirement: AchievementRequirement,
+    battle?: BattleAchievementContext,
+  ): boolean {
     switch (requirement.type) {
       case "resource":
         return this.resources[requirement.resource].gte(requirement.amount);
@@ -2237,6 +2257,15 @@ export class CivilizationState {
         );
       case "encounter":
         return this.defeatedEncounters.includes(requirement.encounterId);
+      case "battle":
+        return (
+          battle?.encounterId === requirement.encounterId &&
+          battle.survivingPlayerUnitIds.length > 0 &&
+          battle.survivingPlayerUnitIds.every(
+            (unitId) =>
+              findUnitDefinition(unitId)?.domain === requirement.unitDomain,
+          )
+        );
       case "upgrade-count":
         return this.boughtUpgrades.length >= requirement.count;
       case "offline-time":
@@ -2249,17 +2278,19 @@ export class CivilizationState {
   }
 
   /**
-   * Records every achievement whose requirement is met, once. Earned ids are the
-   * only achievement data in state – never applied bonuses – so migrations and
-   * re-balancing stay safe (roadmap Milestone 6). Returns `this` when nothing is new.
+   * Records every achievement whose requirement is met, once. `battle` is
+   * supplied only while resolving the event that an army-shape requirement
+   * describes. Earned ids are the only achievement data in state – never
+   * applied bonuses – so migrations and re-balancing stay safe (roadmap
+   * Milestone 6). Returns `this` when nothing is new.
    */
-  checkAchievements(): CivilizationState {
+  checkAchievements(battle?: BattleAchievementContext): CivilizationState {
     const earned = this.earnedAchievementSet();
     const newlyEarned = [
       ...achievementDefinitions
         .filter(
           ({ key, requirement }) =>
-            !earned.has(key) && this.meetsRequirement(requirement),
+            !earned.has(key) && this.meetsRequirement(requirement, battle),
         )
         .map(({ key }) => key),
       ...this.openEndedChainEarnings(),

@@ -34,6 +34,25 @@
     ]
   },
   {
+    "guid": "e8d30bc5-ebe2-5fa8-a0e4-c353bb522b75",
+    "key": "a-good-legal-cheat-for-battle",
+    "name": "a good legal cheat for battle",
+    "description": "hidden",
+    "requirement": {
+      "type": "battle",
+      "encounterId": "age0_2_wolf_pack",
+      "unitDomain": "naval"
+    },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "tag.naval.hp", "value": 1.1 },
+      { "type": "attributeMultiplier", "destination": "tag.naval.attack", "value": 1.1 },
+      { "type": "attributeMultiplier", "destination": "tag.naval.armor", "value": 1.1 },
+      { "type": "attributeMultiplier", "destination": "tag.naval.range", "value": 1.1 },
+      { "type": "attributeMultiplier", "destination": "tag.naval.speed", "value": 1.1 },
+      { "type": "attributeMultiplier", "destination": "tag.naval.accuracy", "value": 1.1 }
+    ]
+  },
+  {
     "guid": "cc1999e4-d9bf-50c0-89a8-ec0f4f065f88",
     "key": "hall-of-halls",
     "name": "Hall of Halls",

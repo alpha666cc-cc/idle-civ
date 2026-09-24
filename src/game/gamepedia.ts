@@ -50,7 +50,8 @@ const achievementRelatedIds = (
         ? [populationDefinition.id]
         : requirement.type === "building-count"
           ? [requirement.building]
-          : requirement.type === "encounter"
+          : requirement.type === "encounter" ||
+              requirement.type === "battle"
             ? [requirement.encounterId]
             : []),
     ...achievement.bonuses.map(
