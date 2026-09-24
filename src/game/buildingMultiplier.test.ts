@@ -157,6 +157,16 @@ describe("building resource bonuses", () => {
     }
   });
 
+  it("keeps the capacity base stored but reports effective capacity", () => {
+    const bought = richState({ farm: 9 }).buyUpgrade("farm-enhancer-9");
+
+    // The upgrade does not rewrite the saved/base resource. It is resolved on read.
+    expect(bought.resources.farmCapacity.toNumber()).toBe(10);
+    expect(bought.getBuildingMax("farm").toNumber()).toBe(100);
+    // getAttributeValue intentionally exposes the stored/base capacity.
+    expect(bought.getAttributeValue("farmCapacity").toNumber()).toBe(10);
+  });
+
   it("raises power by +1 per enhancer upgrade and x2 when the first age ends", () => {
     // Each farm-enhancer-N upgrade grants +1 farmPower (a flat on the power
     // stat); the age-1 transition grants a global buildingPower x2 that folds

@@ -5,7 +5,7 @@
 
 import { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
-import { type BuildingKey } from "../src/game/buildings.js";
+import { buildingDefinitions, type BuildingKey } from "../src/game/buildings.js";
 import { encounterDefinitions } from "../src/game/encounters.js";
 import {
   producerResourceKeys,
@@ -222,12 +222,7 @@ export class GameSimulation {
         time: this.gameTime,
         type,
         id,
-        resources: Object.fromEntries(
-          Object.entries(this.state.resources).map(([resource, amount]) => [
-            resource,
-            amount.toString(),
-          ]),
-        ),
+        resources: this.resourceSnapshot(),
         productionRates: this.computeProductionRates(),
         population: this.state.population.toNumber(),
       });
@@ -242,6 +237,29 @@ export class GameSimulation {
         key,
         this.state.computeResourceRate(key).toString(),
       ]),
+    );
+  }
+
+  /**
+   * Effective balances for event and milestone snapshots. Amounts come from the
+   * state, while capacities go through getBuildingMax() so enhancer multipliers
+   * are visible without mutating the stored capacity base.
+   */
+  private resourceSnapshot(): Record<string, string> {
+    const buildingByCapacityKey = new Map(
+      buildingDefinitions.map((building) => [
+        `${building.key}Capacity`,
+        building.key,
+      ]),
+    );
+    return Object.fromEntries(
+      Object.entries(this.state.resources).map(([resource, amount]) => {
+        const buildingKey = buildingByCapacityKey.get(resource);
+        const value = buildingKey
+          ? this.state.getBuildingMax(buildingKey)
+          : amount;
+        return [resource, value.toString()];
+      }),
     );
   }
 
@@ -588,12 +606,7 @@ export class GameSimulation {
       timestamp: this.gameTime,
       age: currentAge?.key || "unknown",
       population: this.state.population.toNumber(),
-      resources: Object.fromEntries(
-        Object.entries(this.state.resources).map(([k, v]) => [
-          k,
-          (v as ExpNumber).toString(),
-        ]),
-      ) as Record<string, string>,
+      resources: this.resourceSnapshot(),
       researches: [...this.state.boughtResearch],
       buildings: Object.entries(this.state.builtBuildings).map(
         ([building, count]) => ({
