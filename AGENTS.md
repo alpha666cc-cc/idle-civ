@@ -32,9 +32,9 @@ toward a 10-billion population and an interstellar colony ship
   attribute-targeted bonuses (`attributeMultiplier` on production resources and
   capacities), the cost-reduction path in `getBuildingCost()` (enhancer tiers 3–8 use
   `costReductionPercent`/`costReductionFactor` on their building), the
-  `UpgradeDefinition` registry with the 32 production-enhancer tiers
-  (`src/game/upgrades.ts`), the Upgrades tab, unlock-gated buildings (barracks at 5
-  town halls; smithy battle-gated; university at 20) and the `military`/`metalwork`
+  `UpgradeDefinition` registry with the 64 production-enhancer tiers
+  (`src/game/upgrades.ts`, 8 buildings × 8 tiers), the Upgrades tab, unlock-gated
+  buildings and the `military`/`metalwork`
   resources. **Implemented (achievement slice):** the `AchievementDefinition` registry
   (`src/game/achievements.ts` + `data/achievements.json`), five data-driven requirement
   types, `CivilizationState.checkAchievements()` (run from `tick()`), the
@@ -192,8 +192,8 @@ Every value a bonus destination can name is an **attribute** (§13.2), registere
   worker-assignable; `WorkerAssignments` is a `Record` of exactly these four) plus the
   tracked `population`/`science`/`military`/`metalwork` resources.
 - `"capacity"` — `CapacityResourceKey` = `` `${buildingKey}Capacity` `` — **capacity is
-  stored as a resource**. Eleven exist today, one per buildable building (monument has
-  none), defaulting to 10 in `emptyResourceAmounts()` (town-hall to 1).
+  stored as a resource**. Eleven exist today, one per building, defaulting to 10 in
+  `emptyResourceAmounts()` (town-hall to 1).
 - `"derived"` — `DerivedAttributeKey` (`clickPower`, `autoClickRate`): computed stats,
   never stored (§13.2 decision 2).
 
@@ -242,18 +242,31 @@ type BuildingEffects = {
   resource (also 10 by default), raised via `CivilizationState.upgradeBuildingLimit()`.
   Treat `maxCount` as decorative metadata, not authority.
 
-The 12 definitions, in order (order matters — it drives `autoBuyBuildings()` and the
+The 11 definitions, in order (order matters — it drives `autoBuyBuildings()` and the
 building grid order, which roughly tracks progression): `people` ("Citizen", costs food,
 drains 1 food/sec each), `house`, `farm`, `lumber-yard`, `quarry`, `gold-mine`,
-`market`, `town-hall`, `smithy`, `barracks`, `university`, `monument`
-(`available: false`, so it renders as locked and cannot be built).
+`town-hall`, `barracks`, `university`, `smithy`, `market`.
 
-Current data conventions: production buildings give `additiveMultiplier` `+10%` each (`perBuilding: 0.1`);
-`house` gives `+10 peopleCapacity`; `town-hall` gives `+10 houseCapacity`;
-`smithy`/`barracks`/`university` each produce 1/sec of `metalwork`/`military`/`science`
-(`resourceProduction`) and carry unlock gates — smithy on the first age-0 battle
-`age0_1_first_fire`, barracks at 5 town halls, university at 20.
-`market`/`monument` have no effects; monument stays `available: false`.
+**Production buildings come in two tiers.** Membership is data, not an engine branch: it is
+derived from the `effects` a definition carries (`attributes.ts` →
+`buildingPowerAttributeDefinitions` filters on `additiveMultiplier || resourceProduction`),
+so both tiers run through identical code paths and each owns a `${key}Power` stat.
+
+| | **Primary** — `farm`, `lumber-yard`, `quarry`, `gold-mine` | **Advanced** — `barracks`, `university`, `smithy`, `market` |
+| --- | --- | --- |
+| Boosts | a worker-assignable resource (`food`/`wood`/`stone`/`gold`) | a building resource (`military`/`science`/`metalwork`/`trade`) |
+| Effect | `additiveMultiplier` `+10%` each | `resourceProduction` `+1/s` each **plus** `additiveMultiplier` `+5%` (market has no multiplier) |
+| Workers | needs workers assigned | self-sustaining |
+| Unlock | available from the start | 90 citizens / `age0_1_first_fire` / 5 town halls / `age-1` |
+| Enhancers | 8 tiers, **grant `×10` capacity** | 8 tiers, **no capacity bonus** — power + production only |
+
+Because the advanced enhancers grant no capacity, barracks/university/smithy/market are
+capped at their base capacity of 10 and only tier 1 (threshold 9) of each 8-tier chain is
+reachable today. Do not assume the advanced chains are live past tier 1 without first
+adding a capacity source (research/age bonus) or rescaling the thresholds.
+
+Other data conventions: `house` gives `+10 peopleCapacity`; `town-hall` gives
+`+10 houseCapacity` plus `+1` barracks and university each.
 
 `effects` is a **per-building stopgap**. The target model is a shared
 `bonuses: Bonus[]` list whose destinations are resources _or_ buyables (buildings and
@@ -345,7 +358,7 @@ achievement is earned), then `buildRelations()`. Consequences:
 - `buildingsForResource(resourceId)` returns buildings linked to a resource.
 
 `resource`, `capacity`, `building`, `unit`, `upgrade`, `achievement`, `stat` and
-`combat` entries exist today (combat holds the 23 campaign battles; upgrades hold the 32
+`combat` entries exist today (combat holds the campaign encounters; upgrades hold the 64
 enhancer tiers; `stat` holds `clickPower`, `autoClickRate` and `armyPower`, all
 `seen = true` because computed values are visible from the start). The `research`
 category is wired through the types and the modal tabs but carries no data, so that tab
@@ -693,12 +706,12 @@ with a roadmap entry already assigned.
 - **The era card is hardcoded** ("Neolithic Dawn", "Year 12", "68% to Bronze Age"). It
   does not match the seven-age model in the roadmap (Ancient → Modern/Space keyed on
   powers of ten). Treat it as a mock-up: do not build logic on those strings.
-- **Existing but unused:** `public/icons.svg`, the `Market`/`Monument` building effects
-  (both still have no effects).
+- **Existing but unused:** `public/icons.svg`. (`monument` has since been removed from
+  `data/buildings.json`; market now produces `trade` 1/s.)
 - **The bonus/upgrade system is only partially built** (§13). Implemented: the `Bonus`
   type, `attributeMultiplier`/`attributeFlat` application (production resources via
   `getFactors()` from every bonus source, capacities via `getBuildingMax()`, stats via
-  the derived-attribute computations), `UpgradeDefinition` + the 32 enhancer tiers, the
+  the derived-attribute computations), `UpgradeDefinition` + the 64 enhancer tiers, the
   `seen` → Gamepedia reveal, the Upgrades tab, building unlock gates and
   `military`/`metalwork`, and the cost-reduction pipeline in `getBuildingCost()`
   (`costReductionPercent`/`costReductionBase`/`costReductionFactor` are used by the
@@ -718,7 +731,7 @@ with a roadmap entry already assigned.
 
 **Engine debt and gotchas**
 
-- **`available: boolean` is a hardcoded unlock flag** (`monument` is `false`). The
+- **`available: boolean` is a hardcoded unlock flag.** The
   roadmap wants unlocks driven by age data instead. Do not add more hardcoded locks;
   when ages land, migrate `available` to age-driven data.
 - **Building-specific conditionals already exist** in `civilizationState.ts`
@@ -789,8 +802,8 @@ Full detail in `docs/roadmap.md`; this is orientation only.
 | 4 — Action multiplier (1 / 10 / MAX)                     | **Partly done** — the UI has 1, 10, powers of ten and Max; the engine has `getMaxAffordableBuildings()` and clamped worker commands, but no shared `getActionQuantity()`                                                                                                                                                                                                                                                                                                                                                                   |
 | 5 — Statistics                                           | **Not started**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 6 — Achievements                                         | **First slice done** — `src/game/achievements.ts` + `data/achievements.json` (12 milestone records, five requirement types), `CivilizationState.checkAchievements()` evaluated at the end of `tick()`, `earnedAchievements` id list, Achievements tab, `achievement` Gamepedia category. Age-transition and click-power achievements still pending (they need ages and the `stat` family)                                                                                                                                                  |
-| 7 — Upgrades                                             | **First slice done** — bonus type, 32 enhancer upgrades (capacity/production, plus cost reductions on tiers 3–8), Upgrades tab, unlock-gated buildings, cost-reduction engine path. Flat/drain/base bonus data and research/achievement/battle sources still pending; full model in **§13**                                                                                                                                                                                                                                                |
-| 8 — Battle system                                        | **First slice done** — `src/game/battle.ts` (deterministic stack sim, seed = battle id + army signatures, ≤ 200 rounds), `src/game/units.ts` + `data/units.json` (79 units, cost factor 1.2, per-age hp/attack scale), 23 encounters in `data/encounters.json` with enemy boosts and victory bonuses, `unitCounts` + buy/resolve paths on the engine, Army tab (`components/ArmyPanel.tsx`), unit icons vendored from game-icons.net (`public/units/`). Unit retirement, research-sourced unlocks and unit boosts via research are pending |
+| 7 — Upgrades                                             | **First slice done** — bonus type, 64 enhancer upgrades (8 buildings × 8 tiers; primary tiers grant capacity + production, advanced tiers power + production only, plus cost reductions on tiers 3–8), Upgrades tab, unlock-gated buildings, cost-reduction engine path. Flat/drain/base bonus data and research/achievement/battle sources still pending; full model in **§13**                                                                                                                                                                                                                                                |
+| 8 — Battle system                                        | **First slice done** — `src/game/battle.ts` (deterministic stack sim, seed = battle id + army signatures, ≤ 200 rounds), `src/game/units.ts` + `data/units.json` (79 units, cost factor 10, per-age hp/attack scale), 23 encounters in `data/encounters.json` with enemy boosts and victory bonuses, `unitCounts` + buy/resolve paths on the engine, Army tab (`components/ArmyPanel.tsx`), unit icons vendored from game-icons.net (`public/units/`). Unit retirement, research-sourced unlocks and unit boosts via research are pending |
 | 9 — Research tree                                        | **Not started**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 10 — Game-length simulation                              | **Not started**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 

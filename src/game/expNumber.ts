@@ -180,6 +180,22 @@ export class ExpNumber {
       mantissa *= 10;
       exponent -= 1;
     }
+    // Cancellation amplifies the low-order noise already in the operands:
+    // `25 - 24` runs as `2.5 - 2.4`, and that subtraction is 0.10000000000000009
+    // rather than 0.1, so the result comes back as 1.0000000000000009 instead
+    // of 1. When the value lands on a whole number, a double holds it exactly,
+    // so the whole number is the true value rather than an approximation of it.
+    // The tolerance is relative, so snapping a value to zero (or to any other
+    // whole number) still requires the gap to be negligible next to the value
+    // itself. Every other result keeps the raw mantissa, the only carrier of
+    // the >15-digit precision the split exists to preserve.
+    const value = bigger.sign * mantissa * 10 ** exponent;
+    if (Number.isFinite(value) && value !== 0) {
+      const whole = Math.round(value);
+      if (Math.abs(value - whole) <= Math.abs(value) * 1e-9) {
+        return ExpNumber.fromNumber(whole);
+      }
+    }
     return new ExpNumber(bigger.sign, mantissa, exponent);
   }
 

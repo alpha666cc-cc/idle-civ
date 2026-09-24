@@ -9,6 +9,7 @@ import {
 } from "./achievements";
 import { ageDefinitions, findAgeDefinition, type AgeDefinition } from "./ages";
 import {
+  buildingPowerAttributeDefinitions,
   computeResourceRate,
   derivedAttributeDefinitions,
   emptyResourceAmounts,
@@ -277,6 +278,8 @@ for (const key of [
   "buildingCostMultiplier",
   "wastedResources",
   "tradeProductionMultiplier",
+  "buildingPower",
+  ...buildingPowerAttributeDefinitions.map(({ key }) => key),
 ]) {
   derivedAttributeComputations[key] = {
     value:
@@ -1003,6 +1006,14 @@ export class CivilizationState {
         factors.multiplicative.push([sourceId, bonus.value]);
       }
     }
+    // A building's power folds in the global `buildingPower` multiplier, so the
+    // displayed value is the effective one (§13.2).
+    if (buildingPowerAttributeDefinitions.some(({ key: pk }) => pk === key)) {
+      factors.multiplicative.push([
+        "buildingPower",
+        this.getAttributeValue("buildingPower"),
+      ]);
+    }
     return factors;
   }
 
@@ -1063,6 +1074,17 @@ export class CivilizationState {
     };
   }
 
+  /**
+   * A production building's power stat (its `${key}Power` derived attribute). Base
+   * 1; `attributeMultiplier` bonuses raise it. Buildings with no power attribute
+   * (house, town-hall, people) and any power that resolves to 0 read as 1 so the
+   * exponent never collapses a building's output.
+   */
+  buildingPower(buildingKey: BuildingKey): ExpNumber {
+    const value = this.getAttributeValue(`${buildingKey}Power`);
+    return value.gt(ExpNumber.ZERO) ? value : ExpNumber.ONE;
+  }
+
   /** Effective effects for one or more buildings, shared by simulation and Pedia. */
   getBuildingEffects(buildingKey: BuildingKey, count = 1): BuildingEffects {
     const effects = buildingDefinitions.find(
@@ -1070,16 +1092,20 @@ export class CivilizationState {
     )?.effects;
     if (!effects) return {};
     const quantity = ExpNumber.fromNumber(count);
+    const power = this.buildingPower(buildingKey);
     return {
       additiveMultiplier:
         effects.additiveMultiplier?.map((effect) => ({
           ...effect,
-          perBuilding: effect.perBuilding.mul(quantity),
+          // Exponent scaling: the summed per-building bonus is
+          // (perBuilding x count)^power (user's farm formula, §13.1).
+          perBuilding: effect.perBuilding.mul(quantity).pow(power),
         })) ?? undefined,
       resourceProduction:
         effects.resourceProduction?.map((effect) => ({
           ...effect,
-          amount: effect.amount.mul(quantity),
+          // Flat +N/s per building has no count curve, so power scales it linearly.
+          amount: effect.amount.mul(quantity).mul(power),
         })) ?? undefined,
       resourceDrain:
         effects.resourceDrain?.map((effect) => ({
@@ -1754,6 +1780,12 @@ export class CivilizationState {
           : bonus.type === "attributeMultiplier"
             ? "multiplicative"
             : "drain";
+      // Only resource and capacity destinations belong in the factor model.
+      // Derived stats (clickPower, buildingPower, ...) are computed from
+      // activeBonuses() by getDerivedAttributeFactors(), so they must not be
+      // pushed here — they have no resourceFactors bucket.
+      if (acc.resourceFactors[bonus.destination as ResourceKey] === undefined)
+        continue;
       acc = acc.addFactor(
         bonus.destination as Parameters<typeof acc.addFactor>[0],
         factorType,

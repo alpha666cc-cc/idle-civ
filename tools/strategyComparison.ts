@@ -9,6 +9,7 @@ import type {
   SimulationStrategy,
 } from "./simulation.js";
 import { runSimulation } from "./simulationRunner.js";
+import { formatExpoNumber } from "./simFormat.js";
 
 /**
  * Comparison metrics for ranking strategies.
@@ -161,7 +162,7 @@ export async function evolutionaryTournament(
     console.log(`\nGeneration ${gen + 1} Ranking:`);
     comparison.ranking.forEach((metrics, index) => {
       console.log(
-        `${index + 1}. ${metrics.strategyName}: Score ${metrics.score.toFixed(0)}, Population ${metrics.finalPopulation}, Buildings ${metrics.totalBuildings}, Battles ${metrics.battlesWon}`,
+        `${index + 1}. ${metrics.strategyName}: Score ${formatExpoNumber(metrics.score)}, Population ${formatExpoNumber(metrics.finalPopulation)}, Buildings ${metrics.totalBuildings}, Battles ${metrics.battlesWon}`,
       );
     });
 
@@ -205,12 +206,19 @@ export async function headToHead(
 }> {
   const comparison = await compareStrategies([strategyA, strategyB], config);
 
+  // compareStrategies always returns a result per requested strategy, but guard
+  // anyway: an optional chain is undefined by design, so never assert past it.
   const metricsA = comparison.results.find(
     (r) => r.strategyName === strategyA.name,
-  )?.metrics!;
+  )?.metrics;
   const metricsB = comparison.results.find(
     (r) => r.strategyName === strategyB.name,
-  )?.metrics!;
+  )?.metrics;
+  if (!metricsA || !metricsB) {
+    throw new Error(
+      `Missing metrics for ${!metricsA ? strategyA.name : strategyB.name}`,
+    );
+  }
 
   const winner =
     metricsA.score > metricsB.score ? strategyA.name : strategyB.name;

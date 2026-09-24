@@ -18,7 +18,7 @@ A browser-based idle/incremental game with a civilization theme (React 19 + Type
 Vite, no backend). The player gathers food/wood/stone/gold, assigns workers, buys 12
 building types with exponentially scaling costs, and pushes population toward the campaign
 goal of **10 billion people**, finishing with a **colony-ship launch**. A bonus/upgrade
-layer (32 enhancer tiers), unlock gates, and an in-game codex (Gamepedia) already exist.
+layer (64 enhancer tiers), unlock gates, and an in-game codex (Gamepedia) already exist.
 So do statistics (including online/offline time tracking), achievements, the battle first
 slice (79 buyable units, 24 deterministic campaign encounters with a playback Army tab),
 the seven-age progression (Ancient → Modern/Space, with age-driven unit retirement), and
@@ -45,64 +45,90 @@ at 0. Click gain = `(worker production + 1)` × multipliers (drains excluded).
 
 ### Special resources
 
-| id           | Family      | Status | Notes                                                                                                                             |
-| ------------ | ----------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `population` | worker pool | 🟢     | Derived from built citizens; each citizen drains 1 food/s; capped by `peopleCapacity`; assignable workers = population − assigned |
-| `science`    | building    | 🟡     | Produced 1/s per university; university is gated at 20 town halls (gated at 20 town halls)                                        |
-| `military`   | building    | 🟢     | Produced 1/s per barracks; barracks gated at 5 town halls; spendable as a trade resource (production commit 2026-09-19)           |
-| `metalwork`  | building    | 🟢     | Produced 1/s per smithy; smithy gated behind the first battle (`age0_1_first_fire`); also an upgrade cost from enhancer tier 3    |
+The four **advanced production** resources (see §3) are not worker-assignable — they are
+produced by the advanced buildings themselves, one per second each.
+
+| id          | Family   | Status | Produced by                                            | Notes                                                                                          |
+| ----------- | -------- | ------ | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `population` | worker pool | 🟢  | — (derived from `people` buildings)                    | each citizen drains 1 food/s; capped by `peopleCapacity`; assignable = population − assigned   |
+| `military`  | building | 🟢     | `barracks`, +1/s each                                  | gated at 90 citizens; also the primary unit cost; spendable as a trade resource                 |
+| `science`   | building | 🟢     | `university`, +1/s each                                | gated on battle `age0_1_first_fire`; funds the research tree                                    |
+| `metalwork` | building | 🟢     | `smithy`, +1/s each                                    | gated at 5 town halls; also an enhancer cost from tier 3 on                                    |
+| `trade`     | building | 🟢     | `market`, +1/s each                                    | gated on `age-1`; spendable as the trade resource (Trade tab is still placeholder UI)          |
 
 Implemented: `click power` and `automated click power` are derived **attributes**
 (`attributes.ts`, `family: "derived"`; own `stat` Gamepedia category + stats tab) — 🟢.
 
-### Capacity resources (12, all 🟢)
+### Capacity resources (11, all 🟢)
 
-`${buildingKey}Capacity` for each of the 12 buildings, **default 10** — this is the real
+`${buildingKey}Capacity` for each of the 11 buildings, **default 10** — this is the real
 build limit (`maxCount` on definitions is decorative). Effective capacity = stored base ×
 Π(bought capacity multipliers). `peopleCapacity` additionally has a floor of houses × 10;
 `houseCapacity` a floor of 10 + 10 × town halls. Capacities are displayed in the buildings
 UI (`count / capacity` per card), not in the sidebar.
 
-## 3. Buildings (12)
+## 3. Buildings (11)
 
 Cost curve per entry: the total for `n` units is `T(n) = base × (factor^√n − 1)`, so
 unit `n` costs `T(n) − T(n−1)` and a bulk buy is one subtraction `T(n + k) − T(n)`.
-Every building uses `factor` 25, except `people` at 2.5; the first buys never get cheaper
+The eight **production** buildings use `factor` 10; `people` is 2.5 and the two
+capacity buildings (`house`, `town-hall`) stay at 25. The first buys never get cheaper
 (the early dip is clamped to the first unit price).
 Order below drives the building grid and auto-buy.
 
 **Endgame factor targets (age 7 — target only, not applied to game data):** the planned
 progressive reduction walks the cost growth factors down from **25 → 1.07** (buildings) and
 **2.5 → 1.02** (citizens) across the campaign, so a 1e9-count production building costs
-≈10^988 and 10B citizens ≈10^1000 at the seventh age. `data/buildings.json` still ships
-`factor` 25 / 2.5 today; 1.07 and 1.02 are endgame *goals* for the reduction schedule, not
-current values. Per-age end-of-age targets (derived from the production-exponent
-progression): age 1–2 hold ≈25, age 3 falls to ≈2.83, age 4 ≈1.77, age 5 ≈1.34, age 6
-≈1.155, age 7 ≈1.07. Citizens walk 2.5 → 1.02 over the same ten steps (smooth
-interpolation; their intermediate shape is not yet pe-confirmed).
+≈10^988 and 10B citizens ≈10^1000 at the seventh age. Per-age end-of-age targets (derived
+from the production-exponent progression): age 1–2 hold ≈25, age 3 falls to ≈2.83, age 4
+≈1.77, age 5 ≈1.34, age 6 ≈1.155, age 7 ≈1.07. Citizens walk 2.5 → 1.02 over the same ten
+steps (smooth interpolation; their intermediate shape is not yet pe-confirmed).
 
-| id            | Name        | Costs (base × factor)                            | Effects                             | Unlock                                         | Status                 |
-| ------------- | ----------- | ------------------------------------------------ | ----------------------------------- | ---------------------------------------------- | ---------------------- |
-| `people`      | Citizen     | food 10 ×1.2                                     | +1 population; drains 1 food/s each | always                                         | 🟢 engine special case |
-| `house`       | House       | wood 10 ×1.3                                     | +10 `peopleCapacity`                | always                                         | 🟢                     |
-| `farm`        | Farm        | food 10 ×1.25, wood 10 ×1.25                     | food gain ×1.1 each                 | always                                         | 🟢                     |
-| `lumber-yard` | Lumber Yard | wood 10 ×1.25, stone 5 ×1.25                     | wood gain ×1.1 each                 | always                                         | 🟢                     |
-| `quarry`      | Quarry      | stone 20 ×1.3                                    | stone gain ×1.1 each                | always                                         | 🟢                     |
-| `gold-mine`   | Gold Mine   | wood 100 ×1.25, stone 50 ×1.3                    | gold gain ×1.1 each                 | always                                         | 🟢                     |
-| `market`      | Market      | wood 300 ×1.2, stone 120 ×1.15                   | none yet                            | always                                         | 🟢 inert               |
-| `town-hall`   | Town Hall   | wood 1000 ×1.25, stone 500 ×1.25, gold 500 ×1.25 | +10 `houseCapacity`                 | always                                         | 🟢                     |
-| `smithy`      | Smithy      | wood 360 ×1.2, stone 180 ×1.15                   | +1 `metalwork`/s each               | after first battle                             | �                      |
-| `barracks`    | Barracks    | wood 420 ×1.22, stone 260 ×1.18, food 100 ×1.1   | +1 `military`/s each                | 5 town halls                                   | 🟢                     |
-| `university`  | University  | wood 520 ×1.24, stone 300 ×1.18, gold 180 ×1.16  | +1 `science`/s each                 | 20 town halls (unreachable: TH capacity is 10) | 🟡                     |
-| `monument`    | Monument    | stone 900 ×1.3, gold 400 ×1.2                    | none                                | never (`available: false`)                     | 🔒                     |
+### Two tiers of production buildings
+
+The eight buildings that produce anything split into a **primary** and an **advanced**
+tier. The split is data, not an engine branch: membership is derived from the `effects`
+a definition carries (see `buildingPowerAttributeDefinitions` in `attributes.ts`), so both
+tiers are handled by identical code paths and each owns a `${key}Power` stat.
+
+| | **Primary production** | **Advanced production** |
+| --- | --- | --- |
+| Buildings | `farm`, `lumber-yard`, `quarry`, `gold-mine` | `barracks`, `university`, `smithy`, `market` |
+| Boosts | a **worker-assignable** resource (`food`/`wood`/`stone`/`gold`) | a **building** resource (`military`/`science`/`metalwork`/`trade`) |
+| Effect | `additiveMultiplier` `+10%` each | `resourceProduction` `+1/s` each, plus `additiveMultiplier` `+5%` (market has no multiplier) |
+| Work input | needs workers assigned to that resource | self-sustaining — no worker assignment |
+| Power stat | `farmPower`, `lumber-yardPower`, `quarryPower`, `gold-minePower` | `barracksPower`, `universityPower`, `smithyPower`, `marketPower` |
+| Availability | available from the start | gated: barracks at 90 citizens, university on `age0_1_first_fire`, smithy at 5 town halls, market on `age-1` |
+| Enhancers | 8 tiers each, **grant `×10` capacity** | 8 tiers each, **power + production only — no capacity bonus** |
+
+The practical difference: primary buildings feed the click/worker economy you play from
+the first minute, while the advanced tier is gated behind population, battles or ages and
+generates the resources that later gate research, units and upgrades. Because their
+enhancers grant no capacity, the advanced four are capped at their base capacity of 10 —
+only tier 1 (threshold 9) of each chain is reachable today. Raising that cap is a
+separate balance decision (research/age capacity bonuses, or a rescaled threshold ladder).
+
+| id            | Name        | Costs (base × factor)                          | Tier      | Effects                                | Unlock                    | Status        |
+| ------------- | ----------- | ---------------------------------------------- | --------- | -------------------------------------- | ------------------------- | ------------- |
+| `people`      | Citizen     | food 10 ×2.5                                  | —         | +1 population; drains 1 food/s each    | always                    | 🟢 engine case |
+| `house`       | House       | wood 10 ×25                                   | capacity  | +10 `peopleCapacity`                   | always                    | 🟢            |
+| `farm`        | Farm        | food 10 ×10, wood 10 ×10                       | primary   | food gain ×1.1 each                    | always                    | 🟢            |
+| `lumber-yard` | Lumber Yard | wood 10 ×10, stone 5 ×10                       | primary   | wood gain ×1.1 each                    | always                    | 🟢            |
+| `quarry`      | Quarry      | stone 20 ×10                                   | primary   | stone gain ×1.1 each                   | always                    | 🟢            |
+| `gold-mine`   | Gold Mine   | wood 100 ×10, stone 50 ×10                     | primary   | gold gain ×1.1 each                    | always                    | 🟢            |
+| `town-hall`   | Town Hall   | wood 20000 ×25, stone 15000 ×25, gold 25000 ×25 | capacity  | +10 `houseCapacity`, +1 barracks and university each | always     | 🟢            |
+| `barracks`    | Barracks    | wood 10000 ×10, stone 1000 ×10, food 5000 ×10   | advanced  | +1 `military`/s, ×1.05 each            | 90 citizens               | 🟢            |
+| `university`  | University  | wood 20000 ×10, stone 25000 ×10, gold 10000 ×10 | advanced  | +1 `science`/s, ×1.05 each             | battle `age0_1_first_fire` | 🟢            |
+| `smithy`      | Smithy      | wood 1e6 ×10, stone 1e6 ×10                    | advanced  | +1 `metalwork`/s, ×1.05 each           | 5 town halls              | 🟢            |
+| `market`      | Market      | wood 2.5e6 ×10, stone 2.5e6 ×10                | advanced  | +1 `trade`/s (no multiplier effect)    | age `age-1`               | 🟢            |
 
 Known engine debt: `people`/`house`/`town-hall` capacity bookkeeping is special-cased in
 the engine instead of being fully data-driven; age-driven availability will replace the
 hardcoded `available` flag (roadmap Milestone 2).
 
-## 4. Upgrades (32, all 🟢)
+## 4. Upgrades (64, all 🟢)
 
-**Enhancer upgrades** — generated data: 4 buildings × 8 tiers.
+**Enhancer upgrades** — generated data: 8 buildings × 8 tiers (32 primary + 32 advanced).
 
 - **Ids:** `{building}-enhancer-{threshold}` with thresholds `10, 100, 1k, 10k, 100k, 1M, 10M, 100M` (e.g. `farm-enhancer-1000`); names "Enhanced Farm I"–"VIII".
 - **Applies to:** farm → food, lumber-yard → wood, quarry → stone, gold-mine → gold.
@@ -212,7 +238,7 @@ Master Builder rewards target the derived `buildingCostMultiplier` stat (base ×
 | 5 — Statistics              | Counters + time tracking done; command-style actions → result events remain                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 6 — Achievements            | Age-transition achievements; milestone chains (resource multipliers, hoarders, Master Builder) + cumulative family cards + open-ended hoarder tiers are done                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 7 — Upgrades (rest)         | `attributeFlat`/`attributeDrain`/`costReductionBase`/`costReductionFlat` data; research/achievement/battle unlock sources                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| 8 — Battles                 | **First slice done** — `src/game/units.ts` + `data/units.json` (79 units, per-age hp/attack scale ×8, cost factor 1.2), `src/game/battle.ts` (seeded deterministic stack/hp-pool sim, ≤ 200 rounds, stalemate outcome, `armyPower = attack × accuracy × √(hp ÷ (1 − armor))` summed over stacks), units as buyables **and** bonus receptacles (`hoplite.attack`, `tag.ranged.range`, `unitAll.hp` scopes; enemy boosts use the same channel), Army tab (unit column + enemy army + battle playback at 1 round/sec, units restored after battle), Gamepedia `unit`/`combat` pages, 79 vendored game-icons.net SVGs (CC BY 3.0, `public/units/ATTRIBUTION.md`). Age-driven retirement trims units from two ages back. Remaining: research-driven unlocks (Milestone 9), balance pass on cross-age enemy counts |
+| 8 — Battles                 | **First slice done** — `src/game/units.ts` + `data/units.json` (79 units, per-age hp/attack scale ×8, cost factor 10), `src/game/battle.ts` (seeded deterministic stack/hp-pool sim, ≤ 200 rounds, stalemate outcome, `armyPower = attack × accuracy × √(hp ÷ (1 − armor))` summed over stacks), units as buyables **and** bonus receptacles (`hoplite.attack`, `tag.ranged.range`, `unitAll.hp` scopes; enemy boosts use the same channel), Army tab (unit column + enemy army + battle playback at 1 round/sec, units restored after battle), Gamepedia `unit`/`combat` pages, 79 vendored game-icons.net SVGs (CC BY 3.0, `public/units/ATTRIBUTION.md`). Age-driven retirement trims units from two ages back. Remaining: research-driven unlocks (Milestone 9), balance pass on cross-age enemy counts |
 | 9 — Research                | Tree keyed to ages                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | 10 — Simulation             | Headless pacing run; Vitest is installed (`npm test`), the runner exists but no simulation yet                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Deferred                    | Prestige mechanics, prestige bonuses, interstellar loop, colony ship                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -235,9 +261,9 @@ Master Builder rewards target the derived `buildingCostMultiplier` stat (base ×
 
 | Dimension          | Live                                                       | Planned total (first loop)                                  |
 | ------------------ | ---------------------------------------------------------- | ----------------------------------------------------------- |
-| Buildings          | 12                                                         | ~12 + colony-ship project pieces                            |
-| Resources          | 20 (4 production, 1 population, 3 building, 12 capacity)   | + 2 stats (click power, auto-click rate)                    |
-| Upgrades           | 32 enhancer tiers                                          | + research-gated, achievement-gated, battle-reward upgrades |
+| Buildings          | 11 (2 capacity, 8 production, 1 citizen)         | ~11 + colony-ship project pieces                            |
+| Resources          | 21 (4 production, 1 population, 4 building, 12 capacity) | + 2 stats (click power, auto-click rate)              |
+| Upgrades           | 64 enhancer tiers (32 primary + 32 advanced)       | + research-gated, achievement-gated, battle-reward upgrades |
 | Ages               | 7 (live)                                                   | 7                                                           |
 | Units / encounters | 79 units, 24 encounters (7 age bosses)                     | 79-unit roster + 24 encounters (7 age-end bosses)           |
 | Research           | 0                                                          | 1 tree across 7 eras                                        |

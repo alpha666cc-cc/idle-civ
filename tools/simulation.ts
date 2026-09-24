@@ -81,6 +81,11 @@ export interface SimulationEvent {
   time: number; // game time in seconds
   type: SimulationEventType;
   id: string;
+  /** Resource balances when the event fired (ExpNumber as string). */
+  resources: Record<string, string>;
+  /** Per-second production rates when the event fired. */
+  productionRates: Record<string, string>;
+  population: number;
 }
 
 /**
@@ -213,7 +218,19 @@ export class GameSimulation {
       const key = `${type}:${id}`;
       if (this.seenEvents.has(key)) continue;
       this.seenEvents.add(key);
-      this.events.push({ time: this.gameTime, type, id });
+      this.events.push({
+        time: this.gameTime,
+        type,
+        id,
+        resources: Object.fromEntries(
+          Object.entries(this.state.resources).map(([resource, amount]) => [
+            resource,
+            amount.toString(),
+          ]),
+        ),
+        productionRates: this.computeProductionRates(),
+        population: this.state.population.toNumber(),
+      });
       this.log(`event ${key} at ${this.gameTime}s`);
     }
   }

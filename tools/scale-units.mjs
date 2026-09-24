@@ -17,44 +17,6 @@ const unitsData = JSON.parse(
   readFileSync(join(__dirname, "../src/game/data/units.json"), "utf8"),
 );
 
-// Simple ExpNumber implementation for cost calculation
-class ExpNumber {
-  static from(value) {
-    if (typeof value === "number") {
-      if (value === 0)
-        return {
-          mantissa: 0,
-          exponent: 0,
-          toNumber: () => 0,
-          log10: () => -Infinity,
-        };
-      if (value < 0) throw new Error("Negative numbers not supported");
-      const exp = Math.floor(Math.log10(value));
-      const mant = value / Math.pow(10, exp);
-      return {
-        mantissa: mant,
-        exponent: exp,
-        toNumber: () => value,
-        log10: () => Math.log10(value),
-      };
-    }
-    if (typeof value === "string") {
-      const match = value.match(/^([+-]?\d+\.?\d*)(?:[eE]([+-]?\d+))?$/);
-      if (!match) throw new Error(`Invalid ExpNumber string: ${value}`);
-      const mant = parseFloat(match[1]);
-      const exp = match[2] ? parseInt(match[2]) : 0;
-      const num = mant * Math.pow(10, exp);
-      return {
-        mantissa: mant,
-        exponent: exp,
-        toNumber: () => num,
-        log10: () => Math.log10(num),
-      };
-    }
-    throw new Error(`Unsupported value type: ${typeof value}`);
-  }
-}
-
 // Calculate scaling factor - very conservative tier-based scaling
 function calculateScale(data) {
   const military = data.costs?.find(({ resource }) => resource === "military");

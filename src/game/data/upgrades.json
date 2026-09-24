@@ -22,6 +22,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "farmPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
@@ -55,6 +61,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "farmPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -94,6 +106,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "farmPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -139,6 +157,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "farmPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
@@ -182,6 +206,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "farmPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -227,6 +257,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "farmPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
@@ -270,6 +306,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "farmPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -315,6 +357,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "farmPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
         "value": 10
@@ -354,6 +402,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "lumber-yardPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
@@ -387,6 +441,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "lumber-yardPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
@@ -426,6 +486,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "lumber-yardPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
@@ -471,6 +537,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "lumber-yardPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
@@ -514,6 +586,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "lumber-yardPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
@@ -559,6 +637,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "lumber-yardPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
@@ -602,6 +686,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "lumber-yardPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
@@ -647,6 +737,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "lumber-yardPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "lumber-yardCapacity",
         "value": 10
@@ -681,6 +777,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "quarryPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
@@ -709,6 +811,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "quarryPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -743,6 +851,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "quarryPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -783,6 +897,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "quarryPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
@@ -821,6 +941,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "quarryPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -861,6 +987,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "quarryPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
@@ -899,6 +1031,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "quarryPower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -939,6 +1077,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "quarryPower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
         "value": 10
@@ -978,6 +1122,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "gold-minePower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
@@ -1011,6 +1161,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "gold-minePower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
@@ -1050,6 +1206,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "gold-minePower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
@@ -1095,6 +1257,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "gold-minePower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
@@ -1138,6 +1306,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "gold-minePower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
@@ -1183,6 +1357,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "gold-minePower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
@@ -1226,6 +1406,12 @@
       }
     ],
     "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "gold-minePower",
+        "value": 1
+      },
+
       {
         "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
@@ -1271,6 +1457,12 @@
     ],
     "bonuses": [
       {
+        "type": "attributeFlat",
+        "destination": "gold-minePower",
+        "value": 1
+      },
+
+      {
         "type": "attributeMultiplier",
         "destination": "gold-mineCapacity",
         "value": 10
@@ -1283,6 +1475,1414 @@
       {
         "type": "costReductionFactor",
         "destination": "gold-mine",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "b7c1f6ab-bc9e-56ac-80d0-61d032f12a9b",
+    "key": "barracks-enhancer-9",
+    "name": "Enhanced Barracks I",
+    "description": "increase Barracks power and military production",
+    "building": "barracks",
+    "resource": "military",
+    "threshold": 9,
+    "tier": 0,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      },
+      {
+        "resource": "food",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "barracksPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 2
+      }
+    ]
+  },
+  {
+    "guid": "0d313484-c00d-5920-babc-ccfd3795676c",
+    "key": "barracks-enhancer-98",
+    "name": "Enhanced Barracks II",
+    "description": "increase Barracks power and military production",
+    "building": "barracks",
+    "resource": "military",
+    "threshold": 98,
+    "tier": 1,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      },
+      {
+        "resource": "food",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "barracksPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 2
+      }
+    ]
+  },
+  {
+    "guid": "9fbb389b-ef0d-535e-ac0c-b53b342c553c",
+    "key": "barracks-enhancer-980",
+    "name": "Enhanced Barracks III",
+    "description": "increase Barracks power and military production",
+    "building": "barracks",
+    "resource": "military",
+    "threshold": 980,
+    "tier": 2,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "food",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "barracksPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "barracks",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "7ce4a445-43ed-5f41-84a9-6b9cd13d39bc",
+    "key": "barracks-enhancer-9800",
+    "name": "Enhanced Barracks IV",
+    "description": "increase Barracks power and military production",
+    "building": "barracks",
+    "resource": "military",
+    "threshold": 9800,
+    "tier": 3,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "food",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "barracksPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "barracks",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "fa178be3-a668-5267-8661-880d7d07750c",
+    "key": "barracks-enhancer-98000",
+    "name": "Enhanced Barracks V",
+    "description": "increase Barracks power and military production",
+    "building": "barracks",
+    "resource": "military",
+    "threshold": 98000,
+    "tier": 4,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "food",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "barracksPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "barracks",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "5b5bea76-baae-5d21-b00b-689ade15785b",
+    "key": "barracks-enhancer-980000",
+    "name": "Enhanced Barracks VI",
+    "description": "increase Barracks power and military production",
+    "building": "barracks",
+    "resource": "military",
+    "threshold": 980000,
+    "tier": 5,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "food",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "barracksPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "barracks",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "af92382b-4e4f-5ae6-9fce-76436cf6212a",
+    "key": "barracks-enhancer-9800000",
+    "name": "Enhanced Barracks VII",
+    "description": "increase Barracks power and military production",
+    "building": "barracks",
+    "resource": "military",
+    "threshold": 9800000,
+    "tier": 6,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "food",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "barracksPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "barracks",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "626e6407-02f2-5184-be81-4843158d0ca3",
+    "key": "barracks-enhancer-98000000",
+    "name": "Enhanced Barracks VIII",
+    "description": "increase Barracks power and military production",
+    "building": "barracks",
+    "resource": "military",
+    "threshold": 98000000,
+    "tier": 7,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "food",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "barracksPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "barracks",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "aeef42a7-a3b5-5457-9db8-f1226560f72f",
+    "key": "university-enhancer-9",
+    "name": "Enhanced University I",
+    "description": "increase University power and science production",
+    "building": "university",
+    "resource": "science",
+    "threshold": 9,
+    "tier": 0,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      },
+      {
+        "resource": "gold",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "universityPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 2
+      }
+    ]
+  },
+  {
+    "guid": "259abe69-e7e5-5d7f-90fc-1bc571473896",
+    "key": "university-enhancer-98",
+    "name": "Enhanced University II",
+    "description": "increase University power and science production",
+    "building": "university",
+    "resource": "science",
+    "threshold": 98,
+    "tier": 1,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      },
+      {
+        "resource": "gold",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "universityPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 2
+      }
+    ]
+  },
+  {
+    "guid": "0eb0b712-fcdc-5431-8b7c-f11f3f117ce9",
+    "key": "university-enhancer-980",
+    "name": "Enhanced University III",
+    "description": "increase University power and science production",
+    "building": "university",
+    "resource": "science",
+    "threshold": 980,
+    "tier": 2,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "gold",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "universityPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "university",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "7e79eb8b-18a3-5793-aeee-e79864061d60",
+    "key": "university-enhancer-9800",
+    "name": "Enhanced University IV",
+    "description": "increase University power and science production",
+    "building": "university",
+    "resource": "science",
+    "threshold": 9800,
+    "tier": 3,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "gold",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "universityPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "university",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "1c46571f-4f29-5561-adc3-ae0de236178a",
+    "key": "university-enhancer-98000",
+    "name": "Enhanced University V",
+    "description": "increase University power and science production",
+    "building": "university",
+    "resource": "science",
+    "threshold": 98000,
+    "tier": 4,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "gold",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "universityPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "university",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "4e302725-9e09-53ec-bd78-cfd637201b11",
+    "key": "university-enhancer-980000",
+    "name": "Enhanced University VI",
+    "description": "increase University power and science production",
+    "building": "university",
+    "resource": "science",
+    "threshold": 980000,
+    "tier": 5,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "gold",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "universityPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "university",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "4932448c-1041-56bb-bf3b-93448c2b5a02",
+    "key": "university-enhancer-9800000",
+    "name": "Enhanced University VII",
+    "description": "increase University power and science production",
+    "building": "university",
+    "resource": "science",
+    "threshold": 9800000,
+    "tier": 6,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "gold",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "universityPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "university",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "10e88098-923c-58e5-98d3-67281a993ab4",
+    "key": "university-enhancer-98000000",
+    "name": "Enhanced University VIII",
+    "description": "increase University power and science production",
+    "building": "university",
+    "resource": "science",
+    "threshold": 98000000,
+    "tier": 7,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "gold",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "universityPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "university",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "ec9baaea-363c-5cd7-b8bc-d347386b2b04",
+    "key": "smithy-enhancer-9",
+    "name": "Enhanced Smithy I",
+    "description": "increase Smithy power and metalwork production",
+    "building": "smithy",
+    "resource": "metalwork",
+    "threshold": 9,
+    "tier": 0,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "smithyPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 2
+      }
+    ]
+  },
+  {
+    "guid": "fc6b0b32-98a1-5c47-bc73-254c514068aa",
+    "key": "smithy-enhancer-98",
+    "name": "Enhanced Smithy II",
+    "description": "increase Smithy power and metalwork production",
+    "building": "smithy",
+    "resource": "metalwork",
+    "threshold": 98,
+    "tier": 1,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "smithyPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 2
+      }
+    ]
+  },
+  {
+    "guid": "7f909489-e4c1-5afe-a7e2-b28b8372eaa2",
+    "key": "smithy-enhancer-980",
+    "name": "Enhanced Smithy III",
+    "description": "increase Smithy power and metalwork production",
+    "building": "smithy",
+    "resource": "metalwork",
+    "threshold": 980,
+    "tier": 2,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "smithyPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "smithy",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "25c019e1-aa0d-5746-b623-956534cec3db",
+    "key": "smithy-enhancer-9800",
+    "name": "Enhanced Smithy IV",
+    "description": "increase Smithy power and metalwork production",
+    "building": "smithy",
+    "resource": "metalwork",
+    "threshold": 9800,
+    "tier": 3,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "smithyPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "smithy",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "9a37e1a4-d8e9-55e1-96fc-d0f49cb9efab",
+    "key": "smithy-enhancer-98000",
+    "name": "Enhanced Smithy V",
+    "description": "increase Smithy power and metalwork production",
+    "building": "smithy",
+    "resource": "metalwork",
+    "threshold": 98000,
+    "tier": 4,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "smithyPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "smithy",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "cbbc450a-30fa-508f-bd08-6c5f3f6989a2",
+    "key": "smithy-enhancer-980000",
+    "name": "Enhanced Smithy VI",
+    "description": "increase Smithy power and metalwork production",
+    "building": "smithy",
+    "resource": "metalwork",
+    "threshold": 980000,
+    "tier": 5,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "smithyPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "smithy",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "b7ecd9f2-7208-5fc5-adf3-879d32f17b30",
+    "key": "smithy-enhancer-9800000",
+    "name": "Enhanced Smithy VII",
+    "description": "increase Smithy power and metalwork production",
+    "building": "smithy",
+    "resource": "metalwork",
+    "threshold": 9800000,
+    "tier": 6,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "smithyPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "smithy",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "d2c73607-97b5-594f-901e-3f179377dc43",
+    "key": "smithy-enhancer-98000000",
+    "name": "Enhanced Smithy VIII",
+    "description": "increase Smithy power and metalwork production",
+    "building": "smithy",
+    "resource": "metalwork",
+    "threshold": 98000000,
+    "tier": 7,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "smithyPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "smithy",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "d130c2ba-1f61-5ee8-99de-bebd1111691a",
+    "key": "market-enhancer-9",
+    "name": "Enhanced Market I",
+    "description": "increase Market power and trade production",
+    "building": "market",
+    "resource": "trade",
+    "threshold": 9,
+    "tier": 0,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.570000000000000e2",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "marketPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": 2
+      }
+    ]
+  },
+  {
+    "guid": "be48c35b-3171-59c6-a626-a58d36128626",
+    "key": "market-enhancer-98",
+    "name": "Enhanced Market II",
+    "description": "increase Market power and trade production",
+    "building": "market",
+    "resource": "trade",
+    "threshold": 98,
+    "tier": 1,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "4.535182000000000e6",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "marketPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": 2
+      }
+    ]
+  },
+  {
+    "guid": "65b82976-d9cf-5bd4-b56c-b6c3f0dcbbeb",
+    "key": "market-enhancer-980",
+    "name": "Enhanced Market III",
+    "description": "increase Market power and trade production",
+    "building": "market",
+    "resource": "trade",
+    "threshold": 980,
+    "tier": 2,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5.442595509414944e42",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "marketPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "market",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "2ff52915-a271-5912-af87-aed3de25e601",
+    "key": "market-enhancer-9800",
+    "name": "Enhanced Market IV",
+    "description": "increase Market power and trade production",
+    "building": "market",
+    "resource": "trade",
+    "threshold": 9800,
+    "tier": 3,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "6.58642101814543e400",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "marketPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "market",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "f2ecdc03-6d24-5269-995f-640f66b8dda9",
+    "key": "market-enhancer-98000",
+    "name": "Enhanced Market V",
+    "description": "increase Market power and trade production",
+    "building": "market",
+    "resource": "trade",
+    "threshold": 98000,
+    "tier": 4,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "8.66590293541983e3978",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "marketPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": 2
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "market",
+        "value": 0.5
+      }
+    ]
+  },
+  {
+    "guid": "8bdcfd09-e40a-5d0b-9802-9308cb4bdbad",
+    "key": "market-enhancer-980000",
+    "name": "Enhanced Market VI",
+    "description": "increase Market power and trade production",
+    "building": "market",
+    "resource": "trade",
+    "threshold": 980000,
+    "tier": 5,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "2.63140187246763e39757",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "marketPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "market",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "8f0069f9-c98c-50a7-bf20-346069003a31",
+    "key": "market-enhancer-9800000",
+    "name": "Enhanced Market VII",
+    "description": "increase Market power and trade production",
+    "building": "market",
+    "resource": "trade",
+    "threshold": 9800000,
+    "tier": 6,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "3.42492297861471e397539",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "marketPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "market",
+        "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "6c6c6326-c15f-5810-bc72-d0405d174278",
+    "key": "market-enhancer-98000000",
+    "name": "Enhanced Market VIII",
+    "description": "increase Market power and trade production",
+    "building": "market",
+    "resource": "trade",
+    "threshold": 98000000,
+    "tier": 7,
+    "costs": [
+      {
+        "resource": "wood",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "9.33291149207092e3975357",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeFlat",
+        "destination": "marketPower",
+        "value": 1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": 2
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "market",
         "value": 0.01
       }
     ]

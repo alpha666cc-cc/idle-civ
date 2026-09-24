@@ -50,12 +50,12 @@
       {
         "resource": "food",
         "base": 10,
-        "factor": 25
+        "factor": 10
       },
       {
         "resource": "wood",
         "base": 10,
-        "factor": 25
+        "factor": 10
       }
     ],
     "available": true,
@@ -76,12 +76,12 @@
       {
         "resource": "wood",
         "base": 10,
-        "factor": 25
+        "factor": 10
       },
       {
         "resource": "stone",
         "base": 5,
-        "factor": 25
+        "factor": 10
       }
     ],
     "available": true,
@@ -102,7 +102,7 @@
       {
         "resource": "stone",
         "base": 20,
-        "factor": 25
+        "factor": 10
       }
     ],
     "available": true,
@@ -123,12 +123,12 @@
       {
         "resource": "wood",
         "base": 100,
-        "factor": 25
+        "factor": 10
       },
       {
         "resource": "stone",
         "base": 50,
-        "factor": 25
+        "factor": 10
       }
     ],
     "available": true,
@@ -190,17 +190,17 @@
       {
         "resource": "wood",
         "base": 10000,
-        "factor": 25
+        "factor": 10
       },
       {
         "resource": "stone",
         "base": 1000,
-        "factor": 25
+        "factor": 10
       },
       {
         "resource": "food",
         "base": 5000,
-        "factor": 25
+        "factor": 10
       }
     ],
     "available": true,
@@ -230,17 +230,17 @@
       {
         "resource": "wood",
         "base": 20000,
-        "factor": 25
+        "factor": 10
       },
       {
         "resource": "stone",
         "base": 25000,
-        "factor": 25
+        "factor": 10
       },
       {
         "resource": "gold",
         "base": 10000,
-        "factor": 25
+        "factor": 10
       }
     ],
     "available": true,
@@ -269,12 +269,12 @@
       {
         "resource": "wood",
         "base": 1000000,
-        "factor": 25
+        "factor": 10
       },
       {
         "resource": "stone",
         "base": 1000000,
-        "factor": 25
+        "factor": 10
       }
     ],
     "available": true,
@@ -305,12 +305,12 @@
       {
         "resource": "wood",
         "base": 2500000,
-        "factor": 25
+        "factor": 10
       },
       {
         "resource": "stone",
         "base": 2500000,
-        "factor": 25
+        "factor": 10
       }
     ],
     "available": true,

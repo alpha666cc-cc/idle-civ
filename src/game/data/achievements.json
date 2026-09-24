@@ -10,6 +10,16 @@
     ]
   },
   {
+    "guid": "b2d84f07-6c19-5a3e-8f42-1e7b05c9d6a3",
+    "key": "mustering-village",
+    "name": "Mustering Village",
+    "description": "Reach a population of 100 citizens. Reward: Military x2.",
+    "requirement": { "type": "population", "amount": 100 },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "military", "value": 2 }
+    ]
+  },
+  {
     "guid": "effed5d3-ac6d-5158-8e42-75b58153708e",
     "key": "wolf-slayer",
     "name": "Wolf Slayer",
@@ -1795,6 +1805,114 @@
     },
     "bonuses": [
       { "type": "attributeFlat", "destination": "metalwork", "value": 6 }
+    ]
+  },
+  {
+    "guid": "ea750b6a-177d-58a1-8aaf-967b2aee0ff7",
+    "key": "trade-multiplier-1",
+    "family": "trade-multiplier",
+    "tier": 1,
+    "name": "Trade Multiplier I",
+    "description": "Own 10 markets. Reward: Trade Multiplier +20%.",
+    "requirement": { "type": "building-count", "building": "market", "count": 10 },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "trade", "value": 1.2 }
+    ]
+  },
+  {
+    "guid": "5003b290-e936-587a-9082-f039e75555bc",
+    "key": "trade-multiplier-2",
+    "family": "trade-multiplier",
+    "tier": 2,
+    "name": "Trade Multiplier II",
+    "description": "Own 100 markets. Reward: Trade Multiplier ×3.",
+    "requirement": { "type": "building-count", "building": "market", "count": 100 },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "trade", "value": 3 }
+    ]
+  },
+  {
+    "guid": "04729da9-3941-5b9e-b382-c2cbc261f0c9",
+    "key": "trade-multiplier-3",
+    "family": "trade-multiplier",
+    "tier": 3,
+    "name": "Trade Multiplier III",
+    "description": "Own 1,000 markets. Reward: Trade Multiplier ×4.",
+    "requirement": { "type": "building-count", "building": "market", "count": 1000 },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "trade", "value": 4 }
+    ]
+  },
+  {
+    "guid": "27592cbf-8c2b-54cd-82df-eebe6c6da970",
+    "key": "trade-multiplier-4",
+    "family": "trade-multiplier",
+    "tier": 4,
+    "name": "Trade Multiplier IV",
+    "description": "Own 10,000 markets. Reward: Trade Multiplier ×5.",
+    "requirement": { "type": "building-count", "building": "market", "count": 10000 },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "trade", "value": 5 }
+    ]
+  },
+  {
+    "guid": "cdcad287-126e-50db-a107-f6a8b6156e17",
+    "key": "trade-multiplier-5",
+    "family": "trade-multiplier",
+    "tier": 5,
+    "name": "Trade Multiplier V",
+    "description": "Own 100,000 markets. Reward: Trade Multiplier ×6.",
+    "requirement": { "type": "building-count", "building": "market", "count": 100000 },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "trade", "value": 6 }
+    ]
+  },
+  {
+    "guid": "0829bb54-c91e-5601-b560-58e32c01d4bd",
+    "key": "trade-multiplier-6",
+    "family": "trade-multiplier",
+    "tier": 6,
+    "name": "Trade Multiplier VI",
+    "description": "Own 1,000,000 markets. Reward: Trade Multiplier ×7.",
+    "requirement": { "type": "building-count", "building": "market", "count": 1000000 },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "trade", "value": 7 }
+    ]
+  },
+  {
+    "guid": "c7eccdb6-728a-5019-a848-2450ad3b7290",
+    "key": "trade-multiplier-7",
+    "family": "trade-multiplier",
+    "tier": 7,
+    "name": "Trade Multiplier VII",
+    "description": "Own 10,000,000 markets. Reward: Trade Multiplier ×8.",
+    "requirement": { "type": "building-count", "building": "market", "count": 10000000 },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "trade", "value": 8 }
+    ]
+  },
+  {
+    "guid": "00f3751d-0f1b-56d7-a325-23a3b35ef1a6",
+    "key": "trade-multiplier-8",
+    "family": "trade-multiplier",
+    "tier": 8,
+    "name": "Trade Multiplier VIII",
+    "description": "Own 100,000,000 markets. Reward: Trade Multiplier ×9.",
+    "requirement": { "type": "building-count", "building": "market", "count": 100000000 },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "trade", "value": 9 }
+    ]
+  },
+  {
+    "guid": "d39e8571-0aac-5133-b8cc-11175b23bae2",
+    "key": "trade-multiplier-9",
+    "family": "trade-multiplier",
+    "tier": 9,
+    "name": "Trade Multiplier IX",
+    "description": "Own 1,000,000,000 markets. Reward: Trade Multiplier ×10.",
+    "requirement": { "type": "building-count", "building": "market", "count": 1000000000 },
+    "bonuses": [
+      { "type": "attributeMultiplier", "destination": "trade", "value": 10 }
     ]
   }
 ]

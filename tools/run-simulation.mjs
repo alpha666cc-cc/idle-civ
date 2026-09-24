@@ -17,6 +17,7 @@
  */
 
 import { createSimulationRunner } from "./simulationRunner.js";
+import { formatExpoNumber } from "./simFormat.js";
 import { getStrategy, getStrategyNames } from "./strategies.js";
 
 function parseArgs() {
@@ -228,7 +229,7 @@ async function main() {
   console.log(`Snapshots Recorded: ${result.snapshots.length}`);
 
   const finalProductionList = Object.entries(result.finalProductionRates ?? {})
-    .map(([key, value]) => `${key}: ${value}/s`)
+    .map(([key, value]) => `${key}: ${formatExpoNumber(value)}/s`)
     .join(", ");
   console.log(`Final Production: { ${finalProductionList || "none"} }`);
 
@@ -239,6 +240,15 @@ async function main() {
       console.log(
         `  [${formatGameTime(event.time)}] ${event.type}: ${event.id}`,
       );
+      console.log(`    Population: ${formatExpoNumber(event.population)}`);
+      const eventResourceList = Object.entries(event.resources ?? {})
+        .map(([key, value]) => `${key}: ${formatExpoNumber(value)}`)
+        .join(", ");
+      console.log(`    Resources: { ${eventResourceList || "none"} }`);
+      const eventProductionList = Object.entries(event.productionRates ?? {})
+        .map(([key, value]) => `${key}: ${formatExpoNumber(value)}/s`)
+        .join(", ");
+      console.log(`    Production: { ${eventProductionList || "none"} }`);
     });
   } else {
     console.log("  none");
@@ -259,17 +269,17 @@ async function main() {
       console.log(`Snapshot ${index + 1}:`);
       console.log(`  Time: ${snapshot.timestamp}s`);
       console.log(`  Age: ${snapshot.age}`);
-      console.log(`  Population: ${snapshot.population}`);
+      console.log(`  Population: ${formatExpoNumber(snapshot.population)}`);
       const researchList = snapshot.researches?.length
         ? snapshot.researches.join(", ")
         : "none";
       console.log(`  Researches: [${researchList}]`);
       const resourceList = Object.entries(snapshot.resources ?? {})
-        .map(([key, value]) => `${key}: ${value}`)
+        .map(([key, value]) => `${key}: ${formatExpoNumber(value)}`)
         .join(", ");
       console.log(`  Resources: { ${resourceList || "none"} }`);
       const productionList = Object.entries(snapshot.productionRates ?? {})
-        .map(([key, value]) => `${key}: ${value}/s`)
+        .map(([key, value]) => `${key}: ${formatExpoNumber(value)}/s`)
         .join(", ");
       console.log(`  Production: { ${productionList || "none"} }`);
       const buildingList = snapshot.buildings
@@ -279,12 +289,12 @@ async function main() {
         `  Buildings: [${buildingList}] (${snapshot.totalBuildings} total)`,
       );
       const unitList = snapshot.units
-        .map((u) => `${u.unit} x${u.count}`)
+        .map((u) => `${u.unit} x${formatExpoNumber(u.count)}`)
         .join(", ");
       console.log(`  Units: [${unitList || "none"}]`);
       console.log(`  Battles Won: ${snapshot.battlesWon}`);
       if (snapshot.militaryPower) {
-        console.log(`  Military Power: ${snapshot.militaryPower}`);
+        console.log(`  Military Power: ${formatExpoNumber(snapshot.militaryPower)}`);
       }
     });
   }

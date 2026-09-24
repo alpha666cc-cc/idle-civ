@@ -247,7 +247,7 @@ Modern/Space**. The first encounter is a wolf (`age0_1_first_fire`) in the openi
 Ancient age; defeating it expands the town-hall count beyond the default cap of 10. Each
 victory applies a data-driven reward (bonuses, unlocks, enemy boosts on the same bonus
 channel as upgrades). **Implemented (first battle slice):** unit definitions
-(`src/game/units.ts` + `data/units.json`, hp/attack scaled ×8 per age, cost factor 1.2),
+(`src/game/units.ts` + `data/units.json`, hp/attack scaled ×8 per age, cost factor 10),
 a deterministic seeded stack/hp-pool simulation (`src/game/battle.ts`, ≤ 200 rounds with
 an explicit stalemate outcome), `armyPower = attack × accuracy × √(hp ÷ (1 − armor))`
 summed over stacks, and an Army tab that buys units and plays battles back at one round

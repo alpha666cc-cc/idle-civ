@@ -17,7 +17,7 @@ for (const t of newData) {
     changedCount++;
     continue;
   }
-  const strip = ({ guid, ...rest }) => rest;
+  const strip = ({ guid: _guid, ...rest }) => rest;
   if (norm(strip(old)) !== norm(strip(t))) {
     changedCount++;
     const fields = [];

@@ -1,3 +1,4 @@
+import { buildingDefinitions } from "./buildings";
 import statData from "./data/stats.json";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
@@ -158,6 +159,31 @@ export const wastedResourcesDefinition = new AttributeDefinition(
 );
 
 derivedAttributeDefinitions.push(wastedResourcesDefinition);
+
+/**
+ * Every production building owns a derived power attribute (§13.2): base 1, raised
+ * by `attributeMultiplier` bonuses (e.g. an encounter granting `farmPower` ×4). A
+ * production building is one that has an `additiveMultiplier` or a
+ * `resourceProduction` effect — `house`, `town-hall` and `people` (capacity/drain
+ * only) have none. Keys are `${buildingKey}Power`.
+ */
+export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
+  buildingDefinitions
+    .filter(
+      (b) => b.effects.additiveMultiplier || b.effects.resourceProduction,
+    )
+    .map(
+      (b) =>
+        new AttributeDefinition(
+          `${b.key}Power` as AttributeKey,
+          `${b.name} power`,
+          "derived",
+          `${b.name} power scales this building's production. Base 1; bonuses raise it.`,
+        ),
+    );
+
+derivedAttributeDefinitions.push(...buildingPowerAttributeDefinitions);
+
 
 export const attributeDefinitions: AttributeDefinition[] = [
   ...productionDefinitions,

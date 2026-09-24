@@ -22,5 +22,11 @@
     "key": "armyPower",
     "label": "Army power",
     "description": "Combined fighting strength of every owned unit, summed from each stack's attack, accuracy, armour and hit points. Shown on both army headers in battle."
+  },
+  {
+    "guid": "7c3e9a12-4b58-5d0f-9a71-2e6c4f8b1d03",
+    "key": "buildingPower",
+    "label": "Building power",
+    "description": "Global multiplier folded into every production building's own power. Ages and endgame bonuses raise it for all buildings at once."
   }
 ]

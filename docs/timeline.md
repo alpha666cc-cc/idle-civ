@@ -64,5 +64,5 @@
 ## Earlier (2026-09-14 → 09-15) — Foundations
 
 - `ExpNumber` (extended precision), number formatting, action multipliers,
-  Gamepedia registry, upgrades (32 enhancer tiers), JSON-backed definitions,
+  Gamepedia registry, upgrades (64 enhancer tiers), JSON-backed definitions,
   vendored Node toolchain, agents/docs scaffolding, roadmap pacing notes.

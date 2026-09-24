@@ -20,6 +20,11 @@
         "type": "attributeMultiplier",
         "destination": "town-hallCapacity",
         "value": "1e1"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "buildingPower",
+        "value": 2
       }
     ]
   },

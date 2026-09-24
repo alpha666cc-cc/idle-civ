@@ -18,6 +18,7 @@
  *   --help                   Show this help
  */
 
+import { formatExpoNumber } from "./simFormat.js";
 import {
   compareStrategies,
   evolutionaryTournament,
@@ -231,12 +232,12 @@ async function main() {
     console.log("\n=== Final Ranking ===");
     result.finalRanking.forEach((metrics, index) => {
       console.log(
-        `${index + 1}. ${metrics.strategyName}: Score ${metrics.score.toFixed(0)}, Population ${metrics.finalPopulation}, Buildings ${metrics.totalBuildings}, Battles ${metrics.battlesWon}`,
+        `${index + 1}. ${metrics.strategyName}: Score ${formatExpoNumber(metrics.score)}, Population ${formatExpoNumber(metrics.finalPopulation)}, Buildings ${metrics.totalBuildings}, Battles ${metrics.battlesWon}`,
       );
     });
 
     console.log(
-      `\nBest Strategy: ${result.bestStrategy.strategyName} (Score: ${result.bestStrategy.score.toFixed(0)})`,
+      `\nBest Strategy: ${result.bestStrategy.strategyName} (Score: ${formatExpoNumber(result.bestStrategy.score)})`,
     );
   } else {
     // Single generation comparison
@@ -245,12 +246,12 @@ async function main() {
     console.log("\n=== Strategy Ranking ===");
     result.ranking.forEach((metrics, index) => {
       console.log(
-        `${index + 1}. ${metrics.strategyName}: Score ${metrics.score.toFixed(0)}, Population ${metrics.finalPopulation}, Buildings ${metrics.totalBuildings}, Battles ${metrics.battlesWon}`,
+        `${index + 1}. ${metrics.strategyName}: Score ${formatExpoNumber(metrics.score)}, Population ${formatExpoNumber(metrics.finalPopulation)}, Buildings ${metrics.totalBuildings}, Battles ${metrics.battlesWon}`,
       );
     });
 
     console.log(
-      `\nBest Strategy: ${result.bestStrategy.strategyName} (Score: ${result.bestStrategy.score.toFixed(0)})`,
+      `\nBest Strategy: ${result.bestStrategy.strategyName} (Score: ${formatExpoNumber(result.bestStrategy.score)})`,
     );
   }
 
