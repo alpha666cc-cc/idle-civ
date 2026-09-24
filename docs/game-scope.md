@@ -65,8 +65,21 @@ UI (`count / capacity` per card), not in the sidebar.
 
 ## 3. Buildings (12)
 
-Cost curve per entry: `cost = base × factor^count` (geometric; bulk buys use the
-closed-form series). Order below drives the building grid and auto-buy.
+Cost curve per entry: the total for `n` units is `T(n) = base × (factor^√n − 1)`, so
+unit `n` costs `T(n) − T(n−1)` and a bulk buy is one subtraction `T(n + k) − T(n)`.
+Every building uses `factor` 25, except `people` at 2.5; the first buys never get cheaper
+(the early dip is clamped to the first unit price).
+Order below drives the building grid and auto-buy.
+
+**Endgame factor targets (age 7 — target only, not applied to game data):** the planned
+progressive reduction walks the cost growth factors down from **25 → 1.07** (buildings) and
+**2.5 → 1.02** (citizens) across the campaign, so a 1e9-count production building costs
+≈10^988 and 10B citizens ≈10^1000 at the seventh age. `data/buildings.json` still ships
+`factor` 25 / 2.5 today; 1.07 and 1.02 are endgame *goals* for the reduction schedule, not
+current values. Per-age end-of-age targets (derived from the production-exponent
+progression): age 1–2 hold ≈25, age 3 falls to ≈2.83, age 4 ≈1.77, age 5 ≈1.34, age 6
+≈1.155, age 7 ≈1.07. Citizens walk 2.5 → 1.02 over the same ten steps (smooth
+interpolation; their intermediate shape is not yet pe-confirmed).
 
 | id            | Name        | Costs (base × factor)                            | Effects                             | Unlock                                         | Status                 |
 | ------------- | ----------- | ------------------------------------------------ | ----------------------------------- | ---------------------------------------------- | ---------------------- |
@@ -106,9 +119,9 @@ clamps at 1.01 minimum. Percent reductions compound as `Π(1 − N)`, factor red
 today: `costReductionPercent` + `costReductionFactor` (enhancers). Defined but unused:
 `costReductionBase`, `costReductionFlat` (engine path exists, no data).
 
-**Bonus model (7 types):** resource-targeted — `resourceFlat`, `resourceMultiplier`,
-`resourceDrain`; buyable-targeted — the four cost reductions above. Resource multipliers
-stack multiplicatively, flats/drains sum equally (option A). Bonuses are always **derived
+**Bonus model (7 types):** resource-targeted — `resourceFlat`, `additiveMultiplier`,
+`resourceDrain`; buyable-targeted — the four cost reductions above. Building `additiveMultiplier` bonuses sum as percentages (× power); other
+multiplier sources compound, flats/drains sum equally. Bonuses are always **derived
 from the set of bought upgrade ids**, never accumulated into saved state.
 
 **Planned upgrade sources (🔵):** ages, research completion, battle victories, building
@@ -171,7 +184,7 @@ loop beyond that is deferred by decision.
 | Gather clicks                | 🟢     | Per-resource click gain; dev auto-clicker (`autoClicksPerSecond`) exists as a dev tool                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Building purchase            | 🟢     | Buy 1/10/…/1e9/Max; O(1)-per-check affordability via closed-form geometric sum + doubling probe/binary search (`getMaxAffordableBuildings`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | Auto-buy                     | 🟢     | Dev-tools toggle; one pass in definition order buying the max affordable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| Bonus application            | 🟢     | `resourceMultiplier` (production + capacities) and cost reductions (`percent`, `factor`) live; `flat`/`drain`/`base` types have engine paths but no data                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Bonus application            | 🟢     | `additiveMultiplier` (production + capacities) and cost reductions (`percent`, `factor`) live; `flat`/`drain`/`base` types have engine paths but no data                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Upgrade lifecycle            | 🟢     | `seen` → Gamepedia reveal (permanent), `unlocked` → tab, `bought` → bonuses derived from id list; purchase is one-shot                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Unlock gates                 | 🟢     | Buildings: `building-count` (barracks/university) and `battle` (smithy, placeholder id `first-battle`); Upgrades: `building-capacity` ratio 0.98                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | UI tabs                      | 🟢     | Production, Upgrades, Achievements, Trade (hidden until a market exists), Settings, Stats, Dev Tools; **Army** hidden until barracks exists; **Research** hidden until university exists (both render no content yet)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |

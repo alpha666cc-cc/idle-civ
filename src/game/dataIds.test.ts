@@ -115,10 +115,12 @@ describe("static content guids", () => {
     const state = new CivilizationState(
       {
         ...emptyResourceAmounts(),
-        wood: ExpNumber.fromNumber(200_000),
-        stone: ExpNumber.fromNumber(200_000),
-        gold: ExpNumber.fromNumber(200_000),
-        food: ExpNumber.fromNumber(200_000),
+        // The first town-hall costs 480k wood, 360k stone and 600k gold
+        // (base x 24 at factor 25) — stock enough to actually build it.
+        wood: ExpNumber.fromNumber(1_000_000),
+        stone: ExpNumber.fromNumber(1_000_000),
+        gold: ExpNumber.fromNumber(1_000_000),
+        food: ExpNumber.fromNumber(1_000_000),
       },
       emptyWorkerAssignments(),
       {},

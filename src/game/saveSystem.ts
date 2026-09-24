@@ -66,6 +66,8 @@ export type SerializedBuildingCost = {
 export type SerializedFactors = {
   readonly additional: readonly (readonly [string, string])[];
   readonly multiplicative: readonly (readonly [string, string])[];
+  /** Added with the summed building bonuses; absent in older documents. */
+  readonly additiveMultiplier?: readonly (readonly [string, string])[];
   readonly drain: readonly (readonly [string, string])[];
 };
 
@@ -632,6 +634,7 @@ const deserializeFactors = (
   return {
     additional: (data?.additional ?? []).map(pair),
     multiplicative: (data?.multiplicative ?? []).map(pair),
+    additiveMultiplier: (data?.additiveMultiplier ?? []).map(pair),
     drain: (data?.drain ?? []).map(pair),
   };
 };
@@ -644,6 +647,7 @@ export const serializeFactorMap = (
     serialized[key] = {
       additional: value.additional.map(serializeFactor),
       multiplicative: value.multiplicative.map(serializeFactor),
+      additiveMultiplier: value.additiveMultiplier.map(serializeFactor),
       drain: value.drain.map(serializeFactor),
     };
   }

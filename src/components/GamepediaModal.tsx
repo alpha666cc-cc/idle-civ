@@ -58,7 +58,7 @@ type CategoryTab = {
   icon: LucideIcon;
 };
 
-type FactorTab = "additional" | "multiplicative" | "drain";
+type FactorTab = "additional" | "additiveMultiplier" | "multiplicative" | "drain";
 
 const categoryTabs: CategoryTab[] = [
   { category: "resource", label: "Resources", icon: Leaf },
@@ -85,6 +85,7 @@ const categoryLabels: Record<GamepediaCategory, string> = {
 
 const factorTabLabels: Record<FactorTab, string> = {
   additional: "Add",
+  additiveMultiplier: "Bonus",
   multiplicative: "Mult",
   drain: "Drain",
 };
@@ -104,8 +105,17 @@ const formatFactorValue = (
   value: ExpNumber | number,
   format: NumberFormat,
 ): string => {
-  const text = formatNumber(value, format);
   const positive = typeof value === "number" ? value > 0 : value.sign > 0;
+  // Bonus fractions render as percentages (0.1 -> +10%), like unit armour.
+  if (tab === "additiveMultiplier") {
+    const percent =
+      typeof value === "number"
+        ? value * 100
+        : value.mul(ExpNumber.fromNumber(100));
+    const percentText = formatNumber(percent, format);
+    return positive ? `+${percentText}%` : `${percentText}%`;
+  }
+  const text = formatNumber(value, format);
   if (tab === "multiplicative") return `×${text}`;
   if (tab === "drain") return positive ? `−${text}` : text;
   return positive ? `+${text}` : text;
@@ -306,7 +316,7 @@ export default function GamepediaModal({
                   {renderReference(resource)}
                   {factor && (
                     <span className="gamepedia-cost-meta">
-                      ×{formatAmount(factor)} each built (effective)
+                      growth ×{formatAmount(factor)}^√n (effective)
                     </span>
                   )}
                 </div>
@@ -321,17 +331,16 @@ export default function GamepediaModal({
         <p className="gamepedia-category">Cost reductions</p>
         <div className="gamepedia-recap">
           <p>
-            Per building: base → growth → percentage → flat. Costs floor at 0;
-            growth floors at 1.
+            Per unit: base → growth → percentage → flat, on a base × growth^√n
+            curve. Costs floor at 0; growth floors at 1.01.
           </p>
           <p>
             Base remaining:{" "}
             {formatAmount(reductions.base.mul(ExpNumber.fromNumber(100)))}%
           </p>
           <p>
-            Growth reduction:{" "}
-            {formatAmount(reductions.factor.mul(ExpNumber.fromNumber(100)))}{" "}
-            percentage points
+            Growth reduction remaining:{" "}
+            {formatAmount(reductions.factor.mul(ExpNumber.fromNumber(100)))}%
           </p>
           <p>
             Cost remaining after percentage reductions:{" "}
@@ -396,7 +405,7 @@ export default function GamepediaModal({
               </strong>
             </div>
           ))}
-          {effects.resourceMultiplier?.map((effect, index) => (
+          {effects.additiveMultiplier?.map((effect, index) => (
             <div
               className="gamepedia-effect-row"
               key={`multiplier-${effect.resource}-${index}`}
@@ -404,14 +413,19 @@ export default function GamepediaModal({
               <div className="gamepedia-effect-copy">
                 {renderReference(effect.resource)}
                 <span className="gamepedia-effect-meta">
-                  ×{formatNumber(effect.factor, numberFormat)} gain per building
+                  {formatFactorValue(
+                    "additiveMultiplier",
+                    effect.perBuilding,
+                    numberFormat,
+                  )}{" "}
+                  per building
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
-                ×
-                {formatNumber(
-                  totalEffects.resourceMultiplier?.[index]?.factor ??
-                    effect.factor,
+                {formatFactorValue(
+                  "additiveMultiplier",
+                  totalEffects.additiveMultiplier?.[index]?.perBuilding ??
+                    effect.perBuilding,
                   numberFormat,
                 )}{" "}
                 now
@@ -490,6 +504,16 @@ export default function GamepediaModal({
           Additions (sum): {formatAmount(summary.additional)}
           {unit}
         </p>
+        {summary.additiveMultiplier.gt(ExpNumber.ZERO) && (
+          <p>
+            Building bonuses (sum):{" "}
+            {formatFactorValue(
+              "additiveMultiplier",
+              summary.additiveMultiplier,
+              numberFormat,
+            )}
+          </p>
+        )}
         <p>Multipliers (product): ×{formatAmount(summary.multiplier)}</p>
         <p>
           Drains (sum): {formatAmount(summary.drain)}
@@ -500,7 +524,7 @@ export default function GamepediaModal({
           {formatAmount(summary.additional)}
           {derived && ")"}
           {" × "}
-          {formatAmount(summary.multiplier)} − {formatAmount(summary.drain)}
+          {formatAmount(summary.totalMultiplier)} − {formatAmount(summary.drain)}
           {" = "}
           <strong>
             {formatAmount(summary.result)}
@@ -516,7 +540,12 @@ export default function GamepediaModal({
     const resources = gameState.resources as Record<string, ExpNumber>;
     const rate = gameState.computeResourceRate(key);
     const factors = gameState.getProductionFactors(key);
-    const factorTabs: FactorTab[] = ["additional", "multiplicative", "drain"];
+    const factorTabs: FactorTab[] = [
+    "additional",
+    "additiveMultiplier",
+    "multiplicative",
+    "drain",
+  ];
     const isPopulation = key === "population";
     const hasWorkers = productionDefinitions.some(
       ({ key: resourceKey }) => resourceKey === key,
@@ -524,7 +553,7 @@ export default function GamepediaModal({
     const workerProduction = hasWorkers
       ? gameState.getWorkerProduction(key as ProductionResourceKey)
       : undefined;
-    const multiplierProduct = gameState.getModifierSummary(key).multiplier;
+    const totalMultiplier = gameState.getModifierSummary(key).totalMultiplier;
 
     return (
       <div className="gamepedia-detail">
@@ -596,7 +625,7 @@ export default function GamepediaModal({
                 <strong>
                   {formatFactorValue(
                     "multiplicative",
-                    multiplierProduct,
+                    totalMultiplier,
                     numberFormat,
                   )}
                 </strong>

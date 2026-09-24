@@ -188,6 +188,11 @@ export type ResourceFactor = readonly [
 export type ResourceFactors = {
   additional: ResourceFactor[];
   multiplicative: ResourceFactor[];
+  /**
+   * Building bonuses that **sum** (AGENTS.md §13.1): (1 + Σ additiveMultiplier)
+   * scales the resource beside the compounding multiplicative product.
+   */
+  additiveMultiplier: ResourceFactor[];
   drain: ResourceFactor[];
 };
 
@@ -235,31 +240,32 @@ export const emptyWorkerAssignments = (): WorkerAssignments => ({
 });
 
 export const emptyResourceFactors = (): ResourceFactorMap => ({
-  food: { additional: [], multiplicative: [], drain: [] },
-  wood: { additional: [], multiplicative: [], drain: [] },
-  stone: { additional: [], multiplicative: [], drain: [] },
-  gold: { additional: [], multiplicative: [], drain: [] },
-  population: { additional: [], multiplicative: [], drain: [] },
-  science: { additional: [], multiplicative: [], drain: [] },
-  military: { additional: [], multiplicative: [], drain: [] },
-  metalwork: { additional: [], multiplicative: [], drain: [] },
-  trade: { additional: [], multiplicative: [], drain: [] },
-  peopleCapacity: { additional: [], multiplicative: [], drain: [] },
-  houseCapacity: { additional: [], multiplicative: [], drain: [] },
-  farmCapacity: { additional: [], multiplicative: [], drain: [] },
-  "lumber-yardCapacity": { additional: [], multiplicative: [], drain: [] },
-  quarryCapacity: { additional: [], multiplicative: [], drain: [] },
-  "gold-mineCapacity": { additional: [], multiplicative: [], drain: [] },
-  marketCapacity: { additional: [], multiplicative: [], drain: [] },
-  "town-hallCapacity": { additional: [], multiplicative: [], drain: [] },
-  smithyCapacity: { additional: [], multiplicative: [], drain: [] },
-  barracksCapacity: { additional: [], multiplicative: [], drain: [] },
-  universityCapacity: { additional: [], multiplicative: [], drain: [] },
+  food: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  wood: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  stone: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  gold: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  population: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  science: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  military: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  metalwork: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  trade: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  peopleCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  houseCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  farmCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  "lumber-yardCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  quarryCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  "gold-mineCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  marketCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  "town-hallCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  smithyCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  barracksCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  universityCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
 });
 
 export const summarizeResourceFactors = ({
   additional,
   multiplicative,
+  additiveMultiplier,
   drain,
 }: ResourceFactors) => {
   const additionalTotal = additional.reduce(
@@ -270,6 +276,15 @@ export const summarizeResourceFactors = ({
     (total, [, value]) => total.mul(value),
     ExpNumber.ONE,
   );
+  // Summed bonuses floor at -1, so the combined multiplier never drops below 0.
+  const additiveBonus = ExpNumber.max(
+    ExpNumber.fromNumber(-1),
+    additiveMultiplier.reduce(
+      (total, [, value]) => total.add(value),
+      ExpNumber.ZERO,
+    ),
+  );
+  const additive = ExpNumber.ONE.add(additiveBonus);
   const drainTotal = drain.reduce(
     (total, [, value]) => total.add(value),
     ExpNumber.ZERO,
@@ -278,8 +293,10 @@ export const summarizeResourceFactors = ({
   return {
     additional: additionalTotal,
     multiplier,
+    additiveMultiplier: additiveBonus,
+    totalMultiplier: multiplier.mul(additive),
     drain: drainTotal,
-    result: additionalTotal.mul(multiplier).sub(drainTotal),
+    result: additionalTotal.mul(multiplier).mul(additive).sub(drainTotal),
   };
 };
 

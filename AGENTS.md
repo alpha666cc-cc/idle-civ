@@ -206,13 +206,14 @@ Every value a bonus destination can name is an **attribute** (§13.2), registere
 
 Supporting shapes: `ResourceAmounts` (`Record<ResourceKey, ExpNumber>`),
 `ResourceFactor = readonly [AttributeDefinition | string, ExpNumber]`,
-`ResourceFactors = { additional, multiplicative, drain }`, and `ResourceFactorMap`.
+`ResourceFactors = { additional, multiplicative, additiveMultiplier, drain }`, and
 
 The single rate formula lives here:
 
 ```ts
-computeResourceRate({ additional, multiplicative, drain })
-  = (Σ additional) × (Π multiplicative) − (Σ drain)
+computeResourceRate({ additional, multiplicative, additiveMultiplier, drain })
+  = (Σ additional) × (Π multiplicative) × (1 + Σ additiveMultiplier)
+    − (Σ drain)
 ```
 
 A factor's source is either an `AttributeDefinition` (rendered with its label) or a
@@ -225,7 +226,7 @@ building keys are Gamepedia ids, the Gamepedia modal turns factor sources into l
 type BuildingCost = { resource: ResourceKey; base: ExpNumber; factor: number };
 type BuildingEffects = {
   capacityProvided?: { building: BuildingKey; perBuilding: ExpNumber };
-  resourceMultiplier?: { resource: ResourceKey; factor: ExpNumber };
+  additiveMultiplier?: { resource: ResourceKey; perBuilding: ExpNumber };
   resourceDrain?: { resource: ResourceKey; amount: ExpNumber };
 };
 ```
@@ -233,10 +234,10 @@ type BuildingEffects = {
 `BuildingDefinition` fields: `key` (= id), `name`, `description`, `costs`, `available`,
 `maxCount` (default 10), `effects`.
 
-- `costAt(alreadyBuilt)` = `ceil(base × factor^alreadyBuilt)` — one building, for previews.
-- The engine's `getBuildingCost(key, alreadyBuilt, count)` sums **`count`** purchases:
-  linear when `factor === 1`, otherwise the closed-form geometric series
-  `first × (factor^count − 1) / (factor − 1)`, rounded up. Use it instead of looping.
+- Cumulative curve: `T(n) = base × (factor^√n − 1)` is the total spent owning `n`
+  units, so unit `n` costs `T(n) − T(n−1)` and buying `count` more from `alreadyBuilt` is
+  one subtraction, `T(alreadyBuilt + count) − T(alreadyBuilt)`, rounded up. `costAt()` and
+  `formatCost()` on the definition were removed with the geometric series.
 - `maxCount` is **not** the live limit: the live limit is the building's capacity
   resource (also 10 by default), raised via `CivilizationState.upgradeBuildingLimit()`.
   Treat `maxCount` as decorative metadata, not authority.
@@ -247,7 +248,7 @@ drains 1 food/sec each), `house`, `farm`, `lumber-yard`, `quarry`, `gold-mine`,
 `market`, `town-hall`, `smithy`, `barracks`, `university`, `monument`
 (`available: false`, so it renders as locked and cannot be built).
 
-Current data conventions: production buildings give `resourceMultiplier` `×1.1` each;
+Current data conventions: production buildings give `additiveMultiplier` `+10%` each (`perBuilding: 0.1`);
 `house` gives `+10 peopleCapacity`; `town-hall` gives `+10 houseCapacity`;
 `smithy`/`barracks`/`university` each produce 1/sec of `metalwork`/`military`/`science`
 (`resourceProduction`) and carry unlock gates — smithy on the first age-0 battle
@@ -306,7 +307,8 @@ switches on that vocabulary to pick its notice text, so keep the strings stable.
 Notable internals: `getFactors()` merges worker production (only for production keys,
 phrased as a `WorkerProduction` source), a `"dev auto clicker"` entry when
 `autoClicksPerSecond > 0`, caller-added factors from `resourceFactors`, and building
-`resourceMultiplier^count` / `resourceDrain.amount × count` contributions.
+`additiveMultiplier` (per-building bonus × count, **summed**) /
+`resourceDrain.amount × count` contributions.
 `computeClickGain()` is the only click path: it multiplies the global click power stat by
 the resource's `productionPerWorker` and the resource multipliers, and names the factor
 source after the `clickPower` stat so the Gamepedia links it.
@@ -906,6 +908,8 @@ application and clamping are in §13.1, and the decision list is in §13.7.
 **Stacking (decided).** Attribute bonuses stack exactly as `computeResourceRate()` already
 does — **option A** (§13.7): every `attributeMultiplier` source multiplies with the others,
 while every `attributeFlat` and every `attributeDrain` source **sums with equal weight**.
+Building per-count bonuses are the exception: their `additiveMultiplier` contributions
+**sum as percentages** (`1 + Σ count × perBuilding × power`) and never compound.
 There is **no `group`/`tier` concept** and no per-source precedence: sources of an additive
 type are all treated equally. Type order is **fixed** (`flat → mult → drain`), not
 declaration order. If growth ever runs away, an optional `group` field is the escape
@@ -1127,7 +1131,7 @@ the others.
 Part of this is implemented now (bonus type, resource multipliers, enhancer upgrades,
 unlock gates). The remaining seams to reuse instead of adding parallel machinery:
 
-- `BuildingEffects` (`capacityProvided` / `resourceMultiplier` / `resourceDrain`) is the
+- `BuildingEffects` (`capacityProvided` / `additiveMultiplier` / `resourceDrain`) is the
   direct precursor of a `bonuses: Bonus[]` list. The bonus types are now named
   `attributeMultiplier` / `attributeDrain` / `attributeFlat` (the destination may be any
   attribute); `capacityProvided` **survives as its own capacity representation** rather

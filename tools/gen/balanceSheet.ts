@@ -83,16 +83,20 @@ type BuildingInfo = {
 
 const BUILDINGS: BuildingInfo[] = buildingDefinitions.map((building) => {
   const effects = building.effects as unknown as {
-    resourceMultiplier?: { resource: string; factor: ExpNumber }[];
+    additiveMultiplier?: { resource: string; perBuilding: ExpNumber }[];
     resourceProduction?: { resource: string; amount: ExpNumber }[];
   };
-  const multiplier = effects.resourceMultiplier?.[0];
+  const multiplier = effects.additiveMultiplier?.[0];
   const production = effects.resourceProduction?.[0];
   return {
     key: building.key,
     name: building.name,
     multiplier: multiplier
-      ? { resource: multiplier.resource, factor: multiplier.factor.toNumber() }
+      ? {
+          resource: multiplier.resource,
+          // The sheet model still compounds; perBuilding + 1 rebuilds the factor.
+          factor: multiplier.perBuilding.toNumber() + 1,
+        }
       : undefined,
     production: production
       ? { resource: production.resource, amount: production.amount.toNumber() }
@@ -370,9 +374,14 @@ const measure = (citizens: number): Measurement => {
     };
     rates[resource] = engines[resource].result;
     const breakdown: Record<string, number> = {};
-    for (const [sourceId, value] of state.getFactors(resource).multiplicative) {
+    const buckets = state.getFactors(resource);
+    for (const [sourceId, value] of buckets.multiplicative) {
       const category = categoryOf(sourceId);
       breakdown[category] = (breakdown[category] ?? 1) * value.toNumber();
+    }
+    for (const [sourceId, value] of buckets.additiveMultiplier) {
+      const category = categoryOf(sourceId);
+      breakdown[category] = (breakdown[category] ?? 1) * (1 + value.toNumber());
     }
     categories[resource] = breakdown;
   }

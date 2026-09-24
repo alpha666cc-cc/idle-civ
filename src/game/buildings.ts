@@ -14,7 +14,6 @@ export type BuildingKey =
 import type { ResourceKey } from "./attributes";
 import { GameObject } from "./gameObject";
 import { ExpNumber } from "./expNumber";
-import { formatNumber } from "./numberFormat";
 import buildingData from "./data/buildings.json";
 
 export type BuildingCost = {
@@ -30,9 +29,9 @@ export type BuildingEffects = {
     building: BuildingKey;
     perBuilding: ExpNumber;
   }>;
-  resourceMultiplier?: BuildingEffectEntry<{
+  additiveMultiplier?: BuildingEffectEntry<{
     resource: ResourceKey;
-    factor: ExpNumber;
+    perBuilding: ExpNumber;
   }>;
   resourceDrain?: BuildingEffectEntry<{
     resource: ResourceKey;
@@ -84,21 +83,6 @@ export class BuildingDefinition extends GameObject {
     this.effects = effects;
     this.unlock = unlock;
   }
-
-  costAt(buildingsAlreadyBuilt: number): BuildingCost[] {
-    return this.costs.map((cost) => ({
-      ...cost,
-      base: ExpNumber.from(cost.base)
-        .mul(ExpNumber.fromNumber(cost.factor).pow(buildingsAlreadyBuilt))
-        .ceil(),
-    }));
-  }
-
-  formatCost(buildingsAlreadyBuilt: number): string {
-    return this.costAt(buildingsAlreadyBuilt)
-      .map(({ resource, base }) => `${formatNumber(base, "named")} ${resource}`)
-      .join(" + ");
-  }
 }
 
 type BuildingData = {
@@ -112,9 +96,9 @@ type BuildingData = {
     capacityProvided?:
       | { building: BuildingKey; perBuilding: number }
       | { building: BuildingKey; perBuilding: number }[];
-    resourceMultiplier?:
-      | { resource: ResourceKey; factor: number }
-      | { resource: ResourceKey; factor: number }[];
+    additiveMultiplier?:
+      | { resource: ResourceKey; perBuilding: number }
+      | { resource: ResourceKey; perBuilding: number }[];
     resourceDrain?:
       | { resource: ResourceKey; amount: number }
       | { resource: ResourceKey; amount: number }[];
@@ -153,11 +137,11 @@ const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
             building,
             perBuilding: ExpNumber.fromNumber(perBuilding),
           })),
-          resourceMultiplier: normalizeBuildingEffects(
-            effects.resourceMultiplier,
-          )?.map(({ resource, factor }) => ({
+          additiveMultiplier: normalizeBuildingEffects(
+            effects.additiveMultiplier,
+          )?.map(({ resource, perBuilding }) => ({
             resource,
-            factor: ExpNumber.fromNumber(factor),
+            perBuilding: ExpNumber.fromNumber(perBuilding),
           })),
           resourceDrain: normalizeBuildingEffects(effects.resourceDrain)?.map(
             ({ resource, amount }) => ({

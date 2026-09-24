@@ -201,7 +201,7 @@ for (const building of buildingDefinitions) {
   const relatedIds = [
     ...building.costs.map(({ resource }) => resource),
     "buildingCostMultiplier",
-    ...(building.effects.resourceMultiplier ?? []).map(
+    ...(building.effects.additiveMultiplier ?? []).map(
       ({ resource }) => resource,
     ),
     ...(building.effects.resourceDrain ?? []).map(({ resource }) => resource),
