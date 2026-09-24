@@ -161,11 +161,12 @@ export const wastedResourcesDefinition = new AttributeDefinition(
 derivedAttributeDefinitions.push(wastedResourcesDefinition);
 
 /**
- * Every production building owns a derived power attribute (§13.2): base 1, raised
- * by `attributeMultiplier` bonuses (e.g. an encounter granting `farmPower` ×4). A
- * production building is one that has an `additiveMultiplier` or a
- * `resourceProduction` effect — `house`, `town-hall` and `people` (capacity/drain
- * only) have none. Keys are `${buildingKey}Power`.
+ * Every production building owns a derived power attribute (§13.2): its base is
+ * the `power` field on the building definition (1 unless the data says
+ * otherwise), raised by `attributeMultiplier` bonuses (e.g. an encounter
+ * granting `farmPower` ×4). A production building is one that has an
+ * `additiveMultiplier` or a `resourceProduction` effect — `house`, `town-hall`
+ * and `people` (capacity/drain only) have none. Keys are `${buildingKey}Power`.
  */
 export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
   buildingDefinitions
@@ -178,7 +179,7 @@ export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
           `${b.key}Power` as AttributeKey,
           `${b.name} power`,
           "derived",
-          `${b.name} power scales this building's production. Base 1; bonuses raise it.`,
+          `${b.name} power scales this building's production. Base ${b.power?.toString() ?? "1"}; bonuses raise it.`,
         ),
     );
 

@@ -62,6 +62,13 @@ export class BuildingDefinition extends GameObject {
   readonly maxCount: number;
   readonly effects: BuildingEffects;
   readonly unlock?: BuildingUnlock;
+  /**
+   * The building's own power, the base of its `${key}Power` derived stat (§13.2).
+   * It is data rather than a hardcoded 1 so a building can start stronger or
+   * weaker; bonuses (enhancers, ages, encounters) then move it from there.
+   * Buildings with no production effect carry no power and leave this undefined.
+   */
+  readonly power?: ExpNumber;
 
   constructor(
     key: BuildingKey,
@@ -72,6 +79,7 @@ export class BuildingDefinition extends GameObject {
     maxCount = 10,
     effects: BuildingEffects = {},
     unlock?: BuildingUnlock,
+    power?: ExpNumber,
   ) {
     super(key, description);
     this.key = key;
@@ -82,6 +90,7 @@ export class BuildingDefinition extends GameObject {
     this.maxCount = maxCount;
     this.effects = effects;
     this.unlock = unlock;
+    this.power = power;
   }
 }
 
@@ -107,6 +116,8 @@ type BuildingData = {
       | { resource: ResourceKey; amount: number }[];
   };
   unlock?: BuildingUnlock;
+  /** Base power for this building's `${key}Power` stat; absent for non-producers. */
+  power?: number;
 };
 
 const normalizeBuildingEffects = <T extends object>(
@@ -158,6 +169,11 @@ const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
         }
       : undefined,
     data.unlock,
+    // A building that produces something owns a power stat; `power` is its base
+    // value, so the JSON decides whether it starts at 1 or somewhere else.
+    data.effects?.additiveMultiplier || data.effects?.resourceProduction
+      ? ExpNumber.fromNumber(data.power ?? 1)
+      : undefined,
   );
 };
 

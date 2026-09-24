@@ -60,6 +60,7 @@
     ],
     "available": true,
     "maxCount": 10,
+    "power": 1,
     "effects": {
       "additiveMultiplier": {
         "resource": "food",
@@ -86,6 +87,7 @@
     ],
     "available": true,
     "maxCount": 10,
+    "power": 1,
     "effects": {
       "additiveMultiplier": {
         "resource": "wood",
@@ -107,6 +109,7 @@
     ],
     "available": true,
     "maxCount": 10,
+    "power": 1,
     "effects": {
       "additiveMultiplier": {
         "resource": "stone",
@@ -133,6 +136,7 @@
     ],
     "available": true,
     "maxCount": 10,
+    "power": 1,
     "effects": {
       "additiveMultiplier": {
         "resource": "gold",
@@ -205,6 +209,7 @@
     ],
     "available": true,
     "maxCount": 10,
+    "power": 1,
     "effects": {
       "resourceProduction": {
         "resource": "military",
@@ -245,6 +250,7 @@
     ],
     "available": true,
     "maxCount": 10,
+    "power": 1,
     "effects": {
       "resourceProduction": {
         "resource": "science",
@@ -279,6 +285,7 @@
     ],
     "available": true,
     "maxCount": 10,
+    "power": 1,
     "effects": {
       "resourceProduction": {
         "resource": "metalwork",
@@ -314,6 +321,7 @@
       }
     ],
     "available": true,
+    "power": 1,
     "effects": {
       "resourceProduction": {
         "resource": "trade",

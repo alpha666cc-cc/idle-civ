@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildingPowerAttributeDefinitions,
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
@@ -7,7 +8,7 @@ import {
   summarizeResourceFactors,
   type WorkerAssignments,
 } from "./attributes";
-import type { BuildingKey } from "./buildings";
+import { buildingDefinitions, type BuildingKey } from "./buildings";
 import { CivilizationState } from "./civilizationState";
 import { ExpNumber } from "./expNumber";
 import { emptyStatistics } from "./statistics";
@@ -174,5 +175,39 @@ describe("building resource bonuses", () => {
     const aged = oneTier.enterAge("age-1");
     expect(aged.getAttributeValue("buildingPower").toNumber()).toBe(2);
     expect(aged.buildingPower("farm").toNumber()).toBe(4);
+  });
+
+  it("takes its base power from the building definition, not a hardcoded 1", () => {
+    // `power` lives on the definition, so a building may start above or below 1.
+    for (const key of buildingPowerAttributeDefinitions.map(({ key }) => key)) {
+      const building = buildingDefinitions.find(
+        (b) => `${b.key}Power` === key,
+      );
+      expect(building).toBeDefined();
+      expect(building?.power).toBeDefined();
+      // The stat's bonus-free base must read that value.
+      const state = stateWith();
+      expect(state.getDerivedAttributeFactors(key)?.base).toEqual(building?.power);
+    }
+    // The shipped data bases all eight production buildings at 1.
+    for (const key of [
+      "farm",
+      "lumber-yard",
+      "quarry",
+      "gold-mine",
+      "barracks",
+      "university",
+      "smithy",
+      "market",
+    ]) {
+      const building = buildingDefinitions.find((b) => b.key === key);
+      expect(building?.power?.toNumber()).toBe(1);
+      expect(stateWith().buildingPower(key as BuildingKey).toNumber()).toBe(1);
+    }
+    // Non-producers carry no power at all.
+    for (const key of ["house", "town-hall", "people"] as const) {
+      const building = buildingDefinitions.find((b) => b.key === key);
+      expect(building?.power).toBeUndefined();
+    }
   });
 });

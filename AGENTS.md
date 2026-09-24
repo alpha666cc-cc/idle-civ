@@ -232,7 +232,12 @@ type BuildingEffects = {
 ```
 
 `BuildingDefinition` fields: `key` (= id), `name`, `description`, `costs`, `available`,
-`maxCount` (default 10), `effects`.
+`maxCount` (default 10), `effects`, `power`, `unlock`.
+
+- `power` is the base of that building's `${key}Power` derived stat, and it is **data** —
+  a `power` field on the JSON entry (default 1), so a building can start above or below 1
+  and the engine reads the value instead of a hardcoded constant. Only buildings with a
+  production effect get one; `house`, `town-hall` and `people` carry none.
 
 - Cumulative curve: `T(n) = base × (factor^√n − 1)` is the total spent owning `n`
   units, so unit `n` costs `T(n) − T(n−1)` and buying `count` more from `alreadyBuilt` is

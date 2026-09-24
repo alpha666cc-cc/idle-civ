@@ -281,6 +281,10 @@ for (const key of [
   "buildingPower",
   ...buildingPowerAttributeDefinitions.map(({ key }) => key),
 ]) {
+  // A building's power base comes from its own definition (`power` in
+  // buildings.json, defaulting to 1), so a building can start above or below 1;
+  // every other derived stat here is based at 1.
+  const building = buildingDefinitions.find((b) => `${b.key}Power` === key);
   derivedAttributeComputations[key] = {
     value:
       key === "wastedResources"
@@ -288,7 +292,7 @@ for (const key of [
         : key === "tradeProductionMultiplier"
           ? (state) => calculateTradeMultiplier(state.resources.trade)
           : (state) => compoundStatValue(state, key),
-    base: () => ExpNumber.ONE,
+    base: () => building?.power ?? ExpNumber.ONE,
   };
 }
 
