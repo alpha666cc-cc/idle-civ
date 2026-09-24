@@ -152,17 +152,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": 20000,
+        "base": 10000,
         "factor": 25
       },
       {
         "resource": "stone",
-        "base": 15000,
+        "base": 7500,
         "factor": 25
       },
       {
         "resource": "gold",
-        "base": 25000,
+        "base": 12500,
         "factor": 25
       }
     ],
@@ -234,12 +234,12 @@
     "costs": [
       {
         "resource": "wood",
-        "base": 20000,
+        "base": 15000,
         "factor": 10
       },
       {
         "resource": "stone",
-        "base": 25000,
+        "base": 20000,
         "factor": 10
       },
       {

@@ -25,7 +25,7 @@
       },
       {
         "resource": "food",
-        "base": 10000,
+        "base": 5000,
         "factor": 10
       }
     ]
