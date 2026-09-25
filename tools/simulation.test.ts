@@ -278,6 +278,28 @@ describe("required progression strategy", () => {
     expect(getRequiredResearchAction(state)).toBeNull();
   });
 
+  it("buys the cheapest affordable purchase instead of a priority purchase", () => {
+    const strategy = getStrategy("cheapest");
+    expect(strategy).toBeDefined();
+    if (!strategy) return;
+
+    const state = makeState({
+      resources: { wood: 10, food: 0, stone: 0, gold: 0 },
+    });
+
+    expect(strategy.decideAction(state, { gameTime: 0, snapshots: [] })).toEqual({
+      type: "build",
+      building: "house",
+      count: 1,
+    });
+  });
+
+  it("keeps the cheapest strategy in the simulation registry", () => {
+    expect(getStrategy("cheapest")?.description).toBe(
+      "Always buy the cheapest legal purchase",
+    );
+  });
+
   it("moves a surplus worker to an under-assigned resource", () => {
     const strategy = getStrategy("production");
     expect(strategy).toBeDefined();

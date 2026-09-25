@@ -3,7 +3,7 @@
  * Usage: node tools/run-simulation.mjs [options]
  *
  * Options:
- *   --strategy <name>      Strategy to use (balanced, production, military, fast-age, economy)
+ *   --strategy <name>      Strategy to use (cheapest, balanced, production, military, fast-age, economy)
  *   --objective <type>     Objective type (buildingCount, ageReach, battleVictory, timeLimit)
  *   --target <value>       Target value for objective
  *   --building <key>       Building key for buildingCount objective

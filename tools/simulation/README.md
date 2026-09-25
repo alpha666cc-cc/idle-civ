@@ -23,6 +23,7 @@ The simulation system allows you to:
 
 ### Strategy Types
 
+- **cheapest**: Always buy the cheapest legal purchase
 - **balanced**: Equal focus on production and military
 - **production**: Maximize resource generation, minimal military
 - **military**: Early military investment, aggressive battles

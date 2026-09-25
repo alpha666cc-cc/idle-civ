@@ -6,7 +6,11 @@
 
 import { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
-import { type BuildingKey } from "../src/game/buildings.js";
+import {
+  buildingDefinitions,
+  type BuildingCost,
+  type BuildingKey,
+} from "../src/game/buildings.js";
 import { encounterDefinitions } from "../src/game/encounters.js";
 import { ageDefinitions } from "../src/game/ages.js";
 import { researchDefinitions } from "../src/game/research.js";
@@ -17,6 +21,7 @@ import {
   type MilestoneEvent,
   isResourceGatherable,
 } from "./simulation.js";
+import { upgradeDefinitions } from "../src/game/upgrades.js";
 import {
   producerResourceKeys,
   type ProductionResourceKey,
@@ -295,6 +300,134 @@ export const getRequiredAgeAction = (
     : null;
 };
 
+/** One legal next purchase considered by the cheapest strategy. */
+type PurchaseCandidate = {
+  readonly action: SimulationAction;
+  readonly costs: readonly BuildingCost[];
+  readonly order: number;
+};
+
+const purchaseCost = (costs: readonly BuildingCost[]): ExpNumber =>
+  costs.reduce((total, { base }) => total.add(base), ExpNumber.ZERO);
+
+const missingPurchaseCosts = (
+  state: CivilizationState,
+  costs: readonly BuildingCost[],
+): BuildingCost[] =>
+  costs.filter(({ resource, base }) => state.resources[resource].lt(base));
+
+const canGatherResource = (
+  state: CivilizationState,
+  resource: string,
+): boolean =>
+  producerResourceKeys.includes(resource as ProductionResourceKey) &&
+  isResourceGatherable(state, resource);
+
+const canProgressPurchase = (
+  state: CivilizationState,
+  candidate: PurchaseCandidate,
+): boolean => {
+  const missing = missingPurchaseCosts(state, candidate.costs);
+  return (
+    missing.length === 0 ||
+    missing.every(({ resource }) => canGatherResource(state, resource))
+  );
+};
+
+const isPurchaseAffordable = (
+  state: CivilizationState,
+  candidate: PurchaseCandidate,
+): boolean => missingPurchaseCosts(state, candidate.costs).length === 0;
+
+const comparePurchaseCost = (
+  left: PurchaseCandidate,
+  right: PurchaseCandidate,
+): number => {
+  const leftCost = purchaseCost(left.costs);
+  const rightCost = purchaseCost(right.costs);
+  if (leftCost.lt(rightCost)) return -1;
+  if (rightCost.lt(leftCost)) return 1;
+  return left.order - right.order;
+};
+
+const getPurchaseCandidates = (state: CivilizationState): PurchaseCandidate[] => {
+  const candidates: PurchaseCandidate[] = [];
+  let order = 0;
+  const add = (action: SimulationAction, costs: readonly BuildingCost[]) => {
+    candidates.push({ action, costs, order });
+    order += 1;
+  };
+
+  for (const building of buildingDefinitions) {
+    if (!state.isBuildingAvailable(building.key) || state.isBuildingAtCapacity(building.key)) {
+      continue;
+    }
+    const currentCount = state.getBuildingCount(building.key);
+    const costs = state.freeBuildings
+      ? []
+      : state.getBuildingCost(building.key, currentCount, 1);
+    add({ type: "build", building: building.key, count: 1 }, costs);
+  }
+
+  for (const unit of state.getRosterUnits()) {
+    const costs = state.freeUnits ? [] : state.getUnitCost(unit.key, 1);
+    add({ type: "buyUnit", unitId: unit.key, count: 1 }, costs);
+  }
+
+  for (const research of researchDefinitions) {
+    if (state.isResearchBought(research.key) || !state.isResearchUnlocked(research.key)) {
+      continue;
+    }
+    add(
+      { type: "buyResearch", researchId: research.key },
+      state.getResearchNextCost(),
+    );
+  }
+
+  for (const upgrade of upgradeDefinitions) {
+    if (state.isUpgradeBought(upgrade.key) || !state.isUpgradeUnlocked(upgrade.key)) {
+      continue;
+    }
+    add(
+      { type: "buyUpgrade", upgradeId: upgrade.key },
+      state.freeUpgrades ? [] : state.getUpgradeCost(upgrade.key),
+    );
+  }
+
+  return candidates;
+};
+
+const getCheapestPurchaseCandidate = (
+  state: CivilizationState,
+): PurchaseCandidate | null => {
+  const candidates = getPurchaseCandidates(state).filter((candidate) =>
+    canProgressPurchase(state, candidate),
+  );
+  const affordable = candidates
+    .filter((candidate) => isPurchaseAffordable(state, candidate))
+    .sort(comparePurchaseCost);
+  if (affordable.length > 0) return affordable[0];
+  return candidates.sort(comparePurchaseCost)[0] ?? null;
+};
+
+const gatherForPurchase = (
+  state: CivilizationState,
+  candidate: PurchaseCandidate,
+): string | null => {
+  const missing = missingPurchaseCosts(state, candidate.costs).filter(({ resource }) =>
+    canGatherResource(state, resource),
+  );
+  if (missing.length === 0) return null;
+  return missing
+    .sort((left, right) => {
+      const leftDeficit = left.base.sub(state.resources[left.resource]);
+      const rightDeficit = right.base.sub(state.resources[right.resource]);
+      if (leftDeficit.gt(rightDeficit)) return -1;
+      if (rightDeficit.gt(leftDeficit)) return 1;
+      return left.resource.localeCompare(right.resource);
+    })[0].resource;
+};
+
 /**
  * Base strategy class with common utilities.
  */
@@ -566,6 +699,65 @@ abstract class BaseStrategy implements SimulationStrategy {
 }
 
 /**
+ * Cheapest-purchase strategy: buy the lowest-cost legal purchase every time.
+ *
+ * Costs are compared as the sum of the purchase's current resource amounts. The
+ * game has no exchange rate between resources, so this is deliberately a
+ * magnitude comparison, with definition order as a deterministic tie-breaker.
+ * Research keeps the engine's global next-purchase price; units and buildings use
+ * the same state-aware cost evaluators the live game uses. If nothing is
+ * affordable, the strategy gathers the resource that is blocking the cheapest
+ * progress-able purchase instead of buying a more expensive item.
+ */
+export class CheapestStrategy extends BaseStrategy {
+  name = "cheapest";
+  description = "Always buy the cheapest legal purchase";
+
+  protected getWorkerRatios(): WorkerRatios {
+    return {
+      food: 1,
+      wood: 0,
+      stone: 0,
+      gold: 0,
+      military: 0,
+      science: 0,
+      metalwork: 0,
+      trade: 0,
+    };
+  }
+
+  decideAction(
+    state: CivilizationState,
+    _context: SimulationContext,
+  ): SimulationAction | null {
+    const requiredAgeAction = getRequiredAgeAction(state);
+    if (requiredAgeAction) return requiredAgeAction;
+
+    const requiredBattleAction = getRequiredBattleAction(state);
+    if (requiredBattleAction) return requiredBattleAction;
+
+    const candidate = getCheapestPurchaseCandidate(state);
+    if (candidate && isPurchaseAffordable(state, candidate)) {
+      return candidate.action;
+    }
+
+    const workerAction = this.assignWorkersByRatio(
+      state,
+      this.getWorkerRatios(),
+    );
+    if (workerAction) return workerAction;
+
+    if (candidate) {
+      const resource = gatherForPurchase(state, candidate);
+      if (resource) return { type: "gather", resource };
+    }
+
+    const resourceToGather = this.getResourceToGather(state);
+    return resourceToGather ? { type: "gather", resource: resourceToGather } : null;
+  }
+}
+
+/**
  * Balanced strategy: equal focus on production and military.
  */
 export class BalancedStrategy extends BaseStrategy {
@@ -791,6 +983,7 @@ export class EconomyStrategy extends BaseStrategy {
  * Strategy registry for easy access.
  */
 export const strategyRegistry: Record<string, SimulationStrategy> = {
+  cheapest: new CheapestStrategy(),
   balanced: new BalancedStrategy(),
   production: new ProductionStrategy(),
   military: new MilitaryStrategy(),
