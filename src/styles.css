@@ -866,6 +866,23 @@ button:focus-visible {
   color: #78877b;
   font-size: 11px;
 }
+.battle-simulator-current {
+  margin: 10px 0 0;
+  padding: 9px 10px;
+  border-left: 3px solid #6f8a3a;
+  color: #68786d;
+  background: rgba(255, 255, 255, 0.4);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.battle-simulator-subheading {
+  margin: 12px 0 4px;
+  color: #78877b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .battle-simulator-actions {
   display: flex;
   flex-wrap: wrap;

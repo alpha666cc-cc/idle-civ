@@ -11,18 +11,31 @@ import type { ResourceKey } from "./attributes";
 
 /** Minimum-army simulator (dev tools only): cheapest winning army per battle. */
 export type SimulatorArmy = ReadonlyMap<string, number>;
+/** Units already owned by the player. Their counts remain ExpNumbers. */
+export type SimulatorOwnedArmy = ReadonlyMap<string, ExpNumber>;
+/** The owned army after applying a proposed set of additional recruits. */
+export type SimulatorTotalArmy = ReadonlyMap<string, ExpNumber>;
 export type SimulatorCostTotal = {
   readonly resource: ResourceKey;
   readonly base: ExpNumber;
 };
+export type SimulatorResearch = {
+  readonly ids: readonly string[];
+  readonly costs: readonly SimulatorCostTotal[];
+};
 export type SimulatorResult = {
+  /** Additional recruits only; the player's current army is not charged again. */
   readonly composition: SimulatorArmy;
+  /** Full army used to test the battle, including currently owned units. */
+  readonly totalComposition: SimulatorTotalArmy;
   readonly military: ExpNumber;
   readonly totalCost: readonly SimulatorCostTotal[];
+  readonly research: SimulatorResearch;
 };
 export type BattleSimulatorContext = {
   getCost: (unitId: string, count: number) => BuildingCost[];
-  wins: (composition: SimulatorArmy, battleId: string) => boolean;
+  getResearch: (unitIds: readonly string[]) => SimulatorResearch;
+  wins: (composition: SimulatorTotalArmy, battleId: string) => boolean;
 };
 
 /** Buyable units of the battle's age and the previous age. */
@@ -32,8 +45,36 @@ export const simulatorCandidates = (battleAge: number): UnitDefinition[] =>
       isBuyableUnit(unit) && unit.age >= battleAge - 1 && unit.age <= battleAge,
   );
 
+/** The actual force that would fight: existing units plus proposed recruits. */
+export const mergeSimulatorArmy = (
+  ownedArmy: SimulatorOwnedArmy,
+  additionalArmy: SimulatorArmy,
+): SimulatorTotalArmy => {
+  const total = new Map<string, ExpNumber>();
+  for (const [unitId, count] of ownedArmy) {
+    if (count.gt(ExpNumber.ZERO)) total.set(unitId, count);
+  }
+  for (const [unitId, count] of additionalArmy) {
+    if (count <= 0) continue;
+    total.set(
+      unitId,
+      (total.get(unitId) ?? ExpNumber.ZERO).add(ExpNumber.fromNumber(count)),
+    );
+  }
+  return total;
+};
+
 const maximumProbe = 10_000_000;
 const maximumPasses = 3;
+
+/** New unit types in a proposal are the ones absent from the current army. */
+const additionalUnitIds = (
+  ownedArmy: SimulatorOwnedArmy,
+  additionalArmy: SimulatorArmy,
+): string[] =>
+  [...additionalArmy.keys()].filter(
+    (unitId) => !(ownedArmy.get(unitId)?.gt(ExpNumber.ZERO) ?? false),
+  );
 
 const militaryOf = (costs: readonly SimulatorCostTotal[]): ExpNumber => {
   let total = ExpNumber.ZERO;
@@ -72,29 +113,41 @@ const withCount = (
   return next;
 };
 
-/** Cheapest solo winner per unit, then bounded mixed hill-climb, then trim. */
+/** Cheapest solo recruit per unit, then bounded mixed hill-climb, then trim. */
 export const solveMinimumArmy = (
   battleId: string,
   candidates: readonly UnitDefinition[],
   context: BattleSimulatorContext,
   requireMixed = false,
+  ownedArmy: SimulatorOwnedArmy = new Map(),
 ): SimulatorResult | null => {
   const battle = encounterDefinitions.find(({ key }) => key === battleId);
   if (!battle) return null;
+  const wins = (composition: SimulatorArmy): boolean =>
+    context.wins(mergeSimulatorArmy(ownedArmy, composition), battle.key);
+  if (wins(new Map())) {
+    return {
+      composition: new Map(),
+      totalComposition: mergeSimulatorArmy(ownedArmy, new Map()),
+      military: ExpNumber.ZERO,
+      totalCost: [],
+      research: { ids: [], costs: [] },
+    };
+  }
   let best: SimulatorArmy | null = null;
   let bestCost = ExpNumber.INFINITY;
   for (const unit of candidates) {
     if (!findUnitDefinition(unit.key)) continue;
     let lo = 1;
     let hi = 1;
-    while (!context.wins(new Map([[unit.key, hi]]), battle.key)) {
+    while (!wins(new Map([[unit.key, hi]]))) {
       hi *= 2;
       if (hi > maximumProbe) break;
     }
     if (hi > maximumProbe) continue;
     while (lo < hi) {
       const mid = Math.floor((lo + hi) / 2);
-      if (context.wins(new Map([[unit.key, mid]]), battle.key)) hi = mid;
+      if (wins(new Map([[unit.key, mid]]))) hi = mid;
       else lo = mid + 1;
     }
     const composition = new Map([[unit.key, lo]]);
@@ -123,7 +176,7 @@ export const solveMinimumArmy = (
                 [left.key, leftCount],
                 [right.key, rightCount],
               ]);
-              if (!context.wins(composition, battle.key)) continue;
+              if (!wins(composition)) continue;
               const cost = compositionCost(composition, context);
               if (cost.lt(bestCost)) {
                 best = composition;
@@ -149,7 +202,7 @@ export const solveMinimumArmy = (
         let found = false;
         while (add <= maximumProbe) {
           const trial = withCount(base, other, (base.get(other) ?? 0) + add);
-          if (context.wins(trial, battle.key)) {
+          if (wins(trial)) {
             found = true;
             break;
           }
@@ -161,12 +214,12 @@ export const solveMinimumArmy = (
         while (lo < hi) {
           const mid = Math.floor((lo + hi) / 2);
           const trial = withCount(base, other, (base.get(other) ?? 0) + mid);
-          if (context.wins(trial, battle.key)) hi = mid;
+          if (wins(trial)) hi = mid;
           else lo = mid + 1;
         }
         const next = withCount(base, other, (base.get(other) ?? 0) + lo);
         const cost = compositionCost(next, context);
-        if (cost.lt(bestCost) && context.wins(next, battle.key)) {
+        if (cost.lt(bestCost) && wins(next)) {
           best = next;
           bestCost = cost;
           improved = true;
@@ -179,11 +232,17 @@ export const solveMinimumArmy = (
     let hi = count;
     while (lo < hi) {
       const mid = Math.floor((lo + hi) / 2);
-      if (context.wins(withCount(best, unitId, mid), battle.key)) hi = mid;
+      if (wins(withCount(best, unitId, mid))) hi = mid;
       else lo = mid + 1;
     }
     best = withCount(best, unitId, lo);
   }
   bestCost = compositionCost(best, context);
-  return { composition: best, military: bestCost, totalCost: sumCosts(best, context) };
+  return {
+    composition: best,
+    totalComposition: mergeSimulatorArmy(ownedArmy, best),
+    military: bestCost,
+    totalCost: sumCosts(best, context),
+    research: context.getResearch(additionalUnitIds(ownedArmy, best)),
+  };
 };

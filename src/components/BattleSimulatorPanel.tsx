@@ -3,42 +3,29 @@ import type { CivilizationState } from "../game/civilizationState";
 import {
   simulatorCandidates,
   solveMinimumArmy,
-  type SimulatorArmy,
+  type SimulatorOwnedArmy,
   type SimulatorResult,
+  type SimulatorTotalArmy,
 } from "../game/battleSimulator";
 import { encounterDefinitions } from "../game/encounters";
 import { findUnitDefinition } from "../game/units";
-import { researchIdsForBattle } from "../game/research";
-import type { BuildingCost } from "../game/buildings";
+import { findResearchDefinition, researchIdsForBattle } from "../game/research";
 import { ExpNumber } from "../game/expNumber";
 
-/** Cost of `count` units from scratch through the engine's series evaluator. */
-const costFromScratch = (
-  gameState: CivilizationState,
-  unitId: string,
-  count: number,
-): BuildingCost[] => {
-  const unit = findUnitDefinition(unitId);
-  if (!unit) return [];
-  const parameters = gameState.getUnitCostParameters(unitId);
-  return gameState.costSeriesFrom(parameters, count);
-};
-
-/** Whether a composition defeats the battle using engine stats + sim. */
+/** Whether a current army plus the proposed recruits defeats the battle. */
 const winsWithStats = (
   gameState: CivilizationState,
   battleId: string,
-  composition: SimulatorArmy,
+  total: SimulatorTotalArmy,
 ): boolean => {
   const researchIds = researchIdsForBattle(
     encounterDefinitions.find(({ key }) => key === battleId)?.age ?? 0,
-    [...composition.keys()],
+    [...total.keys()],
   );
-  const stacks = [...composition.entries()]
-    .filter(([, count]) => count > 0)
+  const stacks = [...total.entries()]
     .map(([unitId, count]) => ({
       unitId,
-      count: ExpNumber.fromNumber(count),
+      count,
       stats: gameState.getUnitStatsWithResearch(unitId, researchIds),
     }))
     .filter(
@@ -52,8 +39,7 @@ const winsWithStats = (
     );
   const enemy = gameState.getEnemyStacks(battleId);
   if (stacks.length === 0 || enemy.length === 0) return false;
-  const sim = gameState.simulateWithStacks(battleId, stacks, enemy);
-  return sim.outcome === "player";
+  return gameState.simulateWithStacks(battleId, stacks, enemy).outcome === "player";
 };
 
 export default function BattleSimulatorPanel({
@@ -66,14 +52,33 @@ export default function BattleSimulatorPanel({
   const [battleId, setBattleId] = useState<string>("");
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<SimulatorResult | null>(null);
-  const [failed, setFailed] = useState(false);
 
   const battle = encounterDefinitions.find(({ key }) => key === battleId);
   const candidates = useMemo(
     () => (battle ? simulatorCandidates(battle.age) : []),
     [battle],
   );
+  const ownedArmy = useMemo<SimulatorOwnedArmy>(
+    () =>
+      new Map(
+        gameState
+          .getArmyStacks()
+          .map(({ unitId, count }) => [unitId, count] as const),
+      ),
+    [gameState],
+  );
+  const currentArmyKey = [
+    ...[...ownedArmy.entries()].map(
+      ([unitId, count]) => `${unitId}:${count.toString()}`,
+    ),
+    `research:${gameState.boughtResearch.join(",")}`,
+  ].join("|");
+  const [resultState, setResultState] = useState<{
+    readonly armyKey: string;
+    readonly result: SimulatorResult | null;
+  } | null>(null);
+  const result = resultState?.armyKey === currentArmyKey ? resultState.result : null;
+  const failed = resultState?.armyKey === currentArmyKey && result === null;
 
   const selectBattle = (id: string): void => {
     const selectedBattle = encounterDefinitions.find(({ key }) => key === id);
@@ -87,8 +92,7 @@ export default function BattleSimulatorPanel({
     } else {
       setSelected(new Set());
     }
-    setResult(null);
-    setFailed(false);
+    setResultState(null);
   };
 
   const toggleUnit = (unitId: string): void => {
@@ -98,21 +102,18 @@ export default function BattleSimulatorPanel({
       else next.add(unitId);
       return next;
     });
-    setResult(null);
-    setFailed(false);
+    setResultState(null);
   };
 
   const reset = (): void => {
     setBattleId("");
     setSelected(new Set());
-    setResult(null);
-    setFailed(false);
+    setResultState(null);
   };
 
   const run = (): void => {
-    if (!battle || selected.size === 0 || running) return;
+    if (!battle || running) return;
     setRunning(true);
-    setFailed(false);
     // Let the button paint before the synchronous search blocks the thread.
     window.setTimeout(() => {
       const units = candidates.filter((unit) => selected.has(unit.key));
@@ -120,14 +121,14 @@ export default function BattleSimulatorPanel({
         battle.key,
         units,
         {
-          getCost: (unitId, count) => costFromScratch(gameState, unitId, count),
-          wins: (composition) =>
-            winsWithStats(gameState, battle.key, composition),
+          getCost: (unitId, count) => gameState.getUnitCost(unitId, count),
+          getResearch: (unitIds) => gameState.getResearchForUnitTypes(unitIds),
+          wins: (composition) => winsWithStats(gameState, battle.key, composition),
         },
         selected.size >= 2,
+        ownedArmy,
       );
-      setResult(outcome);
-      setFailed(outcome === null);
+      setResultState({ armyKey: currentArmyKey, result: outcome });
       setRunning(false);
     }, 30);
   };
@@ -137,9 +138,10 @@ export default function BattleSimulatorPanel({
       <div className="dev-tools-heading">
         <h3>Battle simulator</h3>
         <p className="dev-tools-copy">
-          Minimum-military-cost winning army for one battle. Player units use
-          current and required research bonuses with your cost reductions; the
-          enemy uses prior-age and unlock research plus its encounter boosts.
+          Starts with the army you already own, then finds the cheapest additional
+          recruits that win. Unit stats use current and required research bonuses;
+          recruit costs use your current discounts. The enemy uses prior-age and
+          unlock research plus its encounter boosts.
         </p>
       </div>
       <label className="dev-tools-label" htmlFor="battle-simulator-battle">
@@ -163,36 +165,56 @@ export default function BattleSimulatorPanel({
           <p className="dev-tools-copy">
             Enemy:{" "}
             {battle.enemyArmy
-              .map((stack) => `${stack.unitId} ×${stack.count}`)
+              .map(
+                ({ unitId, count }) =>
+                  `${findUnitDefinition(unitId)?.name ?? unitId} ×${count}`,
+              )
               .join(", ")}
           </p>
+          {ownedArmy.size > 0 && (
+            <p className="battle-simulator-current">
+              Already bought:{" "}
+              {[...ownedArmy.entries()]
+                .map(
+                  ([unitId, count]) =>
+                    `${findUnitDefinition(unitId)?.name ?? unitId} ×${fmt(count)}`,
+                )
+                .join(", ")}
+            </p>
+          )}
           <div className="dev-tools-label">
-            Units (unlocked selected by default; added units receive required
-            research)
+            Additional units the solver may recommend (your current army is always
+            included)
           </div>
           <div className="battle-simulator-units">
-            {candidates.map((unit) => (
-              <div
-                key={unit.key}
-                className="battle-simulator-unit"
-                onClick={() => toggleUnit(unit.key)}
-              >
-                <input
-                  type="checkbox"
-                  checked={selected.has(unit.key)}
-                  readOnly
-                />
-                <span>
-                  {unit.name} <small>age {unit.age}</small>
-                </span>
-              </div>
-            ))}
+            {candidates.map((unit) => {
+              const ownedCount = ownedArmy.get(unit.key);
+              return (
+                <div
+                  key={unit.key}
+                  className="battle-simulator-unit"
+                  onClick={() => toggleUnit(unit.key)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(unit.key)}
+                    readOnly
+                  />
+                  <span>
+                    {unit.name} <small>age {unit.age}</small>
+                    {ownedCount && ownedCount.gt(ExpNumber.ZERO) && (
+                      <small>· owned {fmt(ownedCount)}</small>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
           </div>
           <div className="battle-simulator-actions">
             <button
               type="button"
               className="dev-tools-toggle"
-              disabled={selected.size === 0 || running}
+              disabled={running}
               onClick={run}
             >
               <span>{running ? "Simulating…" : "Find minimum army"}</span>
@@ -208,22 +230,61 @@ export default function BattleSimulatorPanel({
       )}
       {result && (
         <div className="battle-simulator-result">
-          <h4>Minimum army for {battle?.name}</h4>
-          <ul>
-            {[...result.composition].map(([unitId, count]) => (
-              <li key={unitId}>
-                {findUnitDefinition(unitId)?.name ?? unitId} ×{count}
-              </li>
-            ))}
-          </ul>
-          <ul>
-            {result.totalCost.map(({ resource, base }) => (
-              <li key={resource}>
-                {resource}: {fmt(base)}
-              </li>
-            ))}
-          </ul>
-          <p>Military (optimized): {fmt(result.military)}</p>
+          <h4>
+            {result.composition.size === 0
+              ? `Your current army wins ${battle?.name}`
+              : `Missing units for ${battle?.name}`}
+          </h4>
+          {result.composition.size > 0 ? (
+            <>
+              <p className="battle-simulator-subheading">Recruit these units</p>
+              <ul>
+                {[...result.composition].map(([unitId, count]) => (
+                  <li key={unitId}>
+                    {findUnitDefinition(unitId)?.name ?? unitId} ×{fmt(count)}
+                  </li>
+                ))}
+              </ul>
+              <p className="battle-simulator-subheading">Minimum winning army</p>
+              <ul>
+                {[...result.totalComposition].map(([unitId, count]) => (
+                  <li key={unitId}>
+                    {findUnitDefinition(unitId)?.name ?? unitId} ×{fmt(count)}
+                  </li>
+                ))}
+              </ul>
+              <p className="battle-simulator-subheading">Additional resource cost</p>
+              <ul>
+                {result.totalCost.map(({ resource, base }) => (
+                  <li key={resource}>
+                    {resource}: {fmt(base)}
+                  </li>
+                ))}
+              </ul>
+              {result.research.ids.length > 0 && (
+                <>
+                  <p className="battle-simulator-subheading">
+                    Research needed for new unit types
+                  </p>
+                  <ul>
+                    {result.research.ids.map((researchId) => (
+                      <li key={researchId}>
+                        {findResearchDefinition(researchId)?.name ?? researchId}
+                      </li>
+                    ))}
+                  </ul>
+                  {result.research.costs.map(({ resource, base }) => (
+                    <p key={resource}>
+                      Additional research cost ({resource}): {fmt(base)}
+                    </p>
+                  ))}
+                </>
+              )}
+              <p>Additional military (optimized): {fmt(result.military)}</p>
+            </>
+          ) : (
+            <p>No additional units needed. Your current army wins the simulation.</p>
+          )}
         </div>
       )}
     </section>

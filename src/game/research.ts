@@ -158,6 +158,21 @@ const shortestUnlockClosure = (unitId: string): string[] => {
   return paths.sort((left, right) => left.length - right.length)[0] ?? [];
 };
 
+/** Research and prerequisites needed to unlock the requested unit types. */
+export const researchIdsForUnitUnlocks = (
+  unitIds: readonly string[],
+): string[] => {
+  const ids = new Set<string>();
+  for (const unitId of unitIds) {
+    for (const researchId of shortestUnlockClosure(unitId)) {
+      ids.add(researchId);
+    }
+  }
+  return researchDefinitions
+    .filter((research) => ids.has(research.key))
+    .map((research) => research.key);
+};
+
 /**
  * Research applied to an encounter's army: every completed research from an
  * earlier age, plus the shortest prerequisite path needed to unlock each unit

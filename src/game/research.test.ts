@@ -137,6 +137,27 @@ describe("research buying", () => {
     );
   });
 
+  it("prices only unbought research needed for a new unit type", () => {
+    const state = stateWith(1e30).enterAge("age-0");
+    const required = state.getResearchForUnitTypes(["slinger"]);
+
+    expect(required.ids).toEqual(["agriculture", "pottery", "sling_throwing"]);
+    expect(required.costs).toHaveLength(1);
+    expect(required.costs[0].base.toNumber()).toBeCloseTo(
+      100 * 10 ** (Math.sqrt(1) - 1) +
+        100 * 10 ** (Math.sqrt(2) - 1) +
+        100 * 10 ** (Math.sqrt(3) - 1),
+      9,
+    );
+
+    const withPrerequisites = buyPrerequisiteClosure(state, "sling_throwing").buyResearch(
+      "sling_throwing",
+    );
+    const afterPurchase = withPrerequisites.getResearchForUnitTypes(["slinger"]);
+    expect(afterPurchase.ids).toEqual([]);
+    expect(afterPurchase.costs).toEqual([]);
+  });
+
   it("makes age-0 research available from the start", () => {
     const state = stateWith(0);
     expect(state.isResearchUnlocked(first.key)).toBe(true);

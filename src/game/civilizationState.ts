@@ -66,6 +66,7 @@ import {
   findResearchDefinition,
   researchBonusesForIds,
   researchIdsForBattle,
+  researchIdsForUnitUnlocks,
   researchesClosingUnit,
   researchesUnlockingUnit,
 } from "./research";
@@ -644,22 +645,48 @@ export class CivilizationState {
     return this.boughtResearch.includes(researchId);
   }
 
+  /** Unbought research needed to unlock a set of new unit types, plus its cost. */
+  getResearchForUnitTypes(unitIds: readonly string[]): {
+    readonly ids: string[];
+    readonly costs: BuildingCost[];
+  } {
+    const ids = researchIdsForUnitUnlocks(unitIds).filter(
+      (researchId) => !this.boughtResearch.includes(researchId),
+    );
+    return {
+      ids,
+      costs: this.getResearchCostForCount(ids.length),
+    };
+  }
+
+  /**
+   * The cost of `count` sequential research purchases after the current bought
+   * count. This is the same global pricing curve as `getResearchNextCost()`.
+   */
+  getResearchCostForCount(count: number): BuildingCost[] {
+    const purchases = Number.isFinite(count)
+      ? Math.max(0, Math.floor(count))
+      : 0;
+    if (purchases === 0) return [];
+    let total = ExpNumber.ZERO;
+    for (let offset = 0; offset < purchases; offset += 1) {
+      const purchaseNumber = this.boughtResearch.length + offset + 1;
+      total = total.add(
+        researchFirstCost.mul(
+          researchCostFactor.pow(Math.sqrt(purchaseNumber) - 1),
+        ),
+      );
+    }
+    return [{ resource: "science", base: total, factor: 1 }];
+  }
+
   /**
    * The cost of the next research purchase, global across the whole tree. The
    * purchase ordinal starts at 1, so the first tech still costs 100 science and
    * later purchases use `100 × 10^(√n − 1)`.
    */
   getResearchNextCost(): BuildingCost[] {
-    const purchaseNumber = this.boughtResearch.length + 1;
-    return [
-      {
-        resource: "science",
-        base: researchFirstCost.mul(
-          researchCostFactor.pow(Math.sqrt(purchaseNumber) - 1),
-        ),
-        factor: 1,
-      },
-    ];
+    return this.getResearchCostForCount(1);
   }
 
   hasResourcesForResearch(): boolean {
