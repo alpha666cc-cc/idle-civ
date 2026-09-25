@@ -67,6 +67,7 @@ import {
   type ResourceKey,
 } from "./game/attributes";
 import ArmyPanel from "./components/ArmyPanel";
+import { type BattleSimulation } from "./game/battle";
 import ResearchPanel from "./components/ResearchPanel";
 import BattleSimulatorPanel from "./components/BattleSimulatorPanel";
 import {
@@ -371,6 +372,13 @@ function App() {
     [],
   );
   const [paused, setPaused] = useState(false);
+  /** Battle state persists across tab switches */
+  const [activeBattle, setActiveBattle] = useState<{
+    battleId: string;
+    sim: BattleSimulation;
+    startTime: number;
+  } | null>(null);
+  const [battleRoundIndex, setBattleRoundIndex] = useState(0);
   const [autosaveIntervalSeconds, setAutosaveIntervalSeconds] =
     useState(loadAutosaveInterval);
   const [saveFormat, setSaveFormat] = useState<SaveFormat>(loadSaveFormat);
@@ -898,6 +906,13 @@ function App() {
   const hasAffordableUpgrade = unlockedUpgrades.some((upgrade) =>
     gameState.hasResourcesForUpgrade(upgrade.key),
   );
+  const hasAffordableResearch =
+    researchDefinitions.some(
+      (research) =>
+        gameState.isResearchUnlocked(research.key) &&
+        !gameState.isResearchBought(research.key),
+    ) && gameState.hasResourcesForResearch();
+  const hasReadyBattle = gameState.getNextBattle() !== undefined;
   const earnedAchievementCount = gameState.earnedAchievements.length;
   const builtByKeyRows = buildingDefinitions.flatMap((building) => {
     const count = statistics.buildingsBuiltByKey[building.key];
@@ -1140,6 +1155,16 @@ function App() {
                   <span className="visually-hidden">
                     Upgrade available to buy
                   </span>
+                </span>
+              )}
+              {label === "Research" && hasAffordableResearch && (
+                <span className="tab-notification" title="Research available">
+                  <span className="visually-hidden">Research available</span>
+                </span>
+              )}
+              {label === "Army" && hasReadyBattle && (
+                <span className="tab-notification" title="Battle available">
+                  <span className="visually-hidden">Battle available</span>
                 </span>
               )}
             </button>
@@ -1459,6 +1484,10 @@ function App() {
               multiplier={multiplier}
               fmt={fmt}
               onOpenGamepedia={openGamepediaAt}
+              activeBattle={activeBattle}
+              setActiveBattle={setActiveBattle}
+              battleRoundIndex={battleRoundIndex}
+              setBattleRoundIndex={setBattleRoundIndex}
             />
           )}
 
@@ -1470,7 +1499,8 @@ function App() {
                   <h3>Produce resources</h3>
                 </div>
                 <span>
-                  <Users size={14} /> {fmtCount(availableWorkers)} workers available
+                  <Users size={14} /> {fmtCount(availableWorkers)} workers
+                  available
                 </span>
               </div>
               <div className="gather-grid">

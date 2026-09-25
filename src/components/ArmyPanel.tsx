@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Lock, Swords } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Lock, Swords, X } from "lucide-react";
 import type { CivilizationState } from "../game/civilizationState";
 import {
   armyPower,
@@ -35,6 +35,20 @@ type Props = {
   multiplier: Multiplier;
   fmt: (n: ExpNumber | number) => string;
   onOpenGamepedia: (id: string) => void;
+  activeBattle: {
+    battleId: string;
+    sim: BattleSimulation;
+    startTime: number;
+  } | null;
+  setActiveBattle: React.Dispatch<
+    React.SetStateAction<{
+      battleId: string;
+      sim: BattleSimulation;
+      startTime: number;
+    } | null>
+  >;
+  battleRoundIndex: number;
+  setBattleRoundIndex: React.Dispatch<React.SetStateAction<number>>;
 };
 
 /** An army column entry: unit, name, and the count still standing. */
@@ -96,19 +110,30 @@ export default function ArmyPanel({
   multiplier,
   fmt,
   onOpenGamepedia,
+  activeBattle,
+  setActiveBattle,
+  battleRoundIndex,
+  setBattleRoundIndex,
 }: Props) {
-  /** The running battle, keyed by id — a new next-battle invalidates it. */
-  const [active, setActive] = useState<{
+  const roundIndexRef = useRef(battleRoundIndex);
+  const activeRef = useRef<{
     battleId: string;
     sim: BattleSimulation;
     startTime: number;
   } | null>(null);
-  const [roundIndex, setRoundIndex] = useState(0);
+
+  // Sync ref with props
+  useEffect(() => {
+    activeRef.current = activeBattle;
+    roundIndexRef.current = battleRoundIndex;
+  }, [activeBattle, battleRoundIndex]);
 
   const battle = gameState.getNextBattle();
   const roster = gameState.getRosterUnits();
   const sim =
-    active !== null && battle?.key === active.battleId ? active.sim : null;
+    activeBattle !== null && battle?.key === activeBattle.battleId
+      ? activeBattle.sim
+      : null;
 
   const playerPower = gameState.getArmyPower();
   const enemyStacks = battle ? gameState.getEnemyStacks(battle.key) : [];
@@ -116,9 +141,9 @@ export default function ArmyPanel({
 
   const shown =
     sim !== null
-      ? sim.rounds[Math.min(roundIndex, sim.rounds.length - 1)]
+      ? sim.rounds[Math.min(battleRoundIndex, sim.rounds.length - 1)]
       : null;
-  const battleDone = sim !== null && roundIndex >= sim.rounds.length;
+  const battleDone = sim !== null && battleRoundIndex >= sim.rounds.length;
 
   const startBattle = () => {
     if (!battle) return;
@@ -128,17 +153,24 @@ export default function ArmyPanel({
     if (!result) return;
     // oxlint-disable-next-line react/purity
     const startTime = Date.now();
-    setRoundIndex(0);
-    setActive({ battleId: battle.key, sim: result, startTime });
+    roundIndexRef.current = 0;
+    setBattleRoundIndex(0);
+    setActiveBattle({ battleId: battle.key, sim: result, startTime });
+  };
+
+  const cancelBattle = () => {
+    setActiveBattle(null);
+    setBattleRoundIndex(0);
+    roundIndexRef.current = 0;
   };
 
   // One round per second; the win is recorded when the final round ends.
   // Uses time-based advancement to continue even when tab is inactive.
   useEffect(() => {
-    if (active === null || sim === null) return;
-    if (roundIndex >= sim.rounds.length) return;
+    if (activeRef.current === null || sim === null) return;
+    if (roundIndexRef.current >= sim.rounds.length) return;
 
-    const startTime = active.startTime;
+    const startTime = activeRef.current.startTime;
 
     const timer = window.setInterval(() => {
       const elapsedMs = Date.now() - startTime;
@@ -147,18 +179,19 @@ export default function ArmyPanel({
         sim.rounds.length,
       );
 
-      if (targetRound > roundIndex) {
-        setRoundIndex(targetRound);
+      if (targetRound > roundIndexRef.current) {
+        roundIndexRef.current = targetRound;
+        setBattleRoundIndex(targetRound);
         if (targetRound >= sim.rounds.length && sim.outcome === "player") {
           setGameState((current) =>
-            current.resolveBattle(active.battleId, sim),
+            current.resolveBattle(activeRef.current!.battleId, sim),
           );
         }
       }
     }, 100); // Check every 100ms to catch up if tab was inactive
 
     return () => window.clearInterval(timer);
-  }, [sim, active, roundIndex, setGameState]);
+  }, [sim, setGameState, setBattleRoundIndex]);
 
   return (
     <div className="army-layout">
@@ -260,28 +293,41 @@ export default function ArmyPanel({
           <span>Your army</span>
           <strong className="tone-green">{fmt(playerPower)}</strong>
         </div>
-        <button
-          type="button"
-          className="battle-button"
-          disabled={
-            !battle ||
-            (sim !== null && (!battleDone || sim.outcome === "player"))
-          }
-          onClick={startBattle}
-        >
-          <Swords size={20} strokeWidth={1.8} />
-          {sim === null
-            ? battle
-              ? `To battle: ${battle.name}`
-              : "Campaign complete"
-            : battleDone
-              ? sim.outcome === "player"
-                ? "Victory!"
-                : sim.outcome === "enemy"
-                  ? "Defeat — try again"
-                  : "Stalemate — try again"
-              : `Round ${roundIndex + 1} / ${sim.rounds.length}`}
-        </button>
+        <div className="battle-actions">
+          <button
+            type="button"
+            className="battle-button"
+            disabled={
+              !battle ||
+              (sim !== null && (!battleDone || sim.outcome === "player"))
+            }
+            onClick={startBattle}
+          >
+            <Swords size={20} strokeWidth={1.8} />
+            {sim === null
+              ? battle
+                ? `To battle: ${battle.name}`
+                : "Campaign complete"
+              : battleDone
+                ? sim.outcome === "player"
+                  ? "Victory!"
+                  : sim.outcome === "enemy"
+                    ? "Defeat — try again"
+                    : "Stalemate — try again"
+                : `Round ${battleRoundIndex + 1} / ${sim.rounds.length}`}
+          </button>
+          {sim !== null && !battleDone && (
+            <button
+              type="button"
+              className="battle-cancel-button"
+              onClick={cancelBattle}
+              title="Cancel battle"
+            >
+              <X size={16} strokeWidth={1.8} />
+              Cancel
+            </button>
+          )}
+        </div>
         <div className="army-power">
           <span>Enemy army</span>
           <strong className="tone-red">

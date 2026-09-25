@@ -614,16 +614,27 @@ export class CivilizationState {
     );
   }
 
-  /** The tech's age is entered and all prerequisites are bought. */
+  /**
+   * Whether the player has reached an age. The opening age is always reachable;
+   * later ages count as reached once the player is playing in them, so an age's
+   * own era unlocks its research immediately on entry.
+   */
+  private hasReachedAge(ageIndex: number): boolean {
+    if (ageIndex === 0) return true;
+    const currentAge = this.getCurrentAge();
+    const currentAgeIndex = currentAge
+      ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
+      : -1;
+    return (
+      currentAgeIndex >= ageIndex || this.enteredAges.includes(`age-${ageIndex}`)
+    );
+  }
+
+  /** The tech's age is reached and all prerequisites are bought. */
   isResearchUnlocked(researchId: string): boolean {
     const research = findResearchDefinition(researchId);
     if (!research) return false;
-    if (
-      research.age !== 0 &&
-      !this.enteredAges.includes(`age-${research.age}`)
-    ) {
-      return false;
-    }
+    if (!this.hasReachedAge(research.age)) return false;
     return research.prerequisites.every((prereq) =>
       this.boughtResearch.includes(prereq),
     );

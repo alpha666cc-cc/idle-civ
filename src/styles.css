@@ -2477,6 +2477,13 @@ button:focus-visible {
   top: 12px;
 }
 
+.battle-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 .army-power {
   display: flex;
   flex-direction: column;
@@ -2513,6 +2520,28 @@ button:focus-visible {
 .battle-button:disabled {
   opacity: 0.65;
   cursor: default;
+}
+
+.battle-cancel-button {
+  border: 1px solid var(--danger-line);
+  border-radius: 8px;
+  background: var(--danger-paper);
+  color: var(--danger-ink);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 100px;
+}
+
+.battle-cancel-button:hover {
+  background: var(--danger-line);
+  color: var(--paper);
 }
 
 .battle-info {
