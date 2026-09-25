@@ -130,19 +130,17 @@ describe("building resource bonuses", () => {
   });
 
   it("raises the total as power, with the pivot at 10 buildings", () => {
-    // farmPower is a derived stat (base 1). The wolf-pack encounter grants farmPower x4.
-    const boosted = stateWith({ farm: 20 }).defeatEncounter("age0_2_wolf_pack");
-    expect(boosted.buildingPower("farm").toNumber()).toBeCloseTo(4, 9);
-    // A bare farm (no power bonus) reads 1.
-    expect(stateWith({ farm: 20 }).buildingPower("farm").toNumber()).toBe(1);
+    // farmPower is a derived stat (base 1). The first enhancer grants +1.
+    const base = stateWith({ farm: 20 });
+    expect(base.buildingPower("farm").toNumber()).toBe(1);
     // With power 1 the additive bonus is unchanged: (0.1 x 20) = 2.0.
-    expect(foodSummary(stateWith({ farm: 20 })).additiveMultiplier.toNumber()).toBeCloseTo(2, 9);
-    // With power 4 (the encounter), the bonus becomes (0.1 x 20)^4 = 16.0.
-    // The exponent pivots at 10 buildings: below that it scales the bonus down
-    // (5 farms ^ 2 = 0.25), above it up (20 farms ^ 4 = 16).
+    expect(foodSummary(base).additiveMultiplier.toNumber()).toBeCloseTo(2, 9);
+    // With power 2 (the first enhancer), it becomes (0.1 x 20)^2 = 4.0.
+    const boosted = richState({ farm: 20 }).buyUpgrade("farm-enhancer-9");
+    expect(boosted.buildingPower("farm").toNumber()).toBeCloseTo(2, 9);
     expect(
       foodSummary(boosted).additiveMultiplier.toNumber(),
-    ).toBeCloseTo(16, 9);
+    ).toBeCloseTo(4, 9);
   });
 
   it("gives power only to production buildings, never house or town-hall", () => {
@@ -174,9 +172,9 @@ describe("building resource bonuses", () => {
     expect(state.getBuildingMax("farm").toNumber()).toBe(10);
   });
 
-  it("raises power by +1 per enhancer upgrade and x2 when the first age ends", () => {
-    // Each farm-enhancer-N upgrade grants +1 farmPower (a flat on the power
-    // stat); the age-1 transition grants a global buildingPower x2 that folds
+  it("raises power by +1 per enhancer upgrade and x1.5 when entering the next age", () => {
+    // The first enhancer applies +1 farmPower (a flat on the power stat); the
+    // age-1 transition grants a global buildingPower x1.5 that folds
     // into every production building's power.
     // farm-enhancer-9 unlocks at 9 farms; buy it and power goes 1 -> 2.
     const base = richState({ farm: 9 });
@@ -187,11 +185,11 @@ describe("building resource bonuses", () => {
     expect(oneTier.isUpgradeBought("farm-enhancer-9")).toBe(true);
     expect(oneTier.buildingPower("farm").toNumber()).toBe(2);
 
-    // Entering age-1 (end of the first age) doubles the global power, so the
-    // farm's effective power goes from 2 to 2 x 2 = 4.
+    // Entering age-1 (end of the first age) multiplies the global power by
+    // 1.5, so the farm's effective power goes from 2 to 2 x 1.5 = 3.
     const aged = oneTier.enterAge("age-1");
-    expect(aged.getAttributeValue("buildingPower").toNumber()).toBe(2);
-    expect(aged.buildingPower("farm").toNumber()).toBe(4);
+    expect(aged.getAttributeValue("buildingPower").toNumber()).toBe(1.5);
+    expect(aged.buildingPower("farm").toNumber()).toBe(3);
   });
 
   it("takes its base power from the building definition, not a hardcoded 1", () => {

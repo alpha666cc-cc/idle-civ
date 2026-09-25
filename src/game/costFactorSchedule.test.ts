@@ -8,7 +8,7 @@ import {
 } from "./costFactorSchedule";
 
 /**
- * The schedule is a design artifact walking k from its shipped start to the
+ * The schedule is a design artifact walking k from its modeled start to the
  * age-7 endgame target over ten production-building decades. These tests pin
  * the endpoints, the flat-then-cliff-then-decay shape, and the trigger's
  * decade mapping so the eventual costSeries wiring has a checked contract.
@@ -20,7 +20,7 @@ describe("the progressive cost-factor reduction schedule", () => {
     expect(costFactorSteps).toBe(10);
   });
 
-  it("walks buildings from the shipped 25 to the age-7 target", () => {
+  it("walks buildings from the modeled 25 to the age-7 target", () => {
     expect(costFactorAt(buildingFactorSchedule, 0)).toBe(25);
     expect(costFactorAt(buildingFactorSchedule, 9)).toBeCloseTo(1.07, 2);
     expect(costFactorAt(buildingFactorSchedule, 9)).toBeCloseTo(1.0746, 3);

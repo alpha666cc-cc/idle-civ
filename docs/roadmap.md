@@ -247,7 +247,8 @@ Modern/Space**. The first encounter is a wolf (`age0_1_first_fire`) in the openi
 Ancient age; defeating it expands the town-hall count beyond the default cap of 10. Each
 victory applies a data-driven reward (bonuses, unlocks, enemy boosts on the same bonus
 channel as upgrades). **Implemented (first battle slice):** unit definitions
-(`src/game/units.ts` + `data/units.json`, hp/attack scaled ×8 per age, cost factor 5),
+(`src/game/units.ts` + `data/units.json`, hp/attack scaled ×8 per age; unit cost factor
+  5 except the Age-0 Tribesman ×4 and Bronze Spearman/Axeman ×3),
 a deterministic seeded stack/hp-pool simulation (`src/game/battle.ts`, ≤ 200 rounds with
 an explicit stalemate outcome), `armyPower = attack × accuracy × √(hp ÷ (1 − armor))`
 summed over stacks, and an Army tab that buys units and plays battles back at one round
@@ -334,20 +335,11 @@ Create a branching technology tree inspired by broad civilization progression:
 - Writing, administration, and mathematics
 - Navigation, engineering, and organized warfare
 
-Each technology should define stable IDs, prerequisites, research cost, era, and effects:
-
-```ts
-type ResearchDefinition = {
-  id: string;
-  name: string;
-  era: string;
-  prerequisites: string[];
-  scienceCost: number;
-  effects: EffectDefinition[];
-};
-```
-
-The `era` field references an age definition from Milestone 2.
+Research is a globally priced, one-shot technology tree: the first purchase costs 100
+science and purchase `n` costs `100 × 10^(√n − 1)`. A research definition stores its
+stable id, name, age, category, prerequisites, bonuses, unit unlocks/conversions and
+ignored-effect report—not an individual price. Age-0 includes Torsion Physics, so the
+Ancient roster reaches its final Catapult before the Iron Age.
 
 Use original names, descriptions, and artwork. The structure can evoke classic 4X progression without copying Civilization 2's exact technology tree, text, or assets.
 

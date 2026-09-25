@@ -110,20 +110,20 @@ describe("research buying", () => {
   const first = researchDefinitions[0];
   const second = researchDefinitions[1];
 
-  it("charges 100 science for the first tech, then uses factor 8 on the square-root curve", () => {
+  it("charges 100 science for the first tech, then uses factor 10 on the square-root curve", () => {
     const state = stateWith(1e5).enterAge(`age-${first.age}`);
     expect(state.getResearchNextCost()[0].resource).toBe("science");
     expect(state.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(100, 9);
     const afterFirst = state.buyResearch(first.key);
     expect(afterFirst.isResearchBought(first.key)).toBe(true);
     expect(afterFirst.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(
-      100 * 8 ** (Math.sqrt(2) - 1),
+      100 * 10 ** (Math.sqrt(2) - 1),
       9,
     );
     const afterSecond = afterFirst.buyResearch(second.key);
     expect(afterSecond.isResearchBought(second.key)).toBe(true);
     expect(afterSecond.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(
-      100 * 8 ** (Math.sqrt(3) - 1),
+      100 * 10 ** (Math.sqrt(3) - 1),
       9,
     );
   });
@@ -203,7 +203,7 @@ describe("research buying", () => {
     const bought = entered.buyResearch(first.key);
     expect(bought.buyResearch(first.key)).toBe(bought);
     expect(bought.canBuyResearch(first.key)).toBe(false);
-    // The next global price follows the factor-8 square-root curve, and the
+    // The next global price follows the factor-10 square-root curve, and the
     // science is spent.
     expect(bought.getResearchFailureReason(second.key)).toBe("resources");
   });

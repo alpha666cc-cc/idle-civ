@@ -99,24 +99,92 @@ describe("static content guids", () => {
     expect(snapshotGuids([])).toEqual({});
   });
 
-  it("uses factor 8 for building costs and factor 5 for unit costs", () => {
-    const buildingFactors = buildingDefinitions.flatMap(({ costs }) =>
-      costs.map(({ factor }) => factor),
+  it("uses the shipped building and age-0 unit cost factors", () => {
+    const buildingFactors = new Set(
+      buildingDefinitions.flatMap(({ costs }) =>
+        costs.map(({ factor }) => factor),
+      ),
     );
-    const unitFactors = unitDefinitions.flatMap(({ costs }) =>
-      costs.map(({ factor }) => factor),
+    const ageZeroUnitFactors = new Map(
+      unitDefinitions
+        .filter(({ age, costs }) => age === 0 && costs.length > 0)
+        .map((unit) => [unit.key, new Set(unit.costs.map(({ factor }) => factor))]),
     );
-    expect([...new Set(buildingFactors)]).toEqual([8]);
-    expect([...new Set(unitFactors)]).toEqual([5]);
+
+    expect(buildingFactors).toEqual(new Set([2.5, 8, 10, 12, 15]));
+    expect(ageZeroUnitFactors.get("warrior")).toEqual(new Set([4]));
+    expect(ageZeroUnitFactors.get("spearman_bronze")).toEqual(new Set([3]));
+    expect(ageZeroUnitFactors.get("axeman_bronze")).toEqual(new Set([3]));
+    for (const unit of unitDefinitions.filter(
+      ({ age, costs }) => age > 0 && costs.length > 0,
+    )) {
+      expect(unit.costs.map(({ factor }) => factor), unit.key).toEqual(
+        unit.costs.map(() => 5),
+      );
+    }
+  });
+
+  it("keeps the rebalanced age-0 bases, factors and town-hall costs", () => {
+    const ageZeroUnits = unitDefinitions.filter(
+      ({ age, costs }) => age === 0 && costs.length > 0,
+    );
+    const baseAndFactor = (
+      unit: { key: string; costs: { base: ExpNumber; factor: number }[] },
+    ) => unit.costs.map(({ base, factor }) => [base.toNumber(), factor]);
+
+    expect(
+      baseAndFactor(ageZeroUnits.find(({ key }) => key === "warrior")!),
+    ).toEqual([
+      [150, 4],
+      [5_000, 4],
+    ]);
+    expect(
+      baseAndFactor(ageZeroUnits.find(({ key }) => key === "canoe")!),
+    ).toEqual([
+      [25_000, 5],
+      [400_000, 5],
+    ]);
+    expect(
+      baseAndFactor(ageZeroUnits.find(({ key }) => key === "spearman_bronze")!),
+    ).toEqual([
+      [100_000, 3],
+      [5_000, 3],
+    ]);
+    expect(
+      baseAndFactor(ageZeroUnits.find(({ key }) => key === "axeman_bronze")!),
+    ).toEqual([
+      [300_000, 3],
+      [20_000, 3],
+    ]);
+
+    const costsFor = (key: string) =>
+      buildingDefinitions
+        .find((building) => building.key === key)
+        ?.costs.map(({ base, factor }) => [base.toNumber(), factor]);
+    expect(costsFor("barracks")).toEqual([
+      [10_000, 10],
+      [1_000, 12],
+      [5_000, 10],
+    ]);
+    expect(costsFor("university")).toEqual([
+      [10_000, 10],
+      [10_000, 12],
+      [7_500, 10],
+    ]);
+    expect(costsFor("town-hall")).toEqual([
+      [10_000, 15],
+      [7_500, 15],
+      [12_500, 15],
+    ]);
   });
 
   it("keeps multiple capacity effect entries instead of overwriting them", () => {
     const townHall = buildingDefinitions.find(({ key }) => key === "town-hall");
     expect(townHall).toBeDefined();
-    expect(townHall?.effects.capacityProvided).toHaveLength(3);
+    expect(townHall?.effects.capacityProvided).toHaveLength(5);
     expect(
       townHall?.effects.capacityProvided?.map(({ building }) => building),
-    ).toEqual(["house", "barracks", "university"]);
+    ).toEqual(["house", "barracks", "university", "smithy", "market"]);
   });
 
   it("applies town hall capacity grants to other building capacities", () => {
@@ -128,8 +196,7 @@ describe("static content guids", () => {
     const state = new CivilizationState(
       {
         ...emptyResourceAmounts(),
-        // The first town-hall uses the current factor-8 building cost curve;
-        // stock enough to actually build it.
+        // The first town-hall's data-driven cost is affordable with this stock.
         wood: ExpNumber.fromNumber(1_000_000),
         stone: ExpNumber.fromNumber(1_000_000),
         gold: ExpNumber.fromNumber(1_000_000),

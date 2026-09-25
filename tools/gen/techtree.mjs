@@ -16,14 +16,11 @@
 //   Unsupported types are kept per entry under `ignored` with a machine-readable
 //   reason — never silently dropped.
 //
-// Costs are not taken from the source file: techs are ordered topologically
-// (prerequisites first, then source order) and cost 1K × 10^index science.
-//
-// Rerunnable: deterministic output; GUIDs are stamped afterwards by
-// `node tools/gen/guids.mjs` (which derives them from file name + key).
+// Research prices are global engine state, not per-tech JSON costs. Preserve
+// live fields such as GUIDs when converting the source tree.
 //
 // Run: node tools/gen/techtree.mjs [--expect=N]
-import fs from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,6 +31,14 @@ const root = path.resolve(here, "..", "..");
 const sourcePath = path.join(root, "temp", "tech tree-v3-effects.json");
 const outputPath = path.join(root, "src", "game", "data", "research.json");
 const reportPath = path.join(root, "temp", "techtree-flags.txt");
+
+/** Preserve live data fields, including GUIDs, during regeneration. */
+const existingByKey = new Map(
+  (existsSync(outputPath)
+    ? JSON.parse(readFileSync(outputPath, "utf8"))
+    : []
+  ).map((tech) => [tech.key, tech]),
+);
 
 /**
  * Sanity guard: the tree is expected to hold this many techs. A short file means
@@ -51,10 +56,10 @@ const expectedTechCount = expectArg
 // ---------------------------------------------------------------------------
 
 const units = JSON.parse(
-  fs.readFileSync(path.join(root, "src", "game", "data", "units.json"), "utf8"),
+  readFileSync(path.join(root, "src", "game", "data", "units.json"), "utf8"),
 );
 const buildings = JSON.parse(
-  fs.readFileSync(path.join(root, "src", "game", "data", "buildings.json"), "utf8"),
+  readFileSync(path.join(root, "src", "game", "data", "buildings.json"), "utf8"),
 );
 const unitIds = new Set(units.map((unit) => unit.id));
 const buyableUnitIds = new Set(
@@ -181,7 +186,7 @@ const repairJson = (text) => {
   }
 };
 
-const techs = repairJson(fs.readFileSync(sourcePath, "utf8"));
+const techs = repairJson(readFileSync(sourcePath, "utf8"));
 console.log(`parsed ${techs.length} techs from ${path.basename(sourcePath)}`);
 
 // Structural guard: a garbled parse must never silently ship a short tree.
@@ -428,7 +433,7 @@ if (orderViolations.length > 0) {
   );
 }
 
-const entries = techs.map((tech, index) => {
+const entries = techs.map((tech) => {
   const bonuses = [];
   for (const effect of tech.effects ?? []) {
     const converted = convertEffect(tech, effect);
@@ -454,6 +459,7 @@ const entries = techs.map((tech, index) => {
     })
     .filter(Boolean);
   return {
+    ...(existingByKey.get(tech.id) ?? {}),
     key: tech.id,
     name: tech.name,
     description:
@@ -463,13 +469,7 @@ const entries = techs.map((tech, index) => {
     age: tech.age,
     category: tech.category,
     prerequisites: [...(tech.prerequisites ?? [])],
-    costs: [
-      {
-        resource: "science",
-        base: (1000 * Math.pow(10, index)).toExponential(10),
-        factor: 1,
-      },
-    ],
+    // The engine prices research globally; don't inject per-tech cost records.
     bonuses,
     unlocks: [...new Set(tech.unlockedUnits ?? [])],
     // Only emitted when a tech converts something: an empty array on all 172
@@ -483,8 +483,8 @@ const entries = techs.map((tech, index) => {
 // Emit
 // ---------------------------------------------------------------------------
 
-fs.writeFileSync(outputPath, JSON.stringify(entries, null, 2) + "\n", "utf8");
-fs.writeFileSync(
+writeFileSync(outputPath, JSON.stringify(entries, null, 2) + "\n", "utf8");
+writeFileSync(
   reportPath,
   [
     `techtree conversion report — ${new Date().toISOString()}`,

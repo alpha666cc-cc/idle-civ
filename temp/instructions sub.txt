@@ -11,3 +11,66 @@ note :
  
 hall of hall achivement add reduction of 0.01 of scale factor for all buildings ?
 
+  
+  k_farm = 26.46 -> c100 = 1e13 [single farm cost, not total]:  max(1.5*n+10)
+  
+  k_people age 1 =2.63915 -> f(100)=100k max(5*n+10)
+  
+  1B -> e988.5 k= 1.0746
+  10B -> at 1e10: k=1.02 gives 861, k=1.03 gives 1284 -> k=1.02327
+  
+  
+  
+
+prod exponent	exponen t of prod building	age	nb of citizen	nb of building	
+						
+1	0	1	10	1	
+5.5	1	1	100	10	
+14.9757724967	2	1	1000	100	
+46.3979400087	3	2	10000	1000	
+92.3788624837	4	3	100000	10000	
+144.3546349805	5	3	1000000	100000	
+250.925	6	4	10000000	1000000	
+407.4223592406	7	5	100000000	10000000	
+627.9718150252	8	6	1000000000	100000000	
+988.5357533669	9	7	10000000000	1000000000	
+	10	8	100000000000	10000000000	
+	11	9	1000000000000	100000000000	
+					
+prod preduction
+					
+age 1 - 10 people - 1 prod building - prod exponent 0
+age 1 - 100 people - 10 prod building - prod exponent 5.5
+age 1 - 1k p- 100 pb - pe 14.9
+age 2 - 10k p- 1k pb - pe 46
+age 3 - 100k p- 10k pb - pe 92
+age 3 - 1M p- 100k pb - pe 144
+age 4 - 10M p- 1M pb - pe 250
+age 5 - 10M p- 10M pb - pe 407
+age 6 - 1B p- 100M pb - pe 627
+age 7 - 10B p- 1B pb - pe 988
+
+add an achievement "famine" , description "hidden", triggers when you got to 0 food ( and food prod <0 ) with 1001 citizen or more, remove drain from citizen on food
+
+i modified a few unit costs/scaling on age 0 ( as well as reserach and building), can you reflect that on the  building scripts/tests/ documentation ( don't modify any json)
+
+UI: change researcch card ( don't touch card size): lower button size so the card can accomodate a 3rd effect (or 2 line effects like conversion.
+also some research description are outdated. (Tribal Organization doe snot Unlocks Tribesman)
+
+ui;: Enhanced upgrades card says "attributeFlat"; it should be XXX power +1 (xxx is the name of the building) 
+
+in game mode, change the battle-simulator so that it takes into account currently bought units ( it hsould say waht units are missing to reach battle)
+
+simulation ( don't touch main engine)use new battle-simulator to improve strategies ( basically, use simulator when a unit/research is bought to find the shortest path to victory... be reminded that the simulator is not the real battle, you can have to buy additional units)
+
+make a Return of interest function for each thing that is buyable. (updgrade( updgrade should have a high ROI, their boost is massive), research, prod buildings...)
+
+make a cheapest strategy( always buiy the cheapest stuff)
+
+
+
+
+
+
+
+

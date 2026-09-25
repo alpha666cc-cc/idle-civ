@@ -1,19 +1,20 @@
 /**
  * Progressive cost-growth-factor reduction schedule (design artifact).
  *
- * Walks the square-root cost curve's growth factor `k` down from its shipped
- * start value to the age-7 endgame target over ten production-building-count
- * decades — the ten rows of the production-exponent progression. Building
- * values are derived exactly from the `pe` targets via
+ * Walks the square-root cost curve's growth factor `k` down from the planned
+ * model baseline of 25 to its age-7 endgame target over ten
+ * production-building-count decades — the ten rows of the production-exponent
+ * progression. Building values are derived exactly from the `pe` targets via
  * `k = 10^((pe - 1) / sqrt(pb))`: the first four rows hold flat at 25 (pe
  * noise there is rounding only), then the age-3 cliff and the asymptotic decay.
  *
- * This module is intentionally NOT wired into `civilizationState.costSeries()`
- * yet, so `data/buildings.json` keeps its shipped `factor` 25 / 2.5 and live
- * costs are unchanged. Wiring it into live costs — and choosing its trigger
- * key (production-count decade vs population vs age) and its scope (all
- * buildings vs only the four production buildings) — is a game-rule decision
- * deferred until confirmed. See docs/game-scope.md section 3.
+ * This module is intentionally NOT wired into `civilizationState.costSeries()`.
+ * Live costs are per-entry JSON data: building factors currently include
+ * 2.5 / 8 / 10 / 12 / 15, so the schedule remains a separate design artifact.
+ * Wiring it into live costs — and choosing its trigger key (production-count
+ * decade vs population vs age) and its scope (all buildings vs only the four
+ * production buildings) — is a game-rule decision deferred until confirmed. See
+ * docs/game-scope.md section 3.
  */
 
 /** Growth factor `k` per step for buildings: 25 flat, age-3 cliff, decay to ~1.0746. */
@@ -36,8 +37,8 @@ export const costFactorSteps = buildingFactorSchedule.length;
 
 /**
  * Growth factor at `step`, clamped to the schedule's ends: overshoot holds the
- * age-7 floor rather than running past it, and undershoot holds the shipped
- * start.
+ * age-7 floor rather than running past it, and undershoot holds the schedule's
+ * modeled starting value.
  */
 export const costFactorAt = (
   schedule: readonly number[],

@@ -4,6 +4,19 @@
 > (`git --no-pager log`). Pair it with `docs/game-scope.md` (what the game
 > contains now) and `docs/roadmap.md` (what is planned).
 
+## 2026-09-25 — Age-0 balance documentation refresh
+
+- **Unit cost curves:** the default growth factor remains 5, with explicit Age-0
+  exceptions: Tribesman factor 4; Bronze Spearman and Axeman factor 3. The updated
+  bases are kept in `tools/gen/units.mjs` so regeneration does not restore the
+  former values.
+- **Building costs:** current JSON uses citizen 2.5; primary production 8;
+  town halls 15; barracks/university 10 for wood and food (12 for stone); smithy
+  and market 12. The documentation and balance workbook now record these values.
+- **Research pricing:** the first research still costs 100 science, but global
+  purchase `n` now follows `100 × 10^(√n − 1)`. `tools/gen/techtree.mjs` preserves
+  live GUIDs and does not write per-tech prices.
+
 ## 2026-09-19 — Save system, offline progress, trade production
 
 - **Save system (roadmap Milestone 3, first full slice):** versioned `SaveData`

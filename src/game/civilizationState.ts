@@ -647,7 +647,7 @@ export class CivilizationState {
   /**
    * The cost of the next research purchase, global across the whole tree. The
    * purchase ordinal starts at 1, so the first tech still costs 100 science and
-   * later purchases use `100 × 8^(√n − 1)`.
+   * later purchases use `100 × 10^(√n − 1)`.
    */
   getResearchNextCost(): BuildingCost[] {
     const purchaseNumber = this.boughtResearch.length + 1;

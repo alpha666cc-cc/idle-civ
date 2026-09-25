@@ -11,8 +11,8 @@
  *      unit of a newer age is worth roughly 52 units of the previous one under
  *      the square law (3 ages ≈ 4,400). Tactical stats — accuracy, range, speed
  *      — stay bounded on purpose: they decide who can shoot whom, not how hard.
- *   2. `COST_FACTOR` replaces each cost's growth factor with 5, making repeated
- *      purchases of one unit scale more slowly.
+ *   2. Unit costs use factor 5 by default; the Age-0 Tribesman and Bronze
+ *      infantry bands use factors 4 and 3. Age-0 base costs are listed below.
  *
  * A unit's `available` flag is the inverse of the authored `locked` flag: the
  * tribesman is buyable from the start, everything else is unlocked by a battle
@@ -21,9 +21,41 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const SOURCE = "temp/unit100-v3.json";
+
+/**
+ * Age-0 tier bands. Bronze infantry buys scale more slowly, while the starting
+ * Tribesman has a deliberately flatter first rank. All cost entries in one unit
+ * share the same factor; sources from later ages are not modified here.
+ */
+const AGE_ZERO_COSTS = {
+  warrior: [
+    { resource: "military", base: 150 },
+    { resource: "food", base: 5_000 },
+  ],
+  canoe: [
+    { resource: "military", base: 25_000 },
+    { resource: "wood", base: 400_000 },
+  ],
+  spearman_bronze: [
+    { resource: "military", base: 100_000 },
+    { resource: "metalwork", base: 5_000 },
+  ],
+  axeman_bronze: [
+    { resource: "military", base: 300_000 },
+    { resource: "metalwork", base: 20_000 },
+  ],
+};
+const DEFAULT_COST_FACTOR = 5;
+const AGE_ZERO_FACTORS = {
+  warrior: 4,
+  spearman_bronze: 3,
+  axeman_bronze: 3,
+};
+const costsFor = (unit) => AGE_ZERO_COSTS[unit.id] ?? unit.costs ?? [];
+const factorFor = (unit) => AGE_ZERO_FACTORS[unit.id] ?? DEFAULT_COST_FACTOR;
+
 const OUTPUT = "src/game/data/units.json";
 const STAT_SCALE_PER_AGE = 8;
-const COST_FACTOR = 5;
 
 /** Original one-line flavour text; the mechanical facts are rendered from data. */
 const descriptions = {
@@ -132,10 +164,10 @@ const normalized = units.map((unit) => {
     speed: unit.speed,
     accuracy: unit.accuracy,
     available: !unit.locked,
-    costs: (unit.costs ?? []).map(({ resource, base }) => ({
+    costs: costsFor(unit).map(({ resource, base }) => ({
       resource,
       base,
-      factor: COST_FACTOR,
+      factor: factorFor(unit),
     })),
   };
 });
@@ -157,7 +189,8 @@ const beats = (older, newer) =>
   Math.round(Math.sqrt(quality(newer) / quality(older)));
 
 console.log(
-  `units ${normalized.length} | stat scale x${STAT_SCALE_PER_AGE}/age | cost factor ${COST_FACTOR}`,
+  `units ${normalized.length} | stat scale x${STAT_SCALE_PER_AGE}/age | ` +
+    `cost factor ${DEFAULT_COST_FACTOR} (age 0: ${JSON.stringify(AGE_ZERO_FACTORS)})`,
 );
 for (let age = 0; age <= 6; age += 1) {
   const roster = normalized.filter((unit) => unit.age === age);

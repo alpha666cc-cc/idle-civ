@@ -4,7 +4,7 @@
 > systems, and remaining scope — so an AI (or a new contributor) can estimate the project
 > without reading the codebase or the full roadmap.
 >
-> **Snapshot:** commit current (branch `main`), 2026-09-21 — Updated building power system to resource multipliers, changed cost reduction factor to multiplicative computation.
+> **Snapshot:** 2026-09-25 — Age-0 unit bases and factors, advanced-building cost factors, and global research pricing are documented below.
 > **Sources of truth:** `src/game/*.ts` (live definitions) and `docs/roadmap.md`
 > (planned design). This file is a hand-authored snapshot — regenerate it after large
 > content changes. See also `docs/timeline.md` for what landed when.
@@ -21,10 +21,10 @@ goal of **10 billion people**, finishing with a **colony-ship launch**. A bonus/
 layer (64 enhancer tiers), unlock gates, and an in-game codex (Gamepedia) already exist.
 So do statistics (including online/offline time tracking), achievements, the battle first
 slice (79 buyable units, 24 deterministic campaign encounters with a playback Army tab),
-the seven-age progression (Ancient → Modern/Space, with age-driven unit retirement), and
-a full save system (JSON/XML/Base64, GUID-stable content migration, offline gains at
-25% efficiency capped at 12 h). Research, the trade economy, and prestige are still on
-the roadmap.
+the seven-age progression (Ancient → Modern/Space, with age-driven unit retirement), a
+172-node research tree, and a full save system (JSON/XML/Base64, GUID-stable content
+migration, offline gains at 25% efficiency capped at 12 h). The trade economy and
+prestige are still on the roadmap.
 Prestige is deliberately deferred until the first loop is done.
 
 ## 2. Resources (20 live, 2 planned)
@@ -71,9 +71,10 @@ UI (`count / capacity` per card), not in the sidebar.
 
 Cost curve per entry: the total for `n` units is `T(n) = base × (factor^√n − 1)`, so
 unit `n` costs `T(n) − T(n−1)` and a bulk buy is one subtraction `T(n + k) − T(n)`.
-All building cost entries use `factor` 8, including citizens, production buildings, and
-capacity buildings. The first buys never get cheaper (the early dip is clamped to the first
-unit price).
+Building costs are per-entry data: citizens use factor 2.5, primary production buildings
+use 8, barracks/university wood and food use 10 (stone remains 12), town halls use 15,
+and smithy/market use 12. The first buys never get cheaper (the early dip is clamped
+to the first unit price).
 Order below drives the building grid and auto-buy.
 
 **Endgame factor targets (age 7 — target only, not applied to game data):** the planned
@@ -111,22 +112,38 @@ separate balance decision (research/age capacity bonuses, or a rescaled threshol
 | id            | Name        | Costs (base × factor)                          | Tier      | Effects                                | Unlock                    | Status        |
 | ------------- | ----------- | ---------------------------------------------- | --------- | -------------------------------------- | ------------------------- | ------------- |
 | `people`      | Citizen     | food 10 ×2.5                                  | —         | +1 population; drains 1 food/s each    | always                    | 🟢 engine case |
-| `house`       | House       | wood 10 ×25                                   | capacity  | +10 `peopleCapacity`                   | always                    | 🟢            |
-| `farm`        | Farm        | food 10 ×10, wood 10 ×10                       | primary   | food gain ×1.1 each                    | always                    | 🟢            |
-| `lumber-yard` | Lumber Yard | wood 10 ×10, stone 5 ×10                       | primary   | wood gain ×1.1 each                    | always                    | 🟢            |
-| `quarry`      | Quarry      | stone 20 ×10                                   | primary   | stone gain ×1.1 each                   | always                    | 🟢            |
-| `gold-mine`   | Gold Mine   | wood 100 ×10, stone 50 ×10                     | primary   | gold gain ×1.1 each                    | always                    | 🟢            |
-| `town-hall`   | Town Hall   | wood 20000 ×25, stone 15000 ×25, gold 25000 ×25 | capacity  | +10 `houseCapacity`, +1 barracks and university each | always     | 🟢            |
-| `barracks`    | Barracks    | wood 10000 ×10, stone 1000 ×10, food 5000 ×10   | advanced  | +1 `military`/s, ×1.05 each            | 90 citizens               | 🟢            |
-| `university`  | University  | wood 20000 ×10, stone 25000 ×10, gold 10000 ×10 | advanced  | +1 `science`/s, ×1.05 each             | battle `age0_1_first_fire` | 🟢            |
-| `smithy`      | Smithy      | wood 1e6 ×10, stone 1e6 ×10                    | advanced  | +1 `metalwork`/s, ×1.05 each           | 5 town halls              | 🟢            |
-| `market`      | Market      | wood 2.5e6 ×10, stone 2.5e6 ×10                | advanced  | +1 `trade`/s (no multiplier effect)    | age `age-1`               | 🟢            |
+| `house`       | House       | wood 10 ×12                                   | capacity  | +10 `peopleCapacity`                   | always                    | 🟢            |
+| `farm`        | Farm        | food 10 ×8, wood 10 ×8                        | primary   | food gain ×1.1 each                    | always                    | 🟢            |
+| `lumber-yard` | Lumber Yard | wood 10 ×8, stone 5 ×8                        | primary   | wood gain ×1.1 each                    | always                    | 🟢            |
+| `quarry`      | Quarry      | stone 20 ×8                                   | primary   | stone gain ×1.1 each                   | always                    | 🟢            |
+| `gold-mine`   | Gold Mine   | wood 100 ×8, stone 50 ×8                      | primary   | gold gain ×1.1 each                    | always                    | 🟢            |
+| `town-hall`   | Town Hall   | wood 10000 ×15, stone 7500 ×15, gold 12500 ×15 | capacity | +10 `houseCapacity`, +1 barracks and university each | always | 🟢 |
+| `barracks`    | Barracks    | wood 10000 ×10, stone 1000 ×12, food 5000 ×10  | advanced  | +1 `military`/s, ×1.05 each            | 90 citizens               | 🟢            |
+| `university`  | University  | wood 10000 ×10, stone 10000 ×12, gold 7500 ×10 | advanced  | +1 `science`/s, ×1.05 each             | battle `age0_1_first_fire` | 🟢            |
+| `smithy`      | Smithy      | wood 1e6 ×12, stone 1e6 ×12                    | advanced  | +1 `metalwork`/s, ×1.05 each           | 5 town halls              | 🟢            |
+| `market`      | Market      | wood 25e6 ×12, stone 25e6 ×12                  | advanced  | +1 `trade`/s (no multiplier effect)    | age `age-1`               | 🟢            |
 
 Known engine debt: `people`/`house`/`town-hall` capacity bookkeeping is special-cased in
 the engine instead of being fully data-driven; age-driven availability will replace the
 hardcoded `available` flag (roadmap Milestone 2).
 
-## 4. Upgrades (64, all 🟢)
+## 4. Units (79; 77 buyable)
+
+Buyable units share the square-root buyable curve. The default growth factor is 5.
+The Age-0 rebalance adds these bands:
+
+| Unit | Base costs (all entries) | Factor |
+| --- | --- | --- |
+| Tribesman (`warrior`) | military 150; food 5,000 | 4 |
+| Dugout Canoe (`canoe`) | military 25,000; wood 400,000 | 5 |
+| Bronze Spearman (`spearman_bronze`) | military 100,000; metalwork 5,000 | 3 |
+| Bronze Axeman (`axeman_bronze`) | military 300,000; metalwork 20,000 | 3 |
+
+All other buyable units use factor 5. The 172 research definitions globally price the
+first purchase at 100 science and purchase `n` at `100 × 10^(√n − 1)`; individual
+research records do not store costs.
+
+## 5. Upgrades (64, all 🟢)
 
 **Enhancer upgrades** — generated data: 8 buildings × 8 tiers (32 primary + 32 advanced).
 
@@ -266,7 +283,7 @@ Master Builder rewards target the derived `buildingCostMultiplier` stat (base ×
 | Upgrades           | 64 enhancer tiers (32 primary + 32 advanced)       | + research-gated, achievement-gated, battle-reward upgrades |
 | Ages               | 7 (live)                                                   | 7                                                           |
 | Units / encounters | 79 units, 24 encounters (7 age bosses)                     | 79-unit roster + 24 encounters (7 age-end bosses)           |
-| Research           | 0                                                          | 1 tree across 7 eras                                        |
+| Research           | 172 definitions across 7 ages                    | 1 tree across 7 eras                                        |
 | Achievements       | 65 concrete + open-ended hoarder tiers                     | ages + unit chains                                          |
 | Saves              | Versioned JSON/XML/Base64 + GUID migration + offline gains | deeper migrations as the model evolves                      |
 | Screens            | 1 (tabs)                                                   | 1 + stats tab + modal                                       |

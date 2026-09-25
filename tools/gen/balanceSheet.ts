@@ -617,7 +617,7 @@ const constantsRows = (): Cell[][] => {
     ["universityScience", "Science per university per second", 1],
     ["citizenDrain", "Food eaten per citizen per second", 1],
     ["researchFirstCost", "Science for the first research", 100],
-    ["researchCostFactor", "Research price factor on the square-root curve", 8],
+    ["researchCostFactor", "Research price factor on the square-root curve", 10],
     ["upgradeTierMultiplier", "Production per upgrade tier", 2],
   ];
   constants.forEach(([key, label, value], index) => {
@@ -729,7 +729,7 @@ const notesRows = (): Cell[][] => [
   ["Workers", "citizens × the worker-share inputs, rounded down. Each worker produces 1/s (food, wood, stone, gold) or 0.1/s (science)."],
   ["Production (engine)", "the engine's own rate: (Σ flat) × (Π multipliers) − (Σ drain). Food carries the citizen upkeep, −1/s per citizen."],
   ["Multiplier columns", "building × = the building's own per-unit factor ^ count; achievement × = the ‹resource›-multiplier chain tiers unlocked by that building count; upgrade × = ×2 per enhancer tier passed; other × = research + battle + age bonuses (engine values — edit them to test a different research pace)."],
-  ["Times", "next building = the slowest of its cost resources (unit cost / that resource's production). Next research = 100 × 2.5^purchases science. 'Time incl. research' takes the slower of the two, because science and resources accrue in parallel."],
+  ["Times", "next building = the slowest of its cost resources (unit cost / that resource's production). Next research = 100 × 10^(√n − 1), where n is the purchase ordinal. 'Time incl. research' takes the slower of the two, because science and resources accrue in parallel."],
   ["Approximations", "upgrades are assumed bought as soon as their building-count threshold is met; research is assumed bought for every earlier age (Inputs.boughtResearchShare trims that); battles are assumed won for every earlier age; resources are assumed held at exactly the next purchase's cost, which is what unlocks the hoarder tiers."],
   ["Reading the balance", "the engine columns are the current data's answer, not a target. Where they explode or stall is what to tune — start with the cost factors on Data and the ratios on Inputs."],
 ];
@@ -1120,7 +1120,7 @@ const planData = (
   );
 
   const modelScienceCost =
-    100 * 8 ** (Math.sqrt(m.nextResearch.bought + 1) - 1);
+    100 * 10 ** (Math.sqrt(m.nextResearch.bought + 1) - 1);
   const scienceRate = models.science.production;
   row.push(m.nextResearch.bought, m.nextResearch.science);
   row.push({
