@@ -44,12 +44,36 @@
       "unitDomain": "naval"
     },
     "bonuses": [
-      { "type": "attributeMultiplier", "destination": "tag.naval.hp", "value": 1.1 },
-      { "type": "attributeMultiplier", "destination": "tag.naval.attack", "value": 1.1 },
-      { "type": "attributeMultiplier", "destination": "tag.naval.armor", "value": 1.1 },
-      { "type": "attributeMultiplier", "destination": "tag.naval.range", "value": 1.1 },
-      { "type": "attributeMultiplier", "destination": "tag.naval.speed", "value": 1.1 },
-      { "type": "attributeMultiplier", "destination": "tag.naval.accuracy", "value": 1.1 }
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.naval.hp",
+        "value": 1.1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.naval.attack",
+        "value": 1.1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.naval.armor",
+        "value": 1.1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.naval.range",
+        "value": 1.1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.naval.speed",
+        "value": 1.1
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.naval.accuracy",
+        "value": 1.1
+      }
     ]
   },
   {
@@ -66,7 +90,7 @@
       {
         "type": "costReductionFactor",
         "destination": "all-buildings",
-        "value": 0.01
+        "value": 0.02
       }
     ]
   },

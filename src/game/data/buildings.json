@@ -202,7 +202,7 @@
       {
         "resource": "wood",
         "base": 10000,
-        "factor": 12
+        "factor": 10
       },
       {
         "resource": "stone",
@@ -212,7 +212,7 @@
       {
         "resource": "food",
         "base": 5000,
-        "factor": 12
+        "factor": 10
       }
     ],
     "available": true,
@@ -243,17 +243,17 @@
       {
         "resource": "wood",
         "base": 10000,
-        "factor": 12
+        "factor": 10
       },
       {
         "resource": "stone",
-        "base": 20000,
+        "base": 10000,
         "factor": 12
       },
       {
         "resource": "gold",
         "base": 7500,
-        "factor": 12
+        "factor": 10
       }
     ],
     "available": true,

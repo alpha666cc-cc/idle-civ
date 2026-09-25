@@ -20,13 +20,13 @@
     "costs": [
       {
         "resource": "military",
-        "base": 200,
-        "factor": 5
+        "base": 150,
+        "factor": 4
       },
       {
         "resource": "food",
         "base": 5000,
-        "factor": 5
+        "factor": 4
       }
     ]
   },
@@ -102,12 +102,12 @@
     "tags": ["beast"],
     "canHit": ["ground"],
     "bonusVs": [],
-    "hp": 60,
+    "hp": 50,
     "attack": 15,
     "armor": 0.05,
     "range": 1,
     "speed": 8,
-    "accuracy": 0.9,
+    "accuracy": 0.7,
     "available": false,
     "costs": []
   },
@@ -151,12 +151,12 @@
     "costs": [
       {
         "resource": "military",
-        "base": 50000,
+        "base": 25000,
         "factor": 5
       },
       {
         "resource": "wood",
-        "base": 1000000,
+        "base": 400000,
         "factor": 5
       }
     ]
@@ -182,7 +182,7 @@
     "costs": [
       {
         "resource": "military",
-        "base": 200000,
+        "base": 100000,
         "factor": 3
       },
       {
@@ -213,7 +213,7 @@
     "costs": [
       {
         "resource": "military",
-        "base": 400000,
+        "base": 300000,
         "factor": 3
       },
       {
