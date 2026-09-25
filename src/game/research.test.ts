@@ -104,6 +104,15 @@ describe("research data integrity", () => {
       }
     }
   });
+
+  it("does not claim to unlock units that are already available", () => {
+    for (const research of researchDefinitions) {
+      for (const unitId of research.unlocks) {
+        const unit = unitDefinitions.find(({ key }) => key === unitId);
+        expect(unit?.available, `${research.key} → ${unitId}`).toBe(false);
+      }
+    }
+  });
 });
 
 describe("research buying", () => {

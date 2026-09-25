@@ -2678,7 +2678,7 @@ button:focus-visible {
 .research-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   height: 100%;
   padding: 7px 8px;
   border: 1px solid var(--line);
@@ -2746,12 +2746,12 @@ button:focus-visible {
   padding: 0 0 0 14px;
   list-style: disc;
   color: var(--ink-soft);
-  line-height: 1.35;
-  font-size: 0.7rem;
+  line-height: 1;
+  font-size: 0.68rem;
 }
 
 .research-card-effects li {
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .research-card-footer {
@@ -2763,13 +2763,14 @@ button:focus-visible {
 }
 
 .research-buy {
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid var(--line);
   background: none;
   font: inherit;
-  font-size: 0.74rem;
+  font-size: 0.66rem;
   font-weight: 600;
-  padding: 3px 7px;
+  line-height: 1;
+  padding: 1px 5px;
   cursor: pointer;
 }
 

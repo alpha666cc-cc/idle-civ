@@ -922,6 +922,12 @@ function App() {
   });
 
   const describeUpgradeBonus = (bonus: Bonus): string => {
+    if (bonus.type === "attributeFlat") {
+      const attribute = derivedAttributeDefinitions.find(
+        ({ key }) => key === bonus.destination,
+      );
+      if (attribute) return `${attribute.label} +${fmt(bonus.value)}`;
+    }
     if (bonus.type === "attributeMultiplier") {
       const capacity = capacityDefinitions.find(
         ({ key }) => key === bonus.destination,

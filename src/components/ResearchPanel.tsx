@@ -412,7 +412,7 @@ const ResearchCard = ({
         )}
       </div>
       <ul className="research-card-effects">
-        {effects.slice(0, 2).map((effect, index) => (
+        {effects.slice(0, 3).map((effect, index) => (
           <li key={index}>{effect}</li>
         ))}
         {effects.length === 0 && (

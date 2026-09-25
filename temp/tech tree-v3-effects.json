@@ -239,7 +239,6 @@
     "category": "military",
     "cost": "100",
     "prerequisites": ["agriculture"],
-    "unlockedUnits": ["warrior"],
     "effects": [
       {
         "type": "unit_stat_boost",
