@@ -773,9 +773,9 @@
     "key": "torsion_physics",
     "name": "Torsion Physics",
     "description": "unlock_unit catapult_ancient (small); unit_stat_boost army_power (small)",
-    "age": 1,
+    "age": 0,
     "category": "military",
-    "prerequisites": ["wheel_axle"],
+    "prerequisites": ["wheel_axle", "composite_bowcraft"],
     "bonuses": [
       {
         "type": "attributeMultiplier",

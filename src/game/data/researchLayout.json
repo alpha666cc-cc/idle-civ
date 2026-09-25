@@ -81,7 +81,11 @@
   },
   "composite_bowcraft": {
     "column": 7,
-    "row": 2
+    "row": 1
+  },
+  "torsion_physics": {
+    "column": 7,
+    "row": 3
   },
   "galley_design": {
     "column": 7,
@@ -134,10 +138,6 @@
   "philosophy_fundamentals": {
     "column": 12,
     "row": 3
-  },
-  "torsion_physics": {
-    "column": 14,
-    "row": 2
   },
   "iron_working": {
     "column": 9,

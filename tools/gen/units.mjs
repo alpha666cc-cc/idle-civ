@@ -11,7 +11,7 @@
  *      unit of a newer age is worth roughly 52 units of the previous one under
  *      the square law (3 ages ≈ 4,400). Tactical stats — accuracy, range, speed
  *      — stay bounded on purpose: they decide who can shoot whom, not how hard.
- *   2. `COST_FACTOR` replaces each cost's growth factor with 8, making repeated
+ *   2. `COST_FACTOR` replaces each cost's growth factor with 5, making repeated
  *      purchases of one unit scale more slowly.
  *
  * A unit's `available` flag is the inverse of the authored `locked` flag: the
@@ -23,7 +23,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 const SOURCE = "temp/unit100-v3.json";
 const OUTPUT = "src/game/data/units.json";
 const STAT_SCALE_PER_AGE = 8;
-const COST_FACTOR = 8;
+const COST_FACTOR = 5;
 
 /** Original one-line flavour text; the mechanical facts are rendered from data. */
 const descriptions = {

@@ -122,6 +122,8 @@ describe("static content guids", () => {
   it("applies town hall capacity grants to other building capacities", () => {
     const fresh = new CivilizationState();
     expect(fresh.getBuildingMax("house").toNumber()).toBeCloseTo(10, 9);
+    expect(fresh.getBuildingMax("barracks").toNumber()).toBeCloseTo(11, 9);
+    expect(fresh.getBuildingMax("university").toNumber()).toBeCloseTo(11, 9);
 
     const state = new CivilizationState(
       {
@@ -149,6 +151,22 @@ describe("static content guids", () => {
     const after = state.build("town-hall", 1);
     expect(after.getBuildingMax("barracks").toNumber()).toBeCloseTo(11, 9);
     expect(after.getBuildingMax("university").toNumber()).toBeCloseTo(11, 9);
+  });
+
+  it("repairs the missing starting grant in older saved capacities", () => {
+    const state = new CivilizationState(
+      {
+        ...emptyResourceAmounts(),
+        barracksCapacity: ExpNumber.fromNumber(19),
+        universityCapacity: ExpNumber.fromNumber(19),
+      },
+      emptyWorkerAssignments(),
+      { "town-hall": 10 },
+      emptyResourceFactors(),
+    );
+
+    expect(state.getBuildingMax("barracks").toNumber()).toBe(20);
+    expect(state.getBuildingMax("university").toNumber()).toBe(20);
   });
 
   it("locks barracks until 90 citizens", () => {

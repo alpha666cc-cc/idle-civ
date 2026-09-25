@@ -111,8 +111,13 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "science",
+        "destination": "metalwork",
         "value": 3
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "smithyCapacity",
+        "value": 2
       }
     ],
     "unlocks": []
@@ -157,13 +162,13 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "unitAll.hp",
-        "value": 1.2
+        "destination": "metalwork",
+        "value": 4
       },
       {
         "type": "attributeMultiplier",
-        "destination": "unitAll.attack",
-        "value": 1.2
+        "destination": "universityCapacity",
+        "value": 2
       }
     ],
     "unlocks": []

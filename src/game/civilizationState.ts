@@ -153,11 +153,11 @@ const crossoverToSqrt = (
 
 /**
  * Global research pricing: the first tech costs 100 science and later purchases
- * follow the shared square-root curve, `100 × 8^(√n − 1)`, where n is the
+ * follow the shared square-root curve, `100 × 10^(√n − 1)`, where n is the
  * purchase ordinal.
  */
 const researchFirstCost = ExpNumber.fromNumber(100);
-const researchCostFactor = ExpNumber.fromNumber(8);
+const researchCostFactor = ExpNumber.fromNumber(10);
 
 /**
  * Identity-keyed recompute caches. Every state array is replaced immutably and
@@ -366,16 +366,20 @@ export class CivilizationState {
       this.buildingCount("people"),
     );
 
-    // Fresh states start with their default town hall's capacity grants.
-    if (this.buildingCount("town-hall") > 0) {
+    // Capacity grants are stored in the capacity resources. Establish the
+    // base-plus-all-town-halls floor so the starting town hall is not skipped,
+    // and so older saves that missed that first grant are repaired on load.
+    const townHallCount = this.buildingCount("town-hall");
+    if (townHallCount > 0) {
+      const defaults = emptyResourceAmounts();
+      const count = ExpNumber.fromNumber(townHallCount);
       for (const effect of buildingDefinitions.find(
         ({ key }) => key === "town-hall",
       )?.effects.capacityProvided ?? []) {
         const targetKey = capacityKey(effect.building);
-        if (this.resources[targetKey].isZero) {
-          this.resources[targetKey] = effect.perBuilding.mul(
-            ExpNumber.fromNumber(this.buildingCount("town-hall")),
-          );
+        const required = defaults[targetKey].add(effect.perBuilding.mul(count));
+        if (this.resources[targetKey].lt(required)) {
+          this.resources[targetKey] = required;
         }
       }
     }

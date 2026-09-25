@@ -6,7 +6,18 @@
     "description": "The first settlements rise from scattered families into a village. Fire, bronze, and the first walls.",
     "populationThreshold": 0,
     "unlocks": [],
-    "bonuses": []
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "town-hallCapacity",
+        "value": "10"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "buildingPower",
+        "value": 2
+      }
+    ]
   },
   {
     "guid": "bebcccf5-2532-52b6-91f9-110c6790e9fb",
@@ -19,12 +30,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "town-hallCapacity",
-        "value": "1e1"
+        "value": "2"
       },
       {
         "type": "attributeMultiplier",
         "destination": "buildingPower",
-        "value": 2
+        "value": 1.5
       }
     ]
   },

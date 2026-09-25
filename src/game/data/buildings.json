@@ -29,7 +29,7 @@
       {
         "resource": "wood",
         "base": 10,
-        "factor": 10
+        "factor": 12
       }
     ],
     "available": true,
@@ -153,17 +153,17 @@
       {
         "resource": "wood",
         "base": 10000,
-        "factor": 12
+        "factor": 15
       },
       {
         "resource": "stone",
         "base": 7500,
-        "factor": 12
+        "factor": 15
       },
       {
         "resource": "gold",
         "base": 12500,
-        "factor": 12
+        "factor": 15
       }
     ],
     "available": true,
@@ -181,6 +181,14 @@
         {
           "building": "university",
           "perBuilding": 1
+        },
+        {
+          "building": "smithy",
+          "perBuilding": 1
+        },
+        {
+          "building": "market",
+          "perBuilding": 1
         }
       ]
     }
@@ -194,17 +202,17 @@
       {
         "resource": "wood",
         "base": 10000,
-        "factor": 8
+        "factor": 12
       },
       {
         "resource": "stone",
         "base": 1000,
-        "factor": 8
+        "factor": 12
       },
       {
         "resource": "food",
         "base": 5000,
-        "factor": 8
+        "factor": 12
       }
     ],
     "available": true,
@@ -235,17 +243,17 @@
       {
         "resource": "wood",
         "base": 10000,
-        "factor": 8
+        "factor": 12
       },
       {
         "resource": "stone",
         "base": 20000,
-        "factor": 8
+        "factor": 12
       },
       {
         "resource": "gold",
         "base": 7500,
-        "factor": 8
+        "factor": 12
       }
     ],
     "available": true,
@@ -275,12 +283,12 @@
       {
         "resource": "wood",
         "base": 1000000,
-        "factor": 8
+        "factor": 12
       },
       {
         "resource": "stone",
         "base": 1000000,
-        "factor": 8
+        "factor": 12
       }
     ],
     "available": true,
@@ -307,17 +315,17 @@
     "guid": "5f40b930-c61a-5df3-8cd0-e92c9bc8084e",
     "key": "market",
     "name": "Market",
-    "description": "Trade resources",
+    "description": "Generate Trade",
     "costs": [
       {
         "resource": "wood",
-        "base": 2500000,
-        "factor": 8
+        "base": 25000000,
+        "factor": 12
       },
       {
         "resource": "stone",
-        "base": 2500000,
-        "factor": 8
+        "base": 25000000,
+        "factor": 12
       }
     ],
     "available": true,

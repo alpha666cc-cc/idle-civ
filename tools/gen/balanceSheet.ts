@@ -617,7 +617,7 @@ const constantsRows = (): Cell[][] => {
     ["universityScience", "Science per university per second", 1],
     ["citizenDrain", "Food eaten per citizen per second", 1],
     ["researchFirstCost", "Science for the first research", 100],
-    ["researchCostGrowth", "Research price growth per purchase", 2.5],
+    ["researchCostFactor", "Research price factor on the square-root curve", 8],
     ["upgradeTierMultiplier", "Production per upgrade tier", 2],
   ];
   constants.forEach(([key, label, value], index) => {
@@ -1119,13 +1119,15 @@ const planData = (
       : m.target.seconds,
   );
 
-  const modelScienceCost = 100 * 2.5 ** m.nextResearch.bought;
+  const modelScienceCost =
+    100 * 8 ** (Math.sqrt(m.nextResearch.bought + 1) - 1);
   const scienceRate = models.science.production;
   row.push(m.nextResearch.bought, m.nextResearch.science);
   row.push({
     formula:
       `=${dataRef("Data", 3, DATA.constants.researchFirstCost)}` +
-      `*POWER(${dataRef("Data", 3, DATA.constants.researchCostGrowth)};${ref(cols.researchBought, n)})`,
+      `*POWER(${dataRef("Data", 3, DATA.constants.researchCostFactor)};` +
+      `SQRT(${ref(cols.researchBought, n)}+1)-1)`,
     value: modelScienceCost,
   });
   row.push(m.nextResearch.seconds);
