@@ -3,6 +3,7 @@ import {
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
+  type ProductionResourceKey,
   type ResourceKey,
 } from "../src/game/attributes";
 import { type BuildingKey } from "../src/game/buildings";
@@ -18,10 +19,98 @@ import {
   getRequiredBattleAction,
   getRequiredBattlePreparationAction,
   getRequiredBattleUnitTargets,
+  getRequiredResearchAction,
   getStrategy,
 } from "./strategies";
 
 describe("simulation event snapshots", () => {
+  const makeActionRateState = () =>
+    new CivilizationState(
+      {
+        ...emptyResourceAmounts(),
+        food: ExpNumber.fromNumber(1e6),
+        wood: ExpNumber.fromNumber(1e6),
+      },
+      emptyWorkerAssignments(),
+      { "town-hall": 1 },
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      [],
+      emptyStatistics(),
+    );
+
+  it("executes five normal actions before one tick by default", () => {
+    let decisions = 0;
+    const strategy: SimulationStrategy = {
+      name: "action-rate",
+      description: "counts normal strategy decisions",
+      decideAction: () => {
+        decisions += 1;
+        return { type: "wait", seconds: 0 };
+      },
+    };
+    const result = new GameSimulation(makeActionRateState(), strategy, {
+      seed: 42,
+      objective: { type: "timeLimit", seconds: 1 },
+      gatherClicksPerAction: 1,
+      maxGameTime: 1,
+      recordSnapshots: false,
+    }).run();
+
+    expect(decisions).toBe(5);
+    expect(result.gameTime).toBe(1);
+  });
+
+  it("honors an explicit action budget", () => {
+    let decisions = 0;
+    const strategy: SimulationStrategy = {
+      name: "action-override",
+      description: "counts normal strategy decisions",
+      decideAction: () => {
+        decisions += 1;
+        return { type: "wait", seconds: 0 };
+      },
+    };
+    const result = new GameSimulation(makeActionRateState(), strategy, {
+      seed: 42,
+      objective: { type: "timeLimit", seconds: 1 },
+      gatherClicksPerAction: 1,
+      actionsPerSecond: 2,
+      maxGameTime: 1,
+      recordSnapshots: false,
+    }).run();
+
+    expect(decisions).toBe(2);
+    expect(result.gameTime).toBe(1);
+  });
+
+  it("uses the full default action budget for one gather decision", () => {
+    let decisions = 0;
+    const strategy: SimulationStrategy = {
+      name: "gather-rate",
+      description: "counts gather decisions",
+      decideAction: () => {
+        decisions += 1;
+        return { type: "gather", resource: "food" };
+      },
+    };
+    const result = new GameSimulation(makeActionRateState(), strategy, {
+      seed: 42,
+      objective: { type: "timeLimit", seconds: 1 },
+      gatherClicksPerAction: 1,
+      maxGameTime: 1,
+      recordSnapshots: false,
+    }).run();
+
+    expect(decisions).toBe(1);
+    expect(result.finalState.statistics.productionClicks.toNumber()).toBe(1);
+    expect(result.gameTime).toBe(1);
+  });
+
   it("reports the effective capacity after an enhancer purchase", () => {
     const state = new CivilizationState(
       {
@@ -64,24 +153,31 @@ describe("required progression strategy", () => {
     wood: 1e12,
     stone: 1e12,
     gold: 1e12,
+    science: 1e12,
   } as const;
 
   const makeState = ({
     people = 0,
     buildings = {},
     resources = {},
+    workers = {},
     unitCounts = {},
     defeatedEncounters = [],
   }: {
     people?: number;
     buildings?: Partial<Record<BuildingKey, number>>;
     resources?: Partial<Record<ResourceKey, number>>;
+    workers?: Partial<Record<ProductionResourceKey, number>>;
     unitCounts?: Record<string, number>;
     defeatedEncounters?: string[];
   } = {}): CivilizationState => {
     const amounts = emptyResourceAmounts();
     for (const [key, value] of Object.entries(resources)) {
       amounts[key as ResourceKey] = ExpNumber.fromNumber(value);
+    }
+    const assignments = emptyWorkerAssignments();
+    for (const [key, value] of Object.entries(workers)) {
+      assignments[key as ProductionResourceKey] = ExpNumber.fromNumber(value);
     }
     const counts = Object.fromEntries(
       Object.entries(unitCounts).map(([key, value]) => [
@@ -91,7 +187,7 @@ describe("required progression strategy", () => {
     );
     return new CivilizationState(
       amounts,
-      emptyWorkerAssignments(),
+      assignments,
       { "town-hall": 1, ...buildings, people },
       emptyResourceFactors(),
       {},
@@ -157,6 +253,54 @@ describe("required progression strategy", () => {
     expect(getRequiredBattleUnitTargets(state).map(({ key }) => key)).toEqual([
       "axeman_bronze",
     ]);
+  });
+
+  it("queues Bronze Raid's research hint before the next battle", () => {
+    let state = makeState({
+      people: 100,
+      resources: richResources,
+      defeatedEncounters: ["age0_1_first_fire"],
+    });
+    const order = [
+      "agriculture",
+      "pottery",
+      "sling_throwing",
+      "writing",
+    ];
+
+    for (const researchId of order) {
+      expect(getRequiredResearchAction(state)).toEqual({
+        type: "buyResearch",
+        researchId,
+      });
+      state = state.buyResearch(researchId);
+    }
+    expect(getRequiredResearchAction(state)).toBeNull();
+  });
+
+  it("moves a surplus worker to an under-assigned resource", () => {
+    const strategy = getStrategy("production");
+    expect(strategy).toBeDefined();
+    if (!strategy) return;
+    const state = makeState({
+      people: 10,
+      resources: { food: 1e6, wood: 1e6, stone: 1e6, gold: 1e6 },
+      workers: { food: 9, wood: 1 },
+    });
+
+    expect(strategy.decideAction(state, { gameTime: 0, snapshots: [] })).toEqual({
+      type: "unassignWorker",
+      resource: "food",
+      count: 3,
+    });
+    const afterUnassign = state.unassignWorker("food", 3);
+    expect(
+      strategy.decideAction(afterUnassign, { gameTime: 1, snapshots: [] }),
+    ).toEqual({
+      type: "assignWorker",
+      resource: "wood",
+      count: 1,
+    });
   });
 
   it("prepares a building once its existing unlock gate is met", () => {

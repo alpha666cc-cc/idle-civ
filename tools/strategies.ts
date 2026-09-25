@@ -50,6 +50,13 @@ type BuildingPriority = {
   targetCount?: number;
 }[];
 
+/** Simulation-only research routes; the live engine has no recommendation field. */
+const simulationResearchHints: Readonly<
+  Record<string, readonly string[]>
+> = {
+  age0_3_bronze_raid: ["sling_throwing", "writing"],
+};
+
 /**
  * The first unwon encounter in the current age. Encounter order is the
  * progression data; this helper only exposes it to simulation strategies.
@@ -70,7 +77,10 @@ export const getRequiredBattleUnitTargets = (
     battle.enemyArmy.map(({ unitId }) => unitId),
   );
   const directDefinitions = unitDefinitions.filter(
-    (unit) => isBuyableUnit(unit) && unit.age === battle.age && enemyUnitIds.has(unit.key),
+    (unit) =>
+      isBuyableUnit(unit) &&
+      unit.age === battle.age &&
+      enemyUnitIds.has(unit.key),
   );
   if (directDefinitions.length > 0) {
     return directDefinitions.filter((unit) => !state.isUnitAvailable(unit.key));
@@ -94,6 +104,84 @@ export const getRequiredBattleUnitTargets = (
     )
     .sort((left, right) => left.tier - right.tier)
     .slice(0, 1);
+};
+
+const researchLeadsToUnit = (
+  researchId: string,
+  unitId: string,
+  visited = new Set<string>(),
+): boolean => {
+  if (visited.has(researchId)) return false;
+  visited.add(researchId);
+  const research = researchDefinitions.find(({ key }) => key === researchId);
+  if (!research) return false;
+  if (research.unlocks.includes(unitId)) return true;
+  return researchDefinitions.some(
+    (candidate) =>
+      candidate.prerequisites.includes(researchId) &&
+      researchLeadsToUnit(candidate.key, unitId, new Set(visited)),
+  );
+};
+
+const prerequisiteOrder = (
+  researchId: string,
+  seen = new Set<string>(),
+): string[] => {
+  if (seen.has(researchId)) return [];
+  const research = researchDefinitions.find(({ key }) => key === researchId);
+  if (!research) return [];
+  seen.add(researchId);
+  return [
+    ...research.prerequisites.flatMap((prerequisite) =>
+      prerequisiteOrder(prerequisite, seen),
+    ),
+    researchId,
+  ];
+};
+
+const getRecommendedResearchOrder = (
+  state: CivilizationState,
+): readonly string[] => {
+  const currentBattle = getRequiredBattle(state);
+  if (!currentBattle) return [];
+  const hintedBattle = encounterDefinitions.find(
+    (battle) =>
+      battle.age === currentBattle.age &&
+      !state.defeatedEncounters.includes(battle.key) &&
+      (simulationResearchHints[battle.key]?.length ?? 0) > 0,
+  );
+  const recommended = hintedBattle
+    ? simulationResearchHints[hintedBattle.key]
+    : [];
+  return [
+    ...new Set(recommended.flatMap((researchId) => prerequisiteOrder(researchId))),
+  ];
+};
+
+/** The next purchase on the current battle's authored research hint. */
+export const getRequiredResearchAction = (
+  state: CivilizationState,
+): SimulationAction | null => {
+  const recommended = getRecommendedResearchOrder(state);
+  if (recommended.length > 0) {
+    const next = recommended.find(
+      (researchId) => !state.isResearchBought(researchId),
+    );
+    if (!next) return null;
+    return state.canBuyResearch(next)
+      ? { type: "buyResearch", researchId: next }
+      : null;
+  }
+
+  const targetUnits = getRequiredBattleUnitTargets(state);
+  if (targetUnits.length === 0) return null;
+  const research = researchDefinitions.find(
+    ({ key }) =>
+      !state.isResearchBought(key) &&
+      state.canBuyResearch(key) &&
+      targetUnits.some((unit) => researchLeadsToUnit(key, unit.key)),
+  );
+  return research ? { type: "buyResearch", researchId: research.key } : null;
 };
 
 /** How well a buyable unit matches the next encounter's enemy force. */
@@ -244,35 +332,10 @@ abstract class BaseStrategy implements SimulationStrategy {
     return false;
   }
 
-  private researchLeadsToUnit(
-    researchId: string,
-    unitId: string,
-    visited = new Set<string>(),
-  ): boolean {
-    if (visited.has(researchId)) return false;
-    visited.add(researchId);
-    const research = researchDefinitions.find(({ key }) => key === researchId);
-    if (!research) return false;
-    if (research.unlocks.includes(unitId)) return true;
-    return researchDefinitions.some(
-      (candidate) =>
-        candidate.prerequisites.includes(researchId) &&
-        this.researchLeadsToUnit(candidate.key, unitId, new Set(visited)),
-    );
-  }
-
   protected getResearchAction(
     state: CivilizationState,
   ): SimulationAction | null {
-    const targetUnits = getRequiredBattleUnitTargets(state);
-    if (targetUnits.length === 0) return null;
-    const research = researchDefinitions.find(
-      ({ key }) =>
-        !state.isResearchBought(key) &&
-        state.canBuyResearch(key) &&
-        targetUnits.some((unit) => this.researchLeadsToUnit(key, unit.key)),
-    );
-    return research ? { type: "buyResearch", researchId: research.key } : null;
+    return getRequiredResearchAction(state);
   }
 
   protected getUnitAction(state: CivilizationState): SimulationAction | null {
@@ -294,7 +357,8 @@ abstract class BaseStrategy implements SimulationStrategy {
   }
 
   /**
-   * Assign workers according to strategy ratios.
+   * Rebalance workers toward the strategy ratio. Surplus workers are removed
+   * first; the next action can then assign those workers to a deficit resource.
    */
   protected assignWorkersByRatio(
     state: CivilizationState,
@@ -304,7 +368,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     const available = state.availableWorkers; // always integer from engine
     const assigned = state.assignedWorkers; // always integer from engine
 
-    if (available <= 0 || total === 0) return null;
+    if (total === 0) return null;
 
     const totalWorkers = assigned + available;
 
@@ -327,7 +391,25 @@ abstract class BaseStrategy implements SimulationStrategy {
     );
     targets.food += totalWorkers - targetAssigned;
 
-    // Find resource needing most workers (only assign, don't unassign — prevents oscillation)
+    let surplusResource: ProductionResourceKey | null = null;
+    let surplus = 0;
+    for (const resource of producerResourceKeys as ProductionResourceKey[]) {
+      const current = Math.round(state.workers[resource]?.toNumber() || 0);
+      const excess = current - (targets[resource] || 0);
+      if (excess > surplus) {
+        surplus = excess;
+        surplusResource = resource;
+      }
+    }
+    if (surplusResource) {
+      return {
+        type: "unassignWorker",
+        resource: surplusResource,
+        count: surplus,
+      };
+    }
+
+    // Find the resource with the largest remaining deficit.
     let bestResource: ProductionResourceKey = "food";
     let bestDiff = 0;
 
@@ -342,7 +424,7 @@ abstract class BaseStrategy implements SimulationStrategy {
       }
     }
 
-    if (bestDiff <= 0) {
+    if (available <= 0 || bestDiff <= 0) {
       return null;
     }
 

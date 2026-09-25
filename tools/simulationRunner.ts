@@ -40,6 +40,7 @@ export function runSimulation(
     seed: 42,
     objective: { type: "timeLimit", seconds: 3600 },
     gatherClicksPerAction: 10,
+    actionsPerSecond: 5,
     maxGameTime: 3600,
     recordSnapshots: true,
   };

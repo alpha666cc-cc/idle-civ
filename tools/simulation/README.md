@@ -71,6 +71,7 @@ npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
 - `--age <id>`: Age ID for ageReach objective (e.g., age-1)
 - `--battle <id>`: Encounter ID for battleVictory objective
 - `--max-time <seconds>`: Maximum simulation time (default: 3600)
+- `--actions-per-second <n>`: Strategy actions per simulated second (default: 5)
 - `--seed <number>`: Random seed (default: 42)
 - `--output <file>`: Output file for results (JSON)
 - `--no-snapshots`: Disable snapshot recording
@@ -85,6 +86,7 @@ npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
 - `--age <id>`: Age ID for ageReach objective
 - `--battle <id>`: Encounter ID for battleVictory objective
 - `--max-time <seconds>`: Maximum simulation time (default: 3600)
+- `--actions-per-second <n>`: Strategy actions per simulated second (default: 5)
 - `--seed <number>`: Random seed (default: 42)
 - `--output <file>`: Output file for results (JSON)
 - `--generations <number>`: Number of evolutionary generations (default: 1)
@@ -95,9 +97,13 @@ npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
 
 ### Action Model
 
-- **One action per second, then one tick** — each loop iteration executes at most
-  one strategy action, then advances the game by one `tick()` (one second).
-- **Gather actions model 10 clicks** — one gather action loops the engine's
+- **Five actions per tick by default** — each simulated second starts with five action
+  slots, executes up to five normal strategy actions, then advances the engine with one
+  `tick()`. `--actions-per-second <n>` changes the slot count.
+- **Gather consumes the remaining budget** — when the strategy chooses `gather`, that
+  action consumes every remaining slot before the tick. With the default five slots, one
+  gather decision performs one gather action and then advances the tick.
+- **Gather actions model 10 clicks** — each gather execution loops the engine's
   `gather(resource)` `gatherClicksPerAction` times (default 10), adding ten
   `computeClickGain()` amounts and counting ten production clicks (toward click
   achievements, e.g. the 100-click milestone); the gathered amount is logged.
@@ -131,6 +137,7 @@ const result = runSimulation(strategy, {
   seed: 42,
   objective: { type: "timeLimit", seconds: 3600 },
   gatherClicksPerAction: 10,
+  actionsPerSecond: 5,
   maxGameTime: 3600,
   recordSnapshots: true,
 });

@@ -10,6 +10,7 @@
  *   --age <id>               Age ID for ageReach objective
  *   --battle <id>            Encounter ID for battleVictory objective
  *   --max-time <seconds>     Maximum simulation time (default: 3600)
+ *   --actions-per-second <n> Strategy actions per simulated second (default: 5)
  *   --seed <number>          Random seed (default: 42)
  *   --output <file>          Output file for results (JSON)
  *   --generations <number>  Number of evolutionary generations (default: 1)
@@ -36,6 +37,7 @@ function parseArgs() {
     age: null,
     battle: null,
     maxTime: "3600",
+    actionsPerSecond: "5",
     seed: "42",
     output: null,
     generations: "1",
@@ -66,6 +68,9 @@ function parseArgs() {
         break;
       case "--max-time":
         options.maxTime = args[++i];
+        break;
+      case "--actions-per-second":
+        options.actionsPerSecond = args[++i];
         break;
       case "--seed":
         options.seed = args[++i];
@@ -113,6 +118,7 @@ Options:
   --age <id>               Age ID for ageReach objective (e.g., age-1)
   --battle <id>            Encounter ID for battleVictory objective
   --max-time <seconds>     Maximum simulation time (default: 3600)
+  --actions-per-second <n> Strategy actions per simulated second (default: 5)
   --seed <number>          Random seed (default: 42)
   --output <file>          Output file for results (JSON)
   --generations <number>   Number of evolutionary generations (default: 1)
@@ -200,10 +206,16 @@ async function main() {
   const objective = buildObjective(options);
 
   // Build config
+  const actionsPerSecond = Number.parseInt(options.actionsPerSecond, 10);
+  if (!Number.isInteger(actionsPerSecond) || actionsPerSecond < 1) {
+    console.error("--actions-per-second must be a positive integer");
+    process.exit(1);
+  }
   const config = {
     seed: parseInt(options.seed, 10),
     objective,
     gatherClicksPerAction: 10,
+    actionsPerSecond,
     maxGameTime: parseInt(options.maxTime, 10),
     recordSnapshots: options.snapshots,
   };

@@ -137,6 +137,46 @@ describe("research buying", () => {
     expect(entered.getResearchFailureReason(first.key)).toBe("resources");
   });
 
+  it("keeps age-2 research locked until age-2 is reached", () => {
+    const ageTwo = researchDefinitions.find(
+      (research) => research.age === 2,
+    );
+    expect(ageTwo).toBeDefined();
+    if (!ageTwo) return;
+
+    // Before the transition, age-2 (Classical) has not been reached, so its
+    // tech must stay locked even with unlimited science.
+    let state = stateWith(1e30, ["age-0", "age-1"]);
+    expect(state.isResearchUnlocked(ageTwo.key)).toBe(false);
+    expect(state.getResearchFailureReason(ageTwo.key)).toBe("locked");
+    expect(state.buyResearch(ageTwo.key)).toBe(state);
+
+    // Entering Classical unlocks age-2 research once its prerequisites are met.
+    state = state.enterAge("age-2");
+    expect(state.isResearchUnlocked(ageTwo.key)).toBe(
+      ageTwo.prerequisites.every((prerequisite) =>
+        state.boughtResearch.includes(prerequisite),
+      ),
+    );
+  });
+
+  it("unlocks an age's research while the player is in that age", () => {
+    const ironAge = researchDefinitions.find(
+      (research) => research.age === 1,
+    );
+    expect(ironAge).toBeDefined();
+    if (!ironAge) return;
+
+    // The era card advances into the Iron Age; its own techs must be available
+    // immediately, even though `age-1` has not been completed yet.
+    let state = stateWith(1e30, ["age-0"]).enterAge("age-1");
+    state = buyPrerequisiteClosure(state, ironAge.key);
+    expect(state.isResearchUnlocked(ironAge.key)).toBe(true);
+    expect(state.buyResearch(ironAge.key).isResearchBought(ironAge.key)).toBe(
+      true,
+    );
+  });
+
   it("pays science and applies bonuses through the shared factor path", () => {
     // Exactly the first tech's global price: 100 science.
     const entered = stateWith(100, [`age-${first.age}`]).enterAge(

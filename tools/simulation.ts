@@ -45,6 +45,7 @@ export interface SimulationConfig {
   seed: number;
   objective: SimulationObjective;
   gatherClicksPerAction: number; // clicks each gather action models (default 10)
+  actionsPerSecond?: number; // strategy actions per simulated second (default 5)
   maxGameTime: number; // maximum simulation time in seconds
   recordSnapshots: boolean;
   verbose?: boolean; // enable debug output
@@ -268,6 +269,13 @@ export class GameSimulation {
    * Run the full simulation to completion.
    */
   run(): SimulationResult {
+    const configuredActionsPerSecond = this.config.actionsPerSecond ?? 5;
+    const actionsPerSecond =
+      Number.isFinite(configuredActionsPerSecond) &&
+      configuredActionsPerSecond >= 1
+        ? Math.floor(configuredActionsPerSecond)
+        : 5;
+
     // Initial burst: gather wood and build a house, then gather food and build people
     // This sets up the initial population and workers
 
@@ -282,13 +290,14 @@ export class GameSimulation {
     this.log("Initial canBuild house?", this.state.canBuild("house"));
     this.log("Initial canBuild people?", this.state.canBuild("people"));
 
-    // Step 1: Gather wood until we can build a house (one 10-click action/sec)
+    // Step 1: Gather wood until we can build a house. Gathering consumes the
+    // entire action budget for this simulated second.
     while (
       !this.state.canBuild("house") &&
       this.state.resources.wood.lt(ExpNumber.fromNumber(10))
     ) {
       this.executeAction({ type: "gather", resource: "wood" });
-      this.gameTime += 1;
+      this.tick();
     }
 
     this.log(
@@ -309,13 +318,14 @@ export class GameSimulation {
       );
     }
 
-    // Step 3: Gather food until we can build a person (one 10-click action/sec)
+    // Step 3: Gather food until we can build a person. Gathering consumes the
+    // entire action budget for this simulated second.
     while (
       !this.state.canBuild("people") &&
       this.state.resources.food.lt(ExpNumber.fromNumber(10))
     ) {
       this.executeAction({ type: "gather", resource: "food" });
-      this.gameTime += 1;
+      this.tick();
     }
 
     // Step 4: Build as many people as we can afford
@@ -336,20 +346,26 @@ export class GameSimulation {
         return this.createResult(true, "Objective reached");
       }
 
-      // Execute strategy decision — one action per second, then one tick
-      const action = this.strategy.decideAction(this.state, {
-        gameTime: this.gameTime,
-        snapshots: this.snapshots,
-      });
-
-      if (action) {
+      // Each simulated second has an action budget. A normal action consumes
+      // one slot; gather consumes every remaining slot with that gather action.
+      let remainingActions = actionsPerSecond;
+      while (remainingActions > 0) {
+        const action = this.strategy.decideAction(this.state, {
+          gameTime: this.gameTime,
+          snapshots: this.snapshots,
+        });
+        if (!action) break;
         this.executeAction(action);
+        remainingActions =
+          action.type === "gather" ? 0 : remainingActions - 1;
+        if (this.checkObjective()) {
+          return this.createResult(true, "Objective reached");
+        }
+        if (this.gameTime >= this.config.maxGameTime) break;
       }
 
-      // Advance one tick of production, achievement checks, etc.
+      if (this.gameTime >= this.config.maxGameTime) break;
       this.tick();
-
-      // Check for milestones and record snapshots
       this.checkMilestones();
     }
 
@@ -357,9 +373,8 @@ export class GameSimulation {
   }
 
   /**
-   * Execute a single simulation action. One action per second; each gather
-   * action models `gatherClicksPerAction` production clicks and reports the
-   * amount gathered.
+   * Execute a simulation action. Each gather action models
+   * `gatherClicksPerAction` production clicks and reports the amount gathered.
    */
   private executeAction(action: SimulationAction): void {
     switch (action.type) {
