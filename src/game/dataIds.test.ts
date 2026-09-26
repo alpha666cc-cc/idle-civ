@@ -154,7 +154,34 @@ describe("static content guids", () => {
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "axeman_bronze")!),
     ).toEqual([
       [300_000, 3],
-      [20_000, 3],
+      [10_000, 3],
+    ]);
+    // The same metalwork rebalance reached every later age-0 metalwork unit.
+    expect(
+      baseAndFactor(ageZeroUnits.find(({ key }) => key === "chariot_bronze")!),
+    ).toEqual([
+      [2_000_000, 5],
+      [20_000, 5],
+    ]);
+    expect(
+      baseAndFactor(ageZeroUnits.find(({ key }) => key === "bowman_bronze")!),
+    ).toEqual([
+      [200_000, 5],
+      [10_000, 5],
+      [2_000_000, 5],
+    ]);
+    expect(
+      baseAndFactor(ageZeroUnits.find(({ key }) => key === "trireme_bronze")!),
+    ).toEqual([
+      [10_000_000, 5],
+      [100_000, 5],
+      [300_000_000, 5],
+    ]);
+    expect(
+      baseAndFactor(ageZeroUnits.find(({ key }) => key === "catapult_ancient")!),
+    ).toEqual([
+      [20_000_000, 5],
+      [100_000, 5],
     ]);
 
     const costsFor = (key: string) =>

@@ -244,7 +244,7 @@ describe("required progression strategy", () => {
     expect(getRequiredBattleUnitTargets(state)[0]?.key).toBe("slinger");
   });
 
-  it("prefers a named buyable enemy over the generic domain fallback", () => {
+  it("prefers named buyable enemies over the generic domain fallback", () => {
     const bronzeRaid = encounterDefinitions.find(
       ({ key }) => key === "age0_3_bronze_raid",
     );
@@ -260,9 +260,17 @@ describe("required progression strategy", () => {
         .map(({ key }) => key),
     });
 
-    expect(getRequiredBattleUnitTargets(state).map(({ key }) => key)).toEqual([
-      "axeman_bronze",
-    ]);
+    // Bronze Raid fields two buyable age-0 units, so the named path applies and
+    // every one of them is a target. The domain fallback — which returns a single
+    // unit — is covered by the beast-only encounter above, and picking one here
+    // would silently drop the axemen the encounter actually sends.
+    const targets = getRequiredBattleUnitTargets(state).map(({ key }) => key);
+    const named = bronzeRaid.enemyArmy
+      .map(({ unitId }) => unitId)
+      .filter((unitId) => targets.includes(unitId))
+      .sort();
+    expect([...targets].sort()).toEqual(named);
+    expect(targets).toHaveLength(named.length);
   });
 
   it("queues Bronze Raid's research hint before the next battle", () => {
