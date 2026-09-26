@@ -96,11 +96,18 @@ const livingCount = (fighter: Fighter): ExpNumber => {
   );
 };
 
+/**
+ * One fighter per stack, in a canonical (unit id) order. The order is fixed so
+ * that the same set of units always produces the same battle, however the caller
+ * happened to assemble the stack list — see `armySignature` for why.
+ */
 const buildFighters = (
   stacks: readonly ArmyStack[],
   side: BattleSide,
 ): Fighter[] =>
-  stacks.flatMap((stack) => {
+  [...stacks]
+    .sort((left, right) => left.unitId.localeCompare(right.unitId))
+    .flatMap((stack) => {
     const definition = findUnitDefinition(stack.unitId);
     if (!definition || stack.count.lte(ExpNumber.ZERO)) return [];
     const hitPoints = stack.stats.hp.div(
@@ -162,6 +169,13 @@ export const armyPower = (stacks: readonly ArmyStack[]): ExpNumber =>
     ExpNumber.ZERO,
   );
 
+/**
+ * A side's army fingerprint. The entries are sorted so the fingerprint depends
+ * on *which* units are fielded, not on the order they were recruited in: the
+ * engine builds its stacks from the owned-unit map while tooling builds them
+ * from a plan, and both must describe the same battle or an advisor would
+ * verify an army against a different fight than the one actually resolved.
+ */
 const armySignature = (
   side: BattleSide,
   stacks: readonly ArmyStack[],
@@ -171,6 +185,7 @@ const armySignature = (
       (stack) =>
         `${side}:${stack.unitId}:${stack.count.toString()}:${stack.stats.hp.toString()}:${stack.stats.attack.toString()}`,
     )
+    .sort()
     .join("|");
 
 /**

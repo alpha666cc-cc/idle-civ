@@ -218,7 +218,7 @@
       },
       {
         "resource": "metalwork",
-        "base": 20000,
+        "base": 10000,
         "factor": 3
       }
     ]
@@ -249,7 +249,7 @@
       },
       {
         "resource": "metalwork",
-        "base": 200000,
+        "base": 20000,
         "factor": 5
       }
     ]
@@ -280,7 +280,7 @@
       },
       {
         "resource": "metalwork",
-        "base": 20000,
+        "base": 10000,
         "factor": 5
       },
       {
@@ -316,7 +316,7 @@
       },
       {
         "resource": "metalwork",
-        "base": 1000000,
+        "base": 100000,
         "factor": 5
       },
       {
@@ -352,7 +352,7 @@
       },
       {
         "resource": "metalwork",
-        "base": 1000000,
+        "base": 100000,
         "factor": 5
       }
     ]

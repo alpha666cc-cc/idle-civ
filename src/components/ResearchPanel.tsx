@@ -447,10 +447,9 @@ export default function ResearchPanel({
   fmt,
   onOpenGamepedia,
 }: Props) {
-  const layout = useMemo(buildLayout, []);
+  const layout = useMemo(() => buildLayout(), []);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const boughtCount = gameState.boughtResearch.length;
   const nextResearchCost = gameState.getResearchNextCost()[0];
 
   const relatedKeys = useMemo(() => {
@@ -479,21 +478,32 @@ export default function ResearchPanel({
     return related;
   }, [selectedKey]);
 
+  // Latest bought-set predicate, mirrored into a ref so the mount-only scroll
+  // effect below can read current state without re-running on a purchase.
+  // The bought set is read through a ref so the scroll effect below can stay
+  // mount-only. It holds a *bound* call on purpose: storing the bare method
+  // would drop `this`, and invoking it would throw inside the engine.
+  const isResearchBoughtRef = useRef<(researchId: string) => boolean>(
+    () => false,
+  );
+  useEffect(() => {
+    isResearchBoughtRef.current = (researchId) =>
+      gameState.isResearchBought(researchId);
+  }, [gameState]);
+
   // Default scroll: the highest row holding an unresearched tech sits on the
-  // second visible row from the top. Re-runs when the bought set changes.
+  // second visible row from the top. Mount-only on purpose — buying a research
+  // must not scroll the tree out from under the player mid-session.
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
     const firstUnbought = layout.placed
-      .filter(({ research }) => !gameState.isResearchBought(research.key))
+      .filter(({ research }) => !isResearchBoughtRef.current(research.key))
       .sort((a, b) => a.row - b.row)[0];
     container.scrollLeft = firstUnbought
       ? Math.max(0, firstUnbought.col * COL_W - COL_W)
       : 0;
-    // The bought count is the trigger; layout is stable and gameState is read
-    // through the engine methods.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layout, boughtCount]);
+  }, [layout]);
 
   const ageName = (ageIndex: number): string =>
     ageDefinitions.find(({ key }) => key === `age-${ageIndex}`)?.name ??

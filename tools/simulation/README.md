@@ -1,3 +1,5 @@
+against the sum of passive production and the modeled gather clicks per second.
+
 # Game Simulation System
 
 A headless simulation engine for balance testing and strategy optimization in the idle-civ game.
@@ -29,6 +31,62 @@ The simulation system allows you to:
 - **military**: Early military investment, aggressive battles
 - **fast-age**: Push population growth to age up quickly
 - **economy**: Maximize gold and trade production
+- **speedrun**: Buy the highest time-adjusted ROI purchase for fast progression
+
+### ROI Evaluation and Speedrun Planning
+
+`tools/roi.ts` is a headless-only evaluator for every buyable kind: buildings,
+research, upgrades, and units. It does not duplicate balance data. For each legal
+candidate it applies the real domain transition to a resource-rich immutable probe,
+then measures log-scaled marginal gains in production, capacity, population,
+military power, unit unlocks, and building-cost savings. Upgrades receive a
+configurable preference multiplier because enhancer effects are intentionally
+large; the default is 4.
+
+The time component is an estimated acquisition wait. Missing resources are valued
+against the larger of passive production and the modeled gather clicks per second.
+Candidates with no positive income are unreachable, and a candidate whose best
+missing resource is gatherable produces a gather action instead of a purchase. The
+comparison score is:
+
+```text
+timeAdjustedRoi = benefit / (1 + estimatedWaitSeconds)
+```
+
+The `speedrun` strategy preserves the campaign gates and then uses the best
+non-unit ROI action before the battle-simulator advisor's recruitment fallback.
+The order is: real battle launch, required battle preparation, the ROI purchase
+(or a gather action for its missing cost), the advisor's unit/research fallback, and
+finally the existing legacy heuristics. Unit recruitment stays with the battle
+simulator because army composition is battle-specific rather than a single
+economy ROI. `getRoiCandidates()` can still include units for analysis;
+`getBestRoiAction(..., { includeUnits: false })` matches the strategy policy.
+
+Example:
+
+```bash
+# Run the ROI-first strategy for 10 simulated minutes
+npm run simulate -- --strategy speedrun --max-time 600
+
+# Compare the literal cheapest baseline with ROI planning
+npm run simulate:compare -- --strategies cheapest,speedrun --max-time 600
+```
+
+### Battle-Aware Planning
+
+The battle-aware strategies (`balanced`, `production`, `military`, `fast-age`, and
+`economy`) use the shared minimum-army simulator before their legacy research and
+unit heuristics. The plan starts with the army already owned, uses current recruit
+discounts, and applies the research bonuses the next battle can use. A strategy buys
+one simulator-recommended recruit (or the first available unlock research) and
+re-plans after the purchase. If a recommendation is not affordable yet, it gathers
+the missing resource.
+
+The simulator is advisory, not the campaign battle: `simulateEncounter()` remains
+the only gate for launching a battle. If the advisor is optimistic or its bounded
+search cannot find a plan, the strategy falls back to its existing purchase logic and
+continues buying/re-planning. The `cheapest` strategy intentionally remains a literal
+cheapest-purchase baseline and does not use the military advisor.
 
 ## Usage
 

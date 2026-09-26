@@ -105,6 +105,20 @@ import {
   saveTextToFile,
 } from "./components/saveFileIo";
 import { resolveEntryId } from "./game/dataIds";
+import {
+  DEFAULT_DEV_LOG_SNAPSHOT_SECONDS,
+  appendDevLogEvent,
+  appendDevLogSnapshot,
+  buildDevLogEvent,
+  buildDevLogSnapshot,
+  createDevLog,
+  devLogFromSave,
+  devLogGameSeconds,
+  diffDevLogEvents,
+  isDevLogSnapshotDue,
+  serializeDevLog,
+  type DevLogDocument,
+} from "./game/devLog";
 
 type Tab =
   | "Production"
@@ -293,6 +307,49 @@ const clearStoredSave = (): void => {
   }
 };
 
+const devModeStorageKey = "idle-civ:dev-mode";
+
+/**
+ * Dev mode decides whether the Dev Tools tab exists at all. Launching through
+ * the VS Code run task (`vite dev`) is dev mode for now; a production build
+ * starts with it off, and the Settings toggle can always override either way.
+ */
+const devBuildDefault = import.meta.env.DEV;
+
+const loadDevMode = (): boolean => {
+  try {
+    const stored = window.localStorage.getItem(devModeStorageKey);
+    if (stored === "on") return true;
+    if (stored === "off") return false;
+  } catch {
+    // localStorage unavailable — fall back to the build default.
+  }
+  return devBuildDefault;
+};
+
+const storeDevMode = (enabled: boolean): void => {
+  try {
+    window.localStorage.setItem(devModeStorageKey, enabled ? "on" : "off");
+  } catch {
+    // The preference simply won't persist.
+  }
+};
+
+/** Where the dev server writes the run log; absent under a production build. */
+const devLogEndpoint = "/__dev-log";
+
+/** Pushes the log to the dev server, which writes it into `saves/auto`. */
+const flushDevLogToDisk = (log: DevLogDocument): void => {
+  void fetch(devLogEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: log.fileName, text: serializeDevLog(log) }),
+  }).catch(() => {
+    // No dev server (production build or the port is closed). The log still
+    // lives in the save's dev section and can be downloaded from Dev Tools.
+  });
+};
+
 const buildingPresentation: Record<string, { icon: LucideIcon; tone: string }> =
   {
     people: { icon: Users, tone: "teal" },
@@ -392,6 +449,19 @@ function App() {
     source: string;
   } | null>(null);
   const tickMsRef = useRef(0);
+  const [devMode, setDevMode] = useState(loadDevMode);
+  /** The run log, mirrored in a ref so the save writer and effects can read it. */
+  const [devLog, setDevLog] = useState<DevLogDocument | null>(null);
+  const devLogRef = useRef<DevLogDocument | null>(null);
+  /** Cleared by reset so the next run gets its own id — and its own file. */
+  const devRunIdRef = useRef<string | null>(null);
+  /**
+   * False until the stored save has been read (or found absent). The run log
+   * only starts after that decision, so a reload continues the existing log
+   * instead of opening a new one.
+   */
+  const [devLogReady, setDevLogReady] = useState(false);
+  const previousLoggedStateRef = useRef<CivilizationState | null>(null);
   const [lastTickMs, setLastTickMs] = useState(0);
   /** Save-file identity, kept out of render so the autosave timer reads it. */
   const saveIdentityRef = useRef<{
@@ -448,6 +518,60 @@ function App() {
     }, 1000);
     return () => window.clearInterval(timer);
   }, [paused, autoBuyBuildings, autoAssignWorkers]);
+
+  useEffect(() => {
+    storeDevMode(devMode);
+  }, [devMode]);
+
+  /**
+   * Dev mode drives two things: whether the Dev Tools tab is in the list, and
+   * whether the run log is recorded. Turning it off must not leave the shell
+   * sitting on the tab that just disappeared.
+   */
+  const toggleDevMode = (): void => {
+    const next = !devMode;
+    setDevMode(next);
+    if (!next && activeTab === "Dev Tools") setActiveTab("Settings");
+  };
+
+  /**
+   * Dev log: remarkable events plus a snapshot every 300 game-seconds, on the
+   * same clock and with the same fields the simulator records. Runs in its own
+   * effect rather than inside the tick updater, so logging can never run twice
+   * for one tick under StrictMode.
+   *
+   * It waits for `devLogReady` so it never starts a log before the stored save
+   * has been read: creating one on the first render would mint a fresh run id
+   * and leave a stray file behind on every browser restart.
+   */
+  useEffect(() => {
+    if (!devMode || !devLogReady) {
+      previousLoggedStateRef.current = null;
+      return;
+    }
+    const previous = previousLoggedStateRef.current;
+    previousLoggedStateRef.current = gameState;
+
+    const runId =
+      devRunIdRef.current ?? (devRunIdRef.current = generateSaveGuid());
+    let log = devLogRef.current ?? createDevLog(runId);
+    const time = devLogGameSeconds(gameState);
+
+    if (previous) {
+      for (const event of diffDevLogEvents(previous, gameState, time)) {
+        log = appendDevLogEvent(log, event);
+      }
+    }
+    if (isDevLogSnapshotDue(log, time)) {
+      log = appendDevLogSnapshot(log, buildDevLogSnapshot(gameState, time));
+    }
+
+    if (log !== devLogRef.current) {
+      devLogRef.current = log;
+      setDevLog(log);
+      flushDevLogToDisk(log);
+    }
+  }, [gameState, devMode, devLogReady]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -536,6 +660,8 @@ function App() {
         actionMultiplier: multiplier,
         largeMultiplier,
         dismissedAchievements,
+        // Read through the ref so the writer never has to re-subscribe.
+        devLog: devLogRef.current ?? undefined,
       });
       writeStoredSave(serializeSave(data, "json"));
       setLastSavedAtMs(data.savedAtMs);
@@ -588,6 +714,45 @@ function App() {
       : {};
     const hasGains = Object.keys(gains).length > 0;
 
+    let source = options.source;
+    const renamed = Object.keys(repaired.renamed).length;
+    if (renamed > 0) source += ` (${renamed} renamed id(s) resolved by GUID)`;
+    if (repaired.unknown.length > 0) {
+      source += ` — dropped unknown content: ${repaired.unknown.join(", ")}`;
+    }
+
+    // Continue the run log from the save so it spans reloads, and record the
+    // reload itself — with the offline gain it is about to be credited.
+    //
+    // The identity is restored whether or not dev mode is currently on, so that
+    // turning it on later appends to the save's file instead of opening a new
+    // one beside it. Only writing to disk waits for dev mode.
+    const restored = devLogFromSave(data.devLog);
+    if (restored) {
+      devRunIdRef.current = restored.runId;
+      const offlineDetail = hasGains
+        ? `offline ${formatDuration(cappedOfflineMs(elapsedMs))}; gained ${Object.keys(
+            gains,
+          )
+            .map((key) => `${key} ${fmt(gains[key])}`)
+            .join(", ")}`
+        : `offline ${formatDuration(cappedOfflineMs(elapsedMs))}; no offline gain`;
+      const loaded = appendDevLogEvent(
+        restored,
+        buildDevLogEvent(
+          nextState,
+          "load",
+          source,
+          devLogGameSeconds(nextState),
+          offlineDetail,
+        ),
+      );
+      devLogRef.current = loaded;
+      setDevLog(loaded);
+      previousLoggedStateRef.current = nextState;
+      if (devMode) flushDevLogToDisk(loaded);
+    }
+
     // Re-stamp the document so a reload does not re-apply the same gap.
     const reinstalled = createSaveData(
       nextState,
@@ -597,17 +762,12 @@ function App() {
         actionMultiplier: data.actionMultiplier ?? 1,
         largeMultiplier: data.largeMultiplier ?? 100,
         dismissedAchievements: data.dismissedAchievements ?? [],
+        // Keep the (possibly just appended) log across the re-stamp.
+        devLog: devLogRef.current ?? undefined,
       },
     );
     writeStoredSave(serializeSave(reinstalled, "json"));
     setLastSavedAtMs(reinstalled.savedAtMs);
-
-    let source = options.source;
-    const renamed = Object.keys(repaired.renamed).length;
-    if (renamed > 0) source += ` (${renamed} renamed id(s) resolved by GUID)`;
-    if (repaired.unknown.length > 0) {
-      source += ` — dropped unknown content: ${repaired.unknown.join(", ")}`;
-    }
 
     if (!hasGains || elapsedMs <= 0) {
       setGameState(nextState);
@@ -631,7 +791,11 @@ function App() {
   // Relaunch: pick the internal save up and let the offline panel size the gap.
   useEffect(() => {
     const stored = readStoredSave();
-    if (!stored) return;
+    if (!stored) {
+      // No save to continue: this is a fresh run, so the log may start now.
+      setDevLogReady(true);
+      return;
+    }
     const timer = window.setTimeout(() => {
       try {
         adoptSave(saveFromJson(stored), {
@@ -645,8 +809,15 @@ function App() {
           "The stored save could not be read, so a new settlement was founded.",
         );
       }
+      // Either way the load decision is now made, so the run log may start: it
+      // continues the save's log when there was one, and opens a new file when
+      // there was not.
+      setDevLogReady(true);
     }, 0);
     return () => window.clearTimeout(timer);
+    // Adopting the stored save is a mount-only side effect: re-running it on any
+    // later change would re-apply the same offline gap.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** Settings / Dev Tools: save now. Always writes internally first. */
@@ -764,6 +935,11 @@ function App() {
     setLargeMultiplier(100);
     setGameState(new CivilizationState());
     setDismissedAchievements([]);
+    // A new run means a new log id, and therefore a new file under saves/auto.
+    devLogRef.current = null;
+    setDevLog(null);
+    devRunIdRef.current = null;
+    previousLoggedStateRef.current = null;
     setNotice("New settlement founded; the previous run was discarded.");
   };
 
@@ -888,6 +1064,8 @@ function App() {
   };
 
   const visibleTabs = tabs.filter(({ label }) => {
+    // Dev Tools only exist while dev mode is on.
+    if (label === "Dev Tools") return devMode;
     if (label === "Army") return gameState.isBuildingAvailable("barracks");
     if (label === "Research")
       return gameState.isBuildingAvailable("university");
@@ -1466,6 +1644,56 @@ function App() {
                   >
                     <span>Save JSON + XML together</span>
                     <strong>EXPORT</strong>
+                  </button>
+                </div>
+                <div className="dev-tools-controls">
+                  <div className="dev-tools-control">
+                    <span>Run log</span>
+                    <strong>
+                      {devLog
+                        ? `${devLog.events.length}e / ${devLog.snapshots.length}s`
+                        : "not started"}
+                    </strong>
+                  </div>
+                  <div className="dev-tools-control">
+                    <span>Log file</span>
+                    <strong>
+                      {devLog ? devLog.fileName : "saves/auto/…"}
+                    </strong>
+                  </div>
+                  <button
+                    type="button"
+                    className="dev-tools-toggle"
+                    onClick={() => {
+                      if (devLog) flushDevLogToDisk(devLog);
+                      setNotice(
+                        devLog
+                          ? `Run log pushed to saves/auto/${devLog.fileName}.`
+                          : "No run log yet — play a few seconds first.",
+                      );
+                    }}
+                  >
+                    <span>Write log to saves/auto</span>
+                    <strong>WRITE</strong>
+                  </button>
+                  <button
+                    type="button"
+                    className="dev-tools-toggle"
+                    onClick={() => {
+                      if (!devLog) {
+                        setNotice("No run log yet — play a few seconds first.");
+                        return;
+                      }
+                      downloadTextFile(
+                        devLog.fileName,
+                        serializeDevLog(devLog),
+                        "application/json",
+                      );
+                      setNotice(`Run log downloaded as ${devLog.fileName}.`);
+                    }}
+                  >
+                    <span>Download log</span>
+                    <strong>DOWNLOAD</strong>
                   </button>
                 </div>
               </section>
@@ -2091,6 +2319,34 @@ function App() {
                     <small>{formatNumber(12_345_678_900, value)}</small>
                   </button>
                 ))}
+              </div>
+
+              <div className="workbench-heading settings-section-heading">
+                <div>
+                  <p className="eyebrow">Developer</p>
+                  <h3>Dev mode</h3>
+                </div>
+                <span>{devMode ? "on" : "off"}</span>
+              </div>
+              <p className="dev-tools-copy">
+                Dev mode shows the Dev Tools tab and records a run log: every
+                remarkable event plus a snapshot every{" "}
+                {DEFAULT_DEV_LOG_SNAPSHOT_SECONDS} seconds, written to{" "}
+                <strong>saves/auto</strong> so a real session can be compared with
+                a simulation. It defaults to{" "}
+                {devBuildDefault ? "on for this dev build" : "off for this build"},
+                and the choice is remembered.
+              </p>
+              <div className="dev-tools-controls">
+                <button
+                  type="button"
+                  className={`dev-tools-toggle ${devMode ? "on" : ""}`}
+                  aria-pressed={devMode}
+                  onClick={toggleDevMode}
+                >
+                  <span>Dev mode</span>
+                  <strong>{devMode ? "ON" : "OFF"}</strong>
+                </button>
               </div>
 
               <div className="workbench-heading settings-section-heading">

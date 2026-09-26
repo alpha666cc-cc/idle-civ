@@ -6,12 +6,12 @@ import {
   type ProductionResourceKey,
   type ResourceKey,
 } from "../src/game/attributes";
-import { type BuildingKey } from "../src/game/buildings";
+import { buildingDefinitions, type BuildingKey } from "../src/game/buildings";
 import { encounterDefinitions } from "../src/game/encounters";
 import { CivilizationState } from "../src/game/civilizationState";
 import { ExpNumber } from "../src/game/expNumber";
 import { emptyStatistics } from "../src/game/statistics";
-import { GameSimulation } from "./simulation";
+import { GameSimulation, createInitialState } from "./simulation";
 import type { SimulationStrategy } from "./simulation";
 import {
   getRequiredAgeAction,
@@ -20,6 +20,9 @@ import {
   getRequiredBattlePreparationAction,
   getRequiredBattleUnitTargets,
   getRequiredResearchAction,
+  getBootstrapGatherResource,
+  getRecommendedBattlePurchase,
+  getSimulatorBattlePlan,
   getStrategy,
 } from "./strategies";
 
@@ -156,6 +159,13 @@ describe("required progression strategy", () => {
     science: 1e12,
   } as const;
 
+  const simulatorResources = {
+    ...richResources,
+    military: 1e12,
+    metalwork: 1e12,
+    trade: 1e12,
+  } as const;
+
   const makeState = ({
     people = 0,
     buildings = {},
@@ -278,6 +288,126 @@ describe("required progression strategy", () => {
     expect(getRequiredResearchAction(state)).toBeNull();
   });
 
+  it("does not gather toward a battle plan blocked on unproducible resources", () => {
+    // The advisor wants warriors, which cost military. With no barracks there is
+    // no military production, so the plan is blocked on infrastructure: the
+    // advisor must offer no purchase and must not spend the gather budget on it.
+    const state = createInitialState();
+    const plan = getSimulatorBattlePlan(state);
+
+    expect(plan).not.toBeNull();
+    expect(getRecommendedBattlePurchase(state, plan)).toBeNull();
+    expect(getStrategy("balanced")?.decideAction(state, { gameTime: 0, snapshots: [] })).not.toEqual({
+      type: "gather",
+      resource: "military",
+    });
+  });
+
+  it("gathers for the cheapest purchase while no worker produces anything", () => {
+    // Every production rate ties at zero without workers, so a lowest-rate
+    // heuristic would lock onto one arbitrary resource and never bootstrap.
+    const state = createInitialState();
+
+    expect(state.assignedWorkers).toBe(0);
+    const target = getBootstrapGatherResource(state);
+    expect(target).not.toBeNull();
+
+    // The target must actually unblock the economy: repeatedly gathering it has
+    // to make the settlement's first building purchasable.
+    const canBuildAnything = (candidate: CivilizationState) =>
+      buildingDefinitions.some(({ key }) => candidate.canBuild(key));
+    let bootstrapped = state;
+    for (let step = 0; step < 200 && !canBuildAnything(bootstrapped); step += 1) {
+      bootstrapped = bootstrapped.gather(target as ProductionResourceKey);
+    }
+    expect(canBuildAnything(bootstrapped)).toBe(true);
+  });
+
+  it("advances the age whenever the engine allows it, whatever the population", () => {
+    // Regression: the strategy helper used to add its own population gate, so a
+    // run that had won every age-0 battle and cleared the building target still
+    // sat at 999 citizens — one short of the next age's 1000 threshold — and
+    // never asked to advance, even though `canEnterAge` said it could.
+    const ageZeroBattles = encounterDefinitions
+      .filter(({ age }) => age === 0)
+      .map(({ key }) => key);
+    const state = makeState({
+      people: 999,
+      // Clears the 125% building target for age-0 with room to spare.
+      buildings: { farm: 1200 },
+      resources: richResources,
+      defeatedEncounters: ageZeroBattles,
+    });
+
+    expect(state.canEnterAge("age-0")).toBe(true);
+    expect(getRequiredAgeAction(state)).toEqual({
+      type: "enterAge",
+      ageId: "age-0",
+    });
+    // And the cheapest strategy asks for it ahead of any purchase.
+    expect(
+      getStrategy("cheapest")?.decideAction(state, { gameTime: 0, snapshots: [] }),
+    ).toEqual({ type: "enterAge", ageId: "age-0" });
+  });
+
+  it("waits for the age transition until the engine says it is allowed", () => {
+    const notReady = makeState({ people: 999, resources: richResources });
+    expect(notReady.canEnterAge("age-0")).toBe(false);
+    expect(getRequiredAgeAction(notReady)).toBeNull();
+  });
+
+  it("buys the advisor shortfall and re-plans after the purchase", () => {
+    const state = makeState({
+      people: 100,
+      buildings: { barracks: 1, university: 1, smithy: 1 },
+      resources: simulatorResources,
+      unitCounts: { warrior: 4 },
+    });
+    const plan = getSimulatorBattlePlan(state);
+    const strategy = getStrategy("balanced");
+
+    expect(plan).not.toBeNull();
+    expect(plan?.totalComposition.get("warrior")?.toNumber()).toBeGreaterThan(4);
+    expect(strategy?.decideAction(state, { gameTime: 0, snapshots: [] })).toEqual({
+      type: "buyUnit",
+      unitId: "warrior",
+      count: plan?.composition.get("warrior"),
+    });
+
+    const recommended = plan?.composition.get("warrior") ?? 0;
+    const afterPurchase = state.buyUnit("warrior", recommended);
+    expect(getSimulatorBattlePlan(afterPurchase)?.composition.size).toBe(0);
+    expect(getRequiredBattleAction(afterPurchase)).toEqual({
+      type: "launchBattle",
+      encounterId: "age0_1_first_fire",
+    });
+  });
+
+  it("buys simulator-required research and re-plans the army", () => {
+    const state = makeState({
+      people: 100,
+      buildings: { barracks: 1, university: 1, smithy: 1 },
+      resources: simulatorResources,
+      defeatedEncounters: ["age0_1_first_fire"],
+    });
+    const plan = getSimulatorBattlePlan(state);
+    const firstResearch = plan?.research.ids[0];
+    const strategy = getStrategy("balanced");
+
+    expect(plan).not.toBeNull();
+    expect(firstResearch).toBeDefined();
+    expect(strategy?.decideAction(state, { gameTime: 0, snapshots: [] })).toEqual({
+      type: "buyResearch",
+      researchId: firstResearch,
+    });
+    if (!firstResearch) return;
+
+    const afterResearch = state.buyResearch(firstResearch);
+    expect(getSimulatorBattlePlan(afterResearch)?.research.ids).not.toContain(
+      firstResearch,
+    );
+  });
+
   it("buys the cheapest affordable purchase instead of a priority purchase", () => {
     const strategy = getStrategy("cheapest");
     expect(strategy).toBeDefined();
@@ -378,7 +508,7 @@ describe("required progression strategy", () => {
     expect(result.success).toBe(true);
   });
 
-  it("enters the next age only after its data threshold and battles", () => {
+  it("enters the next age only once every battle is won and the target is built", () => {
     const ageZeroBattles = encounterDefinitions
       .filter(({ age }) => age === 0)
       .map(({ key }) => key);
@@ -388,7 +518,9 @@ describe("required progression strategy", () => {
       resources: richResources,
       defeatedEncounters: ageZeroBattles,
     });
-    const belowThreshold = makeState({
+    // One citizen short of the next age's population threshold, but the engine
+    // only asks for battles and buildings — so this is still ready to advance.
+    const oneCitizenShort = makeState({
       people: 999,
       buildings: { farm: 250 },
       resources: richResources,
@@ -400,12 +532,27 @@ describe("required progression strategy", () => {
       resources: richResources,
       defeatedEncounters: ageZeroBattles.slice(1),
     });
+    const missingBuildings = makeState({
+      people: 1000,
+      buildings: { farm: 2 },
+      resources: richResources,
+      defeatedEncounters: ageZeroBattles,
+    });
 
     expect(getRequiredAgeAction(ready)).toEqual({
       type: "enterAge",
       ageId: "age-0",
     });
-    expect(getRequiredAgeAction(belowThreshold)).toBeNull();
+    expect(getRequiredAgeAction(oneCitizenShort)).toEqual({
+      type: "enterAge",
+      ageId: "age-0",
+    });
     expect(getRequiredAgeAction(missingBattle)).toBeNull();
+    expect(getRequiredAgeAction(missingBuildings)).toBeNull();
+    // The engine agrees in every case: the helper adds no rule of its own.
+    expect(ready.canEnterAge("age-0")).toBe(true);
+    expect(oneCitizenShort.canEnterAge("age-0")).toBe(true);
+    expect(missingBattle.canEnterAge("age-0")).toBe(false);
+    expect(missingBuildings.canEnterAge("age-0")).toBe(false);
   });
 });

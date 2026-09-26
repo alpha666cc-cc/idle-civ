@@ -12,8 +12,19 @@ import {
   type BuildingKey,
 } from "../src/game/buildings.js";
 import { encounterDefinitions } from "../src/game/encounters.js";
-import { ageDefinitions } from "../src/game/ages.js";
-import { researchDefinitions } from "../src/game/research.js";
+import {
+  researchDefinitions,
+  researchIdsForBattle,
+} from "../src/game/research.js";
+import { type ArmyStack } from "../src/game/battle.js";
+import {
+  simulatorCandidates,
+  solveMinimumArmy,
+  type BattleSimulatorContext,
+  type SimulatorOwnedArmy,
+  type SimulatorResult,
+  type SimulatorTotalArmy,
+} from "../src/game/battleSimulator.js";
 import {
   type SimulationStrategy,
   type SimulationAction,
@@ -31,6 +42,7 @@ import {
   unitDefinitions,
   type UnitDefinition,
 } from "../src/game/units.js";
+import { getBestRoiAction, type BattleRoiPlan } from "./roi.js";
 
 /**
  * Worker assignment ratios for different strategies.
@@ -283,21 +295,265 @@ export const getRequiredBattlePreparationAction = (
 
 /**
  * Returns the age transition action once the current age's data-defined
- * population threshold, battles, and building target are all satisfied.
+ * requirements are satisfied.
+ *
+ * `canEnterAge` is the whole game rule — the live era card gates on exactly that
+ * and nothing else (every battle in the age won, plus the age's building
+ * target). This helper deliberately adds no population requirement of its own:
+ * population is capped by housing capacity, so a settlement can legitimately
+ * finish an age one citizen short of the *next* age's threshold and still be
+ * allowed to advance. Re-deriving a stricter rule here is what previously left
+ * the simulation stuck at the end of an age the engine said it could leave.
  */
 export const getRequiredAgeAction = (
   state: CivilizationState,
 ): SimulationAction | null => {
   const currentAge = state.getCurrentAge();
   if (!currentAge) return null;
-  const ageIndex = ageDefinitions.findIndex(({ key }) => key === currentAge.key);
-  const nextAge = ageDefinitions[ageIndex + 1];
-  if (!nextAge || state.population.toNumber() < nextAge.populationThreshold) {
-    return null;
-  }
   return state.canEnterAge(currentAge.key)
     ? { type: "enterAge", ageId: currentAge.key }
     : null;
+};
+
+/** Current owned army, keyed by unit id, for the shared battle simulator. */
+const simulatorOwnedArmy = (state: CivilizationState): SimulatorOwnedArmy =>
+  new Map(state.getArmyStacks().map(({ unitId, count }) => [unitId, count]));
+
+/** Build simulator stacks with every research bonus available to the battle. */
+const simulatorStacksWithResearch = (
+  state: CivilizationState,
+  battleId: string,
+  composition: SimulatorTotalArmy,
+): ArmyStack[] => {
+  const battleAge =
+    encounterDefinitions.find(({ key }) => key === battleId)?.age ?? 0;
+  const researchIds = researchIdsForBattle(battleAge, [...composition.keys()]);
+  const stacks: ArmyStack[] = [];
+  for (const [unitId, count] of composition) {
+    const stats = state.getUnitStatsWithResearch(unitId, researchIds);
+    if (stats) stacks.push({ unitId, count, stats });
+  }
+  return stacks;
+};
+
+/** The context shared by every headless battle-plan query. */
+const simulatorContext = (state: CivilizationState): BattleSimulatorContext => ({
+  getCost: (unitId, count) => state.getUnitCost(unitId, count),
+  getResearch: (unitIds) => state.getResearchForUnitTypes(unitIds),
+  wins: (composition, battleId) => {
+    const player = simulatorStacksWithResearch(state, battleId, composition);
+    const enemy = state.getEnemyStacks(battleId);
+    return (
+      player.length > 0 &&
+      enemy.length > 0 &&
+      state.simulateWithStacks(battleId, player, enemy).outcome === "player"
+    );
+  },
+});
+
+/** Candidate units the simulator may consider for the current campaign battle. */
+const simulatorBattleCandidates = (state: CivilizationState): UnitDefinition[] => {
+  const battle = getRequiredBattle(state);
+  return battle ? simulatorCandidates(battle.age) : [];
+};
+
+const simulatorPlanKey = (state: CivilizationState): string =>
+  [
+    getRequiredBattle(state)?.key ?? "",
+    Object.entries(state.unitCounts)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([unitId, count]) => `${unitId}:${count.toString()}`)
+      .join(","),
+    state.boughtResearch.join(","),
+    state.boughtUpgrades.join(","),
+    state.earnedAchievements.join(","),
+    state.enteredAges.join(","),
+    state.defeatedEncounters.join(","),
+    Object.entries(state.builtBuildings)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([building, count]) => `${building}:${count ?? 0}`)
+      .join(","),
+    `${state.freeBuildings ? 1 : 0}${state.freeUnits ? 1 : 0}${state.freeUpgrades ? 1 : 0}`,
+  ].join("|");
+
+/** The simulator's advisory plan for the current battle, or null if unavailable. */
+const simulatorPlanCache = new Map<string, SimulatorResult | null>();
+
+export const getSimulatorBattlePlan = (
+  state: CivilizationState,
+): SimulatorResult | null => {
+  const key = simulatorPlanKey(state);
+  const cached = simulatorPlanCache.get(key);
+  if (cached !== undefined) return cached;
+
+  const battle = getRequiredBattle(state);
+  const candidates = simulatorBattleCandidates(state);
+  const result =
+    !battle || candidates.length === 0
+      ? null
+      : solveMinimumArmy(
+          battle.key,
+          candidates,
+          simulatorContext(state),
+          candidates.length > 1,
+          simulatorOwnedArmy(state),
+        );
+  if (simulatorPlanCache.size >= 64) {
+    const oldest = simulatorPlanCache.keys().next().value;
+    if (oldest !== undefined) simulatorPlanCache.delete(oldest);
+  }
+  simulatorPlanCache.set(key, result);
+  return result;
+};
+
+/** First recommended recruit type that the player can legally buy right now. */
+const getFirstSimulatorUnit = (
+  state: CivilizationState,
+  plan: SimulatorResult,
+): { readonly unitId: string; readonly count: number } | null => {
+  for (const [unitId, count] of plan.composition) {
+    if (count > 0 && state.isUnitAvailable(unitId)) {
+      return { unitId, count };
+    }
+  }
+  return null;
+};
+
+/** First recommended recruit that the player can actually buy right now. */
+const getSimulatorUnitAction = (
+  state: CivilizationState,
+  plan: SimulatorResult | null,
+): SimulationAction | null => {
+  if (!plan) return null;
+  const unit = getFirstSimulatorUnit(state, plan);
+  if (!unit) return null;
+  const maxAffordable = state.getMaxAffordableUnits(unit.unitId);
+  if (maxAffordable <= 0) return null;
+  return {
+    type: "buyUnit",
+    unitId: unit.unitId,
+    count: Math.min(unit.count, maxAffordable),
+  };
+};
+
+/** Unlock research required for the new unit types in the simulator plan. */
+const getSimulatorResearchIds = (
+  state: CivilizationState,
+  plan: SimulatorResult,
+): string[] => {
+  const battle = getRequiredBattle(state);
+  if (!battle) return [];
+  // The solver's explicit research list is deliberately narrower than the
+  // historical research it applies while scoring stats: it contains the unlock
+  // prerequisites for genuinely new unit types, which are the research purchases
+  // the strategy should make.
+  return plan.research.ids.filter(
+    (researchId) => !state.isResearchBought(researchId),
+  );
+};
+
+/** Research that unlocks a unit the simulator plan actually recommends. */
+const getSimulatorResearchAction = (
+  state: CivilizationState,
+  plan: SimulatorResult | null,
+): SimulationAction | null => {
+  if (!plan) return null;
+  const researchIds = getSimulatorResearchIds(state, plan);
+  for (const researchId of researchIds) {
+    if (state.canBuyResearch(researchId)) {
+      return { type: "buyResearch", researchId };
+    }
+  }
+  return null;
+};
+
+/**
+ * Whether a cost resource can be obtained at all right now: either it is
+ * directly gatherable, or something already produces it. A purchase blocked on
+ * a resource with neither property is blocked on infrastructure, not on
+ * gathering, so chasing it would starve the economy that unblocks it.
+ */
+const isCostResourceReachable = (
+  state: CivilizationState,
+  resource: string,
+): boolean =>
+  isResourceGatherable(state, resource) ||
+  producerResourceKeys.includes(resource as ProductionResourceKey) &&
+    state.computeResourceRate(resource as ProductionResourceKey).gt(ExpNumber.ZERO);
+
+/** An affordable advisor purchase (research unlock or recruit) for the current plan. */
+export const getRecommendedBattlePurchase = (
+  state: CivilizationState,
+  plan: SimulatorResult | null,
+): SimulationAction | null => {
+  if (!plan) return null;
+  return getSimulatorResearchAction(state, plan) ?? getSimulatorUnitAction(state, plan);
+};
+
+/**
+ * The ROI evaluator's view of the battle simulator: the recruits a battle still
+ * needs, what they cost, and the research that unlocks them. Injected rather than
+ * imported so `roi.ts` stays independent of the strategy layer.
+ */
+const planBattleForRoi = (
+  state: CivilizationState,
+  battleId: string,
+): BattleRoiPlan | null => {
+  if (state.getNextBattle()?.key !== battleId) return null;
+  const plan = getSimulatorBattlePlan(state);
+  if (!plan) return null;
+  return {
+    composition: plan.composition,
+    costs: plan.totalCost.map(({ resource, base }) => ({ resource, base })),
+    research: plan.research.ids,
+  };
+};
+
+/**
+ * A resource needed by the next recommended purchase, when gatherable. Returns
+ * null when the purchase is blocked on a resource the settlement cannot produce
+ * yet, so the caller falls through to the economy priorities that unblock it.
+ */
+const getSimulatorGatherAction = (
+  state: CivilizationState,
+  plan: SimulatorResult | null,
+): SimulationAction | null => {
+  if (!plan) return null;
+  const unit = getFirstSimulatorUnit(state, plan);
+  if (unit) {
+    const maxAffordable = state.getMaxAffordableUnits(unit.unitId);
+    const count = Math.max(1, Math.min(unit.count, maxAffordable || unit.count));
+    const costs = state.getUnitCost(unit.unitId, count);
+    if (costs.every(({ resource }) => isCostResourceReachable(state, resource))) {
+      const missing = costs
+        .filter(({ resource }) => isResourceGatherable(state, resource))
+        .filter(({ resource, base }) => state.resources[resource].lt(base))
+        .sort((left, right) => {
+          const leftDeficit = left.base.sub(state.resources[left.resource]);
+          const rightDeficit = right.base.sub(state.resources[right.resource]);
+          if (leftDeficit.gt(rightDeficit)) return -1;
+          if (rightDeficit.gt(leftDeficit)) return 1;
+          return left.resource.localeCompare(right.resource);
+        });
+      const resource = missing[0]?.resource;
+      if (resource && producerResourceKeys.includes(resource as ProductionResourceKey)) {
+        return { type: "gather", resource };
+      }
+    }
+  }
+  const researchIds = getSimulatorResearchIds(state, plan);
+  const researchId = researchIds.find((id) => state.isResearchUnlocked(id));
+  if (researchId) {
+    const cost = state.getResearchNextCost()[0];
+    if (
+      cost &&
+      isResourceGatherable(state, cost.resource) &&
+      state.resources[cost.resource].lt(cost.base)
+    ) {
+      return { type: "gather", resource: cost.resource };
+    }
+  }
+  return null;
 };
 
 /** One legal next purchase considered by the cheapest strategy. */
@@ -410,6 +666,21 @@ const getCheapestPurchaseCandidate = (
   return candidates.sort(comparePurchaseCost)[0] ?? null;
 };
 
+/**
+ * Gather target for a settlement that is not producing anything yet: the
+ * resource owed by its cheapest reachable purchase. With no worker assigned every
+ * production rate ties at zero, so a lowest-rate heuristic would keep choosing
+ * the same arbitrary resource and the economy would never bootstrap. Returns
+ * null once any worker is assigned, because rates are meaningful after that.
+ */
+export const getBootstrapGatherResource = (
+  state: CivilizationState,
+): string | null => {
+  if (state.assignedWorkers !== 0) return null;
+  const candidate = getCheapestPurchaseCandidate(state);
+  return candidate ? gatherForPurchase(state, candidate) : null;
+};
+
 const gatherForPurchase = (
   state: CivilizationState,
   candidate: PurchaseCandidate,
@@ -469,6 +740,29 @@ abstract class BaseStrategy implements SimulationStrategy {
     state: CivilizationState,
   ): SimulationAction | null {
     return getRequiredResearchAction(state);
+  }
+
+  /**
+   * Advisory battle plan from the shared simulator. A null plan means the
+   * simulator has no reachable candidate; an empty plan is deliberately treated
+   * as advisory only, so the real battle check above still decides launches.
+   *
+   * Only purchases are returned here. Gathering toward the plan is handled by
+   * `getSimulatorGatherAction` after the economy priorities, because a plan
+   * blocked on a resource the settlement cannot produce yet must not starve the
+   * buildings and workers that unblock it.
+   */
+  protected getSimulatorAction(state: CivilizationState): SimulationAction | null {
+    return getRecommendedBattlePurchase(state, getSimulatorBattlePlan(state));
+  }
+
+  /**
+   * Gathering that targets the advisor's next purchase. Deliberately demoted
+   * below worker assignment and building purchases: it is a hint about *what* to
+   * save for, never a reason to stop growing the economy.
+   */
+  protected getSimulatorGather(state: CivilizationState): SimulationAction | null {
+    return getSimulatorGatherAction(state, getSimulatorBattlePlan(state));
   }
 
   protected getUnitAction(state: CivilizationState): SimulationAction | null {
@@ -602,6 +896,12 @@ abstract class BaseStrategy implements SimulationStrategy {
     const requiredPreparationAction = getRequiredBattlePreparationAction(state);
     if (requiredPreparationAction) return requiredPreparationAction;
 
+    // The battle simulator is advisory: it guides the next purchase, but the
+    // real `simulateEncounter` check above is the only launch gate. Only its
+    // purchases run this early; its gather hint is demoted to priority 7.
+    const simulatorAction = this.getSimulatorAction(state);
+    if (simulatorAction) return simulatorAction;
+
     // Priority 1: Buy the next combat-path research before spending on units.
     const researchAction = this.getResearchAction(state);
     if (researchAction) return researchAction;
@@ -643,7 +943,13 @@ abstract class BaseStrategy implements SimulationStrategy {
       }
     }
 
-    // Priority 7: Gather resources
+    // Priority 7: Gather toward the advisor's next purchase, if it is reachable.
+    // This sits below workers and buildings on purpose: gathering for a plan
+    // blocked on infrastructure must never prevent building that infrastructure.
+    const simulatorGather = this.getSimulatorGather(state);
+    if (simulatorGather) return simulatorGather;
+
+    // Priority 8: Gather resources
     const resourceToGather = this.getResourceToGather(state);
     if (resourceToGather) {
       return { type: "gather", resource: resourceToGather };
@@ -670,6 +976,9 @@ abstract class BaseStrategy implements SimulationStrategy {
   protected getResourceToGather(state: CivilizationState): string | null {
     const requiredBattleResource = getRequiredBattleResourceToGather(state);
     if (requiredBattleResource) return requiredBattleResource;
+
+    const bootstrapResource = getBootstrapGatherResource(state);
+    if (bootstrapResource) return bootstrapResource;
 
     // Only consider resources that are currently unlocked
     const available = (producerResourceKeys as ProductionResourceKey[]).filter(
@@ -980,6 +1289,71 @@ export class EconomyStrategy extends BaseStrategy {
 }
 
 /**
+ * ROI-first speedrun strategy. Required campaign actions remain authoritative;
+ * otherwise it asks the shared ROI evaluator for the best time-adjusted buy.
+ */
+export class SpeedrunStrategy extends BaseStrategy {
+  name = "speedrun";
+  description = "Buy the best time-adjusted ROI purchase for fast progression";
+
+  protected getWorkerRatios(): WorkerRatios {
+    return {
+      food: 0.5,
+      wood: 0.2,
+      stone: 0.15,
+      gold: 0.05,
+      military: 0.05,
+      science: 0.05,
+      metalwork: 0,
+      trade: 0,
+    };
+  }
+
+  decideAction(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulationAction | null {
+    const requiredAgeAction = getRequiredAgeAction(state);
+    if (requiredAgeAction) return requiredAgeAction;
+
+    const requiredBattleAction = getRequiredBattleAction(state);
+    if (requiredBattleAction) return requiredBattleAction;
+
+    const requiredPreparationAction = getRequiredBattlePreparationAction(state);
+    if (requiredPreparationAction) return requiredPreparationAction;
+
+    // A speedrun must not spend its whole gather budget on non-food inputs while
+    // the food buffer is empty; a farm/citizen purchase is the next enabler.
+    if (state.resources.food.lte(ExpNumber.ZERO)) {
+      return { type: "gather", resource: "food" };
+    }
+
+    const workerAction = this.assignWorkersByRatio(
+      state,
+      this.getWorkerRatios(),
+    );
+    if (workerAction) return workerAction;
+
+    // The advisor's battle purchases run before the ROI sweep. ROI excludes units
+    // by policy, so without this the settlement would endlessly buy farms and
+    // never field the army the required battle gate is waiting on.
+    const simulatorAction = this.getSimulatorAction(state);
+    if (simulatorAction) return simulatorAction;
+
+    // The ROI sweep includes the pending battle as a candidate, priced with the
+    // simulator's army and scored on what winning it actually grants (capacity
+    // multipliers included), so a battle worth taking outranks a marginal farm.
+    const roiAction = getBestRoiAction(state, {
+      includeUnits: false,
+      planBattle: planBattleForRoi,
+    });
+    if (roiAction) return roiAction;
+
+    return super.decideAction(state, context);
+  }
+}
+
+/**
  * Strategy registry for easy access.
  */
 export const strategyRegistry: Record<string, SimulationStrategy> = {
@@ -989,6 +1363,7 @@ export const strategyRegistry: Record<string, SimulationStrategy> = {
   military: new MilitaryStrategy(),
   "fast-age": new FastAgeStrategy(),
   economy: new EconomyStrategy(),
+  speedrun: new SpeedrunStrategy(),
 };
 
 /**

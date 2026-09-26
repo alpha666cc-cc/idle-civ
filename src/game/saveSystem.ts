@@ -10,6 +10,7 @@ import {
 } from "./attributes";
 import type { BuildingCost } from "./buildings";
 import { snapshotGuids } from "./dataIds";
+import type { DevLogDocument } from "./devLog";
 import { ExpNumber } from "./expNumber";
 import { CivilizationState } from "./civilizationState";
 import { emptyStatistics, type Statistics } from "./statistics";
@@ -124,12 +125,20 @@ export type SaveData = {
   readonly dismissedAchievements: string[];
   /** Content id → static guid, for every id this save names. */
   readonly referencedGuids: Record<string, string>;
+  /**
+   * Dev-mode run log. Purely additive and optional: a document written before
+   * this field existed, or by a build with dev mode off, simply has none and the
+   * log starts fresh, so no migration is required.
+   */
+  readonly devLog?: DevLogDocument;
 };
 
 export type SaveUiState = {
   readonly actionMultiplier?: SavedActionMultiplier;
   readonly largeMultiplier?: number;
   readonly dismissedAchievements?: readonly string[];
+  /** Written only while dev mode is on; see `SaveData.devLog`. */
+  readonly devLog?: DevLogDocument;
 };
 
 /** Raised for anything a save file cannot be trusted to contain. */
@@ -801,6 +810,9 @@ export const createSaveData = (
   largeMultiplier: uiState.largeMultiplier ?? 100,
   dismissedAchievements: [...(uiState.dismissedAchievements ?? [])],
   referencedGuids: snapshotGuids(collectReferencedIds(state)),
+  // Spread, not `devLog: undefined`, so a save written outside dev mode keeps
+  // exactly the shape it had before this field existed.
+  ...(uiState.devLog ? { devLog: uiState.devLog } : {}),
 });
 
 /**

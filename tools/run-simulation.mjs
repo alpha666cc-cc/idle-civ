@@ -3,7 +3,7 @@
  * Usage: node tools/run-simulation.mjs [options]
  *
  * Options:
- *   --strategy <name>      Strategy to use (cheapest, balanced, production, military, fast-age, economy)
+ *   --strategy <name>      Strategy to use (cheapest, balanced, production, military, fast-age, economy, speedrun)
  *   --objective <type>     Objective type (buildingCount, ageReach, battleVictory, timeLimit)
  *   --target <value>       Target value for objective
  *   --building <key>       Building key for buildingCount objective
@@ -118,6 +118,9 @@ Options:
 Examples:
   # Run balanced strategy for 1 hour
   node tools/run-simulation.mjs --strategy balanced --max-time 3600
+
+  # Run ROI-first speedrun strategy
+  node tools/run-simulation.mjs --strategy speedrun --max-time 600
 
   # Reach age-1 with production strategy
   node tools/run-simulation.mjs --strategy production --objective ageReach --age age-1

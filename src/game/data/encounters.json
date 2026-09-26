@@ -185,17 +185,17 @@
     "enemyArmy": [
       {
         "unitId": "chariot_bronze",
-        "count": 3,
+        "count": 2500,
         "label": "2500 chariots"
       },
       {
         "unitId": "spearman_bronze",
-        "count": 3,
+        "count": 10000,
         "label": "10k bronze"
       },
       {
         "unitId": "bowman_bronze",
-        "count": 2,
+        "count": 2000,
         "label": "2k bowmen"
       }
     ],
@@ -242,12 +242,12 @@
     "enemyArmy": [
       {
         "unitId": "spearman_iron",
-        "count": 4,
+        "count": 30000,
         "label": "30k defenders"
       },
       {
         "unitId": "ballista",
-        "count": 1,
+        "count": 10,
         "label": "10 ballista"
       }
     ],
@@ -273,22 +273,22 @@
     "enemyArmy": [
       {
         "unitId": "spearman_iron",
-        "count": 10,
+        "count": 100000,
         "label": "10 sea peoples spearmen"
       },
       {
         "unitId": "cavalry_iron",
-        "count": 5,
+        "count": 50000,
         "label": "5 sea peoples cavalry"
       },
       {
         "unitId": "elephant_iron",
-        "count": 2,
+        "count": 200,
         "label": "2 war elephants"
       },
       {
         "unitId": "bowman_bronze",
-        "count": 3,
+        "count": 30000,
         "label": "3k bowmen"
       }
     ],
