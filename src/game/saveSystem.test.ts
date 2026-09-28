@@ -54,7 +54,7 @@ const sampleState = (): CivilizationState =>
   new CivilizationState(
     { ...emptyResourceAmounts(), food: ExpNumber.fromNumber(1e30) },
     { ...emptyWorkerAssignments(), food: ExpNumber.fromNumber(3) },
-    { "townHall": 1, house: 1, farm: 2, people: 2 },
+    { townHall: 1, house: 1, farm: 2, people: 2 },
     emptyResourceFactors(),
     {},
     5,
@@ -241,6 +241,22 @@ describe("migration", () => {
     const future = { ...sampleSave(), version: SAVE_VERSION + 5 };
     expect(() => migrateSaveData(future)).toThrow(/newer build/);
   });
+
+  it("converts kebab-case achievement IDs to camelCase in v3 → v4", () => {
+    const v3Save: SaveData = {
+      ...sampleSave(),
+      version: 3,
+      earnedAchievements: ["food-hoarder-5", "stone-hoarder-5"],
+      dismissedAchievements: ["another-old-achievement"],
+    };
+    const migrated = migrateSaveData(v3Save);
+    expect(migrated.version).toBe(SAVE_VERSION);
+    expect(migrated.earnedAchievements).toEqual([
+      "foodHoarder5",
+      "stoneHoarder5",
+    ]);
+    expect(migrated.dismissedAchievements).toEqual(["anotherOldAchievement"]);
+  });
 });
 
 describe("format detection and file names", () => {
@@ -416,7 +432,7 @@ describe("unknown content detection", () => {
   it("keeps materialized open-ended achievement tiers during repair", () => {
     const data: SaveData = {
       ...sampleSave(),
-      earnedAchievements: ["food-hoarder-e9", "stone-hoarder-e9-through-e12"],
+      earnedAchievements: ["foodHoarder5", "stoneHoarder5"],
     };
     const repaired = remapSaveIds(
       data,
@@ -547,7 +563,7 @@ describe("offline production", () => {
     const after = new CivilizationState(
       emptyResourceAmounts(),
       { ...emptyWorkerAssignments(), food: ExpNumber.ONE },
-      { "townHall": 1 },
+      { townHall: 1 },
       emptyResourceFactors(),
       {},
       0,

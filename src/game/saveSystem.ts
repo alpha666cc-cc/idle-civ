@@ -29,7 +29,7 @@ import { emptyStatistics, type Statistics } from "./statistics";
  */
 
 /** Bump when the shape changes; `migrateSaveData` handles older documents. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 /** How a save travels: the same document, three encodings. */
 export type SaveFormat = "base64" | "json" | "xml";
@@ -217,6 +217,15 @@ export const saveFromJson = (json: string): SaveData => {
 };
 
 /**
+ * Convert kebab-case to camelCase for achievement ID migration.
+ * This handles the case where achievement IDs were changed from kebab-case
+ * (e.g., "food-hoarder-5") to camelCase (e.g., "foodHoarder5").
+ */
+const kebabToCamelCase = (kebab: string): string => {
+  return kebab.replace(/-([a-z0-9])/g, (_, char) => char.toUpperCase());
+};
+
+/**
  * Upgrade older documents to the current version. There is nothing to rewrite
  * yet (version 1 is the first), so this is where every migration lands: read the
  * old field, write the new one, bump `version` — and touch nothing else, so
@@ -239,6 +248,21 @@ export const migrateSaveData = (data: SaveData): SaveData => {
       ? countBuildingsFromArray(data.builtBuildings)
       : (data.buildingCounts ?? {});
     return { ...data, version: SAVE_VERSION, buildingCounts };
+  }
+  // v3 → v4: convert kebab-case achievement IDs to camelCase
+  if (data.version === 3) {
+    const earnedAchievements = (data.earnedAchievements ?? []).map(
+      kebabToCamelCase,
+    );
+    const dismissedAchievements = (data.dismissedAchievements ?? []).map(
+      kebabToCamelCase,
+    );
+    return {
+      ...data,
+      version: SAVE_VERSION,
+      earnedAchievements,
+      dismissedAchievements,
+    };
   }
   return { ...data, version: SAVE_VERSION };
 };
