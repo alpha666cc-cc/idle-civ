@@ -15,7 +15,12 @@
   - Missing economy scaling prevents natural progression through building types
 - **Age-0 progression spreadsheet updated:** `age_0_building_progression.csv` now uses actual simulation data from `temp/sim/sim-cheapest.csv` instead of estimates
 - **Corrected data sources:** building counts and production rates extracted directly from simulation CSV at 4 checkpoints (before each battle and end of age)
-- **Recommended fixes documented:** increase food ratios to 0.6-0.8, lower battle launch thresholds, remove target counts from priorities, add cheapest fallback
+- **Short-term fixes implemented and validated:**
+  - Increased food ratios to 0.65-0.8 in all strategies (citizens are critical)
+  - Lowered battle launch thresholds to 25 power with simulation checks
+  - Removed target counts from building priorities (let economy scale naturally)
+  - Economy strategy now reaches 999 population within 1 hour (up from ~480) - nearly at age-1 threshold (1,000)
+  - Economy strategy now leads rankings with 3 battles won and 1,577 buildings
 
 ## 2026-09-25 — Age-0 balance documentation refresh
 

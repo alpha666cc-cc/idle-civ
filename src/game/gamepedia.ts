@@ -48,7 +48,7 @@ const achievementRelatedIds = (
       ? [requirement.resource]
       : requirement.type === "population"
         ? [populationDefinition.id]
-        : requirement.type === "building-count"
+        : requirement.type === "buildingCount"
           ? [requirement.building]
           : requirement.type === "encounter" ||
               requirement.type === "battle"

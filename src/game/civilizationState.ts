@@ -553,7 +553,7 @@ export class CivilizationState {
     const upgrade = upgradeDefinitions.find(({ key }) => key === upgradeId);
     if (!upgrade) return false;
     return (
-      upgrade.unlock.source === "building-count" &&
+      upgrade.unlock.source === "buildingCount" &&
       this.buildingCount(upgrade.unlock.building) >= upgrade.unlock.threshold
     );
   }
@@ -876,6 +876,31 @@ export class CivilizationState {
     return this.withStatistics(statistics);
   }
 
+  /**
+   * The share of `destination`'s per-second drains that still applies once every
+   * active `removeDrain` bonus is taken into account. `value` is a fraction, so
+   * `1` cancels a drain outright and `0.5` halves it; sources compound as
+   * `Π(1 − N)` and clamp at 0, matching the `costReductionPercent` stacking rule
+   * in AGENTS.md §13.1. Returns exactly `ExpNumber.ONE` when nothing removes
+   * drains, which is the common case and costs one pass over the cached
+   * `activeBonuses()` list.
+   *
+   * This is the "rewards are bonuses" rule doing the work: the famine
+   * achievement ends the citizen food upkeep simply by being earned, with no
+   * engine branch naming either the achievement or the `people` building.
+   */
+  private remainingDrainShare(destination: string): ExpNumber {
+    let remaining = ExpNumber.ONE;
+    for (const [, bonus] of this.activeBonuses()) {
+      if (bonus.type !== "removeDrain") continue;
+      if (bonus.destination !== destination) continue;
+      const kept = ExpNumber.ONE.sub(bonus.value);
+      if (kept.lte(ExpNumber.ZERO)) return ExpNumber.ZERO;
+      remaining = remaining.mul(kept);
+    }
+    return remaining;
+  }
+
   getFactors(resourceKey: ResourceKey): ResourceFactors {
     const factors = this.resourceFactors[resourceKey];
     // Production resources include worker-assignable resources (food, wood, stone, gold)
@@ -899,6 +924,7 @@ export class CivilizationState {
       additiveMultiplier: [],
       drain: [],
     };
+    let drainScale: ExpNumber | undefined;
 
     for (const building of buildingDefinitions) {
       const count = this.buildingCount(building.key);
@@ -914,7 +940,13 @@ export class CivilizationState {
       }
       for (const resourceDrain of effects.resourceDrain ?? []) {
         if (resourceDrain.resource === resourceKey) {
-          buildingFactors.drain.push([building.key, resourceDrain.amount]);
+          // Resolved at most once per getFactors() call, and only when this
+          // resource actually has a drain, so the common path stays free.
+          drainScale ??= this.remainingDrainShare(resourceKey);
+          const amount = resourceDrain.amount.mul(drainScale);
+          if (amount.gt(ExpNumber.ZERO)) {
+            buildingFactors.drain.push([building.key, amount]);
+          }
         }
       }
       for (const resourceProduction of effects.resourceProduction ?? []) {
@@ -1608,7 +1640,7 @@ export class CivilizationState {
     const { unlock } = building;
     if (!unlock) return true;
     switch (unlock.source) {
-      case "building-count":
+      case "buildingCount":
         return this.buildingCount(unlock.building) >= unlock.threshold;
       case "battle":
         return this.defeatedEncounters.includes(unlock.encounterId);
@@ -2229,9 +2261,9 @@ export class CivilizationState {
         return this.resources.population;
       case "clicks":
         return this.statistics.productionClicks;
-      case "building-count":
+      case "buildingCount":
         return ExpNumber.fromNumber(this.buildingCount(requirement.building));
-      case "buildings-total":
+      case "buildingsTotal":
         return this.statistics.buildingsBuilt;
       case "encounter":
         return this.defeatedEncounters.includes(requirement.encounterId)
@@ -2240,11 +2272,11 @@ export class CivilizationState {
       case "battle":
         // A battle-shape condition is historical, not a live resource reading.
         return ExpNumber.ZERO;
-      case "upgrade-count":
+      case "upgradeCount":
         return ExpNumber.fromNumber(this.boughtUpgrades.length);
-      case "offline-time":
+      case "offlineTime":
         return ExpNumber.fromNumber(this.statistics.longestOfflineMs);
-      case "active-time":
+      case "activeTime":
         return ExpNumber.fromNumber(this.statistics.longestActiveMs);
       default:
         return ExpNumber.ZERO;
@@ -2257,16 +2289,16 @@ export class CivilizationState {
       case "population":
       case "clicks":
         return requirement.amount;
-      case "building-count":
-      case "buildings-total":
+      case "buildingCount":
+      case "buildingsTotal":
         return ExpNumber.fromNumber(requirement.count);
       case "encounter":
       case "battle":
         return ExpNumber.ONE;
-      case "upgrade-count":
+      case "upgradeCount":
         return ExpNumber.fromNumber(requirement.count);
-      case "offline-time":
-      case "active-time":
+      case "offlineTime":
+      case "activeTime":
         return ExpNumber.fromNumber(requirement.amount);
       default:
         return ExpNumber.ZERO;
@@ -2352,9 +2384,9 @@ export class CivilizationState {
         return this.resources.population.gte(requirement.amount);
       case "clicks":
         return this.statistics.productionClicks.gte(requirement.amount);
-      case "building-count":
+      case "buildingCount":
         return this.buildingCount(requirement.building) >= requirement.count;
-      case "buildings-total":
+      case "buildingsTotal":
         return this.statistics.buildingsBuilt.gte(
           ExpNumber.fromNumber(requirement.count),
         );
@@ -2369,12 +2401,20 @@ export class CivilizationState {
               findUnitDefinition(unitId)?.domain === requirement.unitDomain,
           )
         );
-      case "upgrade-count":
+      case "upgradeCount":
         return this.boughtUpgrades.length >= requirement.count;
-      case "offline-time":
+      case "offlineTime":
         return this.statistics.longestOfflineMs >= requirement.amount;
-      case "active-time":
+      case "activeTime":
         return this.statistics.longestActiveMs >= requirement.amount;
+      case "famine":
+        // A one-time historical record, like every other achievement: the
+        // requirement is a conjunction and is recorded the first tick it holds.
+        return (
+          this.resources[requirement.resource].lte(requirement.amount) &&
+          this.computeResourceRate(requirement.resource).lt(ExpNumber.ZERO) &&
+          this.resources.population.gte(requirement.population)
+        );
       default:
         return false;
     }

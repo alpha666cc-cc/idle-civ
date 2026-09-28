@@ -49,7 +49,7 @@ export type BuildingEffects = {
  * remains permanently locked.
  */
 export type BuildingUnlock =
-  | { source: "building-count"; building: BuildingKey; threshold: number }
+  | { source: "buildingCount"; building: BuildingKey; threshold: number }
   | { source: "battle"; encounterId: string }
   | { source: "age"; ageId: string };
 

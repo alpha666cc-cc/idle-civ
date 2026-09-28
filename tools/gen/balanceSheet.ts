@@ -131,7 +131,7 @@ const plainNumber = (value: unknown): number => {
   return typeof candidate?.toNumber === "function" ? candidate.toNumber() : 0;
 };
 
-/** `‹resource›-multiplier` tiers: building-count threshold → ×value. */
+/** `‹resource›-multiplier` tiers: buildingCount threshold → ×value. */
 const MULTIPLIER_CHAINS: Record<string, ChainTier[]> = {};
 /** `‹resource›-hoarder` tiers: held-amount threshold → +flat value. */
 const HOARDER_CHAINS: Record<string, ChainTier[]> = {};
@@ -664,7 +664,7 @@ const chainRows = (): Cell[][] => {
     ),
   );
   const rows: Cell[][] = [
-    ["Achievement multiplier chains — building-count threshold → multiplier", null, null, null, null, null, null, null, null],
+    ["Achievement multiplier chains — buildingCount threshold → multiplier", null, null, null, null, null, null, null, null],
     ["tier", "threshold", ...TRACKED_CHAIN_RESOURCES],
   ];
   DATA.chainFirstRow = rows.length + 1;
@@ -689,7 +689,7 @@ const chainRows = (): Cell[][] => {
 const upgradeRows = (): Cell[][] => {
   const rows: Cell[][] = [
     ["Upgrade tiers — ×2 production each, by building count", null, null],
-    ["resource", "tier", "building-count threshold"],
+    ["resource", "tier", "buildingCount threshold"],
   ];
   for (const building of UPGRADE_BUILDINGS) {
     const resource =
@@ -730,7 +730,7 @@ const notesRows = (): Cell[][] => [
   ["Production (engine)", "the engine's own rate: (Σ flat) × (Π multipliers) − (Σ drain). Food carries the citizen upkeep, −1/s per citizen."],
   ["Multiplier columns", "building × = the building's own per-unit factor ^ count; achievement × = the ‹resource›-multiplier chain tiers unlocked by that building count; upgrade × = ×2 per enhancer tier passed; other × = research + battle + age bonuses (engine values — edit them to test a different research pace)."],
   ["Times", "next building = the slowest of its cost resources (unit cost / that resource's production). Next research = 100 × 10^(√n − 1), where n is the purchase ordinal. 'Time incl. research' takes the slower of the two, because science and resources accrue in parallel."],
-  ["Approximations", "upgrades are assumed bought as soon as their building-count threshold is met; research is assumed bought for every earlier age (Inputs.boughtResearchShare trims that); battles are assumed won for every earlier age; resources are assumed held at exactly the next purchase's cost, which is what unlocks the hoarder tiers."],
+  ["Approximations", "upgrades are assumed bought as soon as their buildingCount threshold is met; research is assumed bought for every earlier age (Inputs.boughtResearchShare trims that); battles are assumed won for every earlier age; resources are assumed held at exactly the next purchase's cost, which is what unlocks the hoarder tiers."],
   ["Reading the balance", "the engine columns are the current data's answer, not a target. Where they explode or stall is what to tune — start with the cost factors on Data and the ratios on Inputs."],
 ];
 

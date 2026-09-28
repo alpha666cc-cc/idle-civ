@@ -18,13 +18,26 @@ export type AchievementRequirement =
   | { type: "resource"; resource: ResourceKey; amount: ExpNumber }
   | { type: "population"; amount: ExpNumber }
   | { type: "clicks"; amount: ExpNumber }
-  | { type: "building-count"; building: BuildingKey; count: number }
-  | { type: "buildings-total"; count: number }
+  | { type: "buildingCount"; building: BuildingKey; count: number }
+  | { type: "buildingsTotal"; count: number }
   | { type: "encounter"; encounterId: string }
   | { type: "battle"; encounterId: string; unitDomain: UnitDomain }
-  | { type: "upgrade-count"; count: number }
-  | { type: "offline-time"; amount: number }
-  | { type: "active-time"; amount: number };
+  | { type: "upgradeCount"; count: number }
+  | { type: "offlineTime"; amount: number }
+  | { type: "activeTime"; amount: number }
+  | {
+      /**
+       * A supply collapse: the resource is exhausted (`amount` is a ceiling — the
+       * user reads 0), it is still *losing ground* (its per-second rate is
+       * negative), and the settlement is at least `population` citizens. The
+       * negative-rate clause is what separates a famine from an ordinary empty
+       * stockpile, so it is intrinsic to the type rather than a separate flag.
+       */
+      type: "famine";
+      resource: ResourceKey;
+      amount: ExpNumber;
+      population: ExpNumber;
+    };
 
 /**
  * The player units still alive in the final round of a resolved battle.
@@ -74,13 +87,14 @@ type AchievementRequirementData =
   | { type: "resource"; resource: ResourceKey; amount: number }
   | { type: "population"; amount: number }
   | { type: "clicks"; amount: number }
-  | { type: "building-count"; building: BuildingKey; count: number }
-  | { type: "buildings-total"; count: number }
+  | { type: "buildingCount"; building: BuildingKey; count: number }
+  | { type: "buildingsTotal"; count: number }
   | { type: "encounter"; encounterId: string }
   | { type: "battle"; encounterId: string; unitDomain: UnitDomain }
-  | { type: "upgrade-count"; count: number }
-  | { type: "offline-time"; amount: number }
-  | { type: "active-time"; amount: number };
+  | { type: "upgradeCount"; count: number }
+  | { type: "offlineTime"; amount: number }
+  | { type: "activeTime"; amount: number }
+  | { type: "famine"; resource: ResourceKey; amount: number; population: number };
 
 type AchievementData = {
   key: string;
@@ -106,14 +120,14 @@ const toRequirement = (
       return { type: "population", amount: ExpNumber.fromNumber(data.amount) };
     case "clicks":
       return { type: "clicks", amount: ExpNumber.fromNumber(data.amount) };
-    case "building-count":
+    case "buildingCount":
       return {
-        type: "building-count",
+        type: "buildingCount",
         building: data.building,
         count: data.count,
       };
-    case "buildings-total":
-      return { type: "buildings-total", count: data.count };
+    case "buildingsTotal":
+      return { type: "buildingsTotal", count: data.count };
     case "encounter":
       return { type: "encounter", encounterId: data.encounterId };
     case "battle":
@@ -122,19 +136,26 @@ const toRequirement = (
         encounterId: data.encounterId,
         unitDomain: data.unitDomain,
       };
-    case "upgrade-count":
-      return { type: "upgrade-count", count: data.count };
-    case "offline-time":
-      return { type: "offline-time", amount: data.amount };
-    case "active-time":
-      return { type: "active-time", amount: data.amount };
+    case "upgradeCount":
+      return { type: "upgradeCount", count: data.count };
+    case "offlineTime":
+      return { type: "offlineTime", amount: data.amount };
+    case "activeTime":
+      return { type: "activeTime", amount: data.amount };
+    case "famine":
+      return {
+        type: "famine",
+        resource: data.resource,
+        amount: ExpNumber.fromNumber(data.amount),
+        population: ExpNumber.fromNumber(data.population),
+      };
   }
 };
 
 for (const data of achievementData as AchievementData[]) {
   const { requirement } = data;
   if (
-    requirement.type === "building-count" &&
+    requirement.type === "buildingCount" &&
     !buildingDefinitions.some(({ key }) => key === requirement.building)
   ) {
     throw new Error(`Unknown achievement building: ${requirement.building}`);
@@ -195,49 +216,49 @@ export type OpenEndedHoarderChain = {
 
 export const openEndedHoarderChains: OpenEndedHoarderChain[] = [
   {
-    family: "food-hoarder",
+    family: "foodHoarder",
     resource: "food",
     startExponent: 9,
     exponentStep: 3,
     label: "Food Hoarder",
   },
   {
-    family: "wood-hoarder",
+    family: "woodHoarder",
     resource: "wood",
     startExponent: 9,
     exponentStep: 3,
     label: "Wood Hoarder",
   },
   {
-    family: "stone-hoarder",
+    family: "stoneHoarder",
     resource: "stone",
     startExponent: 9,
     exponentStep: 3,
     label: "Stone Hoarder",
   },
   {
-    family: "gold-hoarder",
+    family: "goldHoarder",
     resource: "gold",
     startExponent: 9,
     exponentStep: 3,
     label: "Gold Hoarder",
   },
   {
-    family: "science-hoarder",
+    family: "scienceHoarder",
     resource: "science",
     startExponent: 3,
     exponentStep: 3,
     label: "Science Hoarder",
   },
   {
-    family: "military-hoarder",
+    family: "militaryHoarder",
     resource: "military",
     startExponent: 3,
     exponentStep: 3,
     label: "Military Hoarder",
   },
   {
-    family: "metalwork-hoarder",
+    family: "metalworkHoarder",
     resource: "metalwork",
     startExponent: 3,
     exponentStep: 3,

@@ -2431,7 +2431,7 @@ function App() {
       <aside className="buildings-panel">
         <div className="buildings-header">
           <h2>Build</h2>
-          <span className="building-count">
+          <span className="buildingCount">
             {Object.values(gameState.builtBuildings).reduce(
               (sum, count) => sum + count,
               0,

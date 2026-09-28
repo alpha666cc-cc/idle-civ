@@ -11,7 +11,7 @@ import type { ResourceKey } from "./attributes";
 
 /** Unlock conditions for upgrades (AGENTS.md §13.4). Sources own their id lists. */
 export type UpgradeUnlock = {
-  source: "building-count";
+  source: "buildingCount";
   building: BuildingKey;
   threshold: number;
 };
@@ -73,7 +73,7 @@ const toUpgradeDefinition = (data: UpgradeData): UpgradeDefinition =>
       value: ExpNumber.fromNumber(value),
     })),
     {
-      source: "building-count",
+      source: "buildingCount",
       building: data.building,
       threshold: data.threshold,
     },

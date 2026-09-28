@@ -15,6 +15,7 @@ export type BonusType =
   | "attributeFlat" // +N to the destination attribute's accrual
   | "attributeMultiplier" // ×N on the destination attribute (or capacity) gain
   | "attributeDrain" // −N per second of the destination attribute, clamped at 0
+  | "removeDrain" // cancels a share (0–1) of the destination attribute's drains
   // buyable-targeted: the destination is a buyable (building or unit) id
   | "costReductionFlat" // destination cost −N (absolute, per unit)
   | "costReductionPercent" // destination cost × (1 − N) per unit
@@ -66,6 +67,7 @@ const bonusTypes: readonly BonusType[] = [
   "attributeFlat",
   "attributeMultiplier",
   "attributeDrain",
+  "removeDrain",
   "costReductionFlat",
   "costReductionPercent",
   "costReductionBase",

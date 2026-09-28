@@ -229,7 +229,7 @@
       }
     },
     "unlock": {
-      "source": "building-count",
+      "source": "buildingCount",
       "building": "people",
       "threshold": 90
     }
@@ -305,7 +305,7 @@
       }
     },
     "unlock": {
-      "source": "building-count",
+      "source": "buildingCount",
       "building": "townHall",
       "threshold": 5
     }

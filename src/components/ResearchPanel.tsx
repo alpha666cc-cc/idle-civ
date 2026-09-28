@@ -302,6 +302,8 @@ const describeBonus = (bonus: Bonus, fmt: Props["fmt"]): string => {
       return `${label} cost −${value}`;
     case "attributeDrain":
       return `${label} upkeep −${value}/s`;
+    case "removeDrain":
+      return `${label} upkeep removed`;
     default:
       return `${bonus.type} ${label}`;
   }

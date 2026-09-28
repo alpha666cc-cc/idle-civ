@@ -150,6 +150,8 @@ const bonusEffectLabel = (bonus: Bonus): string => {
       return `${target} gain`;
     case "attributeDrain":
       return `${target} drain`;
+    case "removeDrain":
+      return `${target} upkeep removed`;
     case "costReductionPercent":
       return `${target} cost`;
     case "costReductionFactor":
