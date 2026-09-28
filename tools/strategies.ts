@@ -954,31 +954,31 @@ abstract class BaseStrategy implements SimulationStrategy {
   }
 
   /**
-   * Whether this strategy is willing to take the next campaign battle right now.
+   * Whether this strategy is willing to take the next campaign battle at all.
    *
-   * The default is aggressive but never blind: it takes the battle whenever the
-   * battle simulator says the current army actually wins. That is the normal
-   * case, because `getRequiredBattleAction` is the only path that can launch a
-   * battle, so a strategy that wants combat simply inherits it; a strategy that
-   * wants to stay out of the campaign overrides this to return `false`.
+   * The default is the normal case: yes, take it. A strategy that wants to stay
+   * out of the campaign (or hold its army back for a later push) overrides this
+   * to return `false`.
    *
-   * This is deliberately a *gate* and not a decision: `getBattleLaunchAction`
-   * still re-checks the encounter and the outcome before returning a
-   * `launchBattle`, so overriding it can only ever make a strategy fight *less*,
-   * never launch a battle it would lose.
+   * There is deliberately **no winnability check here**. "Aggressive, but never
+   * blind" is already enforced one line below, by `getRequiredBattleAction`,
+   * which refuses to emit a `launchBattle` unless the battle simulator says the
+   * army actually wins. Re-implementing that test as a boolean here made this
+   * method an exact restatement of `getRequiredBattleAction(state) !== null`,
+   * so the wrapper was an identity function that ran the same un-memoized
+   * battle simulation twice per decision — and the runner runs it a third time
+   * in `launchBattle`. One authority for "can we win", here.
    */
-  protected shouldLaunchBattle(state: CivilizationState): boolean {
-    // Launch battles aggressively but with simulation check
-    const nextBattle = state.getNextBattle();
-    if (!nextBattle) return false;
-    const simulation = state.simulateEncounter(nextBattle.key);
-    return simulation?.outcome === "player";
+  protected shouldLaunchBattle(_state: CivilizationState): boolean {
+    return true;
   }
 
   /**
    * The battle to launch this turn, or null. The single entry point every
    * `decideAction` uses for combat, so `shouldLaunchBattle` is genuinely wired
-   * in rather than a dead override.
+   * in rather than a dead override — and because the win check lives in
+   * `getRequiredBattleAction`, overriding this can only ever make a strategy
+   * fight *less*, never launch a battle it would lose.
    */
   protected getBattleLaunchAction(
     state: CivilizationState,
