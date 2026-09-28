@@ -50,27 +50,25 @@ age 5 - 10M p- 10M pb - pe 407
 age 6 - 1B p- 100M pb - pe 627
 age 7 - 10B p- 1B pb - pe 988
 
+
+
+simulation cheapest startegy reach end of age -0 but does not 'click' on age-1 ... is there an action missing ( age transition should be the most priority action usually) 
+
+simulation : speedrun strategy is stuck on battle 1, it should run the battle simulator and evaluate the cost of battle vs the gain ( the capacity improvemnt are very important)
+
+age 1- balance : multiply science costs by 1000 when entering age-1 ( iron), the science production gets a too big boost 
+
 add an achievement "famine" , description "hidden", triggers when you got to 0 food ( and food prod <0 ) with 1001 citizen or more, remove drain from citizen on food
 
-i modified a few unit costs/scaling on age 0 ( as well as reserach and building), can you reflect that on the  building scripts/tests/ documentation ( don't modify any json)
 
-UI: change researcch card ( don't touch card size): lower button size so the card can accomodate a 3rd effect (or 2 line effects like conversion.
-also some research description are outdated. (Tribal Organization doe snot Unlocks Tribesman)
-
-ui;: Enhanced upgrades card says "attributeFlat"; it should be XXX power +1 (xxx is the name of the building) 
-
-in game mode, change the battle-simulator so that it takes into account currently bought units ( it hsould say waht units are missing to reach battle)
-
-simulation ( don't touch main engine)use new battle-simulator to improve strategies ( basically, use simulator when a unit/research is bought to find the shortest path to victory... be reminded that the simulator is not the real battle, you can have to buy additional units)
-
-make a Return of interest function for each thing that is buyable. (updgrade( updgrade should have a high ROI, their boost is massive), research, prod buildings...)
-
-make a cheapest strategy( always buiy the cheapest stuff)
-
-
-
-
-
+path of age-0 is clear ( and mandatory) -> 
+go to 90 pop, 
+do first battle ( to raise pop cap),
+(optional but helpful : ramp to 200 people) 
+do 2nd battle (to raise cap again)
+use science
+3rd-4th battle and ramp to ~1000 people 
+enter next age
 
 
 

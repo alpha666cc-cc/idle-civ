@@ -54,14 +54,14 @@ const sampleState = (): CivilizationState =>
   new CivilizationState(
     { ...emptyResourceAmounts(), food: ExpNumber.fromNumber(1e30) },
     { ...emptyWorkerAssignments(), food: ExpNumber.fromNumber(3) },
-    { "town-hall": 1, house: 1, farm: 2, people: 2 },
+    { "townHall": 1, house: 1, farm: 2, people: 2 },
     emptyResourceFactors(),
     {},
     5,
-    ["farm-enhancer-9"],
+    ["farmEnhancer9"],
     ["age0_1_first_fire"],
-    ["age-0"],
-    ["growing-hamlet"],
+    ["age0"],
+    ["growingHamlet"],
     emptyStatistics(),
     { warrior: ExpNumber.fromNumber(12) },
     ExpNumber.fromNumber(3),
@@ -151,12 +151,12 @@ describe("save document identity", () => {
     const data = createSaveData(sampleState(), "ui-state", 1, {
       actionMultiplier: "Max",
       largeMultiplier: 1000000,
-      dismissedAchievements: ["click-100"],
+      dismissedAchievements: ["click100"],
     });
     const restored = saveFromJson(saveToJson(data));
     expect(restored.actionMultiplier).toBe("Max");
     expect(restored.largeMultiplier).toBe(1000000);
-    expect(restored.dismissedAchievements).toEqual(["click-100"]);
+    expect(restored.dismissedAchievements).toEqual(["click100"]);
   });
 
   it("stores repeated buildings as counts instead of an entry per building", () => {
@@ -323,7 +323,7 @@ describe("loading a state", () => {
 });
 describe("renamed content repair", () => {
   it("re-points an id through the static guid snapshot", () => {
-    const oldId = "farm-enhancer-9";
+    const oldId = "farmEnhancer9";
     const guid = entryGuidById.get(oldId);
     expect(guid).toBeDefined();
     const renamedTo = "farm-enhancer-renamed-for-the-test";
@@ -398,7 +398,7 @@ describe("unknown content detection", () => {
   it("reports ids the data files no longer define", () => {
     const data: SaveData = {
       ...sampleSave(),
-      boughtUpgrades: ["farm-enhancer-9", "removed-upgrade"],
+      boughtUpgrades: ["farmEnhancer9", "removed-upgrade"],
       unitCounts: { warrior: "1", removed_unit: "2" },
     };
     expect(findUnknownContentIds(data, (id) => entryGuidById.has(id))).toEqual([
@@ -500,7 +500,7 @@ describe("offline production", () => {
     });
     const credited = state.applyOfflineGain({ food: ExpNumber.ONE });
     expect(credited.resources.food.toNumber()).toBe(100);
-    expect(credited.isAchievementEarned("food-hoarder-1")).toBe(true);
+    expect(credited.isAchievementEarned("foodHoarder1")).toBe(true);
   });
 
   it("uses already-earned achievement bonuses in offline rates", () => {
@@ -514,7 +514,7 @@ describe("offline production", () => {
       [],
       [],
       [],
-      ["growing-hamlet"],
+      ["growingHamlet"],
     );
     const rate = state.getProductionRates().food!;
     const gain = calculateOfflineGain({ food: rate }, 1000);
@@ -529,13 +529,13 @@ describe("offline production", () => {
     expect(active.statistics.onlineTimeMs).toBe(86_400_000);
     expect(active.statistics.offlineTimeMs).toBe(0);
     expect(active.statistics.longestActiveMs).toBe(86_400_000);
-    expect(active.isAchievementEarned("active-24h")).toBe(true);
+    expect(active.isAchievementEarned("active24h")).toBe(true);
 
     const resumed = active.recordOfflineTime(86_400_000).checkAchievements();
     expect(resumed.statistics.offlineTimeMs).toBe(86_400_000);
     expect(resumed.statistics.longestOfflineMs).toBe(86_400_000);
     expect(resumed.statistics.activeStreakMs).toBe(0);
-    expect(resumed.isAchievementEarned("offline-24h")).toBe(true);
+    expect(resumed.isAchievementEarned("offline24h")).toBe(true);
     expect(resumed.getOfflineEfficiency()).toBeCloseTo(0.5, 12);
   });
 
@@ -547,19 +547,19 @@ describe("offline production", () => {
     const after = new CivilizationState(
       emptyResourceAmounts(),
       { ...emptyWorkerAssignments(), food: ExpNumber.ONE },
-      { "town-hall": 1 },
+      { "townHall": 1 },
       emptyResourceFactors(),
       {},
       0,
       [],
       [],
       [],
-      ["active-24h"],
+      ["active24h"],
       { ...emptyStatistics(), longestActiveMs: 86_400_000 },
     );
     const baseRate = before.getProductionRates().food!;
     const boostedRate = after.getProductionRates().food!;
-    expect(after.isAchievementEarned("active-24h")).toBe(true);
+    expect(after.isAchievementEarned("active24h")).toBe(true);
     expect(boostedRate.toNumber()).toBeCloseTo(baseRate.toNumber() * 1.1, 10);
   });
 

@@ -36,9 +36,9 @@ All amounts use `ExpNumber` (mantissa/exponent — no overflow to `Infinity`).
 | id      | Gathered by            | Per worker | Building multiplier  | Displayed in                 |
 | ------- | ---------------------- | ---------- | -------------------- | ---------------------------- |
 | `food`  | gather click + workers | 1/s        | ×1.1 per farm        | sidebar summary, gather grid |
-| `wood`  | gather click + workers | 1/s        | ×1.1 per lumber-yard | sidebar summary, gather grid |
+| `wood`  | gather click + workers | 1/s        | ×1.1 per lumberYard | sidebar summary, gather grid |
 | `stone` | gather click + workers | 1/s        | ×1.1 per quarry      | sidebar summary, gather grid |
-| `gold`  | gather click + workers | 1/s        | ×1.1 per gold-mine   | sidebar summary, gather grid |
+| `gold`  | gather click + workers | 1/s        | ×1.1 per goldMine   | sidebar summary, gather grid |
 
 Rate formula (per resource): `(Σ flat additions) × (Π multipliers) − (Σ drains)`, clamped
 at 0. Click gain = `(worker production + 1)` × multipliers (drains excluded).
@@ -54,7 +54,7 @@ produced by the advanced buildings themselves, one per second each.
 | `military`  | building | 🟢     | `barracks`, +1/s each                                  | gated at 90 citizens; also the primary unit cost; spendable as a trade resource                 |
 | `science`   | building | 🟢     | `university`, +1/s each                                | gated on battle `age0_1_first_fire`; funds the research tree                                    |
 | `metalwork` | building | 🟢     | `smithy`, +1/s each                                    | gated at 5 town halls; also an enhancer cost from tier 3 on                                    |
-| `trade`     | building | 🟢     | `market`, +1/s each                                    | gated on `age-1`; spendable as the trade resource (Trade tab is still placeholder UI)          |
+| `trade`     | building | 🟢     | `market`, +1/s each                                    | gated on `age1`; spendable as the trade resource (Trade tab is still placeholder UI)          |
 
 Implemented: `click power` and `automated click power` are derived **attributes**
 (`attributes.ts`, `family: "derived"`; own `stat` Gamepedia category + stats tab) — 🟢.
@@ -94,12 +94,12 @@ tiers are handled by identical code paths and each owns a `${key}Power` stat.
 
 | | **Primary production** | **Advanced production** |
 | --- | --- | --- |
-| Buildings | `farm`, `lumber-yard`, `quarry`, `gold-mine` | `barracks`, `university`, `smithy`, `market` |
+| Buildings | `farm`, `lumberYard`, `quarry`, `goldMine` | `barracks`, `university`, `smithy`, `market` |
 | Boosts | a **worker-assignable** resource (`food`/`wood`/`stone`/`gold`) | a **building** resource (`military`/`science`/`metalwork`/`trade`) |
 | Effect | `additiveMultiplier` `+10%` each | `resourceProduction` `+1/s` each, plus `additiveMultiplier` `+5%` (market has no multiplier) |
 | Work input | needs workers assigned to that resource | self-sustaining — no worker assignment |
-| Power stat | `farmPower`, `lumber-yardPower`, `quarryPower`, `gold-minePower` | `barracksPower`, `universityPower`, `smithyPower`, `marketPower` |
-| Availability | available from the start | gated: barracks at 90 citizens, university on `age0_1_first_fire`, smithy at 5 town halls, market on `age-1` |
+| Power stat | `farmPower`, `lumberYardPower`, `quarryPower`, `goldMinePower` | `barracksPower`, `universityPower`, `smithyPower`, `marketPower` |
+| Availability | available from the start | gated: barracks at 90 citizens, university on `age0_1_first_fire`, smithy at 5 town halls, market on `age1` |
 | Enhancers | 8 tiers each, **grant `×10` capacity** | 8 tiers each, **power + production only — no capacity bonus** |
 
 The practical difference: primary buildings feed the click/worker economy you play from
@@ -114,16 +114,16 @@ separate balance decision (research/age capacity bonuses, or a rescaled threshol
 | `people`      | Citizen     | food 10 ×2.5                                  | —         | +1 population; drains 1 food/s each    | always                    | 🟢 engine case |
 | `house`       | House       | wood 10 ×12                                   | capacity  | +10 `peopleCapacity`                   | always                    | 🟢            |
 | `farm`        | Farm        | food 10 ×8, wood 10 ×8                        | primary   | food gain ×1.1 each                    | always                    | 🟢            |
-| `lumber-yard` | Lumber Yard | wood 10 ×8, stone 5 ×8                        | primary   | wood gain ×1.1 each                    | always                    | 🟢            |
+| `lumberYard` | Lumber Yard | wood 10 ×8, stone 5 ×8                        | primary   | wood gain ×1.1 each                    | always                    | 🟢            |
 | `quarry`      | Quarry      | stone 20 ×8                                   | primary   | stone gain ×1.1 each                   | always                    | 🟢            |
-| `gold-mine`   | Gold Mine   | wood 100 ×8, stone 50 ×8                      | primary   | gold gain ×1.1 each                    | always                    | 🟢            |
-| `town-hall`   | Town Hall   | wood 10000 ×15, stone 7500 ×15, gold 12500 ×15 | capacity | +10 `houseCapacity`, +1 barracks and university each | always | 🟢 |
+| `goldMine`   | Gold Mine   | wood 100 ×8, stone 50 ×8                      | primary   | gold gain ×1.1 each                    | always                    | 🟢            |
+| `townHall`   | Town Hall   | wood 10000 ×15, stone 7500 ×15, gold 12500 ×15 | capacity | +10 `houseCapacity`, +1 barracks and university each | always | 🟢 |
 | `barracks`    | Barracks    | wood 10000 ×10, stone 1000 ×12, food 5000 ×10  | advanced  | +1 `military`/s, ×1.05 each            | 90 citizens               | 🟢            |
 | `university`  | University  | wood 10000 ×10, stone 10000 ×12, gold 7500 ×10 | advanced  | +1 `science`/s, ×1.05 each             | battle `age0_1_first_fire` | 🟢            |
 | `smithy`      | Smithy      | wood 1e6 ×12, stone 1e6 ×12                    | advanced  | +1 `metalwork`/s, ×1.05 each           | 5 town halls              | 🟢            |
-| `market`      | Market      | wood 25e6 ×12, stone 25e6 ×12                  | advanced  | +1 `trade`/s (no multiplier effect)    | age `age-1`               | 🟢            |
+| `market`      | Market      | wood 25e6 ×12, stone 25e6 ×12                  | advanced  | +1 `trade`/s (no multiplier effect)    | age `age1`               | 🟢            |
 
-Known engine debt: `people`/`house`/`town-hall` capacity bookkeeping is special-cased in
+Known engine debt: `people`/`house`/`townHall` capacity bookkeeping is special-cased in
 the engine instead of being fully data-driven; age-driven availability will replace the
 hardcoded `available` flag (roadmap Milestone 2).
 
@@ -148,7 +148,7 @@ research records do not store costs.
 **Enhancer upgrades** — generated data: 8 buildings × 8 tiers (32 primary + 32 advanced).
 
 - **Ids:** `{building}-enhancer-{threshold}` with thresholds `10, 100, 1k, 10k, 100k, 1M, 10M, 100M` (e.g. `farm-enhancer-1000`); names "Enhanced Farm I"–"VIII".
-- **Applies to:** farm → food, lumber-yard → wood, quarry → stone, gold-mine → gold.
+- **Applies to:** farm → food, lumberYard → wood, quarry → stone, goldMine → gold.
 - **Unlock condition:** building count ≥ 98% of its current effective capacity (self-sequencing: each tier raises capacity ×10, so the next tier appears ~10× later).
 - **Effects (every tier):** building capacity **×10**; resource production **×2** (stacks multiplicatively across tiers).
 - **Cost reductions (per tier):** tiers 3–5 (1k/10k/100k) add `costReductionPercent` 0.5 on their building — compounding to **÷8** across the three; tiers 6–8 (1M+) add `costReductionFactor` 0.01 — growth factor reduced multiplicatively, clamped at 1.01 minimum (formula: `1.01 + (baseFactor - 1.01) * Π(1 - N)`).
@@ -236,7 +236,7 @@ loop beyond that is deferred by decision.
 | Saves                        | 🟢     | **Milestone 3 first slice done** — versioned `SaveData` (`SAVE_VERSION = 1`) in `src/game/saveSystem.ts`; JSON, XML and Base64 encodings of the same document; import/export in Settings (clipboard/file pickers via `components/saveFileIo.ts`); static content GUIDs (`src/game/dataIds.ts`, generated by `tools/gen/guids.mjs`) with a `referencedGuids` snapshot in every save so content renames migrate; offline gains at `E_off` = 25% capped at 12 h with an offline-gain panel on load, plus a cross-language contract test (`tools/tests/offline_gain_test.py`, `npm run test:cross-language`) over `data/offlineGainVectors.json`; autosave interval and reset-to-start in Settings/Dev Tools |
 | Statistics                   | 🟢     | Stats tab, tracked counters (clicks, buildings built, fastest age/battle records) and the `stat` Gamepedia category (click power, auto-click rate as derived attributes); time tracking now includes `playTimeMs`/`runTimeMs`, `onlineTimeMs`/`offlineTimeMs`, longest-offline/active streaks, and `wastedResources` (unit-retirement cost); command-style actions → result events remain 🔵                                                                                                                                                                                                                                                                                                             |
 | Achievements                 | 🟢     | 65 concrete records (17 other milestones + resource multiplier chains 4×9, hoarder chains 4×3, Master Builder 7) with `family`/`tier` data, plus open-ended hoarder tiers every e³ past 1e9 (materialized on demand); cumulative family cards with locked/partial/complete states; age-transition and unit chains still pending                                                                                                                                                                                                                                                                                                                                                                          |
-| Ages / era card              | 🟢     | **Milestone 2 first slice done** — seven `AgeDefinition`s in `src/game/data/ages.json` (`age-0` Ancient → `age-6` Modern/Space, thresholds at powers of ten), live era card in the sidebar, transitions recorded in statistics with fastest-age records, and age-driven unit retirement (units from two ages back are retired; their cost feeds `wastedResources`). Still pending: age-driven building availability (replacing the hardcoded `available` flag) and age-owned unlock lists                                                                                                                                                                                                                |
+| Ages / era card              | 🟢     | **Milestone 2 first slice done** — seven `AgeDefinition`s in `src/game/data/ages.json` (`age0` Ancient → `age6` Modern/Space, thresholds at powers of ten), live era card in the sidebar, transitions recorded in statistics with fastest-age records, and age-driven unit retirement (units from two ages back are retired; their cost feeds `wastedResources`). Still pending: age-driven building availability (replacing the hardcoded `available` flag) and age-owned unlock lists                                                                                                                                                                                                                |
 | Battle system                | 🟢     | **First slice done** — 79 units (`src/game/data/units.json`), **24 encounters** (`src/game/data/encounters.json`, 7 age bosses), deterministic stack sim (`src/game/battle.ts`), Army tab playback at 1 round/sec, victory bonuses, Gamepedia `unit`/`combat` pages, 79 vendored game-icons.net SVGs. Age-driven retirement now trims old units. Remaining: research-driven unlocks (Milestone 9), balance pass on cross-age enemy counts                                                                                                                                                                                                                                                                |
 | Research tree                | 🔵     | Milestone 9 — `era` field referencing age ids                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Game-length simulation       | 🔵     | Milestone 10 — headless engine run at accelerated speed reporting time-to-age/pacing; needs Vitest first                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |

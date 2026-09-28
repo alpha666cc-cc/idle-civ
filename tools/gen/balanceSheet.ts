@@ -107,9 +107,9 @@ const BUILDINGS: BuildingInfo[] = buildingDefinitions.map((building) => {
 /** Resource → the building whose count feeds its achievement / upgrade tiers. */
 const OWNER_BUILDING: Record<string, BuildingKey> = {
   food: "farm",
-  wood: "lumber-yard",
+  wood: "lumberYard",
   stone: "quarry",
-  gold: "gold-mine",
+  gold: "goldMine",
   science: "university",
   military: "barracks",
   metalwork: "smithy",
@@ -195,18 +195,18 @@ const countOf = (key: BuildingKey, citizens: number): number => {
       return citizens;
     case "house":
       return Math.max(1, Math.ceil(citizens / inputValue("citizensPerHouse")));
-    case "town-hall":
+    case "townHall":
       return Math.max(
         1,
         Math.ceil(countOf("house", citizens) / inputValue("housesPerTownHall")),
       );
     case "farm":
       return Math.max(1, Math.ceil(citizens / inputValue("citizensPerFarm")));
-    case "lumber-yard":
+    case "lumberYard":
       return Math.max(1, Math.ceil(citizens / inputValue("citizensPerLumberYard")));
     case "quarry":
       return Math.max(1, Math.ceil(citizens / inputValue("citizensPerQuarry")));
-    case "gold-mine":
+    case "goldMine":
       return Math.max(1, Math.ceil(citizens / inputValue("citizensPerGoldMine")));
     case "university":
       return Math.max(1, Math.ceil(citizens / inputValue("citizensPerUniversity")));
@@ -581,7 +581,7 @@ const TRACKED_CHAIN_RESOURCES = [
   "military",
   "metalwork",
 ];
-const UPGRADE_BUILDINGS = ["farm", "lumber-yard", "quarry", "gold-mine"];
+const UPGRADE_BUILDINGS = ["farm", "lumberYard", "quarry", "goldMine"];
 
 /** Row addresses on the reference sheets (filled by the row builders below). */
 const BUILDING_ROW = new Map<string, number>();
@@ -744,11 +744,11 @@ const MISMATCHES: string[] = [];
 const PLAN_BUILDINGS: BuildingKey[] = [
   "people",
   "house",
-  "town-hall",
+  "townHall",
   "farm",
-  "lumber-yard",
+  "lumberYard",
   "quarry",
-  "gold-mine",
+  "goldMine",
   "university",
   "barracks",
   "smithy",
@@ -850,9 +850,9 @@ const inputsRows = (): Cell[][] => [
 /** Which ratio input prices each Plan building count. */
 const RATIO_INPUT: Record<string, string> = {
   farm: "citizensPerFarm",
-  "lumber-yard": "citizensPerLumberYard",
+  "lumberYard": "citizensPerLumberYard",
   quarry: "citizensPerQuarry",
-  "gold-mine": "citizensPerGoldMine",
+  "goldMine": "citizensPerGoldMine",
   university: "citizensPerUniversity",
   barracks: "citizensPerBarracks",
   smithy: "citizensPerSmithy",
@@ -1059,7 +1059,7 @@ const planData = (
         formula: `=MAX(1;ROUNDUP(${ref(cols.citizens, n)}/${inputRef("citizensPerHouse")};0))`,
         value,
       });
-    else if (key === "town-hall")
+    else if (key === "townHall")
       row.push({
         formula: `=MAX(1;ROUNDUP(${ref(cols.count.house, n)}/${inputRef("housesPerTownHall")};0))`,
         value,
@@ -1266,11 +1266,11 @@ const dump = (rows: Measurement[]): void => {
       [
         String(row.citizens).padEnd(10),
         row.ageName.padEnd(16),
-        String(row.counts["town-hall"]).padStart(6),
+        String(row.counts["townHall"]).padStart(6),
         String(row.counts.farm).padStart(6),
-        String(row.counts["lumber-yard"]).padStart(6),
+        String(row.counts["lumberYard"]).padStart(6),
         String(row.counts.quarry).padStart(6),
-        String(row.counts["gold-mine"]).padStart(6),
+        String(row.counts["goldMine"]).padStart(6),
         String(row.counts.university).padStart(6),
         compact(row.rates.food).padStart(12),
         compact(row.rates.wood).padStart(12),

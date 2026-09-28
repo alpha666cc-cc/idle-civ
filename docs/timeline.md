@@ -4,6 +4,19 @@
 > (`git --no-pager log`). Pair it with `docs/game-scope.md` (what the game
 > contains now) and `docs/roadmap.md` (what is planned).
 
+## 2026-09-28 — Strategy balance analysis and Age-0 progression documentation
+
+- **Strategy performance analysis:** analyzed 7 simulation strategies (cheapest, balanced, production, military, fast-age, economy, speedrun) at 60-minute mark
+- **Key finding:** only cheapest strategy reaches 3 battles/699 population within 1 hour; all others stall at 2 battles/~480 population
+- **Root causes identified:**
+  - Over-constrained building priorities with hardcoded orders block cheaper alternatives
+  - Suboptimal worker ratios split focus (cheapest uses 100% food vs 40-50% in others)
+  - Conservative battle launch conditions (50 power threshold vs immediate simulation-based launches)
+  - Missing economy scaling prevents natural progression through building types
+- **Age-0 progression spreadsheet updated:** `age_0_building_progression.csv` now uses actual simulation data from `temp/sim/sim-cheapest.csv` instead of estimates
+- **Corrected data sources:** building counts and production rates extracted directly from simulation CSV at 4 checkpoints (before each battle and end of age)
+- **Recommended fixes documented:** increase food ratios to 0.6-0.8, lower battle launch thresholds, remove target counts from priorities, add cheapest fallback
+
 ## 2026-09-25 — Age-0 balance documentation refresh
 
 - **Unit cost curves:** the default growth factor remains 5, with explicit Age-0
@@ -55,7 +68,7 @@
   (capture-phase click race) was fixed by inverting React state instead of
   reading `event.target.checked`.
 - **Performance and balance passes** over production, encounters and the
-  gold-mine chain; unit icons fixed.
+  goldMine chain; unit icons fixed.
 
 ## 2026-09-17 — Battles first playable, achievement polish
 
@@ -68,7 +81,7 @@
 ## 2026-09-16 — Attributes, achievements, units
 
 - **Attribute model** replaced the loose resource map (`family: amount |
-  capacity | derived`), unlocking derived stats (`clickPower`,
+capacity | derived`), unlocking derived stats (`clickPower`,
   `autoClickRate`).
 - **Achievements + statistics slice:** JSON-backed achievement registry,
   `checkAchievements()` in the tick, milestone chains, Stats tab.

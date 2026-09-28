@@ -262,7 +262,7 @@ const unitStatLabels: Record<string, string> = {
 };
 
 const destinationLabel = (destination: string): string => {
-  if (destination === "all-production") return "all production";
+  if (destination === "allProduction") return "all production";
   if (destination.endsWith("Capacity")) {
     return `${buildingNames.get(destination.slice(0, -8) as BuildingKey) ?? destination.slice(0, -8)} capacity`;
   }

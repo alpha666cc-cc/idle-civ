@@ -54,7 +54,7 @@ const clock = (seconds: number): string =>
  * that accrue per tick (it also holds science/military/metalwork/trade, which
  * AGENTS.md §9 notes are out of step with the `ProductionResourceKey` union).
  *
- * `people`, `house` and `town-hall` resolve to nothing: they take no workers and
+ * `people`, `house` and `townHall` resolve to nothing: they take no workers and
  * feed no resource, so they are absent from the summary block entirely.
  */
 const WORKER_KEYS = new Set(Object.keys(emptyWorkerAssignments()));
@@ -122,7 +122,7 @@ const factor = (value: ExpNumber | number | undefined): string => {
  *   - `resourceDrain`       → `food=-3/s` (consumption, hence the sign)
  *   - `capacityProvided`    → `houseCapacity=+30` (flat, not per second)
  *
- * A building can drive several things at once — town-hall provides five
+ * A building can drive several things at once — townHall provides five
  * capacities, barracks produces military *and* multiplies it — so the entries
  * are listed rather than summed into one lossy number.
  */
@@ -163,7 +163,7 @@ const header: string[] = [
   "battles_won",
 ];
 // The economy at a glance, before the research block. Only buildings that take
-// workers appear here — `people`, `house` and `town-hall` would be three columns
+// workers appear here — `people`, `house` and `townHall` would be three columns
 // of blanks, so they live in the cost block below instead.
 for (const building of WORKER_BUILDINGS) {
   header.push(

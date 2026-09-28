@@ -25,11 +25,11 @@ export type CapacityResourceKey =
   | "peopleCapacity"
   | "houseCapacity"
   | "farmCapacity"
-  | "lumber-yardCapacity"
+  | "lumberYardCapacity"
   | "quarryCapacity"
-  | "gold-mineCapacity"
+  | "goldMineCapacity"
   | "marketCapacity"
-  | "town-hallCapacity"
+  | "townHallCapacity"
   | "smithyCapacity"
   | "barracksCapacity"
   | "universityCapacity";
@@ -99,19 +99,19 @@ export const capacityDefinitions: AttributeDefinition[] = [
   new AttributeDefinition("houseCapacity", "House Capacity", "capacity"),
   new AttributeDefinition("farmCapacity", "Farm Capacity", "capacity"),
   new AttributeDefinition(
-    "lumber-yardCapacity",
+    "lumberYardCapacity",
     "Lumber Yard Capacity",
     "capacity",
   ),
   new AttributeDefinition("quarryCapacity", "Quarry Capacity", "capacity"),
   new AttributeDefinition(
-    "gold-mineCapacity",
+    "goldMineCapacity",
     "Gold Mine Capacity",
     "capacity",
   ),
   new AttributeDefinition("marketCapacity", "Market Capacity", "capacity"),
   new AttributeDefinition(
-    "town-hallCapacity",
+    "townHallCapacity",
     "Town Hall Capacity",
     "capacity",
   ),
@@ -165,7 +165,7 @@ derivedAttributeDefinitions.push(wastedResourcesDefinition);
  * the `power` field on the building definition (1 unless the data says
  * otherwise), raised by `attributeMultiplier` bonuses (e.g. an encounter
  * granting `farmPower` ×4). A production building is one that has an
- * `additiveMultiplier` or a `resourceProduction` effect — `house`, `town-hall`
+ * `additiveMultiplier` or a `resourceProduction` effect — `house`, `townHall`
  * and `people` (capacity/drain only) have none. Keys are `${buildingKey}Power`.
  */
 export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
@@ -245,11 +245,11 @@ export const emptyResourceAmounts = (): ResourceAmounts => ({
   peopleCapacity: ExpNumber.ZERO,
   houseCapacity: ExpNumber.ZERO,
   farmCapacity: ExpNumber.fromNumber(10),
-  "lumber-yardCapacity": ExpNumber.fromNumber(10),
+  "lumberYardCapacity": ExpNumber.fromNumber(10),
   quarryCapacity: ExpNumber.fromNumber(10),
-  "gold-mineCapacity": ExpNumber.fromNumber(10),
+  "goldMineCapacity": ExpNumber.fromNumber(10),
   marketCapacity: ExpNumber.fromNumber(10),
-  "town-hallCapacity": ExpNumber.fromNumber(1),
+  "townHallCapacity": ExpNumber.fromNumber(1),
   smithyCapacity: ExpNumber.fromNumber(10),
   barracksCapacity: ExpNumber.fromNumber(10),
   universityCapacity: ExpNumber.fromNumber(10),
@@ -279,11 +279,11 @@ export const emptyResourceFactors = (): ResourceFactorMap => ({
   peopleCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
   houseCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
   farmCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  "lumber-yardCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  "lumberYardCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
   quarryCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  "gold-mineCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  "goldMineCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
   marketCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  "town-hallCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  "townHallCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
   smithyCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
   barracksCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
   universityCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },

@@ -22,7 +22,7 @@ export type BonusType =
   | "costReductionFactor"; // destination cost's growth factor reduced multiplicatively (clamped at 1.01 minimum)
 
 /** A bonus targets an attribute (resource, capacity or stat) or a buyable id. */
-export type BuyableCostTarget = "all-buildings" | "all-units";
+export type BuyableCostTarget = "allBuildings" | "allUnits";
 
 export type BonusDestination = AttributeKey | BuyableCostTarget | string;
 

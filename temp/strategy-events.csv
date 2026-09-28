@@ -1,0 +1,16 @@
+strategy,sim_seconds,clock,type,id
+cheapest,991,16m31s,battle,age0_1_first_fire
+cheapest,2747,45m47s,battle,age0_2_wolf_pack
+cheapest,3491,58m11s,battle,age0_3_bronze_raid
+speedrun,2344,39m04s,battle,age0_1_first_fire
+speedrun,2898,48m18s,battle,age0_2_wolf_pack
+balanced,900,15m00s,battle,age0_1_first_fire
+balanced,2015,33m35s,battle,age0_2_wolf_pack
+military,1227,20m27s,battle,age0_1_first_fire
+military,2144,35m44s,battle,age0_2_wolf_pack
+production,858,14m18s,battle,age0_1_first_fire
+production,2371,39m31s,battle,age0_2_wolf_pack
+fast-age,945,15m45s,battle,age0_1_first_fire
+fast-age,2608,43m28s,battle,age0_2_wolf_pack
+economy,1411,23m31s,battle,age0_1_first_fire
+economy,2559,42m39s,battle,age0_2_wolf_pack

@@ -328,7 +328,7 @@ export class CivilizationState {
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
     workers: WorkerAssignments = emptyWorkerAssignments(),
-    builtBuildings: Partial<Record<BuildingKey, number>> = { "town-hall": 1 },
+    builtBuildings: Partial<Record<BuildingKey, number>> = { "townHall": 1 },
     resourceFactors: ResourceFactorMap = emptyResourceFactors(),
     buildingCostOverrides: BuildingCostOverrides = {},
     autoClicksPerSecond = 0,
@@ -370,12 +370,12 @@ export class CivilizationState {
     // Capacity grants are stored in the capacity resources. Establish the
     // base-plus-all-town-halls floor so the starting town hall is not skipped,
     // and so older saves that missed that first grant are repaired on load.
-    const townHallCount = this.buildingCount("town-hall");
+    const townHallCount = this.buildingCount("townHall");
     if (townHallCount > 0) {
       const defaults = emptyResourceAmounts();
       const count = ExpNumber.fromNumber(townHallCount);
       for (const effect of buildingDefinitions.find(
-        ({ key }) => key === "town-hall",
+        ({ key }) => key === "townHall",
       )?.effects.capacityProvided ?? []) {
         const targetKey = capacityKey(effect.building);
         const required = defaults[targetKey].add(effect.perBuilding.mul(count));
@@ -663,8 +663,35 @@ export class CivilizationState {
   }
 
   /**
+   * The price scale one resource carries from every age entered so far. Ages
+   * never regress, so the tally is derived from `enteredAges` rather than stored
+   * (the same rule `activeBonuses()` follows for age bonuses). Multipliers
+   * compose, so an age that doubles a price after one that tripled it leaves 6x.
+   *
+   * Returns exactly `ExpNumber.ONE` when no entered age touches the resource,
+   * which keeps the common (age0) path allocation-free. This is deliberately
+   * resource-generic rather than a research special case: it is the inverse of a
+   * bonus, and any future age can use it to re-anchor any price curve.
+   */
+  getResourceCostMultiplier(resource: string): ExpNumber {
+    let total = ExpNumber.ONE;
+    for (const ageId of this.enteredAges) {
+      for (const entry of findAgeDefinition(ageId)?.costMultipliers ?? []) {
+        if (entry.resource === resource) total = total.mul(entry.factor);
+      }
+    }
+    return total;
+  }
+
+  /**
    * The cost of `count` sequential research purchases after the current bought
    * count. This is the same global pricing curve as `getResearchNextCost()`.
+   *
+   * The science total is scaled by every entered age's science cost multiplier,
+   * applied here rather than at each call site so the Research panel, the
+   * Gamepedia, the strategies' affordability checks and the purchase itself can
+   * never quote different prices (the same guarantee `getBuildingCost()` gives
+   * the cost-reduction path, AGENTS.md §13.6).
    */
   getResearchCostForCount(count: number): BuildingCost[] {
     const purchases = Number.isFinite(count)
@@ -680,7 +707,10 @@ export class CivilizationState {
         ),
       );
     }
-    return [{ resource: "science", base: total, factor: 1 }];
+    const scale = this.getResourceCostMultiplier("science");
+    return scale.eq(ExpNumber.ONE)
+      ? [{ resource: "science", base: total, factor: 1 }]
+      : [{ resource: "science", base: total.mul(scale), factor: 1 }];
   }
 
   /**
@@ -909,7 +939,7 @@ export class CivilizationState {
     for (const [sourceId, bonus] of this.activeBonuses()) {
       const targetsResource = String(bonus.destination) === resourceKey;
       const targetsAllProduction =
-        bonus.destination === "all-production" && isProductionKey;
+        bonus.destination === "allProduction" && isProductionKey;
       if (!targetsResource && !targetsAllProduction) continue;
       if (bonus.type === "attributeMultiplier") {
         bonusFactors.multiplicative.push([sourceId, bonus.value]);
@@ -1128,7 +1158,7 @@ export class CivilizationState {
   /**
    * A production building's power stat (its `${key}Power` derived attribute). Base
    * 1; `attributeMultiplier` bonuses raise it. Buildings with no power attribute
-   * (house, town-hall, people) and any power that resolves to 0 read as 1 so the
+   * (house, townHall, people) and any power that resolves to 0 read as 1 so the
    * exponent never collapses a building's output.
    */
   buildingPower(buildingKey: BuildingKey): ExpNumber {
@@ -1177,9 +1207,9 @@ export class CivilizationState {
     const unit = findUnitDefinition(buyableId);
     const targetMatches = (destination: string): boolean => {
       if (destination === buyableId) return true;
-      if (isBuilding) return destination === "all-buildings";
-      if (!unit) return destination === "all-units";
-      if (destination === "all-units") return true;
+      if (isBuilding) return destination === "allBuildings";
+      if (!unit) return destination === "allUnits";
+      if (destination === "allUnits") return true;
       return (
         destination.startsWith("tag.") &&
         unit.tags.includes(destination.slice(4))
@@ -2664,7 +2694,7 @@ export class CivilizationState {
     // Apply age bonuses (data-driven path: ages.json → AgeDefinition.bonuses → engine).
     // Attribute-targeted bonuses fold into the existing factor model via addFactor(); they
     // are then re-derived from enteredAges inside activeBonuses() so getBuildingMax() /
-    // getFactors() / etc. pick them up. This replaces the old hardcoded "×10 town-hall
+    // getFactors() / etc. pick them up. This replaces the old hardcoded "×10 townHall
     // capacity" with a data-driven path.
     const afterBonuses = this.applyAttributeBonuses(age.bonuses, ageId, this);
 

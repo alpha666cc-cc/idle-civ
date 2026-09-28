@@ -93,13 +93,13 @@ describe("static content guids", () => {
   });
 
   it("snapshots only ids it knows", () => {
-    expect(snapshotGuids(["farm-enhancer-9", "no-such-thing"])).toEqual({
-      "farm-enhancer-9": entryGuidById.get("farm-enhancer-9"),
+    expect(snapshotGuids(["farmEnhancer9", "no-such-thing"])).toEqual({
+      "farmEnhancer9": entryGuidById.get("farmEnhancer9"),
     });
     expect(snapshotGuids([])).toEqual({});
   });
 
-  it("uses the shipped building and age-0 unit cost factors", () => {
+  it("uses the shipped building and age0 unit cost factors", () => {
     const buildingFactors = new Set(
       buildingDefinitions.flatMap(({ costs }) =>
         costs.map(({ factor }) => factor),
@@ -124,7 +124,7 @@ describe("static content guids", () => {
     }
   });
 
-  it("keeps the rebalanced age-0 bases, factors and town-hall costs", () => {
+  it("keeps the rebalanced age0 bases, factors and townHall costs", () => {
     const ageZeroUnits = unitDefinitions.filter(
       ({ age, costs }) => age === 0 && costs.length > 0,
     );
@@ -156,7 +156,7 @@ describe("static content guids", () => {
       [300_000, 3],
       [10_000, 3],
     ]);
-    // The same metalwork rebalance reached every later age-0 metalwork unit.
+    // The same metalwork rebalance reached every later age0 metalwork unit.
     expect(
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "chariot_bronze")!),
     ).toEqual([
@@ -198,7 +198,7 @@ describe("static content guids", () => {
       [10_000, 12],
       [7_500, 10],
     ]);
-    expect(costsFor("town-hall")).toEqual([
+    expect(costsFor("townHall")).toEqual([
       [10_000, 15],
       [7_500, 15],
       [12_500, 15],
@@ -206,7 +206,7 @@ describe("static content guids", () => {
   });
 
   it("keeps multiple capacity effect entries instead of overwriting them", () => {
-    const townHall = buildingDefinitions.find(({ key }) => key === "town-hall");
+    const townHall = buildingDefinitions.find(({ key }) => key === "townHall");
     expect(townHall).toBeDefined();
     expect(townHall?.effects.capacityProvided).toHaveLength(5);
     expect(
@@ -223,7 +223,7 @@ describe("static content guids", () => {
     const state = new CivilizationState(
       {
         ...emptyResourceAmounts(),
-        // The first town-hall's data-driven cost is affordable with this stock.
+        // The first townHall's data-driven cost is affordable with this stock.
         wood: ExpNumber.fromNumber(1_000_000),
         stone: ExpNumber.fromNumber(1_000_000),
         gold: ExpNumber.fromNumber(1_000_000),
@@ -242,7 +242,7 @@ describe("static content guids", () => {
       {},
     );
 
-    const after = state.build("town-hall", 1);
+    const after = state.build("townHall", 1);
     expect(after.getBuildingMax("barracks").toNumber()).toBeCloseTo(11, 9);
     expect(after.getBuildingMax("university").toNumber()).toBeCloseTo(11, 9);
   });
@@ -255,7 +255,7 @@ describe("static content guids", () => {
         universityCapacity: ExpNumber.fromNumber(19),
       },
       emptyWorkerAssignments(),
-      { "town-hall": 10 },
+      { "townHall": 10 },
       emptyResourceFactors(),
     );
 
@@ -267,7 +267,7 @@ describe("static content guids", () => {
     const stateAt89 = new CivilizationState(
       { ...emptyResourceAmounts(), food: ExpNumber.fromNumber(1e12) },
       emptyWorkerAssignments(),
-      { "town-hall": 1, people: 89 },
+      { "townHall": 1, people: 89 },
       emptyResourceFactors(),
       {},
       0,
@@ -283,7 +283,7 @@ describe("static content guids", () => {
     const stateAt90 = new CivilizationState(
       { ...emptyResourceAmounts(), food: ExpNumber.fromNumber(1e12) },
       emptyWorkerAssignments(),
-      { "town-hall": 1, people: 90 },
+      { "townHall": 1, people: 90 },
       emptyResourceFactors(),
       {},
       0,
@@ -310,7 +310,7 @@ describe("a fresh save survives a data-edit cycle", () => {
     new CivilizationState(
       { ...emptyResourceAmounts(), food: ExpNumber.fromNumber(1e12) },
       { ...emptyWorkerAssignments(), food: ExpNumber.fromNumber(2) },
-      { "town-hall": 1, farm: 2, house: 1 },
+      { "townHall": 1, farm: 2, house: 1 },
       emptyResourceFactors(),
       {},
       0,

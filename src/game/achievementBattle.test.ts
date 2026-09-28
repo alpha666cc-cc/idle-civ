@@ -10,7 +10,7 @@ import { ExpNumber } from "./expNumber";
 import { emptyStatistics } from "./statistics";
 import { unitStatKeys } from "./units";
 
-const achievementId = "a-good-legal-cheat-for-battle";
+const achievementId = "aGoodLegalCheatForBattle";
 const firstBattle = "age0_1_first_fire";
 const secondBattle = "age0_2_wolf_pack";
 
@@ -21,7 +21,7 @@ const armyState = (
   new CivilizationState(
     emptyResourceAmounts(),
     emptyWorkerAssignments(),
-    { "town-hall": 1 },
+    { "townHall": 1 },
     emptyResourceFactors(),
     {},
     0,

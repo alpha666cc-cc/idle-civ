@@ -355,11 +355,11 @@ const buildingPresentation: Record<string, { icon: LucideIcon; tone: string }> =
     people: { icon: Users, tone: "teal" },
     house: { icon: Building2, tone: "teal" },
     farm: { icon: Wheat, tone: "gold" },
-    "lumber-yard": { icon: Leaf, tone: "green" },
+    "lumberYard": { icon: Leaf, tone: "green" },
     quarry: { icon: Pickaxe, tone: "slate" },
-    "gold-mine": { icon: Coins, tone: "amber" },
+    "goldMine": { icon: Coins, tone: "amber" },
     market: { icon: Landmark, tone: "red" },
-    "town-hall": { icon: Castle, tone: "violet" },
+    "townHall": { icon: Castle, tone: "violet" },
     smithy: { icon: Hammer, tone: "orange" },
     barracks: { icon: Shield, tone: "blue" },
     university: { icon: BookOpen, tone: "pink" },
@@ -1118,7 +1118,7 @@ function App() {
       return `${bonus.destination} ×${fmt(bonus.value)}`;
     }
     if (bonus.type.startsWith("costReduction")) {
-      const isAllBuildings = bonus.destination === "all-buildings";
+      const isAllBuildings = bonus.destination === "allBuildings";
       const building = isAllBuildings
         ? undefined
         : buildingDefinitions.find(({ key }) => key === bonus.destination);

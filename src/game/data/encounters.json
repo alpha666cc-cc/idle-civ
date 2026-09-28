@@ -24,7 +24,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "town-hallCapacity",
+        "destination": "townHallCapacity",
         "value": 2
       },
       {
@@ -65,7 +65,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "town-hallCapacity",
+        "destination": "townHallCapacity",
         "value": 5
       },
       {

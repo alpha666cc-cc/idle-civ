@@ -70,7 +70,7 @@
   },
   {
     "guid": "01d9b552-c2c9-5f62-90db-d242290b9ae6",
-    "key": "lumber-yard",
+    "key": "lumberYard",
     "name": "Lumber Yard",
     "description": "help gather wood",
     "costs": [
@@ -119,7 +119,7 @@
   },
   {
     "guid": "92a4c82c-27f5-53d4-ba99-dd0a8d9b6673",
-    "key": "gold-mine",
+    "key": "goldMine",
     "name": "Gold Mine",
     "description": "help gold miner",
     "costs": [
@@ -146,7 +146,7 @@
   },
   {
     "guid": "c0c8a597-3080-599b-b9e1-c182ff9297b6",
-    "key": "town-hall",
+    "key": "townHall",
     "name": "Town Hall",
     "description": "Increase house capacity",
     "costs": [
@@ -306,7 +306,7 @@
     },
     "unlock": {
       "source": "building-count",
-      "building": "town-hall",
+      "building": "townHall",
       "threshold": 5
     }
   },
@@ -338,7 +338,7 @@
     },
     "unlock": {
       "source": "age",
-      "ageId": "age-1"
+      "ageId": "age1"
     }
   }
 ]

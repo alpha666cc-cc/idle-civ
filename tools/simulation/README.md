@@ -96,8 +96,8 @@ cheapest-purchase baseline and does not use the military advisor.
 # Run balanced strategy for 1 hour
 npm run simulate -- --strategy balanced --max-time 3600
 
-# Reach age-1 with production strategy
-npm run simulate -- --strategy production --objective ageReach --age age-1
+# Reach age1 with production strategy
+npm run simulate -- --strategy production --objective ageReach --age age1
 
 # Build 5 farms with military strategy
 npm run simulate -- --strategy military --objective buildingCount --building farm --target 5
@@ -112,8 +112,8 @@ npm run simulate -- --strategy fast-age --objective battleVictory --battle age0_
 # Compare all strategies for 1 hour
 npm run simulate:compare -- --max-time 3600
 
-# Compare specific strategies to reach age-1
-npm run simulate:compare -- --strategies balanced,production --objective ageReach --age age-1
+# Compare specific strategies to reach age1
+npm run simulate:compare -- --strategies balanced,production --objective ageReach --age age1
 
 # Run evolutionary tournament for 5 generations
 npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
@@ -127,7 +127,7 @@ npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
 - `--objective <type>`: Objective type (buildingCount, ageReach, battleVictory, timeLimit)
 - `--target <value>`: Target value for objective (default: 3600)
 - `--building <key>`: Building key for buildingCount objective
-- `--age <id>`: Age ID for ageReach objective (e.g., age-1)
+- `--age <id>`: Age ID for ageReach objective (e.g., age1)
 - `--battle <id>`: Encounter ID for battleVictory objective
 - `--max-time <seconds>`: Maximum simulation time (default: 3600)
 - `--actions-per-second <n>`: Strategy actions per simulated second (default: 5)
@@ -230,7 +230,7 @@ class MyCustomStrategy implements SimulationStrategy {
 
 ## Balance Testing Workflow
 
-1. **Define objective**: What do you want to test? (e.g., reach age-1 in under 10 minutes)
+1. **Define objective**: What do you want to test? (e.g., reach age1 in under 10 minutes)
 2. **Choose strategies**: Select relevant strategies or create custom ones
 3. **Run simulations**: Execute with desired configuration
 4. **Analyze results**: Review snapshots, production rates, building counts

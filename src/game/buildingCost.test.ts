@@ -11,7 +11,7 @@ import { researchDefinitions } from "./research";
 import { upgradeDefinitions } from "./upgrades";
 import { deserializeStatistics, serializeStatistics } from "./saveSystem";
 
-/** A fresh age-0 state with the same pile of food and wood. */
+/** A fresh age0 state with the same pile of food and wood. */
 const stateWith = (stock = 1e12): CivilizationState =>
   new CivilizationState(
     {
@@ -159,12 +159,12 @@ describe("resources spent", () => {
     );
 
   const richBuildings = {
-    "town-hall": 1,
+    "townHall": 1,
     house: 10,
     farm: 10,
-    "lumber-yard": 10,
+    "lumberYard": 10,
     quarry: 10,
-    "gold-mine": 10,
+    "goldMine": 10,
   };
 
   it("starts empty", () => {

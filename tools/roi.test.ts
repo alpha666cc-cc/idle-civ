@@ -50,7 +50,7 @@ const makeState = ({
   return new CivilizationState(
     amounts,
     assignments,
-    { "town-hall": 1, ...buildings, people },
+    { "townHall": 1, ...buildings, people },
     emptyResourceFactors(),
     {},
     0,
@@ -71,7 +71,7 @@ describe("simulation ROI evaluation", () => {
     });
     const evaluation = getBuyableRoi(state, {
       kind: "upgrade",
-      id: "farm-enhancer-9",
+      id: "farmEnhancer9",
     });
 
     expect(evaluation).not.toBeNull();
@@ -89,12 +89,12 @@ describe("simulation ROI evaluation", () => {
     });
     const normal = getBuyableRoi(
       state,
-      { kind: "upgrade", id: "farm-enhancer-9" },
+      { kind: "upgrade", id: "farmEnhancer9" },
       { upgradeMultiplier: 1 },
     );
     const boosted = getBuyableRoi(
       state,
-      { kind: "upgrade", id: "farm-enhancer-9" },
+      { kind: "upgrade", id: "farmEnhancer9" },
       { upgradeMultiplier: 4 },
     );
 
@@ -132,7 +132,7 @@ describe("simulation ROI evaluation", () => {
     });
     const evaluation = getBuyableRoi(state, {
       kind: "upgrade",
-      id: "farm-enhancer-9",
+      id: "farmEnhancer9",
     });
 
     expect(evaluation?.affordable).toBe(false);
@@ -152,7 +152,7 @@ describe("simulation ROI evaluation", () => {
       candidates.some(
         (candidate) =>
           candidate.buyable.kind === "upgrade" &&
-          candidate.buyable.id === "farm-enhancer-9",
+          candidate.buyable.id === "farmEnhancer9",
       ),
     ).toBe(true);
     expect(candidates.some((candidate) => candidate.buyable.kind === "unit")).toBe(

@@ -6,7 +6,7 @@
  * production-building-count decades — the ten rows of the production-exponent
  * progression. Building values are derived exactly from the `pe` targets via
  * `k = 10^((pe - 1) / sqrt(pb))`: the first four rows hold flat at 25 (pe
- * noise there is rounding only), then the age-3 cliff and the asymptotic decay.
+ * noise there is rounding only), then the age3 cliff and the asymptotic decay.
  *
  * This module is intentionally NOT wired into `civilizationState.costSeries()`.
  * Live costs are per-entry JSON data: building factors currently include
@@ -17,7 +17,7 @@
  * docs/game-scope.md section 3.
  */
 
-/** Growth factor `k` per step for buildings: 25 flat, age-3 cliff, decay to ~1.0746. */
+/** Growth factor `k` per step for buildings: 25 flat, age3 cliff, decay to ~1.0746. */
 export const buildingFactorSchedule: readonly number[] = [
   25, 25, 25, 25, 8.128, 2.833, 1.774, 1.344, 1.155, 1.0745,
 ];

@@ -5,7 +5,10 @@
 
 import { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
-import { buildingDefinitions, type BuildingKey } from "../src/game/buildings.js";
+import {
+  buildingDefinitions,
+  type BuildingKey,
+} from "../src/game/buildings.js";
 import { encounterDefinitions } from "../src/game/encounters.js";
 import {
   producerResourceKeys,
@@ -219,7 +222,10 @@ export class GameSimulation {
     this.recordNewEvents("research", this.state.boughtResearch);
   }
 
-  private recordNewEvents(type: SimulationEventType, ids: readonly string[]): void {
+  private recordNewEvents(
+    type: SimulationEventType,
+    ids: readonly string[],
+  ): void {
     for (const id of ids) {
       const key = `${type}:${id}`;
       if (this.seenEvents.has(key)) continue;
@@ -233,6 +239,9 @@ export class GameSimulation {
         population: this.state.population.toNumber(),
       });
       this.log(`event ${key} at ${this.gameTime}s`);
+      if (type === "achievement") {
+        this.log(`*** ACHIEVEMENT UNLOCKED: ${id} at ${this.gameTime}s ***`);
+      }
     }
   }
 
@@ -360,8 +369,7 @@ export class GameSimulation {
         });
         if (!action) break;
         this.executeAction(action);
-        remainingActions =
-          action.type === "gather" ? 0 : remainingActions - 1;
+        remainingActions = action.type === "gather" ? 0 : remainingActions - 1;
         if (this.checkObjective()) {
           return this.createResult(true, "Objective reached");
         }
@@ -471,7 +479,10 @@ export class GameSimulation {
       }
       case "enterAge": {
         if (!this.state.canEnterAge(action.ageId)) {
-          this.log(`enterAge ${action.ageId}`, "requirements not met (skipped)");
+          this.log(
+            `enterAge ${action.ageId}`,
+            "requirements not met (skipped)",
+          );
           break;
         }
         const agesBefore = this.state.enteredAges.length;
@@ -518,15 +529,12 @@ export class GameSimulation {
     building: BuildingKey,
     count: number,
   ): CivilizationState {
-    let state = this.state;
-    for (let i = 0; i < count; i++) {
-      if (state.canBuild(building)) {
-        state = state.build(building);
-      } else {
-        break;
-      }
+    const maxAffordable = this.state.getMaxAffordableBuildings(building);
+    const actualCount = Math.min(count, maxAffordable);
+    if (actualCount > 0) {
+      return this.state.build(building, actualCount);
     }
-    return state;
+    return this.state;
   }
 
   /**
@@ -537,16 +545,16 @@ export class GameSimulation {
     state: CivilizationState;
     count: number;
   } {
-    let state = this.state;
-    let count = 0;
-
-    while (state.canBuild(building)) {
-      state = state.build(building);
-      count++;
-      if (count >= 100) break; // Safety limit
+    const maxAffordable = this.state.getMaxAffordableBuildings(building);
+    // Safety limit of 100 max in one go to match old logic
+    const actualCount = Math.min(maxAffordable, 100);
+    if (actualCount > 0) {
+      return {
+        state: this.state.build(building, actualCount),
+        count: actualCount,
+      };
     }
-
-    return { state, count };
+    return { state: this.state, count: 0 };
   }
 
   /**

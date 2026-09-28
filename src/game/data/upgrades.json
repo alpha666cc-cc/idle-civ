@@ -1,7 +1,7 @@
 [
   {
     "guid": "f6aeeb06-974d-503e-a188-5a3cf67c277e",
-    "key": "farm-enhancer-9",
+    "key": "farmEnhancer9",
     "name": "Enhanced Farm I",
     "description": "increase Farm capacity and food production",
     "building": "farm",
@@ -41,7 +41,7 @@
   },
   {
     "guid": "aecded6c-aabc-5af3-91e7-6193973a7472",
-    "key": "farm-enhancer-98",
+    "key": "farmEnhancer98",
     "name": "Enhanced Farm II",
     "description": "increase Farm capacity and food production",
     "building": "farm",
@@ -81,7 +81,7 @@
   },
   {
     "guid": "de22fd64-35a9-5b65-b09f-28978794d893",
-    "key": "farm-enhancer-980",
+    "key": "farmEnhancer980",
     "name": "Enhanced Farm III",
     "description": "increase Farm capacity and food production",
     "building": "farm",
@@ -131,7 +131,7 @@
   },
   {
     "guid": "b10e2b2c-5b38-59da-aba8-2fd9817d50f5",
-    "key": "farm-enhancer-9800",
+    "key": "farmEnhancer9800",
     "name": "Enhanced Farm IV",
     "description": "increase Farm capacity and food production",
     "building": "farm",
@@ -181,7 +181,7 @@
   },
   {
     "guid": "b4e96630-eeb5-5cc4-94ed-83ca91c6b8cf",
-    "key": "farm-enhancer-98000",
+    "key": "farmEnhancer98000",
     "name": "Enhanced Farm V",
     "description": "increase Farm capacity and food production",
     "building": "farm",
@@ -231,7 +231,7 @@
   },
   {
     "guid": "a60d975f-9c60-54fc-98af-0df3e028d962",
-    "key": "farm-enhancer-980000",
+    "key": "farmEnhancer980000",
     "name": "Enhanced Farm VI",
     "description": "increase Farm capacity and food production",
     "building": "farm",
@@ -281,7 +281,7 @@
   },
   {
     "guid": "c48c1463-1498-539e-8237-17c0157c3246",
-    "key": "farm-enhancer-9800000",
+    "key": "farmEnhancer9800000",
     "name": "Enhanced Farm VII",
     "description": "increase Farm capacity and food production",
     "building": "farm",
@@ -331,7 +331,7 @@
   },
   {
     "guid": "beda5b0a-12a0-588c-bdc9-bb552c06f5ba",
-    "key": "farm-enhancer-98000000",
+    "key": "farmEnhancer98000000",
     "name": "Enhanced Farm VIII",
     "description": "increase Farm capacity and food production",
     "building": "farm",
@@ -381,10 +381,10 @@
   },
   {
     "guid": "0887c264-decb-5922-be04-aabf82795993",
-    "key": "lumber-yard-enhancer-9",
+    "key": "lumberYardEnhancer9",
     "name": "Enhanced Lumber Yard I",
     "description": "increase Lumber Yard capacity and wood production",
-    "building": "lumber-yard",
+    "building": "lumberYard",
     "resource": "wood",
     "threshold": 9,
     "tier": 0,
@@ -403,13 +403,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumber-yardPower",
+        "destination": "lumberYardPower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "lumber-yardCapacity",
+        "destination": "lumberYardCapacity",
         "value": 10
       },
       {
@@ -421,10 +421,10 @@
   },
   {
     "guid": "048e3910-4762-55fe-ba40-ba0b9b1f1677",
-    "key": "lumber-yard-enhancer-98",
+    "key": "lumberYardEnhancer98",
     "name": "Enhanced Lumber Yard II",
     "description": "increase Lumber Yard capacity and wood production",
-    "building": "lumber-yard",
+    "building": "lumberYard",
     "resource": "wood",
     "threshold": 98,
     "tier": 1,
@@ -443,13 +443,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumber-yardPower",
+        "destination": "lumberYardPower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "lumber-yardCapacity",
+        "destination": "lumberYardCapacity",
         "value": 10
       },
       {
@@ -461,10 +461,10 @@
   },
   {
     "guid": "cc0b8a5a-3900-53f7-8f5d-9a3fed3f0fa0",
-    "key": "lumber-yard-enhancer-980",
+    "key": "lumberYardEnhancer980",
     "name": "Enhanced Lumber Yard III",
     "description": "increase Lumber Yard capacity and wood production",
-    "building": "lumber-yard",
+    "building": "lumberYard",
     "resource": "wood",
     "threshold": 980,
     "tier": 2,
@@ -488,13 +488,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumber-yardPower",
+        "destination": "lumberYardPower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "lumber-yardCapacity",
+        "destination": "lumberYardCapacity",
         "value": 10
       },
       {
@@ -504,17 +504,17 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "lumber-yard",
+        "destination": "lumberYard",
         "value": 0.5
       }
     ]
   },
   {
     "guid": "f9c61889-7423-5aab-8d47-41e81ff0de98",
-    "key": "lumber-yard-enhancer-9800",
+    "key": "lumberYardEnhancer9800",
     "name": "Enhanced Lumber Yard IV",
     "description": "increase Lumber Yard capacity and wood production",
-    "building": "lumber-yard",
+    "building": "lumberYard",
     "resource": "wood",
     "threshold": 9800,
     "tier": 3,
@@ -538,13 +538,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumber-yardPower",
+        "destination": "lumberYardPower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "lumber-yardCapacity",
+        "destination": "lumberYardCapacity",
         "value": 10
       },
       {
@@ -554,17 +554,17 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "lumber-yard",
+        "destination": "lumberYard",
         "value": 0.5
       }
     ]
   },
   {
     "guid": "440a6b51-76d2-5e0a-a66b-00812b1e1ce3",
-    "key": "lumber-yard-enhancer-98000",
+    "key": "lumberYardEnhancer98000",
     "name": "Enhanced Lumber Yard V",
     "description": "increase Lumber Yard capacity and wood production",
-    "building": "lumber-yard",
+    "building": "lumberYard",
     "resource": "wood",
     "threshold": 98000,
     "tier": 4,
@@ -588,13 +588,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumber-yardPower",
+        "destination": "lumberYardPower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "lumber-yardCapacity",
+        "destination": "lumberYardCapacity",
         "value": 10
       },
       {
@@ -604,17 +604,17 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "lumber-yard",
+        "destination": "lumberYard",
         "value": 0.5
       }
     ]
   },
   {
     "guid": "576300e6-a295-598e-a3bf-03f2aa8e5b00",
-    "key": "lumber-yard-enhancer-980000",
+    "key": "lumberYardEnhancer980000",
     "name": "Enhanced Lumber Yard VI",
     "description": "increase Lumber Yard capacity and wood production",
-    "building": "lumber-yard",
+    "building": "lumberYard",
     "resource": "wood",
     "threshold": 980000,
     "tier": 5,
@@ -638,13 +638,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumber-yardPower",
+        "destination": "lumberYardPower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "lumber-yardCapacity",
+        "destination": "lumberYardCapacity",
         "value": 10
       },
       {
@@ -654,17 +654,17 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "lumber-yard",
+        "destination": "lumberYard",
         "value": 0.01
       }
     ]
   },
   {
     "guid": "557bf92b-7e72-5b78-a379-be784d942f8c",
-    "key": "lumber-yard-enhancer-9800000",
+    "key": "lumberYardEnhancer9800000",
     "name": "Enhanced Lumber Yard VII",
     "description": "increase Lumber Yard capacity and wood production",
-    "building": "lumber-yard",
+    "building": "lumberYard",
     "resource": "wood",
     "threshold": 9800000,
     "tier": 6,
@@ -688,13 +688,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumber-yardPower",
+        "destination": "lumberYardPower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "lumber-yardCapacity",
+        "destination": "lumberYardCapacity",
         "value": 10
       },
       {
@@ -704,17 +704,17 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "lumber-yard",
+        "destination": "lumberYard",
         "value": 0.01
       }
     ]
   },
   {
     "guid": "03e3a780-6d94-5fa9-8ac5-8ce78610f68c",
-    "key": "lumber-yard-enhancer-98000000",
+    "key": "lumberYardEnhancer98000000",
     "name": "Enhanced Lumber Yard VIII",
     "description": "increase Lumber Yard capacity and wood production",
-    "building": "lumber-yard",
+    "building": "lumberYard",
     "resource": "wood",
     "threshold": 98000000,
     "tier": 7,
@@ -738,13 +738,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumber-yardPower",
+        "destination": "lumberYardPower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "lumber-yardCapacity",
+        "destination": "lumberYardCapacity",
         "value": 10
       },
       {
@@ -754,14 +754,14 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "lumber-yard",
+        "destination": "lumberYard",
         "value": 0.01
       }
     ]
   },
   {
     "guid": "f32e8c41-dee6-5ae0-bc0f-0f5cda4c064d",
-    "key": "quarry-enhancer-9",
+    "key": "quarryEnhancer9",
     "name": "Enhanced Quarry I",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
@@ -796,7 +796,7 @@
   },
   {
     "guid": "7a666ca9-464f-5adb-9364-b638f6845b87",
-    "key": "quarry-enhancer-98",
+    "key": "quarryEnhancer98",
     "name": "Enhanced Quarry II",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
@@ -831,7 +831,7 @@
   },
   {
     "guid": "6eb570c1-52c9-5f71-b828-8194b6cf0d21",
-    "key": "quarry-enhancer-980",
+    "key": "quarryEnhancer980",
     "name": "Enhanced Quarry III",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
@@ -876,7 +876,7 @@
   },
   {
     "guid": "a05c924b-12c9-538f-90c8-d3fd04f12122",
-    "key": "quarry-enhancer-9800",
+    "key": "quarryEnhancer9800",
     "name": "Enhanced Quarry IV",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
@@ -921,7 +921,7 @@
   },
   {
     "guid": "e3ee482a-7236-5580-a35d-8e4bbf957508",
-    "key": "quarry-enhancer-98000",
+    "key": "quarryEnhancer98000",
     "name": "Enhanced Quarry V",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
@@ -966,7 +966,7 @@
   },
   {
     "guid": "13a53d24-681d-58c9-a452-cd7d6a68c302",
-    "key": "quarry-enhancer-980000",
+    "key": "quarryEnhancer980000",
     "name": "Enhanced Quarry VI",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
@@ -1011,7 +1011,7 @@
   },
   {
     "guid": "01ebb713-bf9a-5ee8-a83a-35e282d43354",
-    "key": "quarry-enhancer-9800000",
+    "key": "quarryEnhancer9800000",
     "name": "Enhanced Quarry VII",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
@@ -1056,7 +1056,7 @@
   },
   {
     "guid": "9e586797-aac0-5c9c-91b1-c06ad97868a8",
-    "key": "quarry-enhancer-98000000",
+    "key": "quarryEnhancer98000000",
     "name": "Enhanced Quarry VIII",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
@@ -1101,10 +1101,10 @@
   },
   {
     "guid": "5ef7957a-4ffe-5a59-93e3-a24caab39547",
-    "key": "gold-mine-enhancer-9",
+    "key": "goldMineEnhancer9",
     "name": "Enhanced Gold Mine I",
     "description": "increase Gold Mine capacity and gold production",
-    "building": "gold-mine",
+    "building": "goldMine",
     "resource": "gold",
     "threshold": 9,
     "tier": 0,
@@ -1123,13 +1123,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "gold-minePower",
+        "destination": "goldMinePower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "gold-mineCapacity",
+        "destination": "goldMineCapacity",
         "value": 10
       },
       {
@@ -1141,10 +1141,10 @@
   },
   {
     "guid": "da2c4410-3a26-540d-9781-1ef6b81fa023",
-    "key": "gold-mine-enhancer-98",
+    "key": "goldMineEnhancer98",
     "name": "Enhanced Gold Mine II",
     "description": "increase Gold Mine capacity and gold production",
-    "building": "gold-mine",
+    "building": "goldMine",
     "resource": "gold",
     "threshold": 98,
     "tier": 1,
@@ -1163,13 +1163,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "gold-minePower",
+        "destination": "goldMinePower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "gold-mineCapacity",
+        "destination": "goldMineCapacity",
         "value": 10
       },
       {
@@ -1181,10 +1181,10 @@
   },
   {
     "guid": "f8504d09-7b2a-569d-ac4c-5d1e30b9843d",
-    "key": "gold-mine-enhancer-980",
+    "key": "goldMineEnhancer980",
     "name": "Enhanced Gold Mine III",
     "description": "increase Gold Mine capacity and gold production",
-    "building": "gold-mine",
+    "building": "goldMine",
     "resource": "gold",
     "threshold": 980,
     "tier": 2,
@@ -1208,13 +1208,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "gold-minePower",
+        "destination": "goldMinePower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "gold-mineCapacity",
+        "destination": "goldMineCapacity",
         "value": 10
       },
       {
@@ -1224,17 +1224,17 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "gold-mine",
+        "destination": "goldMine",
         "value": 0.5
       }
     ]
   },
   {
     "guid": "a1e72619-0d40-5340-bd99-306ceb88b556",
-    "key": "gold-mine-enhancer-9800",
+    "key": "goldMineEnhancer9800",
     "name": "Enhanced Gold Mine IV",
     "description": "increase Gold Mine capacity and gold production",
-    "building": "gold-mine",
+    "building": "goldMine",
     "resource": "gold",
     "threshold": 9800,
     "tier": 3,
@@ -1258,13 +1258,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "gold-minePower",
+        "destination": "goldMinePower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "gold-mineCapacity",
+        "destination": "goldMineCapacity",
         "value": 10
       },
       {
@@ -1274,17 +1274,17 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "gold-mine",
+        "destination": "goldMine",
         "value": 0.5
       }
     ]
   },
   {
     "guid": "dbf5549f-2f7b-5cb4-b879-7a0447892f46",
-    "key": "gold-mine-enhancer-98000",
+    "key": "goldMineEnhancer98000",
     "name": "Enhanced Gold Mine V",
     "description": "increase Gold Mine capacity and gold production",
-    "building": "gold-mine",
+    "building": "goldMine",
     "resource": "gold",
     "threshold": 98000,
     "tier": 4,
@@ -1308,13 +1308,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "gold-minePower",
+        "destination": "goldMinePower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "gold-mineCapacity",
+        "destination": "goldMineCapacity",
         "value": 10
       },
       {
@@ -1324,17 +1324,17 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "gold-mine",
+        "destination": "goldMine",
         "value": 0.5
       }
     ]
   },
   {
     "guid": "8df7ba3d-2393-5121-b4cc-14dd597dad4a",
-    "key": "gold-mine-enhancer-980000",
+    "key": "goldMineEnhancer980000",
     "name": "Enhanced Gold Mine VI",
     "description": "increase Gold Mine capacity and gold production",
-    "building": "gold-mine",
+    "building": "goldMine",
     "resource": "gold",
     "threshold": 980000,
     "tier": 5,
@@ -1358,13 +1358,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "gold-minePower",
+        "destination": "goldMinePower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "gold-mineCapacity",
+        "destination": "goldMineCapacity",
         "value": 10
       },
       {
@@ -1374,17 +1374,17 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "gold-mine",
+        "destination": "goldMine",
         "value": 0.01
       }
     ]
   },
   {
     "guid": "66279396-f1ba-58f8-8e1c-223c14ea9038",
-    "key": "gold-mine-enhancer-9800000",
+    "key": "goldMineEnhancer9800000",
     "name": "Enhanced Gold Mine VII",
     "description": "increase Gold Mine capacity and gold production",
-    "building": "gold-mine",
+    "building": "goldMine",
     "resource": "gold",
     "threshold": 9800000,
     "tier": 6,
@@ -1408,13 +1408,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "gold-minePower",
+        "destination": "goldMinePower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "gold-mineCapacity",
+        "destination": "goldMineCapacity",
         "value": 10
       },
       {
@@ -1424,17 +1424,17 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "gold-mine",
+        "destination": "goldMine",
         "value": 0.01
       }
     ]
   },
   {
     "guid": "7c61752a-8934-56a3-8fe8-4aa7867b2ba8",
-    "key": "gold-mine-enhancer-98000000",
+    "key": "goldMineEnhancer98000000",
     "name": "Enhanced Gold Mine VIII",
     "description": "increase Gold Mine capacity and gold production",
-    "building": "gold-mine",
+    "building": "goldMine",
     "resource": "gold",
     "threshold": 98000000,
     "tier": 7,
@@ -1458,13 +1458,13 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "gold-minePower",
+        "destination": "goldMinePower",
         "value": 1
       },
 
       {
         "type": "attributeMultiplier",
-        "destination": "gold-mineCapacity",
+        "destination": "goldMineCapacity",
         "value": 10
       },
       {
@@ -1474,14 +1474,14 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "gold-mine",
+        "destination": "goldMine",
         "value": 0.01
       }
     ]
   },
   {
     "guid": "b7c1f6ab-bc9e-56ac-80d0-61d032f12a9b",
-    "key": "barracks-enhancer-9",
+    "key": "barracksEnhancer9",
     "name": "Enhanced Barracks I",
     "description": "increase Barracks power and military production",
     "building": "barracks",
@@ -1520,7 +1520,7 @@
   },
   {
     "guid": "0d313484-c00d-5920-babc-ccfd3795676c",
-    "key": "barracks-enhancer-98",
+    "key": "barracksEnhancer98",
     "name": "Enhanced Barracks II",
     "description": "increase Barracks power and military production",
     "building": "barracks",
@@ -1559,7 +1559,7 @@
   },
   {
     "guid": "9fbb389b-ef0d-535e-ac0c-b53b342c553c",
-    "key": "barracks-enhancer-980",
+    "key": "barracksEnhancer980",
     "name": "Enhanced Barracks III",
     "description": "increase Barracks power and military production",
     "building": "barracks",
@@ -1608,7 +1608,7 @@
   },
   {
     "guid": "7ce4a445-43ed-5f41-84a9-6b9cd13d39bc",
-    "key": "barracks-enhancer-9800",
+    "key": "barracksEnhancer9800",
     "name": "Enhanced Barracks IV",
     "description": "increase Barracks power and military production",
     "building": "barracks",
@@ -1657,7 +1657,7 @@
   },
   {
     "guid": "fa178be3-a668-5267-8661-880d7d07750c",
-    "key": "barracks-enhancer-98000",
+    "key": "barracksEnhancer98000",
     "name": "Enhanced Barracks V",
     "description": "increase Barracks power and military production",
     "building": "barracks",
@@ -1706,7 +1706,7 @@
   },
   {
     "guid": "5b5bea76-baae-5d21-b00b-689ade15785b",
-    "key": "barracks-enhancer-980000",
+    "key": "barracksEnhancer980000",
     "name": "Enhanced Barracks VI",
     "description": "increase Barracks power and military production",
     "building": "barracks",
@@ -1755,7 +1755,7 @@
   },
   {
     "guid": "af92382b-4e4f-5ae6-9fce-76436cf6212a",
-    "key": "barracks-enhancer-9800000",
+    "key": "barracksEnhancer9800000",
     "name": "Enhanced Barracks VII",
     "description": "increase Barracks power and military production",
     "building": "barracks",
@@ -1804,7 +1804,7 @@
   },
   {
     "guid": "626e6407-02f2-5184-be81-4843158d0ca3",
-    "key": "barracks-enhancer-98000000",
+    "key": "barracksEnhancer98000000",
     "name": "Enhanced Barracks VIII",
     "description": "increase Barracks power and military production",
     "building": "barracks",
@@ -1853,7 +1853,7 @@
   },
   {
     "guid": "aeef42a7-a3b5-5457-9db8-f1226560f72f",
-    "key": "university-enhancer-9",
+    "key": "universityEnhancer9",
     "name": "Enhanced University I",
     "description": "increase University power and science production",
     "building": "university",
@@ -1892,7 +1892,7 @@
   },
   {
     "guid": "259abe69-e7e5-5d7f-90fc-1bc571473896",
-    "key": "university-enhancer-98",
+    "key": "universityEnhancer98",
     "name": "Enhanced University II",
     "description": "increase University power and science production",
     "building": "university",
@@ -1931,7 +1931,7 @@
   },
   {
     "guid": "0eb0b712-fcdc-5431-8b7c-f11f3f117ce9",
-    "key": "university-enhancer-980",
+    "key": "universityEnhancer980",
     "name": "Enhanced University III",
     "description": "increase University power and science production",
     "building": "university",
@@ -1980,7 +1980,7 @@
   },
   {
     "guid": "7e79eb8b-18a3-5793-aeee-e79864061d60",
-    "key": "university-enhancer-9800",
+    "key": "universityEnhancer9800",
     "name": "Enhanced University IV",
     "description": "increase University power and science production",
     "building": "university",
@@ -2029,7 +2029,7 @@
   },
   {
     "guid": "1c46571f-4f29-5561-adc3-ae0de236178a",
-    "key": "university-enhancer-98000",
+    "key": "universityEnhancer98000",
     "name": "Enhanced University V",
     "description": "increase University power and science production",
     "building": "university",
@@ -2078,7 +2078,7 @@
   },
   {
     "guid": "4e302725-9e09-53ec-bd78-cfd637201b11",
-    "key": "university-enhancer-980000",
+    "key": "universityEnhancer980000",
     "name": "Enhanced University VI",
     "description": "increase University power and science production",
     "building": "university",
@@ -2127,7 +2127,7 @@
   },
   {
     "guid": "4932448c-1041-56bb-bf3b-93448c2b5a02",
-    "key": "university-enhancer-9800000",
+    "key": "universityEnhancer9800000",
     "name": "Enhanced University VII",
     "description": "increase University power and science production",
     "building": "university",
@@ -2176,7 +2176,7 @@
   },
   {
     "guid": "10e88098-923c-58e5-98d3-67281a993ab4",
-    "key": "university-enhancer-98000000",
+    "key": "universityEnhancer98000000",
     "name": "Enhanced University VIII",
     "description": "increase University power and science production",
     "building": "university",
@@ -2225,7 +2225,7 @@
   },
   {
     "guid": "ec9baaea-363c-5cd7-b8bc-d347386b2b04",
-    "key": "smithy-enhancer-9",
+    "key": "smithyEnhancer9",
     "name": "Enhanced Smithy I",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
@@ -2259,7 +2259,7 @@
   },
   {
     "guid": "fc6b0b32-98a1-5c47-bc73-254c514068aa",
-    "key": "smithy-enhancer-98",
+    "key": "smithyEnhancer98",
     "name": "Enhanced Smithy II",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
@@ -2293,7 +2293,7 @@
   },
   {
     "guid": "7f909489-e4c1-5afe-a7e2-b28b8372eaa2",
-    "key": "smithy-enhancer-980",
+    "key": "smithyEnhancer980",
     "name": "Enhanced Smithy III",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
@@ -2337,7 +2337,7 @@
   },
   {
     "guid": "25c019e1-aa0d-5746-b623-956534cec3db",
-    "key": "smithy-enhancer-9800",
+    "key": "smithyEnhancer9800",
     "name": "Enhanced Smithy IV",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
@@ -2381,7 +2381,7 @@
   },
   {
     "guid": "9a37e1a4-d8e9-55e1-96fc-d0f49cb9efab",
-    "key": "smithy-enhancer-98000",
+    "key": "smithyEnhancer98000",
     "name": "Enhanced Smithy V",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
@@ -2425,7 +2425,7 @@
   },
   {
     "guid": "cbbc450a-30fa-508f-bd08-6c5f3f6989a2",
-    "key": "smithy-enhancer-980000",
+    "key": "smithyEnhancer980000",
     "name": "Enhanced Smithy VI",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
@@ -2469,7 +2469,7 @@
   },
   {
     "guid": "b7ecd9f2-7208-5fc5-adf3-879d32f17b30",
-    "key": "smithy-enhancer-9800000",
+    "key": "smithyEnhancer9800000",
     "name": "Enhanced Smithy VII",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
@@ -2513,7 +2513,7 @@
   },
   {
     "guid": "d2c73607-97b5-594f-901e-3f179377dc43",
-    "key": "smithy-enhancer-98000000",
+    "key": "smithyEnhancer98000000",
     "name": "Enhanced Smithy VIII",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
@@ -2557,7 +2557,7 @@
   },
   {
     "guid": "d130c2ba-1f61-5ee8-99de-bebd1111691a",
-    "key": "market-enhancer-9",
+    "key": "marketEnhancer9",
     "name": "Enhanced Market I",
     "description": "increase Market power and trade production",
     "building": "market",
@@ -2591,7 +2591,7 @@
   },
   {
     "guid": "be48c35b-3171-59c6-a626-a58d36128626",
-    "key": "market-enhancer-98",
+    "key": "marketEnhancer98",
     "name": "Enhanced Market II",
     "description": "increase Market power and trade production",
     "building": "market",
@@ -2625,7 +2625,7 @@
   },
   {
     "guid": "65b82976-d9cf-5bd4-b56c-b6c3f0dcbbeb",
-    "key": "market-enhancer-980",
+    "key": "marketEnhancer980",
     "name": "Enhanced Market III",
     "description": "increase Market power and trade production",
     "building": "market",
@@ -2669,7 +2669,7 @@
   },
   {
     "guid": "2ff52915-a271-5912-af87-aed3de25e601",
-    "key": "market-enhancer-9800",
+    "key": "marketEnhancer9800",
     "name": "Enhanced Market IV",
     "description": "increase Market power and trade production",
     "building": "market",
@@ -2713,7 +2713,7 @@
   },
   {
     "guid": "f2ecdc03-6d24-5269-995f-640f66b8dda9",
-    "key": "market-enhancer-98000",
+    "key": "marketEnhancer98000",
     "name": "Enhanced Market V",
     "description": "increase Market power and trade production",
     "building": "market",
@@ -2757,7 +2757,7 @@
   },
   {
     "guid": "8bdcfd09-e40a-5d0b-9802-9308cb4bdbad",
-    "key": "market-enhancer-980000",
+    "key": "marketEnhancer980000",
     "name": "Enhanced Market VI",
     "description": "increase Market power and trade production",
     "building": "market",
@@ -2801,7 +2801,7 @@
   },
   {
     "guid": "8f0069f9-c98c-50a7-bf20-346069003a31",
-    "key": "market-enhancer-9800000",
+    "key": "marketEnhancer9800000",
     "name": "Enhanced Market VII",
     "description": "increase Market power and trade production",
     "building": "market",
@@ -2845,7 +2845,7 @@
   },
   {
     "guid": "6c6c6326-c15f-5810-bc72-d0405d174278",
-    "key": "market-enhancer-98000000",
+    "key": "marketEnhancer98000000",
     "name": "Enhanced Market VIII",
     "description": "increase Market power and trade production",
     "building": "market",

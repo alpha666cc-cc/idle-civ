@@ -99,7 +99,7 @@ type AgeDefinition = {
 - Compute the current age as the highest threshold reached; do not persist an age counter in the save. Keep ages data-driven so the engine has no era-specific conditionals.
 - Make building availability age-driven data instead of the current hard-coded `available` boolean; `canBuild` then reflects the current age.
 - Emit age-transition events so statistics and achievements can record them and the game-length simulation (see Milestone 10) can report time-to-age.
-- Expect **23 battles across the campaign** — two regular fights plus an age-end boss per age (five battles in Modern/Space); see Milestone 8 and the campaign prototype. The first is a wolf in the opening Ancient age whose defeat expands the town-hall count beyond its default cap of 10; each age-end boss unlocks the next age.
+- Expect **23 battles across the campaign** — two regular fights plus an age-end boss per age (five battles in Modern/Space); see Milestone 8 and the campaign prototype. The first is a wolf in the opening Ancient age whose defeat expands the townHall count beyond its default cap of 10; each age-end boss unlocks the next age.
 - Format large populations readably (1.2M, 3.4B) as values pass a million; 10 billion stays well inside `Number.MAX_SAFE_INTEGER`.
 
 ## Milestone 3: Save system
@@ -244,7 +244,7 @@ Encounter pacing is settled by the campaign prototype (`temp/campaign_v2.json`, 
 into `src/game/data/encounters.json`): **23 encounters — two regular battles plus one
 age-end boss for each of the six earlier ages, and five battles (4 + final boss) in
 Modern/Space**. The first encounter is a wolf (`age0_1_first_fire`) in the opening
-Ancient age; defeating it expands the town-hall count beyond the default cap of 10. Each
+Ancient age; defeating it expands the townHall count beyond the default cap of 10. Each
 victory applies a data-driven reward (bonuses, unlocks, enemy boosts on the same bonus
 channel as upgrades). **Implemented (first battle slice):** unit definitions
 (`src/game/units.ts` + `data/units.json`, hp/attack scaled ×8 per age; unit cost factor

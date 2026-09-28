@@ -1,6 +1,20 @@
 import ageData from "./data/ages.json";
 import { GameObject } from "./gameObject";
 import { parseBonus, type Bonus } from "./bonus";
+import { ExpNumber } from "./expNumber";
+import type { ResourceKey } from "./attributes";
+
+/**
+ * A per-resource price scale an age imposes from the moment it is entered. This
+ * is the inverse of a bonus: where `attributeMultiplier` makes a resource
+ * cheaper to earn, this makes it dearer to spend, so an age whose power spike
+ * would otherwise trivialise a purchase curve can re-anchor it. Values compose
+ * across ages (see `CivilizationState.getResourceCostMultiplier`).
+ */
+export type ResourceCostMultiplier = {
+  resource: ResourceKey;
+  factor: ExpNumber;
+};
 
 /** One age in the campaign: a population band with a name, optional unlocks, and
  * optional data-driven bonuses applied on entry (AGENTS.md §13.4). Bonuses reuse the
@@ -14,6 +28,8 @@ export class AgeDefinition extends GameObject {
   readonly populationThreshold: number;
   readonly unlocks: readonly string[];
   readonly bonuses: readonly Bonus[];
+  /** Resource prices this age scales up, applied from the moment it is entered. */
+  readonly costMultipliers: readonly ResourceCostMultiplier[];
 
   constructor(
     key: string,
@@ -22,6 +38,7 @@ export class AgeDefinition extends GameObject {
     populationThreshold: number,
     unlocks: readonly string[] = [],
     bonuses: readonly Bonus[] = [],
+    costMultipliers: readonly ResourceCostMultiplier[] = [],
   ) {
     super(key, description);
     this.key = key;
@@ -30,6 +47,7 @@ export class AgeDefinition extends GameObject {
     this.populationThreshold = populationThreshold;
     this.unlocks = unlocks;
     this.bonuses = bonuses;
+    this.costMultipliers = costMultipliers;
   }
 }
 
@@ -44,6 +62,7 @@ type AgeData = {
     destination: string;
     value: number | string;
   }[];
+  costMultipliers?: { resource: string; factor: number | string }[];
 };
 
 const toAgeDefinition = (data: AgeData): AgeDefinition =>
@@ -54,6 +73,10 @@ const toAgeDefinition = (data: AgeData): AgeDefinition =>
     data.populationThreshold,
     data.unlocks ?? [],
     (data.bonuses ?? []).map((b) => parseBonus(b.type, b.destination, b.value)),
+    (data.costMultipliers ?? []).map(({ resource, factor }) => ({
+      resource: resource as ResourceKey,
+      factor: ExpNumber.from(factor),
+    })),
   );
 
 export const ageDefinitions: AgeDefinition[] = ageData.map(toAgeDefinition);

@@ -120,7 +120,7 @@
     "bonuses": [
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       },
       {
@@ -148,7 +148,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -194,7 +194,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -217,7 +217,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -235,12 +235,12 @@
     "bonuses": [
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -286,7 +286,7 @@
     "bonuses": [
       {
         "type": "costReductionPercent",
-        "destination": "all-units",
+        "destination": "allUnits",
         "value": "0.5"
       },
       {
@@ -365,7 +365,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-units",
+        "destination": "allUnits",
         "value": "0.5"
       }
     ],
@@ -383,7 +383,7 @@
     "bonuses": [
       {
         "type": "costReductionPercent",
-        "destination": "all-units",
+        "destination": "allUnits",
         "value": "0.5"
       }
     ],
@@ -503,7 +503,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -526,7 +526,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -544,12 +544,12 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "town-hallCapacity",
+        "destination": "townHallCapacity",
         "value": "2"
       },
       {
         "type": "costReductionPercent",
-        "destination": "town-hall",
+        "destination": "townHall",
         "value": "0.5"
       },
       {
@@ -577,7 +577,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -623,7 +623,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -646,7 +646,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -664,12 +664,12 @@
     "bonuses": [
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -692,7 +692,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -761,7 +761,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -966,7 +966,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-units",
+        "destination": "allUnits",
         "value": "0.5"
       }
     ],
@@ -1055,12 +1055,12 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1078,7 +1078,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -1108,7 +1108,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1131,7 +1131,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1154,7 +1154,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1177,7 +1177,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1200,7 +1200,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1218,12 +1218,12 @@
     "bonuses": [
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -1281,7 +1281,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "lumber-yardCapacity",
+        "destination": "lumberYardCapacity",
         "value": "2"
       },
       {
@@ -1291,12 +1291,12 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "gold-mineCapacity",
+        "destination": "goldMineCapacity",
         "value": "2"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "town-hallCapacity",
+        "destination": "townHallCapacity",
         "value": "2"
       },
       {
@@ -1321,7 +1321,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -1514,7 +1514,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-units",
+        "destination": "allUnits",
         "value": "0.5"
       }
     ],
@@ -1583,7 +1583,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-units",
+        "destination": "allUnits",
         "value": "0.5"
       }
     ],
@@ -1631,7 +1631,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1677,7 +1677,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1695,12 +1695,12 @@
     "bonuses": [
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -1723,7 +1723,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1746,7 +1746,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1764,7 +1764,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -1819,7 +1819,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -1842,7 +1842,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -2053,7 +2053,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-units",
+        "destination": "allUnits",
         "value": "0.5"
       }
     ],
@@ -2122,7 +2122,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -2145,7 +2145,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -2188,12 +2188,12 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -2216,7 +2216,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -2249,7 +2249,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "lumber-yardCapacity",
+        "destination": "lumberYardCapacity",
         "value": "100"
       },
       {
@@ -2259,12 +2259,12 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "gold-mineCapacity",
+        "destination": "goldMineCapacity",
         "value": "100"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "town-hallCapacity",
+        "destination": "townHallCapacity",
         "value": "100"
       },
       {
@@ -2289,7 +2289,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -2337,7 +2337,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -2360,7 +2360,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.5"
       }
     ],
@@ -2383,7 +2383,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "2"
       }
     ],
@@ -2599,7 +2599,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-units",
+        "destination": "allUnits",
         "value": "0.5"
       }
     ],
@@ -2642,12 +2642,12 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       }
     ],
@@ -2665,7 +2665,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       }
     ],
@@ -2690,12 +2690,12 @@
     "bonuses": [
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       }
     ],
@@ -2718,7 +2718,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       }
     ],
@@ -2741,7 +2741,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       }
     ],
@@ -2764,7 +2764,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       }
     ],
@@ -2807,7 +2807,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       }
     ],
@@ -2837,7 +2837,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       }
     ],
@@ -2860,7 +2860,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       }
     ],
@@ -3089,7 +3089,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-units",
+        "destination": "allUnits",
         "value": "0.01"
       }
     ],
@@ -3112,7 +3112,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       }
     ],
@@ -3130,12 +3130,12 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       }
     ],
@@ -3178,12 +3178,12 @@
     "bonuses": [
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       }
     ],
@@ -3226,7 +3226,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       }
     ],
@@ -3256,7 +3256,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       }
     ],
@@ -3279,7 +3279,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       }
     ],
@@ -3297,7 +3297,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       }
     ],
@@ -3347,12 +3347,12 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": "100"
       },
       {
         "type": "costReductionPercent",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": "0.01"
       }
     ],

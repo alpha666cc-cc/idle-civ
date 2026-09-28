@@ -1,7 +1,7 @@
 [
   {
     "guid": "6a7d6e09-5966-5aaa-a143-356a459b2867",
-    "key": "growing-hamlet",
+    "key": "growingHamlet",
     "name": "Growing Hamlet",
     "description": "Reach a population of 25 citizens.",
     "requirement": { "type": "population", "amount": 25 },
@@ -11,7 +11,7 @@
   },
   {
     "guid": "b2d84f07-6c19-5a3e-8f42-1e7b05c9d6a3",
-    "key": "mustering-village",
+    "key": "musteringVillage",
     "name": "Mustering Village",
     "description": "Reach a population of 100 citizens. Reward: Military x2.",
     "requirement": { "type": "population", "amount": 100 },
@@ -21,7 +21,7 @@
   },
   {
     "guid": "effed5d3-ac6d-5158-8e42-75b58153708e",
-    "key": "wolf-slayer",
+    "key": "wolfSlayer",
     "name": "Wolf Slayer",
     "description": "Win the first battle and drive the wolves from the fields.",
     "requirement": {
@@ -35,7 +35,7 @@
   },
   {
     "guid": "e8d30bc5-ebe2-5fa8-a0e4-c353bb522b75",
-    "key": "a-good-legal-cheat-for-battle",
+    "key": "aGoodLegalCheatForBattle",
     "name": "a good legal cheat for battle",
     "description": "hidden",
     "requirement": {
@@ -78,25 +78,25 @@
   },
   {
     "guid": "cc1999e4-d9bf-50c0-89a8-ec0f4f065f88",
-    "key": "hall-of-halls",
+    "key": "hallOfHalls",
     "name": "Hall of Halls",
     "description": "Build 10 town halls to raise a true capital. Reward: all building costs scale 1% slower.",
     "requirement": {
       "type": "building-count",
-      "building": "town-hall",
+      "building": "townHall",
       "count": 10
     },
     "bonuses": [
       {
         "type": "costReductionFactor",
-        "destination": "all-buildings",
+        "destination": "allBuildings",
         "value": 0.02
       }
     ]
   },
   {
     "guid": "f4dfda8c-60fc-597b-988a-f49864e27b26",
-    "key": "click-100",
+    "key": "click100",
     "family": "clicks",
     "tier": 1,
     "name": "Hundred Hands",
@@ -108,7 +108,7 @@
   },
   {
     "guid": "1a0a2e12-b1fe-5343-880d-d1ba1445466d",
-    "key": "click-1000",
+    "key": "click1000",
     "family": "clicks",
     "tier": 2,
     "name": "A Thousand Hands",
@@ -120,7 +120,7 @@
   },
   {
     "guid": "5c52032f-95c2-5885-b909-61ccb80c60ee",
-    "key": "click-10000",
+    "key": "click10000",
     "family": "clicks",
     "tier": 3,
     "name": "Ten Thousand Hands",
@@ -132,7 +132,7 @@
   },
   {
     "guid": "d3d6921a-a413-52fc-ac80-6ab803473e55",
-    "key": "click-100000",
+    "key": "click100000",
     "family": "clicks",
     "tier": 4,
     "name": "Hundred Thousand Hands",
@@ -144,7 +144,7 @@
   },
   {
     "guid": "bc2a4961-567b-54a9-b358-c2b70fa89287",
-    "key": "click-1000000",
+    "key": "click1000000",
     "family": "clicks",
     "tier": 5,
     "name": "A Million Hands",
@@ -156,7 +156,7 @@
   },
   {
     "guid": "1b9536e8-26e7-5fa9-b5fb-3cde0b88890d",
-    "key": "food-multiplier-1",
+    "key": "foodMultiplier1",
     "family": "food-multiplier",
     "tier": 1,
     "name": "Food Multiplier I",
@@ -172,7 +172,7 @@
   },
   {
     "guid": "cbcc18e0-2925-505b-92f5-9bbaa1fbb144",
-    "key": "food-multiplier-2",
+    "key": "foodMultiplier2",
     "family": "food-multiplier",
     "tier": 2,
     "name": "Food Multiplier II",
@@ -188,7 +188,7 @@
   },
   {
     "guid": "77774c41-f116-5a99-b693-d88e487542ff",
-    "key": "food-multiplier-3",
+    "key": "foodMultiplier3",
     "family": "food-multiplier",
     "tier": 3,
     "name": "Food Multiplier III",
@@ -204,7 +204,7 @@
   },
   {
     "guid": "9e8816e2-8335-5a39-9819-7cd63b3b92e6",
-    "key": "food-multiplier-4",
+    "key": "foodMultiplier4",
     "family": "food-multiplier",
     "tier": 4,
     "name": "Food Multiplier IV",
@@ -220,7 +220,7 @@
   },
   {
     "guid": "5c53c699-a55c-5332-b1d9-7595b94ddce0",
-    "key": "food-multiplier-5",
+    "key": "foodMultiplier5",
     "family": "food-multiplier",
     "tier": 5,
     "name": "Food Multiplier V",
@@ -236,7 +236,7 @@
   },
   {
     "guid": "dea577d6-30a4-5b88-9969-5a50096fa3aa",
-    "key": "food-multiplier-6",
+    "key": "foodMultiplier6",
     "family": "food-multiplier",
     "tier": 6,
     "name": "Food Multiplier VI",
@@ -252,7 +252,7 @@
   },
   {
     "guid": "57952a3b-e869-5f96-bdef-f6cbd543fba1",
-    "key": "food-multiplier-7",
+    "key": "foodMultiplier7",
     "family": "food-multiplier",
     "tier": 7,
     "name": "Food Multiplier VII",
@@ -268,7 +268,7 @@
   },
   {
     "guid": "b7926878-5fe1-5201-b46d-0df9e11cefe2",
-    "key": "food-multiplier-8",
+    "key": "foodMultiplier8",
     "family": "food-multiplier",
     "tier": 8,
     "name": "Food Multiplier VIII",
@@ -284,7 +284,7 @@
   },
   {
     "guid": "a4836216-aa7c-5aa1-8be2-0f5432fa1246",
-    "key": "food-multiplier-9",
+    "key": "foodMultiplier9",
     "family": "food-multiplier",
     "tier": 9,
     "name": "Food Multiplier IX",
@@ -300,14 +300,14 @@
   },
   {
     "guid": "f6d64419-1c05-5f50-9472-9e4b4de2e2b5",
-    "key": "wood-multiplier-1",
+    "key": "woodMultiplier1",
     "family": "wood-multiplier",
     "tier": 1,
     "name": "Wood Multiplier I",
     "description": "Own 10 lumber yards. Reward: Wood Multiplier +20%",
     "requirement": {
       "type": "building-count",
-      "building": "lumber-yard",
+      "building": "lumberYard",
       "count": 10
     },
     "bonuses": [
@@ -320,14 +320,14 @@
   },
   {
     "guid": "822bd535-32ea-501b-afb6-7251694e644f",
-    "key": "wood-multiplier-2",
+    "key": "woodMultiplier2",
     "family": "wood-multiplier",
     "tier": 2,
     "name": "Wood Multiplier II",
     "description": "Own 100 lumber yards. Reward: Wood Multiplier ×3.",
     "requirement": {
       "type": "building-count",
-      "building": "lumber-yard",
+      "building": "lumberYard",
       "count": 100
     },
     "bonuses": [
@@ -340,14 +340,14 @@
   },
   {
     "guid": "8ce402ab-170f-5491-a1b6-245e2ca4bfcd",
-    "key": "wood-multiplier-3",
+    "key": "woodMultiplier3",
     "family": "wood-multiplier",
     "tier": 3,
     "name": "Wood Multiplier III",
     "description": "Own 1,000 lumber yards. Reward: Wood Multiplier ×4.",
     "requirement": {
       "type": "building-count",
-      "building": "lumber-yard",
+      "building": "lumberYard",
       "count": 1000
     },
     "bonuses": [
@@ -360,14 +360,14 @@
   },
   {
     "guid": "d7576494-78b0-5bc2-beec-55311793fd1f",
-    "key": "wood-multiplier-4",
+    "key": "woodMultiplier4",
     "family": "wood-multiplier",
     "tier": 4,
     "name": "Wood Multiplier IV",
     "description": "Own 10,000 lumber yards. Reward: Wood Multiplier ×5.",
     "requirement": {
       "type": "building-count",
-      "building": "lumber-yard",
+      "building": "lumberYard",
       "count": 10000
     },
     "bonuses": [
@@ -380,14 +380,14 @@
   },
   {
     "guid": "6e4c7a1a-653a-5aa7-8739-411c9a3a88c8",
-    "key": "wood-multiplier-5",
+    "key": "woodMultiplier5",
     "family": "wood-multiplier",
     "tier": 5,
     "name": "Wood Multiplier V",
     "description": "Own 100,000 lumber yards. Reward: Wood Multiplier ×6.",
     "requirement": {
       "type": "building-count",
-      "building": "lumber-yard",
+      "building": "lumberYard",
       "count": 100000
     },
     "bonuses": [
@@ -400,14 +400,14 @@
   },
   {
     "guid": "512a7db7-3d7d-508a-8fce-7811146ebdaf",
-    "key": "wood-multiplier-6",
+    "key": "woodMultiplier6",
     "family": "wood-multiplier",
     "tier": 6,
     "name": "Wood Multiplier VI",
     "description": "Own 1,000,000 lumber yards. Reward: Wood Multiplier ×7.",
     "requirement": {
       "type": "building-count",
-      "building": "lumber-yard",
+      "building": "lumberYard",
       "count": 1000000
     },
     "bonuses": [
@@ -420,14 +420,14 @@
   },
   {
     "guid": "a30f41c5-b276-54f1-834c-aac4fdbd8967",
-    "key": "wood-multiplier-7",
+    "key": "woodMultiplier7",
     "family": "wood-multiplier",
     "tier": 7,
     "name": "Wood Multiplier VII",
     "description": "Own 10,000,000 lumber yards. Reward: Wood Multiplier ×8.",
     "requirement": {
       "type": "building-count",
-      "building": "lumber-yard",
+      "building": "lumberYard",
       "count": 10000000
     },
     "bonuses": [
@@ -440,14 +440,14 @@
   },
   {
     "guid": "b18f9f29-8f3a-54a2-abac-0a6ab1a06269",
-    "key": "wood-multiplier-8",
+    "key": "woodMultiplier8",
     "family": "wood-multiplier",
     "tier": 8,
     "name": "Wood Multiplier VIII",
     "description": "Own 100,000,000 lumber yards. Reward: Wood Multiplier ×9.",
     "requirement": {
       "type": "building-count",
-      "building": "lumber-yard",
+      "building": "lumberYard",
       "count": 100000000
     },
     "bonuses": [
@@ -460,14 +460,14 @@
   },
   {
     "guid": "47487d6d-8c98-5261-8cce-aa333f89c5f9",
-    "key": "wood-multiplier-9",
+    "key": "woodMultiplier9",
     "family": "wood-multiplier",
     "tier": 9,
     "name": "Wood Multiplier IX",
     "description": "Own 1,000,000,000 lumber yards. Reward: Wood Multiplier ×10.",
     "requirement": {
       "type": "building-count",
-      "building": "lumber-yard",
+      "building": "lumberYard",
       "count": 1000000000
     },
     "bonuses": [
@@ -480,7 +480,7 @@
   },
   {
     "guid": "9b5cd521-1b8c-5938-afee-1afafcecc972",
-    "key": "stone-multiplier-1",
+    "key": "stoneMultiplier1",
     "family": "stone-multiplier",
     "tier": 1,
     "name": "Stone Multiplier I",
@@ -500,7 +500,7 @@
   },
   {
     "guid": "9cd536a2-2b2d-5dc4-ba0e-7126eabf235a",
-    "key": "stone-multiplier-2",
+    "key": "stoneMultiplier2",
     "family": "stone-multiplier",
     "tier": 2,
     "name": "Stone Multiplier II",
@@ -520,7 +520,7 @@
   },
   {
     "guid": "352e734d-df5d-5b4a-b880-aea1cccac4bb",
-    "key": "stone-multiplier-3",
+    "key": "stoneMultiplier3",
     "family": "stone-multiplier",
     "tier": 3,
     "name": "Stone Multiplier III",
@@ -540,7 +540,7 @@
   },
   {
     "guid": "6931575f-0be0-5e3d-b090-56a8237abc1e",
-    "key": "stone-multiplier-4",
+    "key": "stoneMultiplier4",
     "family": "stone-multiplier",
     "tier": 4,
     "name": "Stone Multiplier IV",
@@ -560,7 +560,7 @@
   },
   {
     "guid": "df71c845-c8e9-5de7-ac2a-15d6bf01dfea",
-    "key": "stone-multiplier-5",
+    "key": "stoneMultiplier5",
     "family": "stone-multiplier",
     "tier": 5,
     "name": "Stone Multiplier V",
@@ -580,7 +580,7 @@
   },
   {
     "guid": "864c87c6-6028-5b47-ba24-bef69c9b3574",
-    "key": "stone-multiplier-6",
+    "key": "stoneMultiplier6",
     "family": "stone-multiplier",
     "tier": 6,
     "name": "Stone Multiplier VI",
@@ -600,7 +600,7 @@
   },
   {
     "guid": "5b5eaf50-fdad-51ff-81ff-971b408725de",
-    "key": "stone-multiplier-7",
+    "key": "stoneMultiplier7",
     "family": "stone-multiplier",
     "tier": 7,
     "name": "Stone Multiplier VII",
@@ -620,7 +620,7 @@
   },
   {
     "guid": "6ee0c8da-97ce-51f7-8e7b-1c8ae67b87f4",
-    "key": "stone-multiplier-8",
+    "key": "stoneMultiplier8",
     "family": "stone-multiplier",
     "tier": 8,
     "name": "Stone Multiplier VIII",
@@ -640,7 +640,7 @@
   },
   {
     "guid": "72417030-2557-5662-a79d-886df42c94dc",
-    "key": "stone-multiplier-9",
+    "key": "stoneMultiplier9",
     "family": "stone-multiplier",
     "tier": 9,
     "name": "Stone Multiplier IX",
@@ -660,14 +660,14 @@
   },
   {
     "guid": "fe3ddcb8-a6fc-598a-b66c-3cd2956d3145",
-    "key": "gold-multiplier-1",
+    "key": "goldMultiplier1",
     "family": "gold-multiplier",
     "tier": 1,
     "name": "Gold Multiplier I",
     "description": "Own 10 gold mines. Reward: Gold Multiplier +20%.",
     "requirement": {
       "type": "building-count",
-      "building": "gold-mine",
+      "building": "goldMine",
       "count": 10
     },
     "bonuses": [
@@ -680,14 +680,14 @@
   },
   {
     "guid": "4eff887c-4302-5e26-82f3-ddd230cd8513",
-    "key": "gold-multiplier-2",
+    "key": "goldMultiplier2",
     "family": "gold-multiplier",
     "tier": 2,
     "name": "Gold Multiplier II",
     "description": "Own 100 gold mines. Reward: Gold Multiplier ×3.",
     "requirement": {
       "type": "building-count",
-      "building": "gold-mine",
+      "building": "goldMine",
       "count": 100
     },
     "bonuses": [
@@ -700,14 +700,14 @@
   },
   {
     "guid": "7cb1abbb-b3cd-5f51-9cb8-ec3f2032808f",
-    "key": "gold-multiplier-3",
+    "key": "goldMultiplier3",
     "family": "gold-multiplier",
     "tier": 3,
     "name": "Gold Multiplier III",
     "description": "Own 1,000 gold mines. Reward: Gold Multiplier ×4.",
     "requirement": {
       "type": "building-count",
-      "building": "gold-mine",
+      "building": "goldMine",
       "count": 1000
     },
     "bonuses": [
@@ -720,14 +720,14 @@
   },
   {
     "guid": "d05878a4-4c61-5909-9779-f51607c236f4",
-    "key": "gold-multiplier-4",
+    "key": "goldMultiplier4",
     "family": "gold-multiplier",
     "tier": 4,
     "name": "Gold Multiplier IV",
     "description": "Own 10,000 gold mines. Reward: Gold Multiplier ×5.",
     "requirement": {
       "type": "building-count",
-      "building": "gold-mine",
+      "building": "goldMine",
       "count": 10000
     },
     "bonuses": [
@@ -740,14 +740,14 @@
   },
   {
     "guid": "e9ea44d2-f002-5a9a-bb91-6c6d623e45d0",
-    "key": "gold-multiplier-5",
+    "key": "goldMultiplier5",
     "family": "gold-multiplier",
     "tier": 5,
     "name": "Gold Multiplier V",
     "description": "Own 100,000 gold mines. Reward: Gold Multiplier ×6.",
     "requirement": {
       "type": "building-count",
-      "building": "gold-mine",
+      "building": "goldMine",
       "count": 100000
     },
     "bonuses": [
@@ -760,14 +760,14 @@
   },
   {
     "guid": "10c05032-5eb6-52bd-a33d-db14b6ceb368",
-    "key": "gold-multiplier-6",
+    "key": "goldMultiplier6",
     "family": "gold-multiplier",
     "tier": 6,
     "name": "Gold Multiplier VI",
     "description": "Own 1,000,000 gold mines. Reward: Gold Multiplier ×7.",
     "requirement": {
       "type": "building-count",
-      "building": "gold-mine",
+      "building": "goldMine",
       "count": 1000000
     },
     "bonuses": [
@@ -780,14 +780,14 @@
   },
   {
     "guid": "bd9136d7-4bb3-50c9-9754-fd100d2977c1",
-    "key": "gold-multiplier-7",
+    "key": "goldMultiplier7",
     "family": "gold-multiplier",
     "tier": 7,
     "name": "Gold Multiplier VII",
     "description": "Own 10,000,000 gold mines. Reward: Gold Multiplier ×8.",
     "requirement": {
       "type": "building-count",
-      "building": "gold-mine",
+      "building": "goldMine",
       "count": 10000000
     },
     "bonuses": [
@@ -800,14 +800,14 @@
   },
   {
     "guid": "9aeaad32-d0d2-50aa-9a60-8a9f5c2c95c8",
-    "key": "gold-multiplier-8",
+    "key": "goldMultiplier8",
     "family": "gold-multiplier",
     "tier": 8,
     "name": "Gold Multiplier VIII",
     "description": "Own 100,000,000 gold mines. Reward: Gold Multiplier ×9.",
     "requirement": {
       "type": "building-count",
-      "building": "gold-mine",
+      "building": "goldMine",
       "count": 100000000
     },
     "bonuses": [
@@ -820,14 +820,14 @@
   },
   {
     "guid": "1a1f6084-6022-5dd1-819e-dcabde0ac2f9",
-    "key": "gold-multiplier-9",
+    "key": "goldMultiplier9",
     "family": "gold-multiplier",
     "tier": 9,
     "name": "Gold Multiplier IX",
     "description": "Own 1,000,000,000 gold mines. Reward: Gold Multiplier ×10.",
     "requirement": {
       "type": "building-count",
-      "building": "gold-mine",
+      "building": "goldMine",
       "count": 1000000000
     },
     "bonuses": [
@@ -840,7 +840,7 @@
   },
   {
     "guid": "01056cb6-c1aa-552a-8c9a-6879ec30ba25",
-    "key": "food-hoarder-1",
+    "key": "foodHoarder1",
     "family": "food-hoarder",
     "tier": 1,
     "name": "Food Hoarder I",
@@ -854,7 +854,7 @@
   },
   {
     "guid": "07c1b2be-f25f-551e-92af-9ada1f22176c",
-    "key": "food-hoarder-2",
+    "key": "foodHoarder2",
     "family": "food-hoarder",
     "tier": 2,
     "name": "Food Hoarder II",
@@ -868,7 +868,7 @@
   },
   {
     "guid": "9a245ee0-1f7c-54fe-9747-0dd8e0fce044",
-    "key": "food-hoarder-5",
+    "key": "foodHoarder5",
     "family": "food-hoarder",
     "tier": 3,
     "name": "Food Hoarder III",
@@ -882,7 +882,7 @@
   },
   {
     "guid": "421ff198-757b-5e00-9933-718866e0f201",
-    "key": "wood-hoarder-1",
+    "key": "woodHoarder1",
     "family": "wood-hoarder",
     "tier": 1,
     "name": "Wood Hoarder I",
@@ -896,7 +896,7 @@
   },
   {
     "guid": "47efbf5d-ee6f-5ace-94a1-a42c91aff7bc",
-    "key": "wood-hoarder-2",
+    "key": "woodHoarder2",
     "family": "wood-hoarder",
     "tier": 2,
     "name": "Wood Hoarder II",
@@ -910,7 +910,7 @@
   },
   {
     "guid": "6ea6e1a1-3b1a-5273-95d0-58dfd9c2578c",
-    "key": "wood-hoarder-5",
+    "key": "woodHoarder5",
     "family": "wood-hoarder",
     "tier": 3,
     "name": "Wood Hoarder III",
@@ -924,7 +924,7 @@
   },
   {
     "guid": "a162fa02-df0e-52d1-89a7-b757e9da4c85",
-    "key": "stone-hoarder-1",
+    "key": "stoneHoarder1",
     "family": "stone-hoarder",
     "tier": 1,
     "name": "Stone Hoarder I",
@@ -938,7 +938,7 @@
   },
   {
     "guid": "a6d76bce-f4c0-5781-8be0-dffa8f6ba900",
-    "key": "stone-hoarder-2",
+    "key": "stoneHoarder2",
     "family": "stone-hoarder",
     "tier": 2,
     "name": "Stone Hoarder II",
@@ -952,7 +952,7 @@
   },
   {
     "guid": "4f8f4cd6-630b-5715-abc7-6f439e0d4ce6",
-    "key": "stone-hoarder-5",
+    "key": "stoneHoarder5",
     "family": "stone-hoarder",
     "tier": 3,
     "name": "Stone Hoarder III",
@@ -966,7 +966,7 @@
   },
   {
     "guid": "28a74712-4ec3-5f52-825e-8039242d9d24",
-    "key": "gold-hoarder-1",
+    "key": "goldHoarder1",
     "family": "gold-hoarder",
     "tier": 1,
     "name": "Gold Hoarder I",
@@ -980,7 +980,7 @@
   },
   {
     "guid": "d9e4056f-34de-5966-98a5-b6eb0e28b2ef",
-    "key": "gold-hoarder-2",
+    "key": "goldHoarder2",
     "family": "gold-hoarder",
     "tier": 2,
     "name": "Gold Hoarder II",
@@ -994,7 +994,7 @@
   },
   {
     "guid": "887bdc97-7442-5e70-ba44-26e599b4ff8e",
-    "key": "gold-hoarder-5",
+    "key": "goldHoarder5",
     "family": "gold-hoarder",
     "tier": 3,
     "name": "Gold Hoarder III",
@@ -1008,7 +1008,7 @@
   },
   {
     "guid": "ba07e5ad-c4dc-5281-93fb-1ae170affff8",
-    "key": "master-builder-1",
+    "key": "masterBuilder1",
     "family": "master-builder",
     "tier": 1,
     "name": "Master Builder I",
@@ -1027,7 +1027,7 @@
   },
   {
     "guid": "e5228ec5-370b-5c83-9644-6e629613e36f",
-    "key": "master-builder-2",
+    "key": "masterBuilder2",
     "family": "master-builder",
     "tier": 2,
     "name": "Master Builder II",
@@ -1046,7 +1046,7 @@
   },
   {
     "guid": "cdb940c2-c6f8-58af-aa18-113fafd94f96",
-    "key": "offline-24h",
+    "key": "offline24h",
     "name": "Long Rest",
     "description": "Remain offline for 24 consecutive hours. Offline gain efficiency +25%.",
     "requirement": { "type": "offline-time", "amount": 86400000 },
@@ -1060,21 +1060,21 @@
   },
   {
     "guid": "42ebf0d0-647a-5eb6-a991-560d1440d573",
-    "key": "active-24h",
+    "key": "active24h",
     "name": "Enduring Hands",
     "description": "Play actively for 24 consecutive hours. All production +10%.",
     "requirement": { "type": "active-time", "amount": 86400000 },
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "all-production",
+        "destination": "allProduction",
         "value": 1.1
       }
     ]
   },
   {
     "guid": "ff398f56-2626-5337-8d82-bf880b486156",
-    "key": "master-builder-3",
+    "key": "masterBuilder3",
     "family": "master-builder",
     "tier": 3,
     "name": "Master Builder III",
@@ -1093,7 +1093,7 @@
   },
   {
     "guid": "d957faca-dfdd-57b0-9830-30312d009690",
-    "key": "master-builder-4",
+    "key": "masterBuilder4",
     "family": "master-builder",
     "tier": 4,
     "name": "Master Builder IV",
@@ -1112,7 +1112,7 @@
   },
   {
     "guid": "91480179-7aed-51a9-8114-f14e704ef78d",
-    "key": "master-builder-5",
+    "key": "masterBuilder5",
     "family": "master-builder",
     "tier": 5,
     "name": "Master Builder V",
@@ -1131,7 +1131,7 @@
   },
   {
     "guid": "4390adbb-332f-543e-b42b-d49cc3228465",
-    "key": "master-builder-6",
+    "key": "masterBuilder6",
     "family": "master-builder",
     "tier": 6,
     "name": "Master Builder VI",
@@ -1150,7 +1150,7 @@
   },
   {
     "guid": "d43e01d6-02c9-51f8-ab2d-f4b73f3d9432",
-    "key": "master-builder-7",
+    "key": "masterBuilder7",
     "family": "master-builder",
     "tier": 7,
     "name": "Master Builder VII",
@@ -1169,7 +1169,7 @@
   },
   {
     "guid": "c1df1448-ee48-5d6c-a068-55222c80af6e",
-    "key": "military-multiplier-1",
+    "key": "militaryMultiplier1",
     "family": "military-multiplier",
     "tier": 1,
     "name": "Military Multiplier I",
@@ -1189,7 +1189,7 @@
   },
   {
     "guid": "a9e7007c-6190-5718-bf97-07a016db15f9",
-    "key": "military-multiplier-2",
+    "key": "militaryMultiplier2",
     "family": "military-multiplier",
     "tier": 2,
     "name": "Military Multiplier II",
@@ -1209,7 +1209,7 @@
   },
   {
     "guid": "2b7fc0d1-2fe4-502f-aafc-774aa4a82df4",
-    "key": "military-multiplier-3",
+    "key": "militaryMultiplier3",
     "family": "military-multiplier",
     "tier": 3,
     "name": "Military Multiplier III",
@@ -1229,7 +1229,7 @@
   },
   {
     "guid": "401b0790-415f-5283-b176-17cda43356cf",
-    "key": "military-multiplier-4",
+    "key": "militaryMultiplier4",
     "family": "military-multiplier",
     "tier": 4,
     "name": "Military Multiplier IV",
@@ -1249,7 +1249,7 @@
   },
   {
     "guid": "5adfbe89-a523-5316-b72d-1acac90bf659",
-    "key": "military-multiplier-5",
+    "key": "militaryMultiplier5",
     "family": "military-multiplier",
     "tier": 5,
     "name": "Military Multiplier V",
@@ -1269,7 +1269,7 @@
   },
   {
     "guid": "7bc7a921-1eb6-56ac-8a53-e81d25e96f1e",
-    "key": "military-multiplier-6",
+    "key": "militaryMultiplier6",
     "family": "military-multiplier",
     "tier": 6,
     "name": "Military Multiplier VI",
@@ -1289,7 +1289,7 @@
   },
   {
     "guid": "498b0804-5d54-540e-8bf8-724131b8bae0",
-    "key": "military-multiplier-7",
+    "key": "militaryMultiplier7",
     "family": "military-multiplier",
     "tier": 7,
     "name": "Military Multiplier VII",
@@ -1309,7 +1309,7 @@
   },
   {
     "guid": "0a72f3f6-1337-592d-b72a-41d747aaf4bd",
-    "key": "military-multiplier-8",
+    "key": "militaryMultiplier8",
     "family": "military-multiplier",
     "tier": 8,
     "name": "Military Multiplier VIII",
@@ -1329,7 +1329,7 @@
   },
   {
     "guid": "f34e2fc7-6f67-5822-b7e2-018ae38f036c",
-    "key": "military-multiplier-9",
+    "key": "militaryMultiplier9",
     "family": "military-multiplier",
     "tier": 9,
     "name": "Military Multiplier IX",
@@ -1349,7 +1349,7 @@
   },
   {
     "guid": "3f9a7c1b-c05e-5f2b-bbc5-b483e7ff03f4",
-    "key": "science-multiplier-1",
+    "key": "scienceMultiplier1",
     "family": "science-multiplier",
     "tier": 1,
     "name": "Science Multiplier I",
@@ -1369,7 +1369,7 @@
   },
   {
     "guid": "ebbe0058-13e9-54c5-9c44-3b699a57af4d",
-    "key": "science-multiplier-2",
+    "key": "scienceMultiplier2",
     "family": "science-multiplier",
     "tier": 2,
     "name": "Science Multiplier II",
@@ -1389,7 +1389,7 @@
   },
   {
     "guid": "3db5b3f4-58b7-5f14-aab0-daa22ca7425a",
-    "key": "science-multiplier-3",
+    "key": "scienceMultiplier3",
     "family": "science-multiplier",
     "tier": 3,
     "name": "Science Multiplier III",
@@ -1409,7 +1409,7 @@
   },
   {
     "guid": "bed03704-743e-5f1a-bf58-7899580424a4",
-    "key": "science-multiplier-4",
+    "key": "scienceMultiplier4",
     "family": "science-multiplier",
     "tier": 4,
     "name": "Science Multiplier IV",
@@ -1429,7 +1429,7 @@
   },
   {
     "guid": "c422f6ae-71cb-539f-8c9b-63563447c1b7",
-    "key": "science-multiplier-5",
+    "key": "scienceMultiplier5",
     "family": "science-multiplier",
     "tier": 5,
     "name": "Science Multiplier V",
@@ -1449,7 +1449,7 @@
   },
   {
     "guid": "d42b826c-b36a-59ab-8fa9-95c7695b46ff",
-    "key": "science-multiplier-6",
+    "key": "scienceMultiplier6",
     "family": "science-multiplier",
     "tier": 6,
     "name": "Science Multiplier VI",
@@ -1469,7 +1469,7 @@
   },
   {
     "guid": "9d875d3c-62c8-5da8-a405-85fa9135b350",
-    "key": "science-multiplier-7",
+    "key": "scienceMultiplier7",
     "family": "science-multiplier",
     "tier": 7,
     "name": "Science Multiplier VII",
@@ -1489,7 +1489,7 @@
   },
   {
     "guid": "47d00e85-073a-5cfa-9b91-8536a95b9e2c",
-    "key": "science-multiplier-8",
+    "key": "scienceMultiplier8",
     "family": "science-multiplier",
     "tier": 8,
     "name": "Science Multiplier VIII",
@@ -1509,7 +1509,7 @@
   },
   {
     "guid": "62b31f33-0538-5f0c-90b0-bfb436d4b39d",
-    "key": "science-multiplier-9",
+    "key": "scienceMultiplier9",
     "family": "science-multiplier",
     "tier": 9,
     "name": "Science Multiplier IX",
@@ -1529,7 +1529,7 @@
   },
   {
     "guid": "93e1e5d0-a054-562c-96ae-d45c4db29895",
-    "key": "metalwork-multiplier-1",
+    "key": "metalworkMultiplier1",
     "family": "metalwork-multiplier",
     "tier": 1,
     "name": "Metalwork Multiplier I",
@@ -1549,7 +1549,7 @@
   },
   {
     "guid": "b63c59e3-287e-545d-a937-c0b05fc54758",
-    "key": "metalwork-multiplier-2",
+    "key": "metalworkMultiplier2",
     "family": "metalwork-multiplier",
     "tier": 2,
     "name": "Metalwork Multiplier II",
@@ -1569,7 +1569,7 @@
   },
   {
     "guid": "b85c6410-3fe5-521c-81a0-491c6cbb55d0",
-    "key": "metalwork-multiplier-3",
+    "key": "metalworkMultiplier3",
     "family": "metalwork-multiplier",
     "tier": 3,
     "name": "Metalwork Multiplier III",
@@ -1589,7 +1589,7 @@
   },
   {
     "guid": "58980c67-dd64-58b2-8b41-a076c1f0aab2",
-    "key": "metalwork-multiplier-4",
+    "key": "metalworkMultiplier4",
     "family": "metalwork-multiplier",
     "tier": 4,
     "name": "Metalwork Multiplier IV",
@@ -1609,7 +1609,7 @@
   },
   {
     "guid": "549fc6fd-f611-5481-96e5-93c0f25b9303",
-    "key": "metalwork-multiplier-5",
+    "key": "metalworkMultiplier5",
     "family": "metalwork-multiplier",
     "tier": 5,
     "name": "Metalwork Multiplier V",
@@ -1629,7 +1629,7 @@
   },
   {
     "guid": "03a424da-0234-5e93-842a-53fc88aed0d3",
-    "key": "metalwork-multiplier-6",
+    "key": "metalworkMultiplier6",
     "family": "metalwork-multiplier",
     "tier": 6,
     "name": "Metalwork Multiplier VI",
@@ -1649,7 +1649,7 @@
   },
   {
     "guid": "ea583cda-d527-5fd4-9e5f-20079a6dc3f7",
-    "key": "metalwork-multiplier-7",
+    "key": "metalworkMultiplier7",
     "family": "metalwork-multiplier",
     "tier": 7,
     "name": "Metalwork Multiplier VII",
@@ -1669,7 +1669,7 @@
   },
   {
     "guid": "fbc748ff-de76-570a-9880-221adb36fd19",
-    "key": "metalwork-multiplier-8",
+    "key": "metalworkMultiplier8",
     "family": "metalwork-multiplier",
     "tier": 8,
     "name": "Metalwork Multiplier VIII",
@@ -1689,7 +1689,7 @@
   },
   {
     "guid": "c726f3af-2019-5cfc-92c3-7de0b79c86c2",
-    "key": "metalwork-multiplier-9",
+    "key": "metalworkMultiplier9",
     "family": "metalwork-multiplier",
     "tier": 9,
     "name": "Metalwork Multiplier IX",
@@ -1709,7 +1709,7 @@
   },
   {
     "guid": "b6e7193e-d92c-54eb-8ea3-155ee040291c",
-    "key": "science-hoarder-1",
+    "key": "scienceHoarder1",
     "family": "science-hoarder",
     "tier": 1,
     "name": "Science Hoarder I",
@@ -1725,7 +1725,7 @@
   },
   {
     "guid": "2eafc474-7c24-53cf-884c-4f93cd0128cf",
-    "key": "science-hoarder-2",
+    "key": "scienceHoarder2",
     "family": "science-hoarder",
     "tier": 2,
     "name": "Science Hoarder II",
@@ -1741,7 +1741,7 @@
   },
   {
     "guid": "76e9ad30-8f67-5d01-bd31-c07be863e3a6",
-    "key": "science-hoarder-5",
+    "key": "scienceHoarder5",
     "family": "science-hoarder",
     "tier": 3,
     "name": "Science Hoarder III",
@@ -1757,7 +1757,7 @@
   },
   {
     "guid": "309fe151-5b9d-5f6a-bc75-002530ac5fd1",
-    "key": "military-hoarder-1",
+    "key": "militaryHoarder1",
     "family": "military-hoarder",
     "tier": 1,
     "name": "Military Hoarder I",
@@ -1773,7 +1773,7 @@
   },
   {
     "guid": "cc422da8-5d4f-5a08-a710-f6735fc1ea6e",
-    "key": "military-hoarder-2",
+    "key": "militaryHoarder2",
     "family": "military-hoarder",
     "tier": 2,
     "name": "Military Hoarder II",
@@ -1789,7 +1789,7 @@
   },
   {
     "guid": "5b119cff-d1d1-5907-94f4-238469d927c7",
-    "key": "military-hoarder-5",
+    "key": "militaryHoarder5",
     "family": "military-hoarder",
     "tier": 3,
     "name": "Military Hoarder III",
@@ -1805,7 +1805,7 @@
   },
   {
     "guid": "814513d0-27a1-5e5d-bcd2-24b5c34106f3",
-    "key": "metalwork-hoarder-1",
+    "key": "metalworkHoarder1",
     "family": "metalwork-hoarder",
     "tier": 1,
     "name": "Metalwork Hoarder I",
@@ -1821,7 +1821,7 @@
   },
   {
     "guid": "28c1be5c-719e-59f6-a6a6-094132c148ac",
-    "key": "metalwork-hoarder-2",
+    "key": "metalworkHoarder2",
     "family": "metalwork-hoarder",
     "tier": 2,
     "name": "Metalwork Hoarder II",
@@ -1837,7 +1837,7 @@
   },
   {
     "guid": "ff491522-159c-5c63-af39-614c240509cd",
-    "key": "metalwork-hoarder-5",
+    "key": "metalworkHoarder5",
     "family": "metalwork-hoarder",
     "tier": 3,
     "name": "Metalwork Hoarder III",
@@ -1853,7 +1853,7 @@
   },
   {
     "guid": "ea750b6a-177d-58a1-8aaf-967b2aee0ff7",
-    "key": "trade-multiplier-1",
+    "key": "tradeMultiplier1",
     "family": "trade-multiplier",
     "tier": 1,
     "name": "Trade Multiplier I",
@@ -1869,7 +1869,7 @@
   },
   {
     "guid": "5003b290-e936-587a-9082-f039e75555bc",
-    "key": "trade-multiplier-2",
+    "key": "tradeMultiplier2",
     "family": "trade-multiplier",
     "tier": 2,
     "name": "Trade Multiplier II",
@@ -1885,7 +1885,7 @@
   },
   {
     "guid": "04729da9-3941-5b9e-b382-c2cbc261f0c9",
-    "key": "trade-multiplier-3",
+    "key": "tradeMultiplier3",
     "family": "trade-multiplier",
     "tier": 3,
     "name": "Trade Multiplier III",
@@ -1901,7 +1901,7 @@
   },
   {
     "guid": "27592cbf-8c2b-54cd-82df-eebe6c6da970",
-    "key": "trade-multiplier-4",
+    "key": "tradeMultiplier4",
     "family": "trade-multiplier",
     "tier": 4,
     "name": "Trade Multiplier IV",
@@ -1917,7 +1917,7 @@
   },
   {
     "guid": "cdcad287-126e-50db-a107-f6a8b6156e17",
-    "key": "trade-multiplier-5",
+    "key": "tradeMultiplier5",
     "family": "trade-multiplier",
     "tier": 5,
     "name": "Trade Multiplier V",
@@ -1933,7 +1933,7 @@
   },
   {
     "guid": "0829bb54-c91e-5601-b560-58e32c01d4bd",
-    "key": "trade-multiplier-6",
+    "key": "tradeMultiplier6",
     "family": "trade-multiplier",
     "tier": 6,
     "name": "Trade Multiplier VI",
@@ -1949,7 +1949,7 @@
   },
   {
     "guid": "c7eccdb6-728a-5019-a848-2450ad3b7290",
-    "key": "trade-multiplier-7",
+    "key": "tradeMultiplier7",
     "family": "trade-multiplier",
     "tier": 7,
     "name": "Trade Multiplier VII",
@@ -1965,7 +1965,7 @@
   },
   {
     "guid": "00f3751d-0f1b-56d7-a325-23a3b35ef1a6",
-    "key": "trade-multiplier-8",
+    "key": "tradeMultiplier8",
     "family": "trade-multiplier",
     "tier": 8,
     "name": "Trade Multiplier VIII",
@@ -1981,7 +1981,7 @@
   },
   {
     "guid": "d39e8571-0aac-5133-b8cc-11175b23bae2",
-    "key": "trade-multiplier-9",
+    "key": "tradeMultiplier9",
     "family": "trade-multiplier",
     "tier": 9,
     "name": "Trade Multiplier IX",

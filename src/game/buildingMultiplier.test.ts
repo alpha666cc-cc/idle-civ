@@ -13,7 +13,7 @@ import { CivilizationState } from "./civilizationState";
 import { ExpNumber } from "./expNumber";
 import { emptyStatistics } from "./statistics";
 
-/** An age-0 state with the given building counts and worker split. */
+/** An age0 state with the given building counts and worker split. */
 const stateWith = (
   builtBuildings: Partial<Record<BuildingKey, number>> = {},
   workers: WorkerAssignments = emptyWorkerAssignments(),
@@ -136,19 +136,19 @@ describe("building resource bonuses", () => {
     // With power 1 the additive bonus is unchanged: (0.1 x 20) = 2.0.
     expect(foodSummary(base).additiveMultiplier.toNumber()).toBeCloseTo(2, 9);
     // With power 2 (the first enhancer), it becomes (0.1 x 20)^2 = 4.0.
-    const boosted = richState({ farm: 20 }).buyUpgrade("farm-enhancer-9");
+    const boosted = richState({ farm: 20 }).buyUpgrade("farmEnhancer9");
     expect(boosted.buildingPower("farm").toNumber()).toBeCloseTo(2, 9);
     expect(
       foodSummary(boosted).additiveMultiplier.toNumber(),
     ).toBeCloseTo(4, 9);
   });
 
-  it("gives power only to production buildings, never house or town-hall", () => {
-    const state = stateWith({ farm: 5, house: 5, "town-hall": 5 });
+  it("gives power only to production buildings, never house or townHall", () => {
+    const state = stateWith({ farm: 5, house: 5, "townHall": 5 });
     // Production buildings carry a farmPower attribute and read it.
     expect(findAttributeDefinition("farmPower")).toBeDefined();
     // Capacity-only and drain-only buildings have no power attribute at all.
-    for (const key of ["house", "town-hall", "people"]) {
+    for (const key of ["house", "townHall", "people"]) {
       expect(findAttributeDefinition(`${key}Power`)).toBeUndefined();
       // buildingPower falls back to 1 so the exponent is a no-op for them.
       expect(state.buildingPower(key as BuildingKey).toNumber()).toBe(1);
@@ -156,7 +156,7 @@ describe("building resource bonuses", () => {
   });
 
   it("keeps the capacity base stored but reports effective capacity", () => {
-    const bought = richState({ farm: 9 }).buyUpgrade("farm-enhancer-9");
+    const bought = richState({ farm: 9 }).buyUpgrade("farmEnhancer9");
 
     // The upgrade does not rewrite the saved/base resource. It is resolved on read.
     expect(bought.resources.farmCapacity.toNumber()).toBe(10);
@@ -174,20 +174,20 @@ describe("building resource bonuses", () => {
 
   it("raises power by +1 per enhancer upgrade and x1.5 when entering the next age", () => {
     // The first enhancer applies +1 farmPower (a flat on the power stat); the
-    // age-1 transition grants a global buildingPower x1.5 that folds
+    // age1 transition grants a global buildingPower x1.5 that folds
     // into every production building's power.
-    // farm-enhancer-9 unlocks at 9 farms; buy it and power goes 1 -> 2.
+    // farmEnhancer9 unlocks at 9 farms; buy it and power goes 1 -> 2.
     const base = richState({ farm: 9 });
     expect(base.buildingPower("farm").toNumber()).toBe(1);
 
     // Buy the first farm enhancer: +1 farmPower.
-    const oneTier = base.buyUpgrade("farm-enhancer-9");
-    expect(oneTier.isUpgradeBought("farm-enhancer-9")).toBe(true);
+    const oneTier = base.buyUpgrade("farmEnhancer9");
+    expect(oneTier.isUpgradeBought("farmEnhancer9")).toBe(true);
     expect(oneTier.buildingPower("farm").toNumber()).toBe(2);
 
-    // Entering age-1 (end of the first age) multiplies the global power by
+    // Entering age1 (end of the first age) multiplies the global power by
     // 1.5, so the farm's effective power goes from 2 to 2 x 1.5 = 3.
-    const aged = oneTier.enterAge("age-1");
+    const aged = oneTier.enterAge("age1");
     expect(aged.getAttributeValue("buildingPower").toNumber()).toBe(1.5);
     expect(aged.buildingPower("farm").toNumber()).toBe(3);
   });
@@ -207,9 +207,9 @@ describe("building resource bonuses", () => {
     // The shipped data bases all eight production buildings at 1.
     for (const key of [
       "farm",
-      "lumber-yard",
+      "lumberYard",
       "quarry",
-      "gold-mine",
+      "goldMine",
       "barracks",
       "university",
       "smithy",
@@ -220,7 +220,7 @@ describe("building resource bonuses", () => {
       expect(stateWith().buildingPower(key as BuildingKey).toNumber()).toBe(1);
     }
     // Non-producers carry no power at all.
-    for (const key of ["house", "town-hall", "people"] as const) {
+    for (const key of ["house", "townHall", "people"] as const) {
       const building = buildingDefinitions.find((b) => b.key === key);
       expect(building?.power).toBeUndefined();
     }

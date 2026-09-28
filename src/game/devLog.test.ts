@@ -25,12 +25,12 @@ const runId = "abcdef12-3456-7890-abcd-ef1234567890";
 describe("dev run log", () => {
   it("records remarkable events between two states", () => {
     const before = new CivilizationState();
-    const after = before.enterAge("age-1").defeatEncounter("age0_1_first_fire");
+    const after = before.enterAge("age1").defeatEncounter("age0_1_first_fire");
 
     const events = diffDevLogEvents(before, after, 42);
     const types = events.map((event) => `${event.type}:${event.id}`);
 
-    expect(types).toContain("age:age-1");
+    expect(types).toContain("age:age1");
     expect(types).toContain("battle:age0_1_first_fire");
     // Every event carries the state reading the simulator also records.
     expect(events[0].time).toBe(42);

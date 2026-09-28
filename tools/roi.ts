@@ -551,7 +551,7 @@ const cachedMetrics = (
 
 /**
  * Metric weights. Capacity is weighted heavily on purpose: a battle that doubles
- * `town-hallCapacity` or `barracksCapacity` unlocks more houses, more barracks
+ * `townHallCapacity` or `barracksCapacity` unlocks more houses, more barracks
  * and therefore more population, which is worth far more than its log gain
  * alone suggests. Tuned by feel, so they live in one place.
  */

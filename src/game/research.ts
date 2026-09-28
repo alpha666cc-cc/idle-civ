@@ -246,13 +246,13 @@ for (const research of researchDefinitions) {
   }
   for (const bonus of research.bonuses) {
     const destination = String(bonus.destination);
-    if (destination === "all-production") continue;
+    if (destination === "allProduction") continue;
     if (parseUnitStatTarget(destination)) continue;
     if (findAttributeDefinition(destination)) continue;
     if (buildingDefinitions.some(({ key }) => key === destination)) continue;
     if (
-      destination === "all-buildings" ||
-      destination === "all-units" ||
+      destination === "allBuildings" ||
+      destination === "allUnits" ||
       destination.startsWith("tag.")
     )
       continue;

@@ -35,7 +35,7 @@ describe("simulation event snapshots", () => {
         wood: ExpNumber.fromNumber(1e6),
       },
       emptyWorkerAssignments(),
-      { "town-hall": 1 },
+      { "townHall": 1 },
       emptyResourceFactors(),
       {},
       0,
@@ -166,7 +166,7 @@ describe("simulation event snapshots", () => {
       description: "buys the first farm enhancer",
       decideAction: () => ({
         type: "buyUpgrade",
-        upgradeId: "farm-enhancer-9",
+        upgradeId: "farmEnhancer9",
       }),
     };
     const result = new GameSimulation(state, strategy, {
@@ -178,7 +178,7 @@ describe("simulation event snapshots", () => {
     }).run();
     const event = result.events.find(
       ({ type, id }) =>
-        type === "upgrade" && id === "farm-enhancer-9",
+        type === "upgrade" && id === "farmEnhancer9",
     );
 
     expect(result.finalState.resources.farmCapacity.toString()).toBe("1e1");
@@ -235,7 +235,7 @@ describe("required progression strategy", () => {
     return new CivilizationState(
       amounts,
       assignments,
-      { "town-hall": 1, ...buildings, people },
+      { "townHall": 1, ...buildings, people },
       emptyResourceFactors(),
       {},
       0,
@@ -297,7 +297,7 @@ describe("required progression strategy", () => {
         .map(({ key }) => key),
     });
 
-    // Bronze Raid fields two buyable age-0 units, so the named path applies and
+    // Bronze Raid fields two buyable age0 units, so the named path applies and
     // every one of them is a target. The domain fallback — which returns a single
     // unit — is covered by the beast-only encounter above, and picking one here
     // would silently drop the axemen the encounter actually sends.
@@ -370,7 +370,7 @@ describe("required progression strategy", () => {
 
   it("advances the age whenever the engine allows it, whatever the population", () => {
     // Regression: the strategy helper used to add its own population gate, so a
-    // run that had won every age-0 battle and cleared the building target still
+    // run that had won every age0 battle and cleared the building target still
     // sat at 999 citizens — one short of the next age's 1000 threshold — and
     // never asked to advance, even though `canEnterAge` said it could.
     const ageZeroBattles = encounterDefinitions
@@ -378,26 +378,26 @@ describe("required progression strategy", () => {
       .map(({ key }) => key);
     const state = makeState({
       people: 999,
-      // Clears the 125% building target for age-0 with room to spare.
+      // Clears the 125% building target for age0 with room to spare.
       buildings: { farm: 1200 },
       resources: richResources,
       defeatedEncounters: ageZeroBattles,
     });
 
-    expect(state.canEnterAge("age-0")).toBe(true);
+    expect(state.canEnterAge("age0")).toBe(true);
     expect(getRequiredAgeAction(state)).toEqual({
       type: "enterAge",
-      ageId: "age-0",
+      ageId: "age0",
     });
     // And the cheapest strategy asks for it ahead of any purchase.
     expect(
       getStrategy("cheapest")?.decideAction(state, { gameTime: 0, snapshots: [] }),
-    ).toEqual({ type: "enterAge", ageId: "age-0" });
+    ).toEqual({ type: "enterAge", ageId: "age0" });
   });
 
   it("waits for the age transition until the engine says it is allowed", () => {
     const notReady = makeState({ people: 999, resources: richResources });
-    expect(notReady.canEnterAge("age-0")).toBe(false);
+    expect(notReady.canEnterAge("age0")).toBe(false);
     expect(getRequiredAgeAction(notReady)).toBeNull();
   });
 
@@ -542,13 +542,13 @@ describe("required progression strategy", () => {
     };
     const result = new GameSimulation(ready, strategy, {
       seed: 42,
-      objective: { type: "ageReach", ageId: "age-1" },
+      objective: { type: "ageReach", ageId: "age1" },
       gatherClicksPerAction: 1,
       maxGameTime: 2,
       recordSnapshots: false,
     }).run();
 
-    expect(result.finalState.getCurrentAge()?.key).toBe("age-1");
+    expect(result.finalState.getCurrentAge()?.key).toBe("age1");
     expect(result.objectiveReached).toBe(true);
     expect(result.success).toBe(true);
   });
@@ -586,18 +586,18 @@ describe("required progression strategy", () => {
 
     expect(getRequiredAgeAction(ready)).toEqual({
       type: "enterAge",
-      ageId: "age-0",
+      ageId: "age0",
     });
     expect(getRequiredAgeAction(oneCitizenShort)).toEqual({
       type: "enterAge",
-      ageId: "age-0",
+      ageId: "age0",
     });
     expect(getRequiredAgeAction(missingBattle)).toBeNull();
     expect(getRequiredAgeAction(missingBuildings)).toBeNull();
     // The engine agrees in every case: the helper adds no rule of its own.
-    expect(ready.canEnterAge("age-0")).toBe(true);
-    expect(oneCitizenShort.canEnterAge("age-0")).toBe(true);
-    expect(missingBattle.canEnterAge("age-0")).toBe(false);
-    expect(missingBuildings.canEnterAge("age-0")).toBe(false);
+    expect(ready.canEnterAge("age0")).toBe(true);
+    expect(oneCitizenShort.canEnterAge("age0")).toBe(true);
+    expect(missingBattle.canEnterAge("age0")).toBe(false);
+    expect(missingBuildings.canEnterAge("age0")).toBe(false);
   });
 });

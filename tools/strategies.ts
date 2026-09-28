@@ -68,9 +68,7 @@ type BuildingPriority = {
 }[];
 
 /** Simulation-only research routes; the live engine has no recommendation field. */
-const simulationResearchHints: Readonly<
-  Record<string, readonly string[]>
-> = {
+const simulationResearchHints: Readonly<Record<string, readonly string[]>> = {
   age0_3_bronze_raid: ["sling_throwing", "writing"],
 };
 
@@ -90,9 +88,7 @@ export const getRequiredBattleUnitTargets = (
 ): UnitDefinition[] => {
   const battle = getRequiredBattle(state);
   if (!battle) return [];
-  const enemyUnitIds = new Set(
-    battle.enemyArmy.map(({ unitId }) => unitId),
-  );
+  const enemyUnitIds = new Set(battle.enemyArmy.map(({ unitId }) => unitId));
   const directDefinitions = unitDefinitions.filter(
     (unit) =>
       isBuyableUnit(unit) &&
@@ -108,8 +104,13 @@ export const getRequiredBattleUnitTargets = (
   // a second encounter-specific unit table to the simulation.
   const enemyDomains = new Set(
     battle.enemyArmy
-      .map(({ unitId }) => unitDefinitions.find(({ key }) => key === unitId)?.domain)
-      .filter((domain): domain is UnitDefinition["domain"] => domain !== undefined),
+      .map(
+        ({ unitId }) =>
+          unitDefinitions.find(({ key }) => key === unitId)?.domain,
+      )
+      .filter(
+        (domain): domain is UnitDefinition["domain"] => domain !== undefined,
+      ),
   );
   return unitDefinitions
     .filter(
@@ -171,7 +172,9 @@ const getRecommendedResearchOrder = (
     ? simulationResearchHints[hintedBattle.key]
     : [];
   return [
-    ...new Set(recommended.flatMap((researchId) => prerequisiteOrder(researchId))),
+    ...new Set(
+      recommended.flatMap((researchId) => prerequisiteOrder(researchId)),
+    ),
   ];
 };
 
@@ -224,7 +227,9 @@ const battleUnitMatchScore = (
   }, 0);
 };
 
-const getBattleUnitCandidates = (state: CivilizationState): UnitDefinition[] => {
+const getBattleUnitCandidates = (
+  state: CivilizationState,
+): UnitDefinition[] => {
   const battle = getRequiredBattle(state);
   if (!battle) return [];
   return state
@@ -250,10 +255,17 @@ const getRequiredBattleResourceToGather = (
     .sort((left, right) => {
       const leftDeficit = left.base.sub(state.resources[left.resource]);
       const rightDeficit = right.base.sub(state.resources[right.resource]);
-      return rightDeficit.gt(leftDeficit) ? -1 : leftDeficit.gt(rightDeficit) ? 1 : 0;
+      return rightDeficit.gt(leftDeficit)
+        ? -1
+        : leftDeficit.gt(rightDeficit)
+          ? 1
+          : 0;
     });
   const resource = missing[0]?.resource;
-  if (!resource || !producerResourceKeys.includes(resource as ProductionResourceKey)) {
+  if (
+    !resource ||
+    !producerResourceKeys.includes(resource as ProductionResourceKey)
+  ) {
     return null;
   }
   return resource as ProductionResourceKey;
@@ -265,7 +277,8 @@ export const getRequiredBattleAction = (
 ): SimulationAction | null => {
   const nextBattle = getRequiredBattle(state);
   if (!nextBattle) return null;
-  if (state.simulateEncounter(nextBattle.key)?.outcome !== "player") return null;
+  if (state.simulateEncounter(nextBattle.key)?.outcome !== "player")
+    return null;
   return { type: "launchBattle", encounterId: nextBattle.key };
 };
 
@@ -295,18 +308,24 @@ const requiredBattleBuildings: readonly BuildingKey[] = [
  * unaffordable. This returns the next *growth* step whenever the route says
  * population is the thing being waited on, so the ladder cannot wander.
  */
-const ageZeroRouteTargets: readonly { readonly afterBattle: number; readonly pop: number }[] =
-  [
-    { afterBattle: 0, pop: 90 },
-    { afterBattle: 1, pop: 200 },
-    { afterBattle: 2, pop: 1000 },
-  ];
+const ageZeroRouteTargets: readonly {
+  readonly afterBattle: number;
+  readonly pop: number;
+}[] = [
+  { afterBattle: 0, pop: 90 },
+  { afterBattle: 1, pop: 200 },
+  { afterBattle: 2, pop: 1000 },
+];
 
 /** The population the route is currently working toward, or 0 when none. */
-export const getAgeRouteTargetPopulation = (state: CivilizationState): number => {
+export const getAgeRouteTargetPopulation = (
+  state: CivilizationState,
+): number => {
   if (state.enteredAges.length > 0) return 0;
   const battlesWon = state.defeatedEncounters.filter((id) =>
-    encounterDefinitions.some((battle) => battle.key === id && battle.age === 0),
+    encounterDefinitions.some(
+      (battle) => battle.key === id && battle.age === 0,
+    ),
   ).length;
   for (const step of ageZeroRouteTargets) {
     if (battlesWon <= step.afterBattle) return step.pop;
@@ -325,9 +344,32 @@ export const getAgeRouteGrowthAction = (
   const target = getAgeRouteTargetPopulation(state);
   if (target <= 0) return null;
   if (state.population.gte(ExpNumber.fromNumber(target))) return null;
-  if (state.isBuildingAvailable("people") && state.canBuild("people")) {
-    return { type: "build", building: "people", count: 1 };
+
+  if (state.isBuildingAvailable("people")) {
+    if (state.canBuild("people")) {
+      return { type: "build", building: "people", count: 1 };
+    }
+    // If capped by housing, we must build a house or town-hall.
+    const currentPop = state.population.toNumber();
+    const capacity = state.maximumPopulation.toNumber();
+    if (currentPop >= capacity) {
+      if (state.canBuild("house"))
+        return { type: "build", building: "house", count: 1 };
+      // Fallback if house can't be built (e.g. lacks resources), gather for it.
+      const houseCost = state.getBuildingCost(
+        "house",
+        state.getBuildingCount("house"),
+        1,
+      );
+      const missing = houseCost.find(({ resource, base }) =>
+        state.resources[resource as ProductionResourceKey]?.lt(base),
+      );
+      if (missing && isResourceGatherable(state, missing.resource)) {
+        return { type: "gather", resource: missing.resource };
+      }
+    }
   }
+
   const citizenCost = state
     .getBuildingCost("people", state.getBuildingCount("people"), 1)
     .find(({ resource }) => resource === "food");
@@ -339,7 +381,8 @@ export const getAgeRouteGrowthAction = (
 
 /**
  * Prepares the next required battle when its progression building is now
- * available. This is strategy policy only; `canBuild()` remains the game rule.
+ * available. Builds it if affordable; gathers the bottleneck resource if not.
+ * This is strategy policy only; `canBuild()` remains the game rule.
  */
 export const getRequiredBattlePreparationAction = (
   state: CivilizationState,
@@ -347,8 +390,31 @@ export const getRequiredBattlePreparationAction = (
   const requiredBattle = getRequiredBattle(state);
   if (!requiredBattle) return null;
   for (const building of requiredBattleBuildings) {
-    if (state.getBuildingCount(building) === 0 && state.canBuild(building)) {
-      return { type: "build", building, count: 1 };
+    if (
+      state.getBuildingCount(building) === 0 &&
+      state.isBuildingAvailable(building)
+    ) {
+      if (state.canBuild(building)) {
+        return { type: "build", building, count: 1 };
+      }
+      // Not affordable yet — gather toward the most-missing gatherable resource.
+      const costs = state.getBuildingCost(building, 0, 1);
+      const missing = costs
+        .filter(({ resource, base }) => state.resources[resource]?.lt(base))
+        .filter(({ resource }) => isResourceGatherable(state, resource))
+        .sort((left, right) => {
+          const leftDeficit = left.base.sub(
+            state.resources[left.resource] ?? ExpNumber.ZERO,
+          );
+          const rightDeficit = right.base.sub(
+            state.resources[right.resource] ?? ExpNumber.ZERO,
+          );
+          if (leftDeficit.gt(rightDeficit)) return -1;
+          if (rightDeficit.gt(leftDeficit)) return 1;
+          return left.resource.localeCompare(right.resource);
+        });
+      if (missing[0]) return { type: "gather", resource: missing[0].resource };
+      // All costs are either met or not gatherable — do not block on this building.
     }
   }
   return null;
@@ -380,25 +446,24 @@ export const getRequiredAgeAction = (
 const simulatorOwnedArmy = (state: CivilizationState): SimulatorOwnedArmy =>
   new Map(state.getArmyStacks().map(({ unitId, count }) => [unitId, count]));
 
-/** Build simulator stacks with every research bonus available to the battle. */
+/** Build simulator stacks with the research the player currently owns. */
 const simulatorStacksWithResearch = (
   state: CivilizationState,
-  battleId: string,
+  _battleId: string,
   composition: SimulatorTotalArmy,
 ): ArmyStack[] => {
-  const battleAge =
-    encounterDefinitions.find(({ key }) => key === battleId)?.age ?? 0;
-  const researchIds = researchIdsForBattle(battleAge, [...composition.keys()]);
   const stacks: ArmyStack[] = [];
   for (const [unitId, count] of composition) {
-    const stats = state.getUnitStatsWithResearch(unitId, researchIds);
+    const stats = state.getUnitStatsWithResearch(unitId, state.boughtResearch);
     if (stats) stacks.push({ unitId, count, stats });
   }
   return stacks;
 };
 
 /** The context shared by every headless battle-plan query. */
-const simulatorContext = (state: CivilizationState): BattleSimulatorContext => ({
+const simulatorContext = (
+  state: CivilizationState,
+): BattleSimulatorContext => ({
   getCost: (unitId, count) => state.getUnitCost(unitId, count),
   getResearch: (unitIds) => state.getResearchForUnitTypes(unitIds),
   wins: (composition, battleId) => {
@@ -412,10 +477,18 @@ const simulatorContext = (state: CivilizationState): BattleSimulatorContext => (
   },
 });
 
-/** Candidate units the simulator may consider for the current campaign battle. */
-const simulatorBattleCandidates = (state: CivilizationState): UnitDefinition[] => {
+/** Candidate units the simulator may consider for the current campaign battle.
+ *  Only includes units the player has actually unlocked — no speculative research
+ *  unlocks — so the solver works with the actual army that can be fielded today. */
+const simulatorBattleCandidates = (
+  state: CivilizationState,
+): UnitDefinition[] => {
   const battle = getRequiredBattle(state);
-  return battle ? simulatorCandidates(battle.age) : [];
+  return battle
+    ? simulatorCandidates(battle.age).filter((unit) =>
+        state.isUnitAvailable(unit.key),
+      )
+    : [];
 };
 
 const simulatorPlanKey = (state: CivilizationState): string =>
@@ -539,8 +612,10 @@ const isCostResourceReachable = (
   resource: string,
 ): boolean =>
   isResourceGatherable(state, resource) ||
-  producerResourceKeys.includes(resource as ProductionResourceKey) &&
-    state.computeResourceRate(resource as ProductionResourceKey).gt(ExpNumber.ZERO);
+  (producerResourceKeys.includes(resource as ProductionResourceKey) &&
+    state
+      .computeResourceRate(resource as ProductionResourceKey)
+      .gt(ExpNumber.ZERO));
 
 /** An affordable advisor purchase (research unlock or recruit) for the current plan. */
 export const getRecommendedBattlePurchase = (
@@ -548,7 +623,10 @@ export const getRecommendedBattlePurchase = (
   plan: SimulatorResult | null,
 ): SimulationAction | null => {
   if (!plan) return null;
-  return getSimulatorResearchAction(state, plan) ?? getSimulatorUnitAction(state, plan);
+  return (
+    getSimulatorResearchAction(state, plan) ??
+    getSimulatorUnitAction(state, plan)
+  );
 };
 
 /**
@@ -582,10 +660,13 @@ const getSimulatorGatherAction = (
   if (!plan) return null;
   const unit = getFirstSimulatorUnit(state, plan);
   if (unit) {
-    const maxAffordable = state.getMaxAffordableUnits(unit.unitId);
-    const count = Math.max(1, Math.min(unit.count, maxAffordable || unit.count));
-    const costs = state.getUnitCost(unit.unitId, count);
-    if (costs.every(({ resource }) => isCostResourceReachable(state, resource))) {
+    // Always price the *next single unit* — pricing the whole remaining
+    // batch inflates food's raw deficit above military's, crowding out the
+    // real bottleneck. One-at-a-time pricing keeps the sort honest.
+    const costs = state.getUnitCost(unit.unitId, 1);
+    if (
+      costs.every(({ resource }) => isCostResourceReachable(state, resource))
+    ) {
       const missing = costs
         .filter(({ resource }) => isResourceGatherable(state, resource))
         .filter(({ resource, base }) => state.resources[resource].lt(base))
@@ -597,7 +678,10 @@ const getSimulatorGatherAction = (
           return left.resource.localeCompare(right.resource);
         });
       const resource = missing[0]?.resource;
-      if (resource && producerResourceKeys.includes(resource as ProductionResourceKey)) {
+      if (
+        resource &&
+        producerResourceKeys.includes(resource as ProductionResourceKey)
+      ) {
         return { type: "gather", resource };
       }
     }
@@ -667,7 +751,9 @@ const comparePurchaseCost = (
   return left.order - right.order;
 };
 
-const getPurchaseCandidates = (state: CivilizationState): PurchaseCandidate[] => {
+const getPurchaseCandidates = (
+  state: CivilizationState,
+): PurchaseCandidate[] => {
   const candidates: PurchaseCandidate[] = [];
   let order = 0;
   const add = (action: SimulationAction, costs: readonly BuildingCost[]) => {
@@ -676,7 +762,10 @@ const getPurchaseCandidates = (state: CivilizationState): PurchaseCandidate[] =>
   };
 
   for (const building of buildingDefinitions) {
-    if (!state.isBuildingAvailable(building.key) || state.isBuildingAtCapacity(building.key)) {
+    if (
+      !state.isBuildingAvailable(building.key) ||
+      state.isBuildingAtCapacity(building.key)
+    ) {
       continue;
     }
     const currentCount = state.getBuildingCount(building.key);
@@ -692,7 +781,10 @@ const getPurchaseCandidates = (state: CivilizationState): PurchaseCandidate[] =>
   }
 
   for (const research of researchDefinitions) {
-    if (state.isResearchBought(research.key) || !state.isResearchUnlocked(research.key)) {
+    if (
+      state.isResearchBought(research.key) ||
+      !state.isResearchUnlocked(research.key)
+    ) {
       continue;
     }
     add(
@@ -702,7 +794,10 @@ const getPurchaseCandidates = (state: CivilizationState): PurchaseCandidate[] =>
   }
 
   for (const upgrade of upgradeDefinitions) {
-    if (state.isUpgradeBought(upgrade.key) || !state.isUpgradeUnlocked(upgrade.key)) {
+    if (
+      state.isUpgradeBought(upgrade.key) ||
+      !state.isUpgradeUnlocked(upgrade.key)
+    ) {
       continue;
     }
     add(
@@ -746,18 +841,17 @@ const gatherForPurchase = (
   state: CivilizationState,
   candidate: PurchaseCandidate,
 ): string | null => {
-  const missing = missingPurchaseCosts(state, candidate.costs).filter(({ resource }) =>
-    canGatherResource(state, resource),
+  const missing = missingPurchaseCosts(state, candidate.costs).filter(
+    ({ resource }) => canGatherResource(state, resource),
   );
   if (missing.length === 0) return null;
-  return missing
-    .sort((left, right) => {
-      const leftDeficit = left.base.sub(state.resources[left.resource]);
-      const rightDeficit = right.base.sub(state.resources[right.resource]);
-      if (leftDeficit.gt(rightDeficit)) return -1;
-      if (rightDeficit.gt(leftDeficit)) return 1;
-      return left.resource.localeCompare(right.resource);
-    })[0].resource;
+  return missing.sort((left, right) => {
+    const leftDeficit = left.base.sub(state.resources[left.resource]);
+    const rightDeficit = right.base.sub(state.resources[right.resource]);
+    if (leftDeficit.gt(rightDeficit)) return -1;
+    if (rightDeficit.gt(leftDeficit)) return 1;
+    return left.resource.localeCompare(right.resource);
+  })[0].resource;
 };
 
 /**
@@ -785,11 +879,11 @@ abstract class BaseStrategy implements SimulationStrategy {
       { building: "people", weight: 10 },
       { building: "house", weight: 8 },
       { building: "farm", weight: 7 },
-      { building: "lumber-yard", weight: 6 },
+      { building: "lumberYard", weight: 6 },
       { building: "quarry", weight: 5 },
-      { building: "gold-mine", weight: 4 },
+      { building: "goldMine", weight: 4 },
       { building: "market", weight: 3 },
-      { building: "town-hall", weight: 2 },
+      { building: "townHall", weight: 2 },
     ];
   }
 
@@ -813,7 +907,9 @@ abstract class BaseStrategy implements SimulationStrategy {
    * blocked on a resource the settlement cannot produce yet must not starve the
    * buildings and workers that unblock it.
    */
-  protected getSimulatorAction(state: CivilizationState): SimulationAction | null {
+  protected getSimulatorAction(
+    state: CivilizationState,
+  ): SimulationAction | null {
     return getRecommendedBattlePurchase(state, getSimulatorBattlePlan(state));
   }
 
@@ -822,7 +918,9 @@ abstract class BaseStrategy implements SimulationStrategy {
    * below worker assignment and building purchases: it is a hint about *what* to
    * save for, never a reason to stop growing the economy.
    */
-  protected getSimulatorGather(state: CivilizationState): SimulationAction | null {
+  protected getSimulatorGather(
+    state: CivilizationState,
+  ): SimulationAction | null {
     return getSimulatorGatherAction(state, getSimulatorBattlePlan(state));
   }
 
@@ -959,14 +1057,16 @@ abstract class BaseStrategy implements SimulationStrategy {
           state.getBuildingCount(building),
           1,
         );
-        const missing = missingPurchaseCosts(state, costs).filter(({ resource }) =>
-          canGatherResource(state, resource),
+        const missing = missingPurchaseCosts(state, costs).filter(
+          ({ resource }) => canGatherResource(state, resource),
         );
         if (missing.length > 0) {
           // Sort missing by deficit descending
           return missing.sort((left, right) => {
             const leftDeficit = left.base.sub(state.resources[left.resource]);
-            const rightDeficit = right.base.sub(state.resources[right.resource]);
+            const rightDeficit = right.base.sub(
+              state.resources[right.resource],
+            );
             if (leftDeficit.gt(rightDeficit)) return -1;
             if (rightDeficit.gt(leftDeficit)) return 1;
             return left.resource.localeCompare(right.resource);
@@ -1077,7 +1177,10 @@ abstract class BaseStrategy implements SimulationStrategy {
     }
     // Priority 8.5: Gather for the highest-priority unaffordable building.
     // If we want a building but can't afford it, actively gather its missing resources.
-    const priorityGather = this.findPriorityBuildingToGatherFor(state, this.getBuildingPriority());
+    const priorityGather = this.findPriorityBuildingToGatherFor(
+      state,
+      this.getBuildingPriority(),
+    );
     if (priorityGather) return { type: "gather", resource: priorityGather };
 
     // Priority 9: Gather toward the advisor's next purchase, if it is reachable.
@@ -1199,7 +1302,9 @@ export class CheapestStrategy extends BaseStrategy {
     }
 
     const resourceToGather = this.getResourceToGather(state);
-    return resourceToGather ? { type: "gather", resource: resourceToGather } : null;
+    return resourceToGather
+      ? { type: "gather", resource: resourceToGather }
+      : null;
   }
 }
 
@@ -1228,14 +1333,14 @@ export class BalancedStrategy extends BaseStrategy {
       { building: "people", weight: 10 },
       { building: "house", weight: 9 },
       { building: "farm", weight: 8 },
-      { building: "lumber-yard", weight: 7 },
+      { building: "lumberYard", weight: 7 },
       { building: "quarry", weight: 6 },
-      { building: "gold-mine", weight: 5 },
+      { building: "goldMine", weight: 5 },
       { building: "barracks", weight: 4, targetCount: 3 },
       { building: "university", weight: 3, targetCount: 3 },
       { building: "smithy", weight: 3, targetCount: 2 },
       { building: "market", weight: 2 },
-      { building: "town-hall", weight: 1 },
+      { building: "townHall", weight: 1 },
     ];
   }
 
@@ -1272,11 +1377,11 @@ export class ProductionStrategy extends BaseStrategy {
       { building: "people", weight: 10 },
       { building: "house", weight: 9 },
       { building: "farm", weight: 8 },
-      { building: "lumber-yard", weight: 8 },
+      { building: "lumberYard", weight: 8 },
       { building: "quarry", weight: 7 },
-      { building: "gold-mine", weight: 7 },
+      { building: "goldMine", weight: 7 },
       { building: "market", weight: 5 },
-      { building: "town-hall", weight: 4 },
+      { building: "townHall", weight: 4 },
     ];
   }
 
@@ -1311,14 +1416,14 @@ export class MilitaryStrategy extends BaseStrategy {
       { building: "people", weight: 10 },
       { building: "house", weight: 9 },
       { building: "farm", weight: 7 },
-      { building: "lumber-yard", weight: 6 },
+      { building: "lumberYard", weight: 6 },
       { building: "quarry", weight: 6 },
       { building: "barracks", weight: 8, targetCount: 5 },
       { building: "university", weight: 7, targetCount: 3 },
       { building: "smithy", weight: 7, targetCount: 3 },
-      { building: "gold-mine", weight: 5 },
+      { building: "goldMine", weight: 5 },
       { building: "market", weight: 3 },
-      { building: "town-hall", weight: 2 },
+      { building: "townHall", weight: 2 },
     ];
   }
 
@@ -1359,10 +1464,10 @@ export class FastAgeStrategy extends BaseStrategy {
       { building: "people", weight: 10 },
       { building: "house", weight: 10 },
       { building: "farm", weight: 9 },
-      { building: "town-hall", weight: 8 },
-      { building: "lumber-yard", weight: 5 },
+      { building: "townHall", weight: 8 },
+      { building: "lumberYard", weight: 5 },
       { building: "quarry", weight: 4 },
-      { building: "gold-mine", weight: 3 },
+      { building: "goldMine", weight: 3 },
       { building: "market", weight: 2 },
     ];
   }
@@ -1411,12 +1516,12 @@ export class EconomyStrategy extends BaseStrategy {
     return [
       { building: "people", weight: 10 },
       { building: "house", weight: 9 },
-      { building: "gold-mine", weight: 9 },
+      { building: "goldMine", weight: 9 },
       { building: "market", weight: 8, targetCount: 5 },
       { building: "farm", weight: 6 },
-      { building: "lumber-yard", weight: 5 },
+      { building: "lumberYard", weight: 5 },
       { building: "quarry", weight: 4 },
-      { building: "town-hall", weight: 3 },
+      { building: "townHall", weight: 3 },
     ];
   }
 
@@ -1474,7 +1579,7 @@ export class SpeedrunStrategy extends BaseStrategy {
     // Follow the mandatory age route before spending anything discretionary.
     // Speedrun overrides decideAction, so without this it never reached the
     // route at all and parked at the 90-population barracks threshold, the
-    // slowest settlement of the seven. The route self-limits: once the age-0
+    // slowest settlement of the seven. The route self-limits: once the age0
     // population targets are met it returns null and recruitment resumes, so
     // this cannot starve the army the remaining battles need.
     const routeAction = getAgeRouteGrowthAction(state);
@@ -1485,6 +1590,11 @@ export class SpeedrunStrategy extends BaseStrategy {
     // never field the army the required battle gate is waiting on.
     const simulatorAction = this.getSimulatorAction(state);
     if (simulatorAction) return simulatorAction;
+
+    // We must gather for the simulator's plan if we can't afford it, otherwise
+    // we stall waiting for workers to passively gather military/science.
+    const simulatorGather = this.getSimulatorGather(state);
+    if (simulatorGather) return simulatorGather;
 
     // The ROI sweep includes the pending battle as a candidate, priced with the
     // simulator's army and scored on what winning it actually grants (capacity

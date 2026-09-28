@@ -21,7 +21,7 @@ import {
 } from "./saveSystem";
 import { isBuyableUnit, unitDefinitions } from "./units";
 
-/** An age-0 state with a pool of science to buy research with. */
+/** An age0 state with a pool of science to buy research with. */
 const stateWith = (
   science: number,
   enteredAges: string[] = [],
@@ -30,7 +30,7 @@ const stateWith = (
   new CivilizationState(
     { ...emptyResourceAmounts(), science: ExpNumber.fromNumber(science) },
     emptyWorkerAssignments(),
-    { "town-hall": 1 },
+    { "townHall": 1 },
     emptyResourceFactors(),
     {},
     0,
@@ -137,8 +137,64 @@ describe("research buying", () => {
     );
   });
 
+  /**
+   * Age-1 hands out a `buildingPower` x1.5 on top of age0's x2, and because
+   * building power feeds `getBuildingEffects()` as an exponent, university
+   * output runs away and the global research curve stops mattering. The age
+   * therefore carries a science cost multiplier to re-anchor it.
+   */
+  describe("age cost multipliers", () => {
+    it("leaves age0 research at the plain curve", () => {
+      const state = stateWith(1e30, ["age0"]);
+      expect(state.getResourceCostMultiplier("science").toNumber()).toBe(1);
+      expect(state.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(100, 9);
+    });
+
+    it("scales science by the age1 factor once that age is entered", () => {
+      const before = stateWith(1e30, ["age0"]);
+      const after = before.enterAge("age1");
+      expect(after.getResourceCostMultiplier("science").toNumber()).toBe(1000);
+      const base = after.getResearchNextCost()[0].base.toNumber();
+      const plain = before.getResearchNextCost()[0].base.toNumber();
+      expect(base / plain).toBeCloseTo(1000, 6);
+    });
+
+    it("scales the whole multi-purchase batch, not just the next one", () => {
+      const plain = stateWith(1e30, ["age0"]).getResearchCostForCount(5);
+      const scaled = stateWith(1e30, ["age0", "age1"]).getResearchCostForCount(5);
+      expect(scaled).toHaveLength(1);
+      expect(scaled[0].base.toNumber() / plain[0].base.toNumber()).toBeCloseTo(
+        1000,
+        6,
+      );
+    });
+
+    it("leaves other resources alone", () => {
+      const state = stateWith(1e30, ["age0", "age1"]);
+      expect(state.getResourceCostMultiplier("food").toNumber()).toBe(1);
+      expect(state.getResourceCostMultiplier("gold").toNumber()).toBe(1);
+    });
+
+    it("actually charges the multiplied price on purchase", () => {
+      // A modest pool, not 1e30: ExpNumber keeps ~15 significant digits, so a
+      // 1e5 deduction out of 1e30 is absorbed and the check would prove nothing.
+      const start = stateWith(1e9, ["age0", "age1"]);
+      const quoted = start.getResearchNextCost()[0].base.toNumber();
+      expect(quoted).toBeCloseTo(100_000, 6); // 100 science x the age1 factor
+      const bought = start.buyResearch(first.key);
+      expect(bought.isResearchBought(first.key)).toBe(true);
+      expect(1e9 - bought.resources.science.toNumber()).toBeCloseTo(quoted, 0);
+    });
+
+    it("leaves an unrelated resource at exactly one", () => {
+      expect(stateWith(1e30, ["age0"]).getResourceCostMultiplier("x")).toBe(
+        ExpNumber.ONE,
+      );
+    });
+  });
+
   it("prices only unbought research needed for a new unit type", () => {
-    const state = stateWith(1e30).enterAge("age-0");
+    const state = stateWith(1e30).enterAge("age0");
     const required = state.getResearchForUnitTypes(["slinger"]);
 
     expect(required.ids).toEqual(["agriculture", "pottery", "sling_throwing"]);
@@ -158,7 +214,7 @@ describe("research buying", () => {
     expect(afterPurchase.costs).toEqual([]);
   });
 
-  it("makes age-0 research available from the start", () => {
+  it("makes age0 research available from the start", () => {
     const state = stateWith(0);
     expect(state.isResearchUnlocked(first.key)).toBe(true);
     expect(state.getResearchFailureReason(first.key)).toBe("resources");
@@ -167,22 +223,22 @@ describe("research buying", () => {
     expect(entered.getResearchFailureReason(first.key)).toBe("resources");
   });
 
-  it("keeps age-2 research locked until age-2 is reached", () => {
+  it("keeps age2 research locked until age2 is reached", () => {
     const ageTwo = researchDefinitions.find(
       (research) => research.age === 2,
     );
     expect(ageTwo).toBeDefined();
     if (!ageTwo) return;
 
-    // Before the transition, age-2 (Classical) has not been reached, so its
+    // Before the transition, age2 (Classical) has not been reached, so its
     // tech must stay locked even with unlimited science.
-    let state = stateWith(1e30, ["age-0", "age-1"]);
+    let state = stateWith(1e30, ["age0", "age1"]);
     expect(state.isResearchUnlocked(ageTwo.key)).toBe(false);
     expect(state.getResearchFailureReason(ageTwo.key)).toBe("locked");
     expect(state.buyResearch(ageTwo.key)).toBe(state);
 
-    // Entering Classical unlocks age-2 research once its prerequisites are met.
-    state = state.enterAge("age-2");
+    // Entering Classical unlocks age2 research once its prerequisites are met.
+    state = state.enterAge("age2");
     expect(state.isResearchUnlocked(ageTwo.key)).toBe(
       ageTwo.prerequisites.every((prerequisite) =>
         state.boughtResearch.includes(prerequisite),
@@ -198,8 +254,8 @@ describe("research buying", () => {
     if (!ironAge) return;
 
     // The era card advances into the Iron Age; its own techs must be available
-    // immediately, even though `age-1` has not been completed yet.
-    let state = stateWith(1e30, ["age-0"]).enterAge("age-1");
+    // immediately, even though `age1` has not been completed yet.
+    let state = stateWith(1e30, ["age0"]).enterAge("age1");
     state = buyPrerequisiteClosure(state, ironAge.key);
     expect(state.isResearchUnlocked(ironAge.key)).toBe(true);
     expect(state.buyResearch(ironAge.key).isResearchBought(ironAge.key)).toBe(
@@ -265,13 +321,13 @@ describe("research buying", () => {
     expect(state.getBuildingCostModifiers("farm").sources).not.toContainEqual(
       expect.arrayContaining([
         expect.anything(),
-        expect.objectContaining({ destination: "all-units" }),
+        expect.objectContaining({ destination: "allUnits" }),
       ]),
     );
     expect(state.getUnitCostModifiers("warrior").sources).not.toContainEqual(
       expect.arrayContaining([
         expect.anything(),
-        expect.objectContaining({ destination: "all-buildings" }),
+        expect.objectContaining({ destination: "allBuildings" }),
       ]),
     );
   });
@@ -338,8 +394,8 @@ describe("research unit conversions", () => {
 
 describe("research in the save system", () => {
   it("round-trips bought research through a save document", () => {
-    const state = stateWith(1e3, ["age-0"])
-      .enterAge("age-0")
+    const state = stateWith(1e3, ["age0"])
+      .enterAge("age0")
       .buyResearch("agriculture");
     const data = createSaveData(state, "guid", 1000);
     const loaded = loadSaveData(data);
