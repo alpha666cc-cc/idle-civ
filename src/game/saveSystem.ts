@@ -79,6 +79,8 @@ export type SerializedStatistics = {
   readonly uiClicks: string;
   readonly buildingsBuilt: string;
   readonly buildingsBuiltByKey: Record<string, string>;
+  /** Optional: saves written before this field existed simply omit it. */
+  readonly resourcesSpent?: Record<string, string>;
   readonly playTimeMs: number;
   readonly runTimeMs: number;
   readonly onlineTimeMs: number;
@@ -686,6 +688,12 @@ export const serializeStatistics = (
       value.toString(),
     ]),
   ),
+  resourcesSpent: Object.fromEntries(
+    Object.entries(statistics.resourcesSpent).map(([key, value]) => [
+      key,
+      value.toString(),
+    ]),
+  ),
   playTimeMs: statistics.playTimeMs,
   runTimeMs: statistics.runTimeMs,
   onlineTimeMs: statistics.onlineTimeMs,
@@ -707,11 +715,16 @@ export const deserializeStatistics = (
   for (const [key, value] of Object.entries(data.buildingsBuiltByKey ?? {})) {
     buildingsBuiltByKey[key] = ExpNumber.from(value);
   }
+  const resourcesSpent: Record<string, ExpNumber> = {};
+  for (const [key, value] of Object.entries(data.resourcesSpent ?? {})) {
+    resourcesSpent[key] = ExpNumber.from(value);
+  }
   return {
     productionClicks: ExpNumber.from(data.productionClicks ?? 0),
     uiClicks: ExpNumber.from(data.uiClicks ?? 0),
     buildingsBuilt: ExpNumber.from(data.buildingsBuilt ?? 0),
     buildingsBuiltByKey,
+    resourcesSpent,
     playTimeMs: data.playTimeMs ?? 0,
     runTimeMs: data.runTimeMs ?? 0,
     onlineTimeMs: data.onlineTimeMs ?? data.playTimeMs ?? 0,

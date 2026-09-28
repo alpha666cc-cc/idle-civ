@@ -46,6 +46,43 @@ describe("simulation event snapshots", () => {
       emptyStatistics(),
     );
 
+  it("honours a configured snapshot interval", () => {
+    const state = () =>
+      new CivilizationState(
+        emptyResourceAmounts(),
+        emptyWorkerAssignments(),
+        {},
+        emptyResourceFactors(),
+        {},
+        0,
+        [],
+        [],
+        [],
+        [],
+        emptyStatistics(),
+      );
+    const noop: SimulationStrategy = {
+      name: "noop",
+      description: "does nothing",
+      decideAction: () => null,
+    };
+    const run = (snapshotIntervalSeconds: number) =>
+      new GameSimulation(state(), noop, {
+        seed: 42,
+        objective: { type: "timeLimit", seconds: 300 },
+        gatherClicksPerAction: 1,
+        maxGameTime: 300,
+        recordSnapshots: true,
+        snapshotIntervalSeconds,
+      }).run();
+
+    const minute = run(60);
+    // 300 simulated seconds at one snapshot a minute.
+    expect(minute.snapshots.length).toBeGreaterThanOrEqual(4);
+    const fiveMinutes = run(300);
+    expect(fiveMinutes.snapshots.length).toBeLessThan(minute.snapshots.length);
+  });
+
   it("executes five normal actions before one tick by default", () => {
     let decisions = 0;
     const strategy: SimulationStrategy = {

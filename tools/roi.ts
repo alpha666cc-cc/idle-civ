@@ -499,6 +499,57 @@ const optionNumber = (value: number | undefined, fallback: number): number =>
   Number.isFinite(value) && value !== undefined && value > 0 ? value : fallback;
 
 /**
+ * Metrics memo. Building the metrics means constructing a probe state and
+ * applying a real transition, which is the expensive half of a scan — and a scan
+ * runs on every one of the runner's five decisions per second.
+ *
+ * The metrics are deliberately *resource-independent*: production rates,
+ * capacities, population, army power and unit availability all follow from what
+ * is built and researched, not from current balances. So they are memoized on a
+ * structural fingerprint of the state, and gathering or ticking (which changes
+ * only balances) reuses them. The cheap part — the wait and whether the
+ * purchase is affordable — is still recomputed every call, because balances are
+ * exactly what it depends on.
+ */
+const metricsCache = new Map<string, RoiMetrics | null>();
+const metricsCacheLimit = 512;
+
+const structuralKey = (state: CivilizationState): string =>
+  [
+    Object.entries(state.builtBuildings)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, count]) => `${key}:${count ?? 0}`)
+      .join(","),
+    state.boughtUpgrades.join(","),
+    state.boughtResearch.join(","),
+    state.enteredAges.join(","),
+    state.defeatedEncounters.join(","),
+    state.earnedAchievements.join(","),
+    Object.keys(state.unitCounts)
+      .sort()
+      .map((unitId) => `${unitId}:${state.unitCounts[unitId].toString()}`)
+      .join(","),
+  ].join("|");
+
+/** Memoized metrics for one candidate, or null when the buyable is a no-op. */
+const cachedMetrics = (
+  buyable: RoiBuyable,
+  structureKey: string,
+  measure: () => RoiMetrics | null,
+): RoiMetrics | null => {
+  const key = `${structureKey}::${buyable.kind}:${(buyable as { id: string }).id}`;
+  const hit = metricsCache.get(key);
+  if (hit !== undefined) return hit;
+  const metrics = measure();
+  if (metricsCache.size >= metricsCacheLimit) {
+    const oldest = metricsCache.keys().next().value;
+    if (oldest !== undefined) metricsCache.delete(oldest);
+  }
+  metricsCache.set(key, metrics);
+  return metrics;
+};
+
+/**
  * Metric weights. Capacity is weighted heavily on purpose: a battle that doubles
  * `town-hallCapacity` or `barracksCapacity` unlocks more houses, more barracks
  * and therefore more population, which is worth far more than its log gain
@@ -545,6 +596,7 @@ export const getBuyableRoi = (
   buyable: RoiBuyable,
   options: RoiOptions = {},
   order = 0,
+  structureKey = structuralKey(state),
 ): RoiEvaluation | null => {
   if (!isLegal(state, buyable)) return null;
   const gatherClicksPerSecond = optionNumber(
@@ -566,14 +618,16 @@ export const getBuyableRoi = (
     // price is the next single recruit, not the whole army.
     const costs = winnable ? [] : (nextRecruitCost(state, plan) ?? totalCost);
     const waitSeconds = waitForCosts(state, costs, gatherClicksPerSecond);
-    const resolved = evaluateBattle(state, buyable.id, plan);
-    if (!resolved) return null;
+    const metrics = cachedMetrics(buyable, structureKey, () => {
+      const resolved = evaluateBattle(state, buyable.id, plan);
+      return resolved ? buildMetrics(resolved.armed, resolved.won, buyable) : null;
+    });
+    if (!metrics) return null;
     const gatherResource = gatherResourceForCosts(
       state,
       costs,
       gatherClicksPerSecond,
     );
-    const metrics = buildMetrics(resolved.armed, resolved.won, buyable);
     const benefit = weightedBenefit(metrics);
     return {
       buyable,
@@ -595,10 +649,12 @@ export const getBuyableRoi = (
 
   const costs = costsFor(state, buyable);
   const waitSeconds = waitForCosts(state, costs, gatherClicksPerSecond);
-  const probe = makeProbeState(state, costs);
-  const after = applyBuyable(probe, buyable);
-  if (after === probe) return null;
-  const metrics = buildMetrics(probe, after, buyable);
+  const metrics = cachedMetrics(buyable, structureKey, () => {
+    const probe = makeProbeState(state, costs);
+    const after = applyBuyable(probe, buyable);
+    return after === probe ? null : buildMetrics(probe, after, buyable);
+  });
+  if (!metrics) return null;
   const benefit =
     weightedBenefit(metrics) *
     (buyable.kind === "upgrade"
@@ -663,8 +719,11 @@ export const getRoiCandidates = (
   state: CivilizationState,
   options: RoiOptions = {},
 ): RoiEvaluation[] => {
+  // Hoisted: the structural fingerprint is built once per scan, not once per
+  // candidate — rebuilding it per candidate cost about 3 ms a call.
+  const key = structuralKey(state);
   const candidates = allBuyables(state, options)
-    .map((buyable, order) => getBuyableRoi(state, buyable, options, order))
+    .map((buyable, order) => getBuyableRoi(state, buyable, options, order, key))
     .filter((candidate): candidate is RoiEvaluation => candidate !== null);
   return candidates.sort(
     (left, right) =>

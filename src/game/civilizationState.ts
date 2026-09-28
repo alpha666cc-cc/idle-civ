@@ -601,10 +601,9 @@ export class CivilizationState {
     const upgrade = upgradeDefinitions.find(({ key }) => key === upgradeId);
     if (!upgrade) return this;
     const resources = { ...this.resources };
-    if (!this.freeUpgrades) {
-      for (const { resource, base } of upgrade.costs) {
-        resources[resource] = resources[resource].sub(base);
-      }
+    const cost = this.freeUpgrades ? [] : upgrade.costs;
+    for (const { resource, base } of cost) {
+      resources[resource] = resources[resource].sub(base);
     }
     return this.withState(
       resources,
@@ -612,6 +611,10 @@ export class CivilizationState {
       this.builtBuildings,
       this.autoClicksPerSecond,
       [...this.boughtUpgrades, upgradeId],
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.recordSpending(this.statistics, cost),
     );
   }
 
@@ -710,7 +713,8 @@ export class CivilizationState {
     if (!this.canBuyResearch(researchId)) return this;
     const research = findResearchDefinition(researchId);
     const resources = { ...this.resources };
-    for (const { resource, base } of this.getResearchNextCost()) {
+    const researchCost = this.getResearchNextCost();
+    for (const { resource, base } of researchCost) {
       resources[resource] = resources[resource].sub(base);
     }
     // Apply the tech's unit conversions: every `ratio` owned units of `from`
@@ -733,7 +737,7 @@ export class CivilizationState {
       this.defeatedEncounters,
       this.enteredAges,
       this.earnedAchievements,
-      this.statistics,
+      this.recordSpending(this.statistics, researchCost),
       unitCounts,
       this.devProductionMultiplier,
       this.freeBuildings,
@@ -1646,19 +1650,22 @@ export class CivilizationState {
       this.defeatedEncounters,
       this.enteredAges,
       this.earnedAchievements,
-      {
-        ...this.statistics,
-        // Cumulative: a building count never falls, so these are lifetime totals.
-        buildingsBuilt: this.statistics.buildingsBuilt.add(
-          ExpNumber.fromNumber(count),
-        ),
-        buildingsBuiltByKey: {
-          ...this.statistics.buildingsBuiltByKey,
-          [buildingKey]: (
-            this.statistics.buildingsBuiltByKey[buildingKey] ?? ExpNumber.ZERO
-          ).add(ExpNumber.fromNumber(count)),
+      this.recordSpending(
+        {
+          ...this.statistics,
+          // Cumulative: a building count never falls, so these are lifetime totals.
+          buildingsBuilt: this.statistics.buildingsBuilt.add(
+            ExpNumber.fromNumber(count),
+          ),
+          buildingsBuiltByKey: {
+            ...this.statistics.buildingsBuiltByKey,
+            [buildingKey]: (
+              this.statistics.buildingsBuiltByKey[buildingKey] ?? ExpNumber.ZERO
+            ).add(ExpNumber.fromNumber(count)),
+          },
         },
-      },
+        cost,
+      ),
     );
   }
 
@@ -1974,7 +1981,29 @@ export class CivilizationState {
     return this.withResources(resources).withUnitCount(
       unitId,
       this.getUnitCount(unitId).add(ExpNumber.fromNumber(count)),
+      this.recordSpending(this.statistics, cost),
     );
+  }
+
+  /**
+   * Folds a cost list into the lifetime `resourcesSpent` tally, so every purchase
+   * path records what it paid. A free purchase passes an empty cost list and so
+   * adds nothing, which is what the dev `free*` switches expect. The input
+   * statistics object is returned untouched when nothing was paid, so a
+   * no-op purchase keeps referential equality with the previous state.
+   */
+  private recordSpending(
+    statistics: Statistics,
+    costs: readonly BuildingCost[],
+  ): Statistics {
+    if (costs.length === 0) return statistics;
+    const resourcesSpent = { ...statistics.resourcesSpent };
+    for (const { resource, base } of costs) {
+      resourcesSpent[resource] = (
+        resourcesSpent[resource] ?? ExpNumber.ZERO
+      ).add(base);
+    }
+    return { ...statistics, resourcesSpent };
   }
 
   /** The player's army as battle stacks, with every bonus in force applied. */
@@ -2416,7 +2445,11 @@ export class CivilizationState {
     );
   }
 
-  private withUnitCount(unitId: string, count: ExpNumber): CivilizationState {
+  private withUnitCount(
+    unitId: string,
+    count: ExpNumber,
+    statistics = this.statistics,
+  ): CivilizationState {
     const unitCounts = { ...this.unitCounts };
     if (count.lte(ExpNumber.ZERO)) delete unitCounts[unitId];
     else unitCounts[unitId] = count;
@@ -2429,7 +2462,7 @@ export class CivilizationState {
       this.defeatedEncounters,
       this.enteredAges,
       this.earnedAchievements,
-      this.statistics,
+      statistics,
       unitCounts,
     );
   }

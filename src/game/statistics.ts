@@ -16,6 +16,13 @@ export type Statistics = {
   readonly buildingsBuilt: ExpNumber;
   /** Cumulative buildings ever built, per building id. */
   readonly buildingsBuiltByKey: Record<string, ExpNumber>;
+  /**
+   * Cumulative resources spent, per resource id — every amount deducted to buy
+   * buildings, units, upgrades and research. Keys are resource ids and only
+   * appear once something has been paid, matching `buildingsBuiltByKey`.
+   * Free purchases (the dev switches) pay nothing and so add nothing.
+   */
+  readonly resourcesSpent: Record<string, ExpNumber>;
   /** Total time played in milliseconds; never reset. */
   readonly playTimeMs: number;
   /** Time played in this run in milliseconds; reset by a future prestige. */
@@ -46,6 +53,7 @@ export const emptyStatistics = (): Statistics => ({
   uiClicks: ExpNumber.ZERO,
   buildingsBuilt: ExpNumber.ZERO,
   buildingsBuiltByKey: {},
+  resourcesSpent: {},
   playTimeMs: 0,
   runTimeMs: 0,
   onlineTimeMs: 0,

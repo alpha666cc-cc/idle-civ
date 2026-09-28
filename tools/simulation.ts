@@ -24,6 +24,8 @@ export interface SimulationSnapshot {
   buildings: { building: BuildingKey; count: number }[];
   units: { unit: string; count: string }[]; // ExpNumber counts as strings
   productionRates: Record<string, string>; // per-second rates
+  /** Cumulative resources spent so far, per resource id (ExpNumber as string). */
+  resourcesSpent: Record<string, string>;
   battlesWon: number;
   totalBuildings: number;
   militaryPower?: number;
@@ -48,6 +50,8 @@ export interface SimulationConfig {
   actionsPerSecond?: number; // strategy actions per simulated second (default 5)
   maxGameTime: number; // maximum simulation time in seconds
   recordSnapshots: boolean;
+  /** Seconds between periodic snapshots (default 300). Battle wins always snapshot. */
+  snapshotIntervalSeconds?: number;
   verbose?: boolean; // enable debug output
 }
 
@@ -615,11 +619,12 @@ export class GameSimulation {
       );
     }
 
-    // Periodic snapshots every 5 minutes for long simulations
+    // Periodic snapshots, every `snapshotIntervalSeconds` (default 300).
     if (this.config.recordSnapshots && this.gameTime > 0) {
+      const interval = this.config.snapshotIntervalSeconds ?? 300;
       const lastSnapshotTime =
         this.snapshots[this.snapshots.length - 1]?.timestamp || 0;
-      if (this.gameTime - lastSnapshotTime >= 300) {
+      if (this.gameTime - lastSnapshotTime >= interval) {
         this.recordSnapshot();
       }
     }
@@ -648,6 +653,11 @@ export class GameSimulation {
         .filter(([, count]) => count.gt(ExpNumber.ZERO))
         .map(([unit, count]) => ({ unit, count: count.toString() })),
       productionRates: this.computeProductionRates(),
+      resourcesSpent: Object.fromEntries(
+        Object.entries(this.state.statistics.resourcesSpent).map(
+          ([key, value]) => [key, value.toString()],
+        ),
+      ),
       battlesWon: this.state.defeatedEncounters.length,
       totalBuildings: Object.values(this.state.builtBuildings).reduce(
         (sum, count) => sum + (count ?? 0),

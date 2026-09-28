@@ -277,6 +277,67 @@ const requiredBattleBuildings: readonly BuildingKey[] = [
 ];
 
 /**
+ * The mandatory route through the first age, in the order the campaign requires.
+ *
+ * Each battle's victory bonus raises the population cap, so the order is not a
+ * preference — it is the only path that works:
+ *
+ *   1. ramp to 90 people, which unlocks the barracks
+ *   2. win the first battle, which raises the cap
+ *   3. ramp to ~200 people
+ *   4. win the second battle, which raises the cap again
+ *   5. raise a university and put the science to work
+ *   6. win the remaining battles and ramp to ~1000 people, in either order
+ *   7. enter the next age
+ *
+ * Strategies used to interleave these freely and stall: they spent on a
+ * hand-ordered priority list while the step that actually unblocked progress was
+ * unaffordable. This returns the next *growth* step whenever the route says
+ * population is the thing being waited on, so the ladder cannot wander.
+ */
+const ageZeroRouteTargets: readonly { readonly afterBattle: number; readonly pop: number }[] =
+  [
+    { afterBattle: 0, pop: 90 },
+    { afterBattle: 1, pop: 200 },
+    { afterBattle: 2, pop: 1000 },
+  ];
+
+/** The population the route is currently working toward, or 0 when none. */
+export const getAgeRouteTargetPopulation = (state: CivilizationState): number => {
+  if (state.enteredAges.length > 0) return 0;
+  const battlesWon = state.defeatedEncounters.filter((id) =>
+    encounterDefinitions.some((battle) => battle.key === id && battle.age === 0),
+  ).length;
+  for (const step of ageZeroRouteTargets) {
+    if (battlesWon <= step.afterBattle) return step.pop;
+  }
+  return 0;
+};
+
+/**
+ * The next mandatory growth step: a citizen when one is affordable, otherwise
+ * the food needed to afford it. Returns null when the route is not waiting on
+ * population, so the caller falls through to its own priorities.
+ */
+export const getAgeRouteGrowthAction = (
+  state: CivilizationState,
+): SimulationAction | null => {
+  const target = getAgeRouteTargetPopulation(state);
+  if (target <= 0) return null;
+  if (state.population.gte(ExpNumber.fromNumber(target))) return null;
+  if (state.isBuildingAvailable("people") && state.canBuild("people")) {
+    return { type: "build", building: "people", count: 1 };
+  }
+  const citizenCost = state
+    .getBuildingCost("people", state.getBuildingCount("people"), 1)
+    .find(({ resource }) => resource === "food");
+  if (citizenCost && state.resources.food.lt(citizenCost.base)) {
+    return { type: "gather", resource: "food" };
+  }
+  return null;
+};
+
+/**
  * Prepares the next required battle when its progression building is now
  * available. This is strategy policy only; `canBuild()` remains the game rule.
  */
@@ -881,6 +942,42 @@ abstract class BaseStrategy implements SimulationStrategy {
   }
 
   /**
+   * Find the first priority building that is blocked only by resources,
+   * and return the resource to gather for it.
+   */
+  protected findPriorityBuildingToGatherFor(
+    state: CivilizationState,
+    priority: BuildingPriority,
+  ): string | null {
+    for (const { building, targetCount } of priority) {
+      if (targetCount && (state.builtBuildings[building] || 0) >= targetCount) {
+        continue;
+      }
+      if (state.getBuildFailureReason(building) === "resources") {
+        const costs = state.getBuildingCost(
+          building,
+          state.getBuildingCount(building),
+          1,
+        );
+        const missing = missingPurchaseCosts(state, costs).filter(({ resource }) =>
+          canGatherResource(state, resource),
+        );
+        if (missing.length > 0) {
+          // Sort missing by deficit descending
+          return missing.sort((left, right) => {
+            const leftDeficit = left.base.sub(state.resources[left.resource]);
+            const rightDeficit = right.base.sub(state.resources[right.resource]);
+            if (leftDeficit.gt(rightDeficit)) return -1;
+            if (rightDeficit.gt(leftDeficit)) return 1;
+            return left.resource.localeCompare(right.resource);
+          })[0].resource;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Default decision logic that can be overridden.
    */
   decideAction(
@@ -902,7 +999,14 @@ abstract class BaseStrategy implements SimulationStrategy {
     const simulatorAction = this.getSimulatorAction(state);
     if (simulatorAction) return simulatorAction;
 
-    // Priority 1: Buy the next combat-path research before spending on units.
+    // Priority 1: Follow the mandatory age route. Population is the step every
+    // battle bonus is waiting on, so it is taken ahead of any hand-ordered
+    // preference — this is what keeps a strategy from stalling on a priority
+    // building while the settlement cannot feed itself.
+    const routeAction = getAgeRouteGrowthAction(state);
+    if (routeAction) return routeAction;
+
+    // Priority 2: Buy the next combat-path research before spending on units.
     const researchAction = this.getResearchAction(state);
     if (researchAction) return researchAction;
 
@@ -943,13 +1047,46 @@ abstract class BaseStrategy implements SimulationStrategy {
       }
     }
 
-    // Priority 7: Gather toward the advisor's next purchase, if it is reachable.
+    // Priority 7: Buy the cheapest legal purchase when nothing above is
+    // affordable. Without this the ladder can stall on a hand-ordered priority
+    // list: the priority building stays unaffordable while cheap buildings and
+    // units — which is what actually grows the settlement — go unpurchased.
+    // This is the same fallback the `cheapest` strategy always takes, so every
+    // strategy inherits at least its progress, then adds its own priorities.
+    const cheapest = getCheapestPurchaseCandidate(state);
+    if (cheapest && isPurchaseAffordable(state, cheapest)) {
+      return cheapest.action;
+    }
+
+    // Priority 8: Food safety. A citizen eats 1 food/second and the next citizen
+    // costs more than the first (the cost curve is per-copy), so a settlement
+    // with one citizen can sit at a small non-zero food balance it can never
+    // spend — one worker cannot out-produce the citizen's own drain. Waiting for
+    // food to hit exactly zero is too late: the buffer never gets there. This is
+    // the general form of the age route's own food step, kept as a backstop for
+    // once the route stops watching population.
+    const citizenCost = state
+      .getBuildingCost("people", state.getBuildingCount("people"), 1)
+      .find(({ resource }) => resource === "food");
+    if (
+      state.isBuildingAvailable("people") &&
+      citizenCost &&
+      state.resources.food.lt(citizenCost.base)
+    ) {
+      return { type: "gather", resource: "food" };
+    }
+    // Priority 8.5: Gather for the highest-priority unaffordable building.
+    // If we want a building but can't afford it, actively gather its missing resources.
+    const priorityGather = this.findPriorityBuildingToGatherFor(state, this.getBuildingPriority());
+    if (priorityGather) return { type: "gather", resource: priorityGather };
+
+    // Priority 9: Gather toward the advisor's next purchase, if it is reachable.
     // This sits below workers and buildings on purpose: gathering for a plan
     // blocked on infrastructure must never prevent building that infrastructure.
     const simulatorGather = this.getSimulatorGather(state);
     if (simulatorGather) return simulatorGather;
 
-    // Priority 8: Gather resources
+    // Priority 10: Gather resources
     const resourceToGather = this.getResourceToGather(state);
     if (resourceToGather) {
       return { type: "gather", resource: resourceToGather };
@@ -1333,6 +1470,15 @@ export class SpeedrunStrategy extends BaseStrategy {
       this.getWorkerRatios(),
     );
     if (workerAction) return workerAction;
+
+    // Follow the mandatory age route before spending anything discretionary.
+    // Speedrun overrides decideAction, so without this it never reached the
+    // route at all and parked at the 90-population barracks threshold, the
+    // slowest settlement of the seven. The route self-limits: once the age-0
+    // population targets are met it returns null and recruitment resumes, so
+    // this cannot starve the army the remaining battles need.
+    const routeAction = getAgeRouteGrowthAction(state);
+    if (routeAction) return routeAction;
 
     // The advisor's battle purchases run before the ROI sweep. ROI excludes units
     // by policy, so without this the settlement would endlessly buy farms and

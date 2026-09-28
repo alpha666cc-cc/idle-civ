@@ -10,6 +10,7 @@
  *   --age <id>             Age ID for ageReach objective
  *   --battle <id>          Encounter ID for battleVictory objective
  *   --max-time <seconds>   Maximum simulation time (default: 3600)
+ *   --snapshot-interval <s> Seconds between snapshots (default: 300)
  *   --actions-per-second <n> Strategy actions per simulated second (default: 5)
  *   --seed <number>        Random seed (default: 42)
  *   --output <file>        Output file for results (JSON)
@@ -31,6 +32,7 @@ function parseArgs() {
     age: null,
     battle: null,
     maxTime: "36000",
+    snapshotInterval: "300",
     actionsPerSecond: "5",
     seed: "42",
     output: null,
@@ -61,6 +63,9 @@ function parseArgs() {
         break;
       case "--max-time":
         options.maxTime = args[++i];
+        break;
+      case "--snapshot-interval":
+        options.snapshotInterval = args[++i];
         break;
       case "--actions-per-second":
         options.actionsPerSecond = args[++i];
@@ -108,6 +113,7 @@ Options:
   --age <id>             Age ID for ageReach objective (e.g., age-1)
   --battle <id>          Encounter ID for battleVictory objective
   --max-time <seconds>   Maximum simulation time (default: 3600)
+  --snapshot-interval <s> Seconds between snapshots (default: 300)
   --actions-per-second <n> Strategy actions per simulated second (default: 5)
   --seed <number>        Random seed (default: 42)
   --output <file>        Output file for results (JSON)
@@ -211,6 +217,12 @@ async function main() {
     process.exit(1);
   }
 
+  const snapshotInterval = Number.parseInt(options.snapshotInterval, 10);
+  if (!Number.isInteger(snapshotInterval) || snapshotInterval < 1) {
+    console.error("--snapshot-interval must be a positive integer");
+    process.exit(1);
+  }
+
   // Build config
   const config = {
     seed: parseInt(options.seed, 10),
@@ -219,6 +231,7 @@ async function main() {
     actionsPerSecond,
     maxGameTime: parseInt(options.maxTime, 10),
     recordSnapshots: options.snapshots,
+    snapshotIntervalSeconds: snapshotInterval,
     verbose: options.verbose,
   };
 

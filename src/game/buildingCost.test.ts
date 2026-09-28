@@ -7,6 +7,9 @@ import {
 import { CivilizationState } from "./civilizationState";
 import { ExpNumber } from "./expNumber";
 import { emptyStatistics } from "./statistics";
+import { researchDefinitions } from "./research";
+import { upgradeDefinitions } from "./upgrades";
+import { deserializeStatistics, serializeStatistics } from "./saveSystem";
 
 /** A fresh age-0 state with the same pile of food and wood. */
 const stateWith = (stock = 1e12): CivilizationState =>
@@ -114,5 +117,152 @@ describe("the square-root building cost curve", () => {
       { resource: "food", base: ExpNumber.ZERO, factor: 2.5 },
     ]);
     expect(farmCost(state, 0, 3)).toBe(0);
+  });
+});
+
+/**
+ * `resourcesSpent` is the lifetime "what did this run cost" tally. Every purchase
+ * path that actually pays must land in it, and a dev-free purchase must not.
+ */
+describe("resources spent", () => {
+  const spent = (state: CivilizationState, resource: string): number =>
+    (state.statistics.resourcesSpent[resource] ?? ExpNumber.ZERO).toNumber();
+
+  /** A state with every resource stocked, optionally with buildings already up. */
+  const rich = (built: Record<string, number> = {}): CivilizationState =>
+    new CivilizationState(
+      {
+        ...emptyResourceAmounts(),
+        food: ExpNumber.fromNumber(1e12),
+        wood: ExpNumber.fromNumber(1e12),
+        stone: ExpNumber.fromNumber(1e12),
+        gold: ExpNumber.fromNumber(1e12),
+        science: ExpNumber.fromNumber(1e12),
+        military: ExpNumber.fromNumber(1e12),
+      },
+      emptyWorkerAssignments(),
+      built,
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      [],
+      emptyStatistics(),
+      {},
+      ExpNumber.ONE,
+      false,
+      false,
+      false,
+      [],
+    );
+
+  const richBuildings = {
+    "town-hall": 1,
+    house: 10,
+    farm: 10,
+    "lumber-yard": 10,
+    quarry: 10,
+    "gold-mine": 10,
+  };
+
+  it("starts empty", () => {
+    expect(stateWith().statistics.resourcesSpent).toEqual({});
+  });
+
+  it("records what a building purchase paid", () => {
+    // Farm: base 10, factor 8, so T(3) = 10 x (8^1.732 - 1) = 46 food.
+    const state = rich().build("farm", 3);
+    expect(spent(state, "food")).toBeCloseTo(46, 6);
+  });
+
+  it("matches the resources actually deducted", () => {
+    const before = rich();
+    const after = before.build("farm", 4);
+    const dropped = before.resources.food.toNumber() - after.resources.food.toNumber();
+    expect(spent(after, "food")).toBeCloseTo(dropped, 4);
+  });
+
+  it("accumulates across separate purchases", () => {
+    // The first farm costs 10; the next one costs 14, so the tally reaches 24.
+    const once = rich().build("farm", 1);
+    const twice = once.build("farm", 1);
+    expect(spent(once, "food")).toBeCloseTo(10, 6);
+    expect(spent(twice, "food")).toBeCloseTo(24, 6);
+  });
+
+  it("sums both resources of a multi-resource cost", () => {
+    const state = rich().build("farm", 3);
+    // Farm also costs wood over the series, so both keys are present.
+    expect(Object.keys(state.statistics.resourcesSpent).sort()).toEqual([
+      "food",
+      "wood",
+    ]);
+  });
+
+  it("records a research purchase", () => {
+    const start = rich();
+    const target = researchDefinitions.find((r) => start.isResearchUnlocked(r.key))!;
+    const next = start.buyResearch(target.key);
+    expect(next.isResearchBought(target.key)).toBe(true);
+    expect(spent(next, "science")).toBeCloseTo(100, 6);
+  });
+
+  it("records an upgrade purchase", () => {
+    const start = rich(richBuildings);
+    const target = upgradeDefinitions.find(
+      (u) => start.getUpgradeFailureReason(u.key) === null,
+    )!;
+    const next = start.buyUpgrade(target.key);
+    expect(next.boughtUpgrades).toContain(target.key);
+    for (const { resource, base } of target.costs) {
+      expect(spent(next, resource)).toBeCloseTo(base.toNumber(), 4);
+    }
+  });
+
+  it("counts nothing for a dev-free building purchase", () => {
+    const free = new CivilizationState(
+      {
+        ...emptyResourceAmounts(),
+        food: ExpNumber.fromNumber(1e12),
+        wood: ExpNumber.fromNumber(1e12),
+      },
+      emptyWorkerAssignments(),
+      {},
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      [],
+      emptyStatistics(),
+      {},
+      ExpNumber.ONE,
+      true, // freeBuildings
+      false,
+      false,
+      [],
+    );
+    const built = free.build("farm", 2);
+    expect(built.getBuildingCount("farm")).toBe(2);
+    expect(built.statistics.resourcesSpent).toEqual({});
+  });
+
+  it("survives a save round trip", () => {
+    const state = rich().build("farm", 3);
+    const restored = deserializeStatistics(serializeStatistics(state.statistics));
+    const food = restored.resourcesSpent.food ?? ExpNumber.ZERO;
+    expect(food.toNumber()).toBeCloseTo(46, 6);
+  });
+
+  it("defaults to empty for a save written before the field existed", () => {
+    // `resourcesSpent` is absent from every save written before this field
+    // landed, so the reader has to tolerate it being missing entirely.
+    const { resourcesSpent: _absent, ...legacy } = serializeStatistics(
+      emptyStatistics(),
+    );
+    expect(deserializeStatistics(legacy).resourcesSpent).toEqual({});
   });
 });
