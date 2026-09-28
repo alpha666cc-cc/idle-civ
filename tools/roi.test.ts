@@ -179,7 +179,7 @@ describe("simulation ROI evaluation", () => {
     expect(action).not.toBeNull();
   });
 
-  it("gathers food before ROI purchases when the food buffer is empty", () => {
+  it("builds ahead of the food guard when the settlement is rich", () => {
     const strategy = getStrategy("speedrun");
     expect(strategy).toBeDefined();
     if (!strategy) return;
@@ -190,7 +190,32 @@ describe("simulation ROI evaluation", () => {
       resources: { food: 0, wood: 1e6, stone: 1e6, gold: 1e6 },
       workers: { food: 1 },
     });
-    expect(strategy.decideAction(state, { gameTime: 1, snapshots: [] })).toEqual({
+    // The mandatory age route outranks the food guard. A citizen both costs
+    // food and drains 1/second, so a settlement large enough to matter sits at
+    // or below zero food almost continuously; a guard that fired first returned
+    // `gather food` for 1127 of 1800 actions and the settlement never grew past
+    // 100 citizens. With a rich treasury the route must therefore reach a
+    // *build* — here housing, because this fixture's capacity is full — rather
+    // than the `gather food` the old ordering demanded.
+    const action = strategy.decideAction(state, { gameTime: 1, snapshots: [] });
+    expect(action).not.toEqual({ type: "gather", resource: "food" });
+    expect(action?.type).toBe("build");
+  });
+
+  it("gathers food only after the growth route has nothing to offer", () => {
+    const strategy = getStrategy("speedrun");
+    expect(strategy).toBeDefined();
+    if (!strategy) return;
+
+    // Housing exhausted, no town hall left, and a citizen is unaffordable: the
+    // route has no population work, so the food guard is allowed to speak.
+    const state = makeState({
+      people: 100,
+      buildings: { house: 10 },
+      resources: { food: 0, wood: 1e6, stone: 1e6, gold: 1e6 },
+      workers: { food: 1 },
+    });
+    expect(strategy.decideAction(state, { gameTime: 900, snapshots: [] })).toEqual({
       type: "gather",
       resource: "food",
     });

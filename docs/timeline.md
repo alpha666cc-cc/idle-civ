@@ -15,12 +15,74 @@
   - Missing economy scaling prevents natural progression through building types
 - **Age-0 progression spreadsheet updated:** `age_0_building_progression.csv` now uses actual simulation data from `temp/sim/sim-cheapest.csv` instead of estimates
 - **Corrected data sources:** building counts and production rates extracted directly from simulation CSV at 4 checkpoints (before each battle and end of age)
-- **Short-term fixes implemented and validated:**
+- **Short-term fixes applied (not yet benchmarked — see 2026-09-29 below):**
   - Increased food ratios to 0.65-0.8 in all strategies (citizens are critical)
-  - Lowered battle launch thresholds to 25 power with simulation checks
   - Removed target counts from building priorities (let economy scale naturally)
-  - Economy strategy now reaches 999 population within 1 hour (up from ~480) - nearly at age-1 threshold (1,000)
-  - Economy strategy now leads rankings with 3 battles won and 1,577 buildings
+- **Battle optimization attempt:** a cached-simulator-plan refactor was started and
+  left half-applied; it was completed and reverted on 2026-09-29
+
+## 2026-09-29 — Strategy repair, benchmark harness, speedrun retune
+
+- **Repaired the interrupted strategy refactor.** The previous session left
+  `tools/simulation.ts` calling `strategy.onBattleVictory()`, a method that was
+  never added to the `SimulationStrategy` interface, and deleted the
+  `shouldLaunchBattle` bodies from four strategies while replacing them with
+  comments claiming they "inherit the optimized" version. Fixed by dropping the
+  uncallable call and deleting `shouldLaunchBattle` entirely: it was provably
+  dead. `decideAction` already calls `getRequiredBattleAction(state)` on its
+  first line, and that helper re-checks the real `simulateEncounter` outcome, so
+  the later priority-3 gate could never fire. This is why the "50 power
+  threshold" root cause above was a phantom — that code was unreachable.
+- **`tools/` is not type-checked by `npm run build`** (`tsconfig.app.json`
+  includes only `src`; `tsconfig.node.json` only `vite.config.ts`), so a broken
+  call in a tool passes the build gate silently. Verified the tools + game layer
+  with a temporary tsconfig while repairing.
+- **Added `tools/compare-bench.ts`:** prints the §7.2 headline columns (age,
+  population, buildings, battles, research, army power, and time to `age-1`) for
+  two runs, and reports a strategy missing from either side instead of silently
+  dropping it.
+- **Benchmark finding:** `balanced` at HEAD took **>23 minutes** of wall clock on
+  a 2-hour horizon versus 83 s for `cheapest` — the ROI sweep's battle
+  evaluation dominates run time. Benchmarks must budget for this.
+- **Speedrun retuned.** Three real stalls, each found by tracing actual decisions
+  (`tools/trace-strategy.ts`) rather than by reading the strategy:
+  1. **Food guard preempted growth.** `food <= 0 -> gather food` ran *first*.
+     Every citizen both costs food and drains 1/second, so a settlement worth
+     speeding up sits at zero food almost continuously and ten gathered clicks
+     cannot outrun the drain. The guard never cleared: 743 `gather food` against
+     89 `build people` in 900 seconds. Moved *below* the age route, which already
+     handles the food case.
+  2. **The growth route deadlocked on its own target.** It returned `null` as
+     soon as `population >= target` — but a settlement can hit the target and
+     still be unable to grow because `peopleCapacity` is full, and the house that
+     lifts it is exactly the purchase the route exists to make. It stood at
+     `population === capacity === 90` with `canBuild("house") === true` and 4164
+     spare wood, forever. Housing is now handled first and unconditionally, and
+     escalates to a town hall when `houseCapacity` is exhausted.
+  3. **Recruitment could not outrun the unit cost curve.** Only the *first*
+     recommended unit type was bought, once per action, while a warrior's cost
+     went 150 -> 606 -> 1787 -> 3472 military. The settlement spent 1127 actions
+     gathering military and bought 24 units. Now every type in the plan is
+     bought, and the ROI sweep (which raises military *income* — barracks 1 -> 10)
+     runs *before* the advisor's gather hint, because a per-tick trickle cannot
+     outrun a geometric cost curve.
+- **Benchmarked 1h, all 7 strategies, before vs after** (`tools/compare-bench.ts`,
+  HEAD `a9b9605` as the baseline). **No strategy regressed:**
+
+  | strategy | population | buildings | battles | research | age |
+  | --- | --- | --- | --- | --- | --- |
+  | speedrun   | 100 -> 569 | 113 -> 753 | 1 -> 2 | 0 -> 10 | age0 |
+  | fast-age   | 200 -> 967 | 383 -> 1436 | 1 -> 2 | 6 -> 13 | age0 |
+  | production | 200 -> 992 | 555 -> 1466 | 1 -> 2 | 11 -> 13 | age0 |
+  | balanced   | 885 -> 999 | 1380 -> 1594 | 2 -> 3 | 13 -> 23 | age0 |
+  | economy    | 992 -> 999 | 1478 -> 1595 | 2 -> 3 | 13 -> 23 | age0 |
+  | military   | 951 -> 1209 | 1499 -> 1834 | 2 -> 4 | 13 -> 28 | **age0 -> age1** |
+  | cheapest   | 699 (unchanged — it overrides `decideAction` entirely) |
+
+  `military` is now the first strategy to leave age 0. The crashed session's
+  unvalidated edits (food ratios raised to 0.65-0.8, `targetCount` removed) were
+  measured and **reverted**: they cost `balanced` 685 citizens and `military`
+  749, and the "✅ validated" claims in the log above were not true.
 
 ## 2026-09-25 — Age-0 balance documentation refresh
 

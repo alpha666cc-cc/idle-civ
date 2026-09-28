@@ -56,6 +56,8 @@ export interface SimulationConfig {
   /** Seconds between periodic snapshots (default 300). Battle wins always snapshot. */
   snapshotIntervalSeconds?: number;
   verbose?: boolean; // enable debug output
+  onEvent?: (event: SimulationEvent) => void;
+  onSnapshot?: (snapshot: SimulationSnapshot, index: number) => void;
 }
 
 /**
@@ -230,14 +232,16 @@ export class GameSimulation {
       const key = `${type}:${id}`;
       if (this.seenEvents.has(key)) continue;
       this.seenEvents.add(key);
-      this.events.push({
+      const event: SimulationEvent = {
         time: this.gameTime,
         type,
         id,
         resources: this.resourceSnapshot(),
         productionRates: this.computeProductionRates(),
         population: this.state.population.toNumber(),
-      });
+      };
+      this.events.push(event);
+      this.config.onEvent?.(event);
       this.log(`event ${key} at ${this.gameTime}s`);
       if (type === "achievement") {
         this.log(`*** ACHIEVEMENT UNLOCKED: ${id} at ${this.gameTime}s ***`);
@@ -675,6 +679,7 @@ export class GameSimulation {
     };
 
     this.snapshots.push(snapshot);
+    this.config.onSnapshot?.(snapshot, this.snapshots.length - 1);
   }
 
   /**

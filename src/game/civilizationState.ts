@@ -328,7 +328,7 @@ export class CivilizationState {
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
     workers: WorkerAssignments = emptyWorkerAssignments(),
-    builtBuildings: Partial<Record<BuildingKey, number>> = { "townHall": 1 },
+    builtBuildings: Partial<Record<BuildingKey, number>> = { townHall: 1 },
     resourceFactors: ResourceFactorMap = emptyResourceFactors(),
     buildingCostOverrides: BuildingCostOverrides = {},
     autoClicksPerSecond = 0,
@@ -630,7 +630,7 @@ export class CivilizationState {
       ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
       : -1;
     return (
-      currentAgeIndex >= ageIndex || this.enteredAges.includes(`age-${ageIndex}`)
+      currentAgeIndex >= ageIndex || this.enteredAges.includes(`age${ageIndex}`)
     );
   }
 

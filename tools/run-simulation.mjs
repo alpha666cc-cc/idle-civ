@@ -233,41 +233,9 @@ async function main() {
     recordSnapshots: options.snapshots,
     snapshotIntervalSeconds: snapshotInterval,
     verbose: options.verbose,
-  };
-
-  console.log(`Starting simulation with strategy: ${strategy.name}`);
-  console.log(`Objective: ${JSON.stringify(objective)}`);
-  console.log(`Config: ${JSON.stringify(config, null, 2)}`);
-  console.log("");
-
-  const startTime = Date.now();
-  const runner = createSimulationRunner(strategy, config);
-  const result = runner.run();
-  const endTime = Date.now();
-
-  console.log("");
-  console.log("=== Simulation Results ===");
-  console.log(`Success: ${result.success}`);
-  console.log(`Objective Reached: ${result.objectiveReached}`);
-  console.log(
-    `Game Time: ${result.gameTime}s (${(result.gameTime / 60).toFixed(1)} minutes)`,
-  );
-  console.log(`Real Time: ${((endTime - startTime) / 1000).toFixed(2)}s`);
-  console.log(`Termination Reason: ${result.terminationReason}`);
-  console.log(`Objective Met: ${result.objectiveMet || "None"}`);
-  console.log(`Snapshots Recorded: ${result.snapshots.length}`);
-
-  const finalProductionList = Object.entries(result.finalProductionRates ?? {})
-    .map(([key, value]) => `${key}: ${formatExpoNumber(value)}/s`)
-    .join(", ");
-  console.log(`Final Production: { ${finalProductionList || "none"} }`);
-
-  console.log("");
-  console.log("=== Major Events ===");
-  if (result.events?.length) {
-    result.events.forEach((event) => {
+    onEvent: (event) => {
       console.log(
-        `  [${formatGameTime(event.time)}] ${event.type}: ${event.id}`,
+        `\n[EVENT] [${formatGameTime(event.time)}] ${event.type}: ${event.id}`,
       );
       console.log(`    Population: ${formatExpoNumber(event.population)}`);
       const eventResourceList = Object.entries(event.resources ?? {})
@@ -278,24 +246,9 @@ async function main() {
         .map(([key, value]) => `${key}: ${formatExpoNumber(value)}/s`)
         .join(", ");
       console.log(`    Production: { ${eventProductionList || "none"} }`);
-    });
-  } else {
-    console.log("  none");
-  }
-
-  const tickTiming = result.tickTiming ?? { ticks: 0, totalMs: 0, meanMs: 0, maxMs: 0 };
-  console.log("");
-  console.log("=== Tick Timing ===");
-  console.log(`  Ticks: ${tickTiming.ticks}`);
-  console.log(`  Total: ${tickTiming.totalMs.toFixed(2)}ms`);
-  console.log(`  Mean: ${tickTiming.meanMs.toFixed(4)}ms`);
-  console.log(`  Max: ${tickTiming.maxMs.toFixed(2)}ms`);
-
-  if (result.snapshots.length > 0) {
-    console.log("");
-    console.log("=== Milestone Snapshots ===");
-    result.snapshots.forEach((snapshot, index) => {
-      console.log(`Snapshot ${index + 1}:`);
+    },
+    onSnapshot: (snapshot, index) => {
+      console.log(`\n[SNAPSHOT] Snapshot ${index + 1}:`);
       console.log(`  Time: ${snapshot.timestamp}s`);
       console.log(`  Age: ${snapshot.age}`);
       console.log(`  Population: ${formatExpoNumber(snapshot.population)}`);
@@ -323,10 +276,54 @@ async function main() {
       console.log(`  Units: [${unitList || "none"}]`);
       console.log(`  Battles Won: ${snapshot.battlesWon}`);
       if (snapshot.militaryPower) {
-        console.log(`  Military Power: ${formatExpoNumber(snapshot.militaryPower)}`);
+        console.log(
+          `  Military Power: ${formatExpoNumber(snapshot.militaryPower)}`,
+        );
       }
-    });
-  }
+    },
+  };
+
+  console.log(`Starting simulation with strategy: ${strategy.name}`);
+  console.log(`Objective: ${JSON.stringify(objective)}`);
+  console.log(
+    `Config: ${JSON.stringify({ ...config, onEvent: undefined, onSnapshot: undefined }, null, 2)}`,
+  );
+  console.log("");
+
+  const startTime = Date.now();
+  const runner = createSimulationRunner(strategy, config);
+  const result = runner.run();
+  const endTime = Date.now();
+
+  console.log("");
+  console.log("=== Simulation Results ===");
+  console.log(`Success: ${result.success}`);
+  console.log(`Objective Reached: ${result.objectiveReached}`);
+  console.log(
+    `Game Time: ${result.gameTime}s (${(result.gameTime / 60).toFixed(1)} minutes)`,
+  );
+  console.log(`Real Time: ${((endTime - startTime) / 1000).toFixed(2)}s`);
+  console.log(`Termination Reason: ${result.terminationReason}`);
+  console.log(`Objective Met: ${result.objectiveMet || "None"}`);
+  console.log(`Snapshots Recorded: ${result.snapshots.length}`);
+
+  const finalProductionList = Object.entries(result.finalProductionRates ?? {})
+    .map(([key, value]) => `${key}: ${formatExpoNumber(value)}/s`)
+    .join(", ");
+  console.log(`Final Production: { ${finalProductionList || "none"} }`);
+
+  const tickTiming = result.tickTiming ?? {
+    ticks: 0,
+    totalMs: 0,
+    meanMs: 0,
+    maxMs: 0,
+  };
+  console.log("");
+  console.log("=== Tick Timing ===");
+  console.log(`  Ticks: ${tickTiming.ticks}`);
+  console.log(`  Total: ${tickTiming.totalMs.toFixed(2)}ms`);
+  console.log(`  Mean: ${tickTiming.meanMs.toFixed(4)}ms`);
+  console.log(`  Max: ${tickTiming.maxMs.toFixed(2)}ms`);
 
   // Output to file if requested
   if (options.output) {

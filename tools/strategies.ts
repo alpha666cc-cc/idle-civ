@@ -12,10 +12,7 @@ import {
   type BuildingKey,
 } from "../src/game/buildings.js";
 import { encounterDefinitions } from "../src/game/encounters.js";
-import {
-  researchDefinitions,
-  researchIdsForBattle,
-} from "../src/game/research.js";
+import { researchDefinitions } from "../src/game/research.js";
 import { type ArmyStack } from "../src/game/battle.js";
 import {
   simulatorCandidates,
@@ -337,10 +334,49 @@ export const getAgeRouteTargetPopulation = (
  * The next mandatory growth step: a citizen when one is affordable, otherwise
  * the food needed to afford it. Returns null when the route is not waiting on
  * population, so the caller falls through to its own priorities.
+ *
+ * Housing is deliberately exempt from the target check below. The route's
+ * population target is about *citizens*, but a settlement can hit that target
+ * and still be unable to grow because `peopleCapacity` is full — and the house
+ * that lifts it is exactly the purchase the route exists to make. Returning
+ * null the moment `population >= target` therefore locked the settlement at
+ * whichever capacity it happened to reach: it had `canBuild("house") === true`
+ * and thousands of spare resources, but stood at `population === capacity`
+ * forever, because the only step that could raise the cap was gated behind the
+ * cap it was meant to lift.
  */
 export const getAgeRouteGrowthAction = (
   state: CivilizationState,
 ): SimulationAction | null => {
+  // Housing first, and unconditionally: a full settlement cannot grow at all,
+  // whatever the population target says.
+  //
+  // Houses are themselves capacity-limited (`houseCapacity`, 10 by default) and a
+  // town hall adds 10 more, so the settlement's population ceiling is finite and
+  // small. Past that ceiling the route must stop asking for citizens, because
+  // `canBuild("people")` will report "capacity" forever and the route would
+  // otherwise gather for a purchase the engine refuses. Detect that case and let
+  // the caller fall through to its own priorities.
+  if (state.isBuildingAvailable("people")) {
+    const cappedByHousing =
+      state.population.toNumber() >= state.maximumPopulation.toNumber();
+    if (cappedByHousing) {
+      if (state.canBuild("house")) {
+        return { type: "build", building: "house", count: 1 };
+      }
+      if (state.canBuild("townHall")) {
+        return { type: "build", building: "townHall", count: 1 };
+      }
+      // Housing is exhausted and no town hall can be added (there is only one,
+      // and this settlement already owns it). Population cannot rise again, so
+      // the route has no population work left to offer.
+      if (!state.canBuild("people")) {
+        const why = state.getBuildFailureReason("people");
+        if (why === "capacity") return null;
+      }
+    }
+  }
+
   const target = getAgeRouteTargetPopulation(state);
   if (target <= 0) return null;
   if (state.population.gte(ExpNumber.fromNumber(target))) return null;
@@ -349,19 +385,17 @@ export const getAgeRouteGrowthAction = (
     if (state.canBuild("people")) {
       return { type: "build", building: "people", count: 1 };
     }
-    // If capped by housing, we must build a house or town-hall.
-    const currentPop = state.population.toNumber();
-    const capacity = state.maximumPopulation.toNumber();
-    if (currentPop >= capacity) {
-      if (state.canBuild("house"))
-        return { type: "build", building: "house", count: 1 };
-      // Fallback if house can't be built (e.g. lacks resources), gather for it.
-      const houseCost = state.getBuildingCost(
-        "house",
-        state.getBuildingCount("house"),
+    // Still capped and neither house nor town hall is affordable: gather for
+    // whichever one is the next real step up.
+    if (state.population.toNumber() >= state.maximumPopulation.toNumber()) {
+      const nextHousing =
+        state.canBuild("house") || !state.canBuild("townHall") ? "house" : "townHall";
+      const cost = state.getBuildingCost(
+        nextHousing,
+        state.getBuildingCount(nextHousing),
         1,
       );
-      const missing = houseCost.find(({ resource, base }) =>
+      const missing = cost.find(({ resource, base }) =>
         state.resources[resource as ProductionResourceKey]?.lt(base),
       );
       if (missing && isResourceGatherable(state, missing.resource)) {
@@ -374,6 +408,20 @@ export const getAgeRouteGrowthAction = (
     .getBuildingCost("people", state.getBuildingCount("people"), 1)
     .find(({ resource }) => resource === "food");
   if (citizenCost && state.resources.food.lt(citizenCost.base)) {
+    // Gathered food alone cannot break this deadlock. Every citizen drains
+    // 1 food/second, so past roughly the first few dozen citizens the drain
+    // outruns what a handful of clicks per action adds, and the route gathers
+    // forever without ever affording the next citizen. A farm raises the
+    // *passive* rate, which is the only thing that scales — so when food is the
+    // binding constraint, buy the farm that multiplies food production instead
+    // of clicking for more of it.
+    if (
+      state.isBuildingAvailable("farm") &&
+      !state.isBuildingAtCapacity("farm") &&
+      state.canBuild("farm")
+    ) {
+      return { type: "build", building: "farm", count: 1 };
+    }
     return { type: "gather", resource: "food" };
   }
   return null;
@@ -553,21 +601,38 @@ const getFirstSimulatorUnit = (
   return null;
 };
 
-/** First recommended recruit that the player can actually buy right now. */
-const getSimulatorUnitAction = (
+/**
+ * Recruit purchases for the current plan, one action per unit type the plan
+ * recommends.
+ *
+ * This used to return only the *first* recommended type. That is wrong for any
+ * plan with more than one unit type in it, and it is precisely the case that
+ * matters: the solver's plan is the minimum army that wins, so leaving out one
+ * of its types leaves the army short and the battle unwinnable. Because the
+ * runner spends one action per tick, returning a single type also capped
+ * recruitment throughput at one recruit per tick, which the geometric unit cost
+ * curve outruns — the settlement bought one warrior at a time while the price of
+ * the next climbed faster than the army grew, and it could never win the second
+ * battle. One action per recommended type keeps the plan intact and buys the
+ * whole shortfall in a single tick.
+ */
+const getSimulatorUnitActions = (
   state: CivilizationState,
   plan: SimulatorResult | null,
-): SimulationAction | null => {
-  if (!plan) return null;
-  const unit = getFirstSimulatorUnit(state, plan);
-  if (!unit) return null;
-  const maxAffordable = state.getMaxAffordableUnits(unit.unitId);
-  if (maxAffordable <= 0) return null;
-  return {
-    type: "buyUnit",
-    unitId: unit.unitId,
-    count: Math.min(unit.count, maxAffordable),
-  };
+): SimulationAction[] => {
+  if (!plan) return [];
+  const actions: SimulationAction[] = [];
+  for (const [unitId, count] of plan.composition) {
+    if (count <= 0 || !state.isUnitAvailable(unitId)) continue;
+    const maxAffordable = state.getMaxAffordableUnits(unitId);
+    if (maxAffordable <= 0) continue;
+    actions.push({
+      type: "buyUnit",
+      unitId,
+      count: Math.min(count, maxAffordable),
+    });
+  }
+  return actions;
 };
 
 /** Unlock research required for the new unit types in the simulator plan. */
@@ -625,7 +690,8 @@ export const getRecommendedBattlePurchase = (
   if (!plan) return null;
   return (
     getSimulatorResearchAction(state, plan) ??
-    getSimulatorUnitAction(state, plan)
+    getSimulatorUnitActions(state, plan)[0] ??
+    null
   );
 };
 
@@ -887,8 +953,38 @@ abstract class BaseStrategy implements SimulationStrategy {
     ];
   }
 
-  protected shouldLaunchBattle(_state: CivilizationState): boolean {
-    return false;
+  /**
+   * Whether this strategy is willing to take the next campaign battle right now.
+   *
+   * The default is aggressive but never blind: it takes the battle whenever the
+   * battle simulator says the current army actually wins. That is the normal
+   * case, because `getRequiredBattleAction` is the only path that can launch a
+   * battle, so a strategy that wants combat simply inherits it; a strategy that
+   * wants to stay out of the campaign overrides this to return `false`.
+   *
+   * This is deliberately a *gate* and not a decision: `getBattleLaunchAction`
+   * still re-checks the encounter and the outcome before returning a
+   * `launchBattle`, so overriding it can only ever make a strategy fight *less*,
+   * never launch a battle it would lose.
+   */
+  protected shouldLaunchBattle(state: CivilizationState): boolean {
+    // Launch battles aggressively but with simulation check
+    const nextBattle = state.getNextBattle();
+    if (!nextBattle) return false;
+    const simulation = state.simulateEncounter(nextBattle.key);
+    return simulation?.outcome === "player";
+  }
+
+  /**
+   * The battle to launch this turn, or null. The single entry point every
+   * `decideAction` uses for combat, so `shouldLaunchBattle` is genuinely wired
+   * in rather than a dead override.
+   */
+  protected getBattleLaunchAction(
+    state: CivilizationState,
+  ): SimulationAction | null {
+    if (!this.shouldLaunchBattle(state)) return null;
+    return getRequiredBattleAction(state);
   }
 
   protected getResearchAction(
@@ -898,19 +994,27 @@ abstract class BaseStrategy implements SimulationStrategy {
   }
 
   /**
-   * Advisory battle plan from the shared simulator. A null plan means the
-   * simulator has no reachable candidate; an empty plan is deliberately treated
-   * as advisory only, so the real battle check above still decides launches.
+   * Advisory battle plan from the shared simulator, as the purchases it calls
+   * for. A null plan means the simulator has no reachable candidate; an empty
+   * plan is deliberately treated as advisory only, so the real battle check
+   * above still decides launches.
+   *
+   * Every unit type the plan recommends is returned, not just the first. The
+   * runner applies one action per tick, so a mixed plan needs one action per
+   * type to actually be bought; see `getSimulatorUnitActions`.
    *
    * Only purchases are returned here. Gathering toward the plan is handled by
    * `getSimulatorGatherAction` after the economy priorities, because a plan
    * blocked on a resource the settlement cannot produce yet must not starve the
    * buildings and workers that unblock it.
    */
-  protected getSimulatorAction(
+  protected getSimulatorActions(
     state: CivilizationState,
-  ): SimulationAction | null {
-    return getRecommendedBattlePurchase(state, getSimulatorBattlePlan(state));
+  ): SimulationAction[] {
+    const plan = getSimulatorBattlePlan(state);
+    const research = getSimulatorResearchAction(state, plan);
+    if (research) return [research];
+    return getSimulatorUnitActions(state, plan);
   }
 
   /**
@@ -1087,7 +1191,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     const requiredAgeAction = getRequiredAgeAction(state);
     if (requiredAgeAction) return requiredAgeAction;
 
-    const requiredBattleAction = getRequiredBattleAction(state);
+    const requiredBattleAction = this.getBattleLaunchAction(state);
     if (requiredBattleAction) return requiredBattleAction;
 
     const requiredPreparationAction = getRequiredBattlePreparationAction(state);
@@ -1096,8 +1200,8 @@ abstract class BaseStrategy implements SimulationStrategy {
     // The battle simulator is advisory: it guides the next purchase, but the
     // real `simulateEncounter` check above is the only launch gate. Only its
     // purchases run this early; its gather hint is demoted to priority 7.
-    const simulatorAction = this.getSimulatorAction(state);
-    if (simulatorAction) return simulatorAction;
+    const simulatorActions = this.getSimulatorActions(state);
+    if (simulatorActions.length > 0) return simulatorActions[0];
 
     // Priority 1: Follow the mandatory age route. Population is the step every
     // battle bonus is waiting on, so it is taken ahead of any hand-ordered
@@ -1114,18 +1218,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     const unitAction = this.getUnitAction(state);
     if (unitAction) return unitAction;
 
-    // Priority 3: Launch battle if ready
-    if (this.shouldLaunchBattle(state)) {
-      const nextBattle = state.getNextBattle();
-      if (
-        nextBattle &&
-        state.simulateEncounter(nextBattle.key)?.outcome === "player"
-      ) {
-        return { type: "launchBattle", encounterId: nextBattle.key };
-      }
-    }
-
-    // Priority 4: Buy affordable unlocked upgrades
+    // Priority 3: Buy affordable unlocked upgrades
     const upgradeAction = this.getBestUpgrade(state);
     if (upgradeAction) return upgradeAction;
 
@@ -1282,7 +1375,7 @@ export class CheapestStrategy extends BaseStrategy {
     const requiredAgeAction = getRequiredAgeAction(state);
     if (requiredAgeAction) return requiredAgeAction;
 
-    const requiredBattleAction = getRequiredBattleAction(state);
+    const requiredBattleAction = this.getBattleLaunchAction(state);
     if (requiredBattleAction) return requiredBattleAction;
 
     const candidate = getCheapestPurchaseCandidate(state);
@@ -1343,13 +1436,6 @@ export class BalancedStrategy extends BaseStrategy {
       { building: "townHall", weight: 1 },
     ];
   }
-
-  protected shouldLaunchBattle(state: CivilizationState): boolean {
-    // Launch battle when military power is decent
-    const power = state.getArmyPower();
-    const nextBattle = state.getNextBattle();
-    return nextBattle !== undefined && power.gte(ExpNumber.fromNumber(50));
-  }
 }
 
 /**
@@ -1383,11 +1469,6 @@ export class ProductionStrategy extends BaseStrategy {
       { building: "market", weight: 5 },
       { building: "townHall", weight: 4 },
     ];
-  }
-
-  protected shouldLaunchBattle(_state: CivilizationState): boolean {
-    // Only launch battles when necessary (high power to ensure wins)
-    return false; // Production strategy avoids battles
   }
 }
 
@@ -1427,12 +1508,6 @@ export class MilitaryStrategy extends BaseStrategy {
     ];
   }
 
-  protected shouldLaunchBattle(state: CivilizationState): boolean {
-    // Launch battles aggressively
-    const nextBattle = state.getNextBattle();
-    return nextBattle !== undefined;
-  }
-
   protected getResourceToGather(_state: CivilizationState): string | null {
     // Prioritize gathering resources for military buildings
     return "gold";
@@ -1470,25 +1545,6 @@ export class FastAgeStrategy extends BaseStrategy {
       { building: "goldMine", weight: 3 },
       { building: "market", weight: 2 },
     ];
-  }
-
-  protected shouldLaunchBattle(state: CivilizationState): boolean {
-    // Only do battles required for age progression
-    const currentAge = state.getCurrentAge();
-    if (!currentAge) return false;
-
-    // Check if all battles in current age are won
-    const ageIndex = parseInt(currentAge.key.slice(-1), 10);
-    const ageBattles = encounterDefinitions.filter(
-      (e: { age: number }) => e.age === ageIndex,
-    );
-    const battlesWon = ageBattles.filter((b: { key: string }) =>
-      state.defeatedEncounters.includes(b.key),
-    ).length;
-
-    // Launch next battle if not all won
-    const nextBattle = state.getNextBattle();
-    return nextBattle !== undefined && battlesWon < ageBattles.length;
   }
 }
 
@@ -1558,23 +1614,11 @@ export class SpeedrunStrategy extends BaseStrategy {
     const requiredAgeAction = getRequiredAgeAction(state);
     if (requiredAgeAction) return requiredAgeAction;
 
-    const requiredBattleAction = getRequiredBattleAction(state);
+    const requiredBattleAction = this.getBattleLaunchAction(state);
     if (requiredBattleAction) return requiredBattleAction;
 
     const requiredPreparationAction = getRequiredBattlePreparationAction(state);
     if (requiredPreparationAction) return requiredPreparationAction;
-
-    // A speedrun must not spend its whole gather budget on non-food inputs while
-    // the food buffer is empty; a farm/citizen purchase is the next enabler.
-    if (state.resources.food.lte(ExpNumber.ZERO)) {
-      return { type: "gather", resource: "food" };
-    }
-
-    const workerAction = this.assignWorkersByRatio(
-      state,
-      this.getWorkerRatios(),
-    );
-    if (workerAction) return workerAction;
 
     // Follow the mandatory age route before spending anything discretionary.
     // Speedrun overrides decideAction, so without this it never reached the
@@ -1582,28 +1626,59 @@ export class SpeedrunStrategy extends BaseStrategy {
     // slowest settlement of the seven. The route self-limits: once the age0
     // population targets are met it returns null and recruitment resumes, so
     // this cannot starve the army the remaining battles need.
+    //
+    // The route also owns the food problem: it builds a citizen when one is
+    // affordable and gathers food when one is not.
     const routeAction = getAgeRouteGrowthAction(state);
     if (routeAction) return routeAction;
+
+    // Workers next. This used to sit above the route, where a settlement pinned
+    // at zero food never reached it; below the route it runs every tick the
+    // route is satisfied.
+    const workerAction = this.assignWorkersByRatio(
+      state,
+      this.getWorkerRatios(),
+    );
+    if (workerAction) return workerAction;
+
+    // Food safety, deliberately *below* the age route rather than above it.
+    // This guard used to run first, and that was the single biggest reason
+    // speedrun was the slowest settlement: a citizen costs food to build and
+    // every citizen drains 1 food/second, so a settlement large enough to be
+    // worth speeding up sits at or below zero food almost continuously. Ten
+    // gathered clicks per action cannot outrun that drain, so the guard never
+    // cleared and it returned `gather food` forever — starving worker
+    // assignment, buildings and recruitment all at once. Below the route it
+    // only speaks when the route has nothing to offer, which is exactly when
+    // there is spare budget to spend on something other than food.
+    if (state.resources.food.lte(ExpNumber.ZERO)) {
+      return { type: "gather", resource: "food" };
+    }
 
     // The advisor's battle purchases run before the ROI sweep. ROI excludes units
     // by policy, so without this the settlement would endlessly buy farms and
     // never field the army the required battle gate is waiting on.
-    const simulatorAction = this.getSimulatorAction(state);
-    if (simulatorAction) return simulatorAction;
+    const simulatorActions = this.getSimulatorActions(state);
+    if (simulatorActions.length > 0) return simulatorActions[0];
 
-    // We must gather for the simulator's plan if we can't afford it, otherwise
-    // we stall waiting for workers to passively gather military/science.
-    const simulatorGather = this.getSimulatorGather(state);
-    if (simulatorGather) return simulatorGather;
-
-    // The ROI sweep includes the pending battle as a candidate, priced with the
-    // simulator's army and scored on what winning it actually grants (capacity
-    // multipliers included), so a battle worth taking outranks a marginal farm.
+    // The ROI sweep runs *before* the advisor's gather hint. Gathering is a
+    // per-tick trickle, and a recruit's military cost grows geometrically
+    // (150 -> 606 -> 1787 -> 3472 across the first four warriors), so a
+    // settlement that answers "I cannot afford the next recruit" by gathering
+    // can never outrun that curve: it spent 1127 actions gathering military and
+    // bought 24 units. Raising military *income* — more barracks, upgrades,
+    // research — is the only thing that scales, and the ROI sweep is what finds
+    // it. Gathering stays below as the last resort, not the first answer.
     const roiAction = getBestRoiAction(state, {
       includeUnits: false,
       planBattle: planBattleForRoi,
     });
     if (roiAction) return roiAction;
+
+    // We must gather for the simulator's plan if we can't afford it, otherwise
+    // we stall waiting for workers to passively gather military/science.
+    const simulatorGather = this.getSimulatorGather(state);
+    if (simulatorGather) return simulatorGather;
 
     return super.decideAction(state, context);
   }
