@@ -15,9 +15,12 @@ import {
  * a million spearmen costs exactly as much to simulate as a stack of one, and a
  * battle always finishes in bounded time.
  *
- * The simulation is pure and seeded: the same armies produce the same battle, so
- * results are reproducible, testable, and cheap to replay in the UI. Casualties
- * are never written back to the save (armies are restored after a fight).
+ * The simulation is pure and deterministic: damage has no random component, so
+ * the same armies always produce the same battle, however many times it is
+ * replayed. The seed still names a fight and keeps the battle id folded into it,
+ * but it no longer changes the outcome. Results are reproducible, testable and
+ * cheap to replay in the UI. Casualties are never written back to the save
+ * (armies are restored after a fight).
  */
 
 /** One unit type in an army, with the stats it actually fights with. */
@@ -74,18 +77,6 @@ type Fighter = {
   readonly initialCount: ExpNumber;
   /** Remaining effective hit points of the whole stack. */
   hpPool: ExpNumber;
-};
-
-/** mulberry32: tiny, fast, and seedable, so a battle can be replayed exactly. */
-const createRandom = (seed: number): (() => number) => {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let value = state;
-    value = Math.imul(value ^ (value >>> 15), value | 1);
-    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
-  };
 };
 
 const livingCount = (fighter: Fighter): ExpNumber => {
@@ -232,7 +223,9 @@ const hasLiving = (fighters: readonly Fighter[]): boolean =>
  * Runs one battle and returns the whole round log (the UI plays it back one round
  * per second). Accuracy is applied as expected damage — `count × attack × hit
  * chance` — rather than as a single coin flip for the stack, so a large stack
- * behaves like the many units it represents. Nothing here touches game state.
+ * behaves like the many units it represents. There is no damage roll on top of
+ * that: the fight is a pure function of the two armies. Nothing here touches
+ * game state.
  */
 const simulateBattleInternal = (
   playerStacks: readonly ArmyStack[],
@@ -243,7 +236,6 @@ const simulateBattleInternal = (
   }: { seed?: number; maxRounds?: number } = {},
   recordRounds: boolean,
 ): BattleSimulation => {
-  const random = createRandom(seed);
   const player = buildFighters(playerStacks, "player");
   const enemy = buildFighters(enemyStacks, "enemy");
   // Speed decides who fires first; equal speeds keep deployment order.
@@ -290,12 +282,11 @@ const simulateBattleInternal = (
             (1 - Math.min(1, distance / attacker.stats.range) * 0.3),
         ),
       );
-      const variance = 0.8 + random() * 0.4;
       const damage = attackers
         .mul(attacker.stats.attack)
         .mul(
           ExpNumber.fromNumber(
-            hitChance * variance * matchupMultiplier(attacker, target),
+            hitChance * matchupMultiplier(attacker, target),
           ),
         );
       target.hpPool = ExpNumber.max(ExpNumber.ZERO, target.hpPool.sub(damage));
@@ -333,7 +324,7 @@ const simulateBattleInternal = (
   return { seed, rounds, outcome, playerSurvivors, enemySurvivors };
 };
 
-/** Full seeded battle result for playback and survivor-dependent rewards. */
+/** Full battle result for playback and survivor-dependent rewards. */
 export const simulateBattle = (
   playerStacks: readonly ArmyStack[],
   enemyStacks: readonly ArmyStack[],
