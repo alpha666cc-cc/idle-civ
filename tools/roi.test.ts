@@ -10,11 +10,7 @@ import { type BuildingKey } from "../src/game/buildings";
 import { CivilizationState } from "../src/game/civilizationState";
 import { ExpNumber } from "../src/game/expNumber";
 import { emptyStatistics } from "../src/game/statistics";
-import {
-  getBestRoiAction,
-  getBuyableRoi,
-  getRoiCandidates,
-} from "./roi";
+import { getBestRoiAction, getBuyableRoi, getRoiCandidates } from "./roi";
 import { getStrategy } from "./strategies";
 
 const richResources: Partial<Record<ResourceKey, number>> = {
@@ -50,7 +46,7 @@ const makeState = ({
   return new CivilizationState(
     amounts,
     assignments,
-    { "townHall": 1, ...buildings, people },
+    { townHall: 1, ...buildings, people },
     emptyResourceFactors(),
     {},
     0,
@@ -155,9 +151,9 @@ describe("simulation ROI evaluation", () => {
           candidate.buyable.id === "farmEnhancer9",
       ),
     ).toBe(true);
-    expect(candidates.some((candidate) => candidate.buyable.kind === "unit")).toBe(
-      true,
-    );
+    expect(
+      candidates.some((candidate) => candidate.buyable.kind === "unit"),
+    ).toBe(true);
     expect(
       getRoiCandidates(state, { includeUnits: false }).some(
         (candidate) => candidate.buyable.kind === "unit",
@@ -202,7 +198,7 @@ describe("simulation ROI evaluation", () => {
     expect(action?.type).toBe("build");
   });
 
-  it("gathers food only after the growth route has nothing to offer", () => {
+  it("focuses workers on food after the growth route has nothing to offer", () => {
     const strategy = getStrategy("speedrun");
     expect(strategy).toBeDefined();
     if (!strategy) return;
@@ -215,9 +211,12 @@ describe("simulation ROI evaluation", () => {
       resources: { food: 0, wood: 1e6, stone: 1e6, gold: 1e6 },
       workers: { food: 1 },
     });
-    expect(strategy.decideAction(state, { gameTime: 900, snapshots: [] })).toEqual({
-      type: "gather",
+    expect(
+      strategy.decideAction(state, { gameTime: 900, snapshots: [] }),
+    ).toEqual({
+      type: "assignWorker",
       resource: "food",
+      count: 49,
     });
   });
 
@@ -230,7 +229,9 @@ describe("simulation ROI evaluation", () => {
       people: 90,
       resources: richResources,
     });
-    expect(strategy.decideAction(state, { gameTime: 90, snapshots: [] })).toEqual({
+    expect(
+      strategy.decideAction(state, { gameTime: 90, snapshots: [] }),
+    ).toEqual({
       type: "build",
       building: "barracks",
       count: 1,

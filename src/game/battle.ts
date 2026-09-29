@@ -108,26 +108,28 @@ const buildFighters = (
   [...stacks]
     .sort((left, right) => left.unitId.localeCompare(right.unitId))
     .flatMap((stack) => {
-    const definition = findUnitDefinition(stack.unitId);
-    if (!definition || stack.count.lte(ExpNumber.ZERO)) return [];
-    const hitPoints = stack.stats.hp.div(
-      ExpNumber.ONE.sub(ExpNumber.fromNumber(Math.min(stack.stats.armor, 0.9))),
-    );
-    return [
-      {
-        unitId: stack.unitId,
-        side,
-        stats: stack.stats,
-        domain: definition.domain,
-        canHit: definition.canHit,
-        bonusVs: definition.bonusVs,
-        tags: definition.tags,
-        hitPoints,
-        initialCount: stack.count,
-        hpPool: hitPoints.mul(stack.count),
-      },
-    ];
-  });
+      const definition = findUnitDefinition(stack.unitId);
+      if (!definition || stack.count.lte(ExpNumber.ZERO)) return [];
+      const hitPoints = stack.stats.hp.div(
+        ExpNumber.ONE.sub(
+          ExpNumber.fromNumber(Math.min(stack.stats.armor, 0.9)),
+        ),
+      );
+      return [
+        {
+          unitId: stack.unitId,
+          side,
+          stats: stack.stats,
+          domain: definition.domain,
+          canHit: definition.canHit,
+          bonusVs: definition.bonusVs,
+          tags: definition.tags,
+          hitPoints,
+          initialCount: stack.count,
+          hpPool: hitPoints.mul(stack.count),
+        },
+      ];
+    });
 
 /** Range and domain rules: who is allowed to shoot whom, and from how far. */
 const canReach = (
@@ -223,19 +225,23 @@ const totalLiving = (fighters: readonly Fighter[]): ExpNumber =>
     ExpNumber.ZERO,
   );
 
+const hasLiving = (fighters: readonly Fighter[]): boolean =>
+  fighters.some((fighter) => fighter.hpPool.gt(ExpNumber.ZERO));
+
 /**
  * Runs one battle and returns the whole round log (the UI plays it back one round
  * per second). Accuracy is applied as expected damage — `count × attack × hit
  * chance` — rather than as a single coin flip for the stack, so a large stack
  * behaves like the many units it represents. Nothing here touches game state.
  */
-export const simulateBattle = (
+const simulateBattleInternal = (
   playerStacks: readonly ArmyStack[],
   enemyStacks: readonly ArmyStack[],
   {
     seed = battleSeed(playerStacks, enemyStacks),
     maxRounds = maximumRounds,
   }: { seed?: number; maxRounds?: number } = {},
+  recordRounds: boolean,
 ): BattleSimulation => {
   const random = createRandom(seed);
   const player = buildFighters(playerStacks, "player");
@@ -245,22 +251,19 @@ export const simulateBattle = (
     (a, b) => b.stats.speed - a.stats.speed,
   );
 
-  const rounds: BattleRound[] = [
-    {
+  const rounds: BattleRound[] = [];
+  if (recordRounds) {
+    rounds.push({
       round: 0,
       distance: initialDistance,
       player: snapshot(player),
       enemy: snapshot(enemy),
-    },
-  ];
+    });
+  }
 
   let distance = initialDistance;
   let round = 0;
-  while (
-    round < maxRounds &&
-    totalLiving(player).gt(ExpNumber.ZERO) &&
-    totalLiving(enemy).gt(ExpNumber.ZERO)
-  ) {
+  while (round < maxRounds && hasLiving(player) && hasLiving(enemy)) {
     round += 1;
 
     for (const attacker of order) {
@@ -268,7 +271,7 @@ export const simulateBattle = (
       if (attackers.lte(ExpNumber.ZERO)) continue;
       const foes = (attacker.side === "player" ? enemy : player).filter(
         (fighter) =>
-          livingCount(fighter).gt(ExpNumber.ZERO) &&
+          fighter.hpPool.gt(ExpNumber.ZERO) &&
           canReach(attacker, fighter, distance),
       );
       if (foes.length === 0) continue;
@@ -300,24 +303,26 @@ export const simulateBattle = (
 
     const fastest = order.reduce(
       (speed, fighter) =>
-        livingCount(fighter).gt(ExpNumber.ZERO)
+        fighter.hpPool.gt(ExpNumber.ZERO)
           ? Math.max(speed, fighter.stats.speed)
           : speed,
       0,
     );
     distance = Math.max(1, distance - Math.max(1, Math.floor(fastest / 2)));
-    rounds.push({
-      round,
-      distance,
-      player: snapshot(player),
-      enemy: snapshot(enemy),
-    });
+    if (recordRounds) {
+      rounds.push({
+        round,
+        distance,
+        player: snapshot(player),
+        enemy: snapshot(enemy),
+      });
+    }
   }
 
-  const playerSurvivors = totalLiving(player);
-  const enemySurvivors = totalLiving(enemy);
-  const playerHolds = playerSurvivors.gt(ExpNumber.ZERO);
-  const enemyHolds = enemySurvivors.gt(ExpNumber.ZERO);
+  const playerSurvivors = recordRounds ? totalLiving(player) : ExpNumber.ZERO;
+  const enemySurvivors = recordRounds ? totalLiving(enemy) : ExpNumber.ZERO;
+  const playerHolds = hasLiving(player);
+  const enemyHolds = hasLiving(enemy);
   const outcome: BattleOutcome =
     enemyHolds && !playerHolds
       ? "enemy"
@@ -327,3 +332,19 @@ export const simulateBattle = (
 
   return { seed, rounds, outcome, playerSurvivors, enemySurvivors };
 };
+
+/** Full seeded battle result for playback and survivor-dependent rewards. */
+export const simulateBattle = (
+  playerStacks: readonly ArmyStack[],
+  enemyStacks: readonly ArmyStack[],
+  options: { seed?: number; maxRounds?: number } = {},
+): BattleSimulation =>
+  simulateBattleInternal(playerStacks, enemyStacks, options, true);
+
+/** Deterministic win/loss check for strategy search; skips all round-log work. */
+export const simulateBattleOutcome = (
+  playerStacks: readonly ArmyStack[],
+  enemyStacks: readonly ArmyStack[],
+  options: { seed?: number; maxRounds?: number } = {},
+): BattleOutcome =>
+  simulateBattleInternal(playerStacks, enemyStacks, options, false).outcome;

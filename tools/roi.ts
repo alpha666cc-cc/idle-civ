@@ -57,7 +57,10 @@ export type RoiOptions = {
    * to the battle simulator. */
   includeUnits?: boolean;
   /** Enables the battle candidate. Without it, battles are never evaluated. */
-  planBattle?: (state: CivilizationState, battleId: string) => BattleRoiPlan | null;
+  planBattle?: (
+    state: CivilizationState,
+    battleId: string,
+  ) => BattleRoiPlan | null;
 };
 
 export type RoiMetrics = {
@@ -108,11 +111,7 @@ const logGain = (before: ExpNumber, after: ExpNumber): number => {
 
 /** Signed, scale-normalized change so a drain lowers ROI instead of being ignored. */
 const relativeChange = (before: ExpNumber, after: ExpNumber): number => {
-  const scale = ExpNumber.max(
-    ExpNumber.ONE,
-    before.abs(),
-    after.abs(),
-  );
+  const scale = ExpNumber.max(ExpNumber.ONE, before.abs(), after.abs());
   const change = after.sub(before).div(scale);
   const value = change.toNumber();
   if (Number.isFinite(value)) return value;
@@ -121,7 +120,9 @@ const relativeChange = (before: ExpNumber, after: ExpNumber): number => {
   return 0;
 };
 
-const isProductionResource = (resource: string): resource is ProductionResourceKey =>
+const isProductionResource = (
+  resource: string,
+): resource is ProductionResourceKey =>
   producerResourceKeys.includes(resource as ProductionResourceKey);
 
 const effectiveIncome = (
@@ -217,7 +218,6 @@ const makeProbeState = (
     state.boughtResearch,
   );
 };
-
 
 const applyBuyable = (
   state: CivilizationState,
@@ -344,10 +344,15 @@ const battleAction = (
   }
   for (const [unitId, count] of plan.composition) {
     if (count > 0 && state.isUnitAvailable(unitId)) {
-      return { type: "buyUnit", unitId, count };
+      const affordable = Math.min(count, state.getMaxAffordableUnits(unitId));
+      if (affordable > 0) {
+        return { type: "buyUnit", unitId, count: affordable };
+      }
     }
   }
-  return gatherResource ? { type: "gather", resource: gatherResource } : { type: "wait", seconds: 0 };
+  return gatherResource
+    ? { type: "gather", resource: gatherResource }
+    : { type: "wait", seconds: 0 };
 };
 
 const costsFor = (
@@ -435,8 +440,6 @@ const compareCapacity = (
     0,
   );
 
-
-
 const compareCosts = (
   before: CivilizationState,
   after: CivilizationState,
@@ -448,10 +451,7 @@ const compareCosts = (
     return beforeCost.reduce(
       (sum, { base }, index) =>
         sum +
-        Math.max(
-          0,
-          logValue(base) - logValue(afterCost[index]?.base ?? base),
-        ),
+        Math.max(0, logValue(base) - logValue(afterCost[index]?.base ?? base)),
       total,
     );
   }, 0);
@@ -472,7 +472,8 @@ const buildMetrics = (
       buyable.kind === "research"
         ? Math.max(
             0,
-            availableBuyableUnitCount(after) - availableBuyableUnitCount(before),
+            availableBuyableUnitCount(after) -
+              availableBuyableUnitCount(before),
           )
         : 0,
     costSavings: compareCosts(before, after),
@@ -613,14 +614,16 @@ export const getBuyableRoi = (
       ...cost,
       factor: 1,
     }));
-    const winnable = state.simulateEncounter(buyable.id)?.outcome === "player";
+    const winnable = state.simulateEncounterOutcome(buyable.id) === "player";
     // A battle that can already be fought costs nothing to launch; otherwise the
     // price is the next single recruit, not the whole army.
     const costs = winnable ? [] : (nextRecruitCost(state, plan) ?? totalCost);
     const waitSeconds = waitForCosts(state, costs, gatherClicksPerSecond);
     const metrics = cachedMetrics(buyable, structureKey, () => {
       const resolved = evaluateBattle(state, buyable.id, plan);
-      return resolved ? buildMetrics(resolved.armed, resolved.won, buyable) : null;
+      return resolved
+        ? buildMetrics(resolved.armed, resolved.won, buyable)
+        : null;
     });
     if (!metrics) return null;
     const gatherResource = gatherResourceForCosts(
@@ -678,8 +681,6 @@ export const getBuyableRoi = (
   };
 };
 
-
-
 const allBuyables = (
   state: CivilizationState,
   options: RoiOptions,
@@ -706,7 +707,9 @@ const allBuyables = (
   // only ever one candidate: the next unwon encounter in the current age.
   const nextBattle = state.getNextBattle();
   const battles: RoiBuyable[] =
-    options.planBattle && nextBattle && !state.defeatedEncounters.includes(nextBattle.key)
+    options.planBattle &&
+    nextBattle &&
+    !state.defeatedEncounters.includes(nextBattle.key)
       ? [{ kind: "battle", id: nextBattle.key }]
       : [];
   return [...buildings, ...research, ...upgrades, ...units, ...battles].filter(
@@ -759,4 +762,3 @@ export const getBestRoiAction = (
   }
   return null;
 };
-

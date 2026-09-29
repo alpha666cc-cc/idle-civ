@@ -19,8 +19,10 @@
  */
 
 import { createSimulationRunner } from "./simulationRunner.js";
+import { ageDefinitions } from "../src/game/ages.js";
 import { formatExpoNumber } from "./simFormat.js";
 import { getStrategy, getStrategyNames } from "./strategies.js";
+import { resolveAgeId } from "./simulation.js";
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -110,7 +112,7 @@ Options:
                          Available: buildingCount, ageReach, battleVictory, timeLimit
   --target <value>       Target value for objective (default: 3600)
   --building <key>       Building key for buildingCount objective
-  --age <id>             Age ID for ageReach objective (e.g., age-1)
+  --age <id>             Age ID for ageReach objective (e.g., age1; age-1 is accepted)
   --battle <id>          Encounter ID for battleVictory objective
   --max-time <seconds>   Maximum simulation time (default: 3600)
   --snapshot-interval <s> Seconds between snapshots (default: 300)
@@ -128,8 +130,8 @@ Examples:
   # Run ROI-first speedrun strategy
   node tools/run-simulation.mjs --strategy speedrun --max-time 600
 
-  # Reach age-1 with production strategy
-  node tools/run-simulation.mjs --strategy production --objective ageReach --age age-1
+  # Reach age1 with production strategy
+  node tools/run-simulation.mjs --strategy production --objective ageReach --age age1
 
   # Build 5 farms with military strategy
   node tools/run-simulation.mjs --strategy military --objective buildingCount --building farm --target 5
@@ -158,9 +160,16 @@ function buildObjective(options) {
         console.error("--age required for ageReach objective");
         process.exit(1);
       }
+      const ageId = resolveAgeId(age);
+      if (!ageId) {
+        console.error(
+          `Unknown age ID "${age}". Valid age IDs: ${ageDefinitions.map(({ key }) => key).join(", ")}`,
+        );
+        process.exit(1);
+      }
       return {
         type: "ageReach",
-        ageId: age,
+        ageId,
       };
     case "battleVictory":
       if (!battle) {

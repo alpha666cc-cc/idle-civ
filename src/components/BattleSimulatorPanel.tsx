@@ -39,7 +39,9 @@ const winsWithStats = (
     );
   const enemy = gameState.getEnemyStacks(battleId);
   if (stacks.length === 0 || enemy.length === 0) return false;
-  return gameState.simulateWithStacks(battleId, stacks, enemy).outcome === "player";
+  return (
+    gameState.simulateWithStacksOutcome(battleId, stacks, enemy) === "player"
+  );
 };
 
 export default function BattleSimulatorPanel({
@@ -77,7 +79,8 @@ export default function BattleSimulatorPanel({
     readonly armyKey: string;
     readonly result: SimulatorResult | null;
   } | null>(null);
-  const result = resultState?.armyKey === currentArmyKey ? resultState.result : null;
+  const result =
+    resultState?.armyKey === currentArmyKey ? resultState.result : null;
   const failed = resultState?.armyKey === currentArmyKey && result === null;
 
   const selectBattle = (id: string): void => {
@@ -123,7 +126,8 @@ export default function BattleSimulatorPanel({
         {
           getCost: (unitId, count) => gameState.getUnitCost(unitId, count),
           getResearch: (unitIds) => gameState.getResearchForUnitTypes(unitIds),
-          wins: (composition) => winsWithStats(gameState, battle.key, composition),
+          wins: (composition) =>
+            winsWithStats(gameState, battle.key, composition),
         },
         selected.size >= 2,
         ownedArmy,
@@ -138,10 +142,10 @@ export default function BattleSimulatorPanel({
       <div className="dev-tools-heading">
         <h3>Battle simulator</h3>
         <p className="dev-tools-copy">
-          Starts with the army you already own, then finds the cheapest additional
-          recruits that win. Unit stats use current and required research bonuses;
-          recruit costs use your current discounts. The enemy uses prior-age and
-          unlock research plus its encounter boosts.
+          Starts with the army you already own, then finds the cheapest
+          additional recruits that win. Unit stats use current and required
+          research bonuses; recruit costs use your current discounts. The enemy
+          uses prior-age and unlock research plus its encounter boosts.
         </p>
       </div>
       <label className="dev-tools-label" htmlFor="battle-simulator-battle">
@@ -183,8 +187,8 @@ export default function BattleSimulatorPanel({
             </p>
           )}
           <div className="dev-tools-label">
-            Additional units the solver may recommend (your current army is always
-            included)
+            Additional units the solver may recommend (your current army is
+            always included)
           </div>
           <div className="battle-simulator-units">
             {candidates.map((unit) => {
@@ -245,7 +249,9 @@ export default function BattleSimulatorPanel({
                   </li>
                 ))}
               </ul>
-              <p className="battle-simulator-subheading">Minimum winning army</p>
+              <p className="battle-simulator-subheading">
+                Minimum winning army
+              </p>
               <ul>
                 {[...result.totalComposition].map(([unitId, count]) => (
                   <li key={unitId}>
@@ -253,7 +259,9 @@ export default function BattleSimulatorPanel({
                   </li>
                 ))}
               </ul>
-              <p className="battle-simulator-subheading">Additional resource cost</p>
+              <p className="battle-simulator-subheading">
+                Additional resource cost
+              </p>
               <ul>
                 {result.totalCost.map(({ resource, base }) => (
                   <li key={resource}>
@@ -283,7 +291,9 @@ export default function BattleSimulatorPanel({
               <p>Additional military (optimized): {fmt(result.military)}</p>
             </>
           ) : (
-            <p>No additional units needed. Your current army wins the simulation.</p>
+            <p>
+              No additional units needed. Your current army wins the simulation.
+            </p>
           )}
         </div>
       )}

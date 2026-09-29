@@ -38,9 +38,7 @@
         "value": 1.5
       }
     ],
-    "costMultipliers": [
-      { "resource": "science", "factor": 1000 }
-    ]
+    "costMultipliers": [{ "resource": "science", "factor": 100000 }]
   },
   {
     "guid": "1ddd7e6b-e76f-54c0-b668-bbdef695ed27",

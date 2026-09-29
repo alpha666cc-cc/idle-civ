@@ -5,6 +5,7 @@
 
 import { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
+import { findAgeDefinition } from "../src/game/ages.js";
 import {
   buildingDefinitions,
   type BuildingKey,
@@ -14,6 +15,14 @@ import {
   producerResourceKeys,
   type ProductionResourceKey,
 } from "../src/game/attributes.js";
+
+export const normalizeAgeId = (ageId: string): string => {
+  const legacyAgeId = /^age-(\d+)$/.exec(ageId);
+  return legacyAgeId ? `age${legacyAgeId[1]}` : ageId;
+};
+
+export const resolveAgeId = (ageId: string): string | undefined =>
+  findAgeDefinition(normalizeAgeId(ageId))?.key;
 
 /**
  * A snapshot of game state at a milestone for analysis.
@@ -594,7 +603,9 @@ export class GameSimulation {
           objective.target
         );
       case "ageReach":
-        return this.state.getCurrentAge()?.key === objective.ageId;
+        return (
+          this.state.getCurrentAge()?.key === resolveAgeId(objective.ageId)
+        );
       case "battleVictory":
         return this.state.defeatedEncounters.includes(objective.encounterId);
       case "timeLimit":
@@ -721,8 +732,8 @@ export class GameSimulation {
         }
         break;
       case "ageReach":
-        if (this.state.getCurrentAge()?.key === objective.ageId) {
-          return `age ${objective.ageId}`;
+        if (this.state.getCurrentAge()?.key === resolveAgeId(objective.ageId)) {
+          return `age ${resolveAgeId(objective.ageId)}`;
         }
         break;
       case "battleVictory":

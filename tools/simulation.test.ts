@@ -14,6 +14,9 @@ import { emptyStatistics } from "../src/game/statistics";
 import { GameSimulation, createInitialState } from "./simulation";
 import type { SimulationStrategy } from "./simulation";
 import {
+  BalancedStrategy,
+  getAgeRouteGrowthAction,
+  getAgeRouteTargetPopulation,
   getRequiredAgeAction,
   getRequiredBattle,
   getRequiredBattleAction,
@@ -35,7 +38,7 @@ describe("simulation event snapshots", () => {
         wood: ExpNumber.fromNumber(1e6),
       },
       emptyWorkerAssignments(),
-      { "townHall": 1 },
+      { townHall: 1 },
       emptyResourceFactors(),
       {},
       0,
@@ -177,8 +180,7 @@ describe("simulation event snapshots", () => {
       recordSnapshots: false,
     }).run();
     const event = result.events.find(
-      ({ type, id }) =>
-        type === "upgrade" && id === "farmEnhancer9",
+      ({ type, id }) => type === "upgrade" && id === "farmEnhancer9",
     );
 
     expect(result.finalState.resources.farmCapacity.toString()).toBe("1e1");
@@ -235,7 +237,7 @@ describe("required progression strategy", () => {
     return new CivilizationState(
       amounts,
       assignments,
-      { "townHall": 1, ...buildings, people },
+      { townHall: 1, ...buildings, people },
       emptyResourceFactors(),
       {},
       0,
@@ -268,6 +270,26 @@ describe("required progression strategy", () => {
     });
   });
 
+  it("reuses the current battle result while combat inputs stay unchanged", () => {
+    const state = makeState({
+      people: 100,
+      resources: richResources,
+      unitCounts: { warrior: 1234 },
+    });
+    const simulate = state.simulateEncounterOutcome.bind(state);
+    let simulations = 0;
+    state.simulateEncounterOutcome = (battleId) => {
+      simulations += 1;
+      return simulate(battleId);
+    };
+
+    const firstAction = getRequiredBattleAction(state);
+    const secondAction = getRequiredBattleAction(state);
+
+    expect(firstAction).toEqual(secondAction);
+    expect(simulations).toBe(1);
+  });
+
   it("finds a player unit path for beast-only encounters", () => {
     const firstBattle = encounterDefinitions[0];
     expect(firstBattle).toBeDefined();
@@ -279,6 +301,108 @@ describe("required progression strategy", () => {
     });
 
     expect(getRequiredBattleUnitTargets(state)[0]?.key).toBe("slinger");
+  });
+
+  it("keeps the 1000-population target through all four age-zero battles", () => {
+    const ageZeroBattles = encounterDefinitions
+      .filter(({ age }) => age === 0)
+      .map(({ key }) => key);
+
+    expect(getAgeRouteTargetPopulation(makeState())).toBe(90);
+    expect(
+      getAgeRouteTargetPopulation(
+        makeState({ defeatedEncounters: ageZeroBattles.slice(0, 1) }),
+      ),
+    ).toBe(200);
+    for (const wins of [2, 3, 4]) {
+      expect(
+        getAgeRouteTargetPopulation(
+          makeState({ defeatedEncounters: ageZeroBattles.slice(0, wins) }),
+        ),
+      ).toBe(1000);
+    }
+
+    const enteredAge0 = makeState({
+      people: 999,
+      buildings: { farm: 1200 },
+      resources: richResources,
+      defeatedEncounters: ageZeroBattles,
+    }).enterAge("age0");
+    expect(getAgeRouteTargetPopulation(enteredAge0)).toBe(1000);
+  });
+
+  it("holds the first two battles for their population checkpoints", () => {
+    const strategy = getStrategy("balanced");
+    expect(strategy).toBeDefined();
+    if (!strategy) return;
+    const firstBattle = encounterDefinitions.find(({ age }) => age === 0);
+    expect(firstBattle).toBeDefined();
+    if (!firstBattle) return;
+
+    const beforeFirst = makeState({
+      people: 89,
+      buildings: { house: 10, barracks: 1 },
+      resources: { ...simulatorResources, peopleCapacity: 110 },
+      unitCounts: { warrior: 1_000_000 },
+    });
+    expect(
+      strategy.decideAction(beforeFirst, { gameTime: 0, snapshots: [] })?.type,
+    ).not.toBe("launchBattle");
+
+    const atFirst = makeState({
+      people: 90,
+      buildings: { house: 10, barracks: 1 },
+      resources: { ...simulatorResources, peopleCapacity: 110 },
+      unitCounts: { warrior: 1_000_000 },
+    });
+    expect(
+      strategy.decideAction(atFirst, { gameTime: 0, snapshots: [] }),
+    ).toEqual({ type: "launchBattle", encounterId: firstBattle.key });
+
+    const beforeSecond = makeState({
+      people: 199,
+      buildings: { house: 20, barracks: 1 },
+      resources: { ...simulatorResources, peopleCapacity: 210 },
+      unitCounts: { warrior: 1_000_000 },
+      defeatedEncounters: [firstBattle.key],
+    });
+    expect(
+      strategy.decideAction(beforeSecond, { gameTime: 0, snapshots: [] })?.type,
+    ).not.toBe("launchBattle");
+
+    const atSecond = makeState({
+      people: 200,
+      buildings: { house: 20, barracks: 1 },
+      resources: { ...simulatorResources, peopleCapacity: 210 },
+      unitCounts: { warrior: 1_000_000 },
+      defeatedEncounters: [firstBattle.key],
+    });
+    expect(
+      strategy.decideAction(atSecond, { gameTime: 0, snapshots: [] })?.type,
+    ).toBe("launchBattle");
+  });
+
+  it("does not miss a housing cap with fractional capacity precision", () => {
+    const state = makeState({
+      people: 999,
+      buildings: { house: 100, townHall: 10 },
+      resources: {
+        ...richResources,
+        peopleCapacity: 999.9999999999982,
+        houseCapacity: 100,
+      },
+      defeatedEncounters: encounterDefinitions
+        .filter(({ age }) => age === 0)
+        .slice(0, 2)
+        .map(({ key }) => key),
+    });
+
+    expect(state.maximumPopulation.toNumber()).toBe(1000);
+    expect(getAgeRouteGrowthAction(state)).toEqual({
+      type: "build",
+      building: "people",
+      count: 1,
+    });
   });
 
   it("prefers named buyable enemies over the generic domain fallback", () => {
@@ -316,12 +440,7 @@ describe("required progression strategy", () => {
       resources: richResources,
       defeatedEncounters: ["age0_1_first_fire"],
     });
-    const order = [
-      "agriculture",
-      "pottery",
-      "sling_throwing",
-      "writing",
-    ];
+    const order = ["agriculture", "pottery", "sling_throwing", "writing"];
 
     for (const researchId of order) {
       expect(getRequiredResearchAction(state)).toEqual({
@@ -342,10 +461,25 @@ describe("required progression strategy", () => {
 
     expect(plan).not.toBeNull();
     expect(getRecommendedBattlePurchase(state, plan)).toBeNull();
-    expect(getStrategy("balanced")?.decideAction(state, { gameTime: 0, snapshots: [] })).not.toEqual({
+    expect(
+      getStrategy("balanced")?.decideAction(state, {
+        gameTime: 0,
+        snapshots: [],
+      }),
+    ).not.toEqual({
       type: "gather",
       resource: "military",
     });
+  });
+
+  it("reuses a battle plan after an unrelated building purchase", () => {
+    const state = createInitialState().setFreeBuildings(true);
+    const plan = getSimulatorBattlePlan(state);
+    expect(plan).not.toBeNull();
+
+    const afterFarm = state.build("farm", 1);
+    expect(afterFarm).not.toBe(state);
+    expect(getSimulatorBattlePlan(afterFarm)).toBe(plan);
   });
 
   it("gathers for the cheapest purchase while no worker produces anything", () => {
@@ -362,7 +496,11 @@ describe("required progression strategy", () => {
     const canBuildAnything = (candidate: CivilizationState) =>
       buildingDefinitions.some(({ key }) => candidate.canBuild(key));
     let bootstrapped = state;
-    for (let step = 0; step < 200 && !canBuildAnything(bootstrapped); step += 1) {
+    for (
+      let step = 0;
+      step < 200 && !canBuildAnything(bootstrapped);
+      step += 1
+    ) {
       bootstrapped = bootstrapped.gather(target as ProductionResourceKey);
     }
     expect(canBuildAnything(bootstrapped)).toBe(true);
@@ -391,7 +529,10 @@ describe("required progression strategy", () => {
     });
     // And the cheapest strategy asks for it ahead of any purchase.
     expect(
-      getStrategy("cheapest")?.decideAction(state, { gameTime: 0, snapshots: [] }),
+      getStrategy("cheapest")?.decideAction(state, {
+        gameTime: 0,
+        snapshots: [],
+      }),
     ).toEqual({ type: "enterAge", ageId: "age0" });
   });
 
@@ -404,16 +545,20 @@ describe("required progression strategy", () => {
   it("buys the advisor shortfall and re-plans after the purchase", () => {
     const state = makeState({
       people: 100,
-      buildings: { barracks: 1, university: 1, smithy: 1 },
-      resources: simulatorResources,
+      buildings: { house: 10, barracks: 1, university: 1, smithy: 1 },
+      resources: { ...simulatorResources, peopleCapacity: 110 },
       unitCounts: { warrior: 4 },
     });
     const plan = getSimulatorBattlePlan(state);
     const strategy = getStrategy("balanced");
 
     expect(plan).not.toBeNull();
-    expect(plan?.totalComposition.get("warrior")?.toNumber()).toBeGreaterThan(4);
-    expect(strategy?.decideAction(state, { gameTime: 0, snapshots: [] })).toEqual({
+    expect(plan?.totalComposition.get("warrior")?.toNumber()).toBeGreaterThan(
+      4,
+    );
+    expect(
+      strategy?.decideAction(state, { gameTime: 0, snapshots: [] }),
+    ).toEqual({
       type: "buyUnit",
       unitId: "warrior",
       count: plan?.composition.get("warrior"),
@@ -428,29 +573,21 @@ describe("required progression strategy", () => {
     });
   });
 
-  it("buys simulator-required research and re-plans the army", () => {
+  it("does not buy research absent from the battle plan", () => {
     const state = makeState({
       people: 100,
-      buildings: { barracks: 1, university: 1, smithy: 1 },
-      resources: simulatorResources,
+      buildings: { house: 10, barracks: 1, university: 1, smithy: 1 },
+      resources: { ...simulatorResources, peopleCapacity: 110 },
       defeatedEncounters: ["age0_1_first_fire"],
     });
     const plan = getSimulatorBattlePlan(state);
-    const firstResearch = plan?.research.ids[0];
     const strategy = getStrategy("balanced");
 
     expect(plan).not.toBeNull();
-    expect(firstResearch).toBeDefined();
-    expect(strategy?.decideAction(state, { gameTime: 0, snapshots: [] })).toEqual({
-      type: "buyResearch",
-      researchId: firstResearch,
-    });
-    if (!firstResearch) return;
-
-    const afterResearch = state.buyResearch(firstResearch);
-    expect(getSimulatorBattlePlan(afterResearch)?.research.ids).not.toContain(
-      firstResearch,
-    );
+    expect(plan?.research.ids).toEqual([]);
+    expect(
+      strategy?.decideAction(state, { gameTime: 0, snapshots: [] })?.type,
+    ).not.toBe("buyResearch");
   });
 
   it("buys the cheapest affordable purchase instead of a priority purchase", () => {
@@ -462,7 +599,9 @@ describe("required progression strategy", () => {
       resources: { wood: 10, food: 0, stone: 0, gold: 0 },
     });
 
-    expect(strategy.decideAction(state, { gameTime: 0, snapshots: [] })).toEqual({
+    expect(
+      strategy.decideAction(state, { gameTime: 0, snapshots: [] }),
+    ).toEqual({
       type: "build",
       building: "house",
       count: 1,
@@ -476,33 +615,52 @@ describe("required progression strategy", () => {
   });
 
   it("moves a surplus worker to an under-assigned resource", () => {
-    const strategy = getStrategy("production");
-    expect(strategy).toBeDefined();
-    if (!strategy) return;
-    const state = makeState({
-      people: 10,
-      resources: { food: 1e6, wood: 1e6, stone: 1e6, gold: 1e6 },
-      workers: { food: 9, wood: 1 },
-    });
+    class FocusStrategy extends BalancedStrategy {
+      focus(state: CivilizationState, resource: ProductionResourceKey) {
+        return this.assignWorkersByRatio(
+          state,
+          this.getWorkerRatios(),
+          resource,
+        );
+      }
+    }
 
-    expect(strategy.decideAction(state, { gameTime: 0, snapshots: [] })).toEqual({
-      type: "unassignWorker",
-      resource: "food",
-      count: 3,
+    let state = makeState({
+      people: 10,
+      workers: { food: 4, wood: 2, stone: 2, gold: 2 },
     });
-    const afterUnassign = state.unassignWorker("food", 3);
-    expect(
-      strategy.decideAction(afterUnassign, { gameTime: 1, snapshots: [] }),
-    ).toEqual({
-      type: "assignWorker",
-      resource: "wood",
-      count: 1,
-    });
+    const strategy = new FocusStrategy();
+
+    for (
+      let attempt = 0;
+      attempt < 10 && state.workers.gold.toNumber() < 5;
+      attempt += 1
+    ) {
+      const action = strategy.focus(state, "gold");
+      expect(action).not.toBeNull();
+      if (!action) break;
+      // `assignWorkersByRatio` is typed as the full `SimulationAction` union, so
+      // both worker variants have to be narrowed explicitly before `count` and
+      // `resource` exist.
+      if (action.type === "unassignWorker") {
+        state = state.unassignWorker(action.resource, action.count);
+      } else if (action.type === "assignWorker") {
+        state = state.assignWorker(action.resource, action.count);
+      } else {
+        break;
+      }
+    }
+
+    expect(state.workers.gold.toNumber()).toBe(5);
   });
 
   it("prepares a building once its existing unlock gate is met", () => {
     const beforeGate = makeState({ people: 89, resources: richResources });
-    const atGate = makeState({ people: 90, resources: richResources });
+    const atGate = makeState({
+      people: 90,
+      buildings: { house: 9 },
+      resources: { ...richResources, peopleCapacity: 100 },
+    });
 
     expect(getRequiredBattlePreparationAction(beforeGate)).toBeNull();
     expect(getRequiredBattlePreparationAction(atGate)).toEqual({
@@ -517,8 +675,14 @@ describe("required progression strategy", () => {
     expect(strategy).toBeDefined();
     if (!strategy) return;
 
-    const atGate = makeState({ people: 90, resources: richResources });
-    expect(strategy.decideAction(atGate, { gameTime: 90, snapshots: [] })).toEqual({
+    const atGate = makeState({
+      people: 90,
+      buildings: { house: 9 },
+      resources: { ...richResources, peopleCapacity: 100 },
+    });
+    expect(
+      strategy.decideAction(atGate, { gameTime: 90, snapshots: [] }),
+    ).toEqual({
       type: "build",
       building: "barracks",
       count: 1,
@@ -551,6 +715,34 @@ describe("required progression strategy", () => {
     expect(result.finalState.getCurrentAge()?.key).toBe("age1");
     expect(result.objectiveReached).toBe(true);
     expect(result.success).toBe(true);
+  });
+
+  it("accepts the legacy hyphenated age objective", () => {
+    const ageZeroBattles = encounterDefinitions
+      .filter(({ age }) => age === 0)
+      .map(({ key }) => key);
+    const ready = makeState({
+      people: 1000,
+      buildings: { farm: 250 },
+      resources: richResources,
+      defeatedEncounters: ageZeroBattles,
+    });
+    const strategy: SimulationStrategy = {
+      name: "age-transition",
+      description: "enters the current age when its requirements are met",
+      decideAction: (state) => getRequiredAgeAction(state),
+    };
+    const result = new GameSimulation(ready, strategy, {
+      seed: 42,
+      objective: { type: "ageReach", ageId: "age-1" },
+      gatherClicksPerAction: 1,
+      maxGameTime: 2,
+      recordSnapshots: false,
+    }).run();
+
+    expect(result.objectiveReached).toBe(true);
+    expect(result.objectiveMet).toBe("age age1");
+    expect(result.gameTime).toBe(0);
   });
 
   it("enters the next age only once every battle is won and the target is built", () => {

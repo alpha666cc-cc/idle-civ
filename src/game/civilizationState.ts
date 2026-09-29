@@ -34,8 +34,10 @@ import {
   armyPower,
   battleSeed,
   simulateBattle,
+  simulateBattleOutcome,
   type ArmyStack,
   type BattleSimulation,
+  type BattleOutcome,
 } from "./battle";
 import {
   collectCostReductions,
@@ -105,6 +107,17 @@ type BuildingCostOverrides = Partial<Record<BuildingKey, BuildingCost[]>>;
 
 /** Units have no capacity limit (§13.3), so the MAX probe stops here. */
 const maximumUnitPurchase = 1_000_000;
+
+const capacitySlotCount = (capacity: ExpNumber): ExpNumber => {
+  const numericCapacity = capacity.toNumber();
+  if (Number.isFinite(numericCapacity)) {
+    const nextSlot = Math.round(numericCapacity);
+    if (nextSlot > numericCapacity && nextSlot - numericCapacity <= 1e-9) {
+      return ExpNumber.fromNumber(nextSlot);
+    }
+  }
+  return capacity.floor();
+};
 
 /** How many leading units the flat cost reduction may zero out directly. */
 const flatClampWindow = 256;
@@ -391,7 +404,7 @@ export class CivilizationState {
   }
 
   get maximumPopulation(): ExpNumber {
-    return this.resources.peopleCapacity.floor();
+    return capacitySlotCount(this.resources.peopleCapacity);
   }
 
   get housingCapacity(): ExpNumber {
@@ -1161,7 +1174,7 @@ export class CivilizationState {
         max = max.mul(bonus.value);
       }
     }
-    return max.floor();
+    return capacitySlotCount(max);
   }
 
   /** Shared production/stat recap; the base remains distinct from bonus additions. */
@@ -1358,6 +1371,16 @@ export class CivilizationState {
     enemy: readonly ArmyStack[],
   ): BattleSimulation {
     return simulateBattle(player, enemy, {
+      seed: battleSeed(player, enemy, battleId),
+    });
+  }
+
+  simulateWithStacksOutcome(
+    battleId: string,
+    player: readonly ArmyStack[],
+    enemy: readonly ArmyStack[],
+  ): BattleOutcome {
+    return simulateBattleOutcome(player, enemy, {
       seed: battleSeed(player, enemy, battleId),
     });
   }
@@ -2181,6 +2204,23 @@ export class CivilizationState {
     const enemy = this.getEnemyStacks(encounterId);
     if (player.length === 0 || enemy.length === 0) return undefined;
     return simulateBattle(player, enemy, {
+      seed: battleSeed(player, enemy, encounter.key),
+    });
+  }
+
+  simulateEncounterOutcome(encounterId: string): BattleOutcome | undefined {
+    const encounter = findEncounterDefinition(encounterId);
+    if (!encounter) return undefined;
+    const currentAge = this.getCurrentAge();
+    if (!currentAge) return undefined;
+    const currentAgeIndex = ageDefinitions.findIndex(
+      (age) => age.key === currentAge.key,
+    );
+    if (encounter.age !== currentAgeIndex) return undefined;
+    const player = this.getArmyStacks();
+    const enemy = this.getEnemyStacks(encounterId);
+    if (player.length === 0 || enemy.length === 0) return undefined;
+    return simulateBattleOutcome(player, enemy, {
       seed: battleSeed(player, enemy, encounter.key),
     });
   }

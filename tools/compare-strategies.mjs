@@ -20,12 +20,14 @@
  */
 
 import { formatExpoNumber } from "./simFormat.js";
+import { ageDefinitions } from "../src/game/ages.js";
 import {
   compareStrategies,
   evolutionaryTournament,
   saveComparisonResults,
 } from "./strategyComparison.js";
 import { getStrategy, getStrategyNames } from "./strategies.js";
+import { resolveAgeId } from "./simulation.js";
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -115,7 +117,7 @@ Options:
                           Available: buildingCount, ageReach, battleVictory, timeLimit
   --target <value>         Target value for objective (default: 3600)
   --building <key>         Building key for buildingCount objective
-  --age <id>               Age ID for ageReach objective (e.g., age-1)
+  --age <id>               Age ID for ageReach objective (e.g., age1; age-1 is accepted)
   --battle <id>            Encounter ID for battleVictory objective
   --max-time <seconds>     Maximum simulation time (default: 3600)
   --actions-per-second <n> Strategy actions per simulated second (default: 5)
@@ -130,8 +132,8 @@ Examples:
   # Compare all strategies for 1 hour
   node tools/compare-strategies.mjs --max-time 3600
 
-  # Compare specific strategies to reach age-1
-  node tools/compare-strategies.mjs --strategies balanced,production --objective ageReach --age age-1
+  # Compare specific strategies to reach age1
+  node tools/compare-strategies.mjs --strategies balanced,production --objective ageReach --age age1
 
   # Run evolutionary tournament for 5 generations
   node tools/compare-strategies.mjs --generations 5 --top 2 --max-time 1800
@@ -160,9 +162,16 @@ function buildObjective(options) {
         console.error("--age required for ageReach objective");
         process.exit(1);
       }
+      const ageId = resolveAgeId(age);
+      if (!ageId) {
+        console.error(
+          `Unknown age ID "${age}". Valid age IDs: ${ageDefinitions.map(({ key }) => key).join(", ")}`,
+        );
+        process.exit(1);
+      }
       return {
         type: "ageReach",
-        ageId: age,
+        ageId,
       };
     case "battleVictory":
       if (!battle) {

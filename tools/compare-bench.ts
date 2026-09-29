@@ -5,10 +5,10 @@
  * after, and the before/after numbers to be reported. This reads two runs that
  * were produced with identical `--horizon`, `--interval` and `--seed`, and prints
  * the columns that matter for pacing, one row per strategy per run, plus the
- * first time each strategy reached `age-1`.
+ * first time each strategy reached `age1`.
  *
  * Usage:
- *   tsx tools/compare-bench.ts <beforeDir> <afterDir> [--age=age-1]
+ *   tsx tools/compare-bench.ts <beforeDir> <afterDir> [--age=age1]
  *
  * Both directories must contain the same `sim-*.csv` files. A strategy present
  * in only one run is reported as `missing` rather than silently dropped, so a
@@ -21,12 +21,16 @@ const flag = (name: string, fallback: string): string => {
   return hit ? hit.slice(name.length + 3) : fallback;
 };
 
-const [beforeDir, afterDir] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+const [beforeDir, afterDir] = process.argv
+  .slice(2)
+  .filter((a) => !a.startsWith("--"));
 if (!beforeDir || !afterDir) {
-  console.error("usage: tsx tools/compare-bench.ts <beforeDir> <afterDir> [--age=age-1]");
+  console.error(
+    "usage: tsx tools/compare-bench.ts <beforeDir> <afterDir> [--age=age1]",
+  );
   process.exit(1);
 }
-const targetAge = flag("age", "age-1");
+const targetAge = flag("age", "age1").replace(/^age-(\d+)$/, "age$1");
 
 /** Minimal CSV reader: handles the quoted cells the snapshot writer emits. */
 const parseCsv = (text: string): string[][] => {
@@ -106,7 +110,9 @@ const readRun = (dir: string): Map<string, Summary> => {
       name,
       rows: rows.length,
       firstAgeSeconds,
-      final: Object.fromEntries(HEADLINE.map((column) => [column, at(final, column)])),
+      final: Object.fromEntries(
+        HEADLINE.map((column) => [column, at(final, column)]),
+      ),
     });
   }
   return out;
@@ -128,7 +134,8 @@ const arrow = (left: string, right: string): string => {
   if (left === right) return "=";
   const a = Number(left);
   const b = Number(right);
-  if (!Number.isFinite(a) || !Number.isFinite(b)) return left === right ? "=" : "?";
+  if (!Number.isFinite(a) || !Number.isFinite(b))
+    return left === right ? "=" : "?";
   if (b > a) return "+";
   if (b < a) return "-";
   return "=";
@@ -143,16 +150,27 @@ for (const name of names) {
   const a = after.get(name);
   console.log(`== ${name} ==`);
   if (!b || !a) {
-    console.log(`  ${!b ? "before" : "after"}: MISSING (${!b ? beforeDir : afterDir})`);
+    console.log(
+      `  ${!b ? "before" : "after"}: MISSING (${!b ? beforeDir : afterDir})`,
+    );
     continue;
   }
   const time = (s: Summary) =>
-    s.firstAgeSeconds === null ? "never" : `${Math.round(s.firstAgeSeconds / 60)}m`;
+    s.firstAgeSeconds === null
+      ? "never"
+      : `${Math.round(s.firstAgeSeconds / 60)}m`;
   console.log(
-    `  ${targetAge.padEnd(9)} ${time(b).padStart(6)} -> ${time(a).padStart(6)}  ${arrow(
-      String(b.firstAgeSeconds ?? Infinity),
-      String(a.firstAgeSeconds ?? Infinity),
-    ) === "-" ? "SLOWER" : arrow(String(b.firstAgeSeconds ?? Infinity), String(a.firstAgeSeconds ?? Infinity))}`,
+    `  ${targetAge.padEnd(9)} ${time(b).padStart(6)} -> ${time(a).padStart(6)}  ${
+      arrow(
+        String(b.firstAgeSeconds ?? Infinity),
+        String(a.firstAgeSeconds ?? Infinity),
+      ) === "-"
+        ? "SLOWER"
+        : arrow(
+            String(b.firstAgeSeconds ?? Infinity),
+            String(a.firstAgeSeconds ?? Infinity),
+          )
+    }`,
   );
   for (const column of HEADLINE) {
     const left = tidy(b.final[column] ?? "");

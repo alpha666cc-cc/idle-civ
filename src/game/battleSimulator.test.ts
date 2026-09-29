@@ -6,11 +6,14 @@ import {
   type SimulatorTotalArmy,
 } from "./battleSimulator";
 import { ExpNumber } from "./expNumber";
+import { simulateBattle, simulateBattleOutcome } from "./battle";
 import { findUnitDefinition } from "./units";
 
 const battleId = "age0_1_first_fire";
 const warrior = findUnitDefinition("warrior");
 if (!warrior) throw new Error("The Tribesman definition is missing.");
+const wolf = findUnitDefinition("wolf");
+if (!wolf) throw new Error("The wolf definition is missing.");
 
 const ownedWarriors = (count: number): SimulatorOwnedArmy =>
   new Map([["warrior", ExpNumber.fromNumber(count)]]);
@@ -29,6 +32,29 @@ const context = () => ({
 });
 
 describe("battle simulator current army", () => {
+  it("matches full playback outcomes without producing logs", () => {
+    const player = [
+      {
+        unitId: warrior.key,
+        count: ExpNumber.fromNumber(30),
+        stats: warrior.stats,
+      },
+    ];
+    const enemy = [
+      {
+        unitId: wolf.key,
+        count: ExpNumber.fromNumber(8),
+        stats: wolf.stats,
+      },
+    ];
+    const full = simulateBattle(player, enemy, { seed: 42 });
+
+    expect(simulateBattleOutcome(player, enemy, { seed: 42 })).toBe(
+      full.outcome,
+    );
+    expect(full.rounds.length).toBeGreaterThan(0);
+  });
+
   it("merges owned units into the simulated total without charging them again", () => {
     const owned = ownedWarriors(4);
     const result = solveMinimumArmy(
@@ -62,9 +88,7 @@ describe("battle simulator current army", () => {
   });
 
   it("passes only new unit types to the research cost evaluator", () => {
-    const owned = new Map([
-      ["warrior", ExpNumber.fromNumber(4)],
-    ]);
+    const owned = new Map([["warrior", ExpNumber.fromNumber(4)]]);
     const result = solveMinimumArmy(
       battleId,
       [warrior],
@@ -72,7 +96,9 @@ describe("battle simulator current army", () => {
         ...context(),
         getResearch: (unitIds) => ({
           ids: unitIds,
-          costs: [{ resource: "science", base: ExpNumber.fromNumber(100), factor: 1 }],
+          costs: [
+            { resource: "science", base: ExpNumber.fromNumber(100), factor: 1 },
+          ],
         }),
       },
       false,
