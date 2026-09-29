@@ -33,9 +33,12 @@ import {
 import {
   armyPower,
   battleSeed,
+  ordersForAge,
   simulateBattle,
   simulateBattleOutcome,
+  standardOrder,
   type ArmyStack,
+  type BattleOrder,
   type BattleSimulation,
   type BattleOutcome,
 } from "./battle";
@@ -323,6 +326,12 @@ export class CivilizationState {
   readonly statistics: Statistics;
   /** Units owned per unit id. Casualties never touch this (armies are restored). */
   readonly unitCounts: Record<string, ExpNumber>;
+  /**
+   * The order each owned unit type fights under, keyed by unit id. Absent means
+   * `standard`. Only orders the current age has discovered are stored, so a
+   * save written later than the player's age cannot smuggle in a locked order.
+   */
+  readonly unitOrders: Partial<Record<string, BattleOrder>>;
   /** Dev-tools production multiplier (×N on every producer rate, shown as a factor). */
   readonly devProductionMultiplier: ExpNumber;
   /** Dev-tools free flags: skip affordability + cost deduction, keep capacity gates. */
@@ -348,6 +357,7 @@ export class CivilizationState {
     freeUnits = false,
     freeUpgrades = false,
     boughtResearch: readonly string[] = [],
+    unitOrders: Partial<Record<string, BattleOrder>> = {},
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -362,6 +372,7 @@ export class CivilizationState {
     this.boughtResearch = boughtResearch;
     this.statistics = statistics;
     this.unitCounts = unitCounts;
+    this.unitOrders = unitOrders;
     this.devProductionMultiplier = devProductionMultiplier;
     this.freeBuildings = freeBuildings;
     this.freeUnits = freeUnits;
@@ -2075,9 +2086,88 @@ export class CivilizationState {
       const count = this.getUnitCount(unit.key);
       if (count.lte(ExpNumber.ZERO)) continue;
       const stats = this.getUnitStats(unit.key);
-      if (stats) stacks.push({ unitId: unit.key, count, stats });
+      if (stats) {
+        stacks.push({
+          unitId: unit.key,
+          count,
+          stats,
+          order: this.getUnitOrder(unit.key),
+        });
+      }
     }
     return stacks;
+  }
+
+  /** The order a unit type fights under; `standard` when none is set. */
+  getUnitOrder(unitId: string): BattleOrder {
+    const order = this.unitOrders[unitId];
+    return order && this.isOrderUnlocked(order) ? order : standardOrder;
+  }
+
+  /** Every order the player's current age has discovered. */
+  getAvailableOrders(): readonly BattleOrder[] {
+    const currentAge = this.getCurrentAge();
+    // Before the first age is entered the player still fights the opening battle,
+    // which is standard-only, so an unknown age falls back to age 0.
+    const ageIndex = currentAge
+      ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
+      : 0;
+    return ordersForAge(ageIndex < 0 ? 0 : ageIndex);
+  }
+
+  /** Orders are a classical-age discovery, gated by the age the player has reached. */
+  isOrderUnlocked(order: BattleOrder): boolean {
+    return this.getAvailableOrders().includes(order);
+  }
+
+  /**
+   * Set (or clear, with `standard`) the order a unit type fights under. Returns
+   * `this` unchanged for an unknown unit, a locked order, or a no-op change, so
+   * callers can test `next === state`.
+   */
+  setUnitOrder(unitId: string, order: BattleOrder): CivilizationState {
+    if (!findUnitDefinition(unitId) || !this.isOrderUnlocked(order)) return this;
+    if (order === standardOrder) {
+      if (this.unitOrders[unitId] === undefined) return this;
+      const { [unitId]: _removed, ...rest } = this.unitOrders;
+      return this.withState(
+        this.resources,
+        this.buildingCostOverrides,
+        this.builtBuildings,
+        this.autoClicksPerSecond,
+        this.boughtUpgrades,
+        this.defeatedEncounters,
+        this.enteredAges,
+        this.earnedAchievements,
+        this.statistics,
+        this.unitCounts,
+        this.devProductionMultiplier,
+        this.freeBuildings,
+        this.freeUnits,
+        this.freeUpgrades,
+        this.boughtResearch,
+        rest,
+      );
+    }
+    if (this.unitOrders[unitId] === order) return this;
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      { ...this.unitOrders, [unitId]: order },
+    );
   }
 
   getArmyPower(): ExpNumber {
@@ -2570,6 +2660,7 @@ export class CivilizationState {
     freeUnits = this.freeUnits,
     freeUpgrades = this.freeUpgrades,
     boughtResearch = this.boughtResearch,
+    unitOrders = this.unitOrders,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -2589,6 +2680,7 @@ export class CivilizationState {
       freeUnits,
       freeUpgrades,
       boughtResearch,
+      unitOrders,
     );
   }
 

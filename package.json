@@ -15,7 +15,8 @@
     "simulate:battle": "node --experimental-strip-types temp/min-army.mjs",
     "helper:battle": "node helper/serve-battle-simulator.mjs",
     "simulate": "tsx tools/run-simulation.mjs",
-    "simulate:compare": "tsx tools/compare-strategies.mjs"
+    "simulate:compare": "tsx tools/compare-strategies.mjs",
+    "simulate:debug": "tsx tools/run-simulation.mjs --strategy cheapest --objective timeLimit --target 4500 --verbose"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -34,4 +35,3 @@
     "vitest": "^5.0.1"
   }
 }
-

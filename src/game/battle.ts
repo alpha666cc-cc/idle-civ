@@ -28,7 +28,136 @@ export type ArmyStack = {
   readonly unitId: string;
   readonly count: ExpNumber;
   readonly stats: UnitStats;
+  /** How this stack picks its target and screens its allies; `standard` if unset. */
+  readonly order?: BattleOrder;
 };
+
+/**
+ * Battle orders (the "Classical discovery", Age 2).
+ *
+ * An order is per unit type, not per stack instance — the player has one army and
+ * `getArmyStacks()` emits a single stack per unit type, so an order always
+ * describes the whole of that type. Orders change only *targeting* and *screening*;
+ * they never touch the damage, range or speed rules, so an order can move the
+ * cost of a battle but not invalidate a unit's own stats.
+ *
+ * `standard` is the pre-order behaviour (fire at the weakest stack you can
+ * reach). The rest are tactical choices the player unlocks with the classical
+ * ages: hold a line, screen the shooters, or concentrate fire differently.
+ */
+export type BattleOrder =
+  | "standard"
+  | "frontline"
+  | "backline"
+  | "focus_weak"
+  | "focus_strong"
+  | "focus_counter"
+  | "same_tag"
+  | "protect_ranged";
+
+export const standardOrder: BattleOrder = "standard";
+
+/** Every order, in unlock order; used to validate a loaded save. */
+export const battleOrders: readonly BattleOrder[] = [
+  "standard",
+  "frontline",
+  "backline",
+  "focus_counter",
+  "focus_weak",
+  "focus_strong",
+  "same_tag",
+  "protect_ranged",
+];
+
+/** Which orders the player has discovered by the time they reach an age. */
+export const orderUnlocks: Record<number, readonly BattleOrder[]> = {
+  0: ["standard"],
+  1: ["standard"],
+  2: [
+    "standard",
+    "frontline",
+    "backline",
+    "focus_counter",
+    "focus_weak",
+    "focus_strong",
+  ],
+  3: [
+    "standard",
+    "frontline",
+    "backline",
+    "focus_counter",
+    "focus_weak",
+    "focus_strong",
+    "same_tag",
+    "protect_ranged",
+  ],
+  4: [
+    "standard",
+    "frontline",
+    "backline",
+    "focus_counter",
+    "focus_weak",
+    "focus_strong",
+    "same_tag",
+    "protect_ranged",
+  ],
+  5: [
+    "standard",
+    "frontline",
+    "backline",
+    "focus_counter",
+    "focus_weak",
+    "focus_strong",
+    "same_tag",
+    "protect_ranged",
+  ],
+  6: [
+    "standard",
+    "frontline",
+    "backline",
+    "focus_counter",
+    "focus_weak",
+    "focus_strong",
+    "same_tag",
+    "protect_ranged",
+  ],
+  7: [
+    "standard",
+    "frontline",
+    "backline",
+    "focus_counter",
+    "focus_weak",
+    "focus_strong",
+    "same_tag",
+    "protect_ranged",
+  ],
+};
+
+export const battleOrderLabels: Record<BattleOrder, string> = {
+  standard: "Standard",
+  frontline: "Hold the line",
+  backline: "Keep to the rear",
+  focus_weak: "Finish the weakest",
+  focus_strong: "Break the strongest",
+  focus_counter: "Hunt the armoured",
+  same_tag: "Match their kind",
+  protect_ranged: "Guard the shooters",
+};
+
+export const battleOrderHints: Record<BattleOrder, string> = {
+  standard: "Fire at the weakest stack you can reach.",
+  frontline: "Engage the nearest melee line, and screen what is behind it.",
+  backline: "Stand off and screen yourself from the enemy line.",
+  focus_weak: "Concentrate on the smallest remaining stack.",
+  focus_strong: "Concentrate on the largest remaining stack.",
+  focus_counter: "Prefer the enemy your unit counters; fall back if it has none.",
+  same_tag: "Pick a foe of your own kind, or the first you can reach.",
+  protect_ranged: "Body-guard the ranged line, absorbing fire for it.",
+};
+
+/** Orders a player of this age may issue; never empty, always includes standard. */
+export const ordersForAge = (ageIndex: number): readonly BattleOrder[] =>
+  orderUnlocks[Math.max(0, Math.min(7, ageIndex))] ?? orderUnlocks[0];
 
 export type BattleSide = "player" | "enemy";
 
@@ -77,6 +206,10 @@ type Fighter = {
   readonly initialCount: ExpNumber;
   /** Remaining effective hit points of the whole stack. */
   hpPool: ExpNumber;
+  /** The order this stack was told to fight under. */
+  readonly order: BattleOrder;
+  /** Hit points the stack started with, so screening can read its health. */
+  readonly initialHpPool: ExpNumber;
 };
 
 const livingCount = (fighter: Fighter): ExpNumber => {
@@ -118,6 +251,8 @@ const buildFighters = (
           hitPoints,
           initialCount: stack.count,
           hpPool: hitPoints.mul(stack.count),
+          initialHpPool: hitPoints.mul(stack.count),
+          order: stack.order ?? standardOrder,
         },
       ];
     });
@@ -176,7 +311,7 @@ const armySignature = (
   stacks
     .map(
       (stack) =>
-        `${side}:${stack.unitId}:${stack.count.toString()}:${stack.stats.hp.toString()}:${stack.stats.attack.toString()}`,
+        `${side}:${stack.unitId}:${stack.count.toString()}:${stack.stats.hp.toString()}:${stack.stats.attack.toString()}:${stack.order ?? standardOrder}`,
     )
     .sort()
     .join("|");
@@ -215,6 +350,117 @@ const totalLiving = (fighters: readonly Fighter[]): ExpNumber =>
     (total, fighter) => total.add(livingCount(fighter)),
     ExpNumber.ZERO,
   );
+
+/** Lowest remaining hit points first — the classic "finish what is nearly dead". */
+const weakestFirst = (foes: readonly Fighter[]): Fighter =>
+  foes.reduce(
+    (weakest, foe) => (foe.hpPool.lt(weakest.hpPool) ? foe : weakest),
+    foes[0],
+  );
+
+/** The foes this unit's `bonusVs` tags actually counter, if any are reachable. */
+const counterTargets = (
+  attacker: Fighter,
+  foes: readonly Fighter[],
+): Fighter[] =>
+  foes.filter((foe) => attacker.bonusVs.some((tag) => foe.tags.includes(tag)));
+
+/**
+ * `standard` is exactly the pre-orders rule — fire at the weakest reachable pool
+ * — so a battle with no orders set resolves bit-for-bit as it did before orders
+ * existed. It deliberately does *not* prefer a countered target; that is what
+ * `focus_counter` is for, and folding it in here would silently retune every
+ * battle in the game for players who never touch the control.
+ */
+const pickStandardTarget = (foes: readonly Fighter[]): Fighter => weakestFirst(foes);
+
+/**
+ * Which foe a stack shoots, by its order. Every order falls back to a reachable
+ * target, so an order never makes a stack idle while enemies are in range.
+ */
+const pickTargetByOrder = (
+  attacker: Fighter,
+  foes: readonly Fighter[],
+): Fighter => {
+  switch (attacker.order) {
+    case "focus_counter": {
+      const counters = counterTargets(attacker, foes);
+      return counters.length > 0 ? weakestFirst(counters) : weakestFirst(foes);
+    }
+    case "focus_weak":
+      return weakestFirst(foes);
+    case "focus_strong":
+      return foes.reduce(
+        (strongest, foe) => (foe.hpPool.gt(strongest.hpPool) ? foe : strongest),
+        foes[0],
+      );
+    case "frontline":
+      // The nearest melee line: the shortest reach, and a screen for what is behind.
+      return foes.reduce(
+        (nearest, foe) =>
+          foe.stats.range < nearest.stats.range ? foe : nearest,
+        foes[0],
+      );
+    case "backline":
+      // Keep to the rear: shoot whatever reaches furthest, from behind the line.
+      return foes.reduce(
+        (furthest, foe) =>
+          foe.stats.range > furthest.stats.range ? foe : furthest,
+        foes[0],
+      );
+    case "same_tag": {
+      const same = foes.filter((foe) =>
+        foe.tags.some((tag) => attacker.tags.includes(tag)),
+      );
+      return same.length > 0 ? same[0] : foes[0];
+    }
+    case "protect_ranged":
+    case "standard":
+    default:
+      return pickStandardTarget(foes);
+  }
+};
+
+/**
+ * Screening: a stack that is holding the line, standing to the rear, or guarding
+ * the shooters draws fire that was aimed at a protected ally. Only a protected
+ * target is screened, so a front line still takes the hits meant for it.
+ *
+ * A fixed share of the damage is split across the living screens, and the rest
+ * lands on the intended target. All of it is still dealt, so screening trades a
+ * body's survival for its allies' rather than adding or removing damage.
+ *
+ * The share is deliberately small. A screen is one stack standing in for another,
+ * and the redirected fire is aimed at it precisely because it is nearest — at a
+ * higher share the screen dies in the opening rounds, the enemy then focuses
+ * whatever is left, and the order loses battles that were already won. A small
+ * share lets a tanky screen blunt the volley that would have deleted a fragile
+ * ally, which is the whole point of holding a line.
+ */
+const screeningShare = 0.25;
+
+const applyScreening = (
+  target: Fighter,
+  damage: ExpNumber,
+  targetAllies: readonly Fighter[],
+): ExpNumber => {
+  const protectedTarget =
+    target.order === "protect_ranged" || target.stats.range <= 3;
+  if (!protectedTarget) return damage;
+  const screens = targetAllies.filter(
+    (ally) =>
+      ally.unitId !== target.unitId &&
+      livingCount(ally).gt(ExpNumber.ZERO) &&
+      (ally.order === "frontline" || ally.order === "protect_ranged"),
+  );
+  if (screens.length === 0) return damage;
+  const shared = damage.mul(ExpNumber.fromNumber(screeningShare));
+  const each = shared.div(ExpNumber.fromNumber(screens.length));
+  for (const screen of screens) {
+    screen.hpPool = ExpNumber.max(ExpNumber.ZERO, screen.hpPool.sub(each));
+  }
+  return damage.sub(shared);
+};
 
 const hasLiving = (fighters: readonly Fighter[]): boolean =>
   fighters.some((fighter) => fighter.hpPool.gt(ExpNumber.ZERO));
@@ -267,13 +513,8 @@ const simulateBattleInternal = (
           canReach(attacker, fighter, distance),
       );
       if (foes.length === 0) continue;
-      // Fire at the weakest stack: finishing units off ends the fight sooner and
-      // keeps the log readable.
-      const target = foes.reduce(
-        (weakest, fighter) =>
-          fighter.hpPool.lt(weakest.hpPool) ? fighter : weakest,
-        foes[0],
-      );
+      // The stack's order decides the target; `standard` finishes off the weakest.
+      const target = pickTargetByOrder(attacker, foes);
       const hitChance = Math.max(
         0.05,
         Math.min(
@@ -282,13 +523,19 @@ const simulateBattleInternal = (
             (1 - Math.min(1, distance / attacker.stats.range) * 0.3),
         ),
       );
-      const damage = attackers
-        .mul(attacker.stats.attack)
-        .mul(
-          ExpNumber.fromNumber(
-            hitChance * matchupMultiplier(attacker, target),
+      const targetAllies = attacker.side === "player" ? enemy : player;
+      // A line that screens its allies absorbs part of the hit meant for them.
+      const damage = applyScreening(
+        target,
+        attackers
+          .mul(attacker.stats.attack)
+          .mul(
+            ExpNumber.fromNumber(
+              hitChance * matchupMultiplier(attacker, target),
+            ),
           ),
-        );
+        targetAllies,
+      );
       target.hpPool = ExpNumber.max(ExpNumber.ZERO, target.hpPool.sub(damage));
     }
 

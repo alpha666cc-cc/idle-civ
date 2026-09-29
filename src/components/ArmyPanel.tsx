@@ -3,6 +3,9 @@ import { Lock, Swords, X } from "lucide-react";
 import type { CivilizationState } from "../game/civilizationState";
 import {
   armyPower,
+  battleOrderHints,
+  battleOrderLabels,
+  type BattleOrder,
   type BattleSimulation,
   type StackSnapshot,
 } from "../game/battle";
@@ -209,6 +212,8 @@ export default function ArmyPanel({
           const reason = gameState.getUnitFailureReason(unit.key, wanted);
           const icon = unitIcon(unit.key, unit.tags);
           const tone = unitTone(unit.tags);
+          const orders = gameState.getAvailableOrders();
+          const order = gameState.getUnitOrder(unit.key);
           return (
             <article key={unit.key} className="unit-card">
               <div className="unit-card-head">
@@ -238,6 +243,28 @@ export default function ArmyPanel({
                 </span>
               </div>
 
+              {orders.length > 1 && (
+                <label className="unit-order">
+                  <span className="unit-order-label">Orders</span>
+                  <select
+                    className="unit-order-select"
+                    value={order}
+                    onChange={(event) =>
+                      setGameState((current) =>
+                        current.setUnitOrder(unit.key, event.target.value as BattleOrder),
+                      )
+                    }
+                    aria-label={`Battle order for ${unit.name}`}
+                    title={battleOrderHints[order]}
+                  >
+                    {orders.map((option) => (
+                      <option key={option} value={option}>
+                        {battleOrderLabels[option]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <button
                 type="button"
                 className="unit-buy"

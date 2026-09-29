@@ -10,7 +10,16 @@
  * instead of quietly in the campaign.
  */
 import { describe, expect, it } from "vitest";
-import { simulateBattle, simulateBattleOutcome } from "./battle";
+import {
+  battleOrderHints,
+  battleOrderLabels,
+  battleOrders,
+  battleSeed,
+  ordersForAge,
+  simulateBattle,
+  simulateBattleOutcome,
+  type BattleOrder,
+} from "./battle";
 import { CivilizationState } from "./civilizationState";
 import { findUnitDefinition } from "./units";
 import { ExpNumber } from "./expNumber";
@@ -116,6 +125,132 @@ describe("Wolf Pack: a mixed army is the cheapest answer", () => {
         ["canoe", 8],
       ]),
     ).toBe("player");
+  });
+});
+
+describe("battle orders", () => {
+  const army = (list: Army, orders: Partial<Record<string, BattleOrder>> = {}) =>
+    player(list).map((stack) => ({
+      ...stack,
+      order: orders[stack.unitId],
+    }));
+
+  /** A two-stack fight where the order can visibly change who is shot at. */
+  const focusedBattle = (orders: Partial<Record<string, BattleOrder>>) =>
+    simulateBattle(
+      army([["warrior", 4], ["slinger", 4]], orders),
+      state.getEnemyStacks(wolfPack),
+      { seed: 7 },
+    );
+
+  it("leaves a battle unchanged when no order is set", () => {
+    const plain = simulateBattle(
+      player([["warrior", 8]]),
+      state.getEnemyStacks(firstFire),
+      { seed: 1 },
+    );
+    const explicit = simulateBattle(
+      army([["warrior", 8]], { warrior: "standard" }),
+      state.getEnemyStacks(firstFire),
+      { seed: 1 },
+    );
+    expect(explicit.rounds).toEqual(plain.rounds);
+    expect(explicit.outcome).toBe(plain.outcome);
+  });
+
+  it("is deterministic under an order, whatever the seed says", () => {
+    const first = focusedBattle({ slinger: "focus_strong" });
+    const reseeded = simulateBattle(
+      army([["warrior", 4], ["slinger", 4]], { slinger: "focus_strong" }),
+      state.getEnemyStacks(wolfPack),
+      { seed: 987654321 },
+    );
+    expect(reseeded.outcome).toBe(first.outcome);
+    expect(reseeded.rounds.length).toBe(first.rounds.length);
+    expect(reseeded.rounds.at(-1)).toEqual(first.rounds.at(-1));
+  });
+
+  it("folds the order into the battle fingerprint", () => {
+    const wolves = state.getEnemyStacks(firstFire);
+    const plain = battleSeed(player([["warrior", 8]]), wolves, firstFire);
+    const ordered = battleSeed(
+      army([["warrior", 8]], { warrior: "focus_strong" }),
+      wolves,
+      firstFire,
+    );
+    expect(ordered).not.toBe(plain);
+  });
+
+  it("changes who a stack shoots at, so an order is not decoration", () => {
+    // focus_strong hits the bigger wolf pool, focus_weak the smaller; the two
+    // enemy pools therefore take damage in a different order.
+    const strong = focusedBattle({ slinger: "focus_strong" });
+    const weak = focusedBattle({ slinger: "focus_weak" });
+    expect(strong.rounds.at(-1)?.enemy).not.toEqual(weak.rounds.at(-1)?.enemy);
+  });
+
+  it("keeps standard an unlocked order in every age", () => {
+    for (let age = 0; age <= 7; age += 1) {
+      expect(ordersForAge(age)).toContain("standard");
+    }
+  });
+
+  it("holds the tactical orders back until the classical ages", () => {
+    expect(ordersForAge(0)).toEqual(["standard"]);
+    expect(ordersForAge(1)).toEqual(["standard"]);
+    expect(ordersForAge(2)).toContain("frontline");
+    expect(ordersForAge(2)).not.toContain("same_tag");
+    expect(ordersForAge(3)).toContain("same_tag");
+  });
+
+  it("gates orders on the age the player has reached", () => {
+    const start = new CivilizationState();
+    expect(start.getAvailableOrders()).toEqual(["standard"]);
+    expect(start.isOrderUnlocked("frontline")).toBe(false);
+    // A locked order is refused, leaving the state untouched.
+    expect(start.setUnitOrder("warrior", "frontline")).toBe(start);
+  });
+
+  it("stores an unlocked order and clears it back to standard", () => {
+    // Orders unlock with the age. `getCurrentAge` needs both a population past
+    // the threshold and every earlier age entered, and the constructor recomputes
+    // population from the `people` buildings, so set both halves honestly.
+    const entered = new CivilizationState(
+      undefined,
+      undefined,
+      { people: 20_000, townHall: 20 },
+      undefined,
+      undefined,
+      0,
+      [],
+      [],
+      ["age0", "age1", "age2"],
+    );
+    expect(entered.getCurrentAge()?.key).not.toBe("age0");
+    expect(entered.getAvailableOrders()).toContain("frontline");
+
+    const ordered = entered.setUnitOrder("warrior", "frontline");
+    expect(ordered).not.toBe(entered);
+    expect(ordered.getUnitOrder("warrior")).toBe("frontline");
+    // The order survives an unrelated transition, such as a tick.
+    expect(ordered.tick().getUnitOrder("warrior")).toBe("frontline");
+    // Setting the same order again is a no-op, and standard clears the entry.
+    expect(ordered.setUnitOrder("warrior", "frontline")).toBe(ordered);
+    expect(
+      ordered.setUnitOrder("warrior", "standard").getUnitOrder("warrior"),
+    ).toBe("standard");
+  });
+
+  it("ignores an unknown unit id", () => {
+    const start = new CivilizationState();
+    expect(start.setUnitOrder("not_a_unit", "standard")).toBe(start);
+  });
+
+  it("ships a label and a hint for every order", () => {
+    for (const order of battleOrders) {
+      expect(battleOrderLabels[order]).toBeTruthy();
+      expect(battleOrderHints[order]).toBeTruthy();
+    }
   });
 });
 

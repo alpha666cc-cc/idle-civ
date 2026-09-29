@@ -2437,6 +2437,32 @@ button:focus-visible {
   flex: none;
 }
 
+.unit-order {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.unit-order-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.unit-order-select {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-deep);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 5px 8px;
+}
+
 .unit-buy {
   border: 1px solid var(--line);
   border-radius: 8px;

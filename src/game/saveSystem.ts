@@ -9,6 +9,7 @@ import {
   type ResourceKey,
 } from "./attributes";
 import type { BuildingCost } from "./buildings";
+import { battleOrders, type BattleOrder } from "./battle";
 import { snapshotGuids } from "./dataIds";
 import type { DevLogDocument } from "./devLog";
 import { ExpNumber } from "./expNumber";
@@ -29,7 +30,7 @@ import { emptyStatistics, type Statistics } from "./statistics";
  */
 
 /** Bump when the shape changes; `migrateSaveData` handles older documents. */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 /** How a save travels: the same document, three encodings. */
 export type SaveFormat = "base64" | "json" | "xml";
@@ -118,6 +119,8 @@ export type SaveData = {
   readonly boughtResearch: string[];
   readonly statistics: SerializedStatistics;
   readonly unitCounts: Record<string, string>;
+  /** Battle orders per unit id, added in version 5; empty for older documents. */
+  readonly unitOrders?: Record<string, string>;
   readonly devProductionMultiplier: string;
   readonly freeBuildings: boolean;
   readonly freeUnits: boolean;
@@ -238,16 +241,25 @@ export const migrateSaveData = (data: SaveData): SaveData => {
       `The save was written by a newer build (version ${data.version}).`,
     );
   }
+  // v4 → v5: battle orders did not exist, so every old document starts on standard.
+  if (data.version === 4) {
+    return { ...data, version: SAVE_VERSION, unitOrders: {} };
+  }
   // v1 → v2: research did not exist, so every old document starts with none.
   if (data.version === 1) {
-    return { ...data, version: SAVE_VERSION, boughtResearch: [] };
+    return {
+      ...data,
+      version: SAVE_VERSION,
+      boughtResearch: [],
+      unitOrders: {},
+    };
   }
   // v2 → v3: convert builtBuildings array to buildingCounts map
   if (data.version === 2) {
     const buildingCounts = data.builtBuildings
       ? countBuildingsFromArray(data.builtBuildings)
       : (data.buildingCounts ?? {});
-    return { ...data, version: SAVE_VERSION, buildingCounts };
+    return { ...data, version: SAVE_VERSION, buildingCounts, unitOrders: {} };
   }
   // v3 → v4: convert kebab-case achievement IDs to camelCase
   if (data.version === 3) {
@@ -609,6 +621,10 @@ export const remapSaveIds = (
       string,
       string
     >,
+    unitOrders: remapRecord(data.unitOrders ?? {}, false) as Record<
+      string,
+      string
+    >,
     buildingCostOverrides: remapRecord(
       data.buildingCostOverrides ?? {},
       true,
@@ -783,6 +799,7 @@ export const collectReferencedIds = (state: CivilizationState): string[] => {
     ...state.boughtResearch,
     ...Object.keys(countBuildings(state.builtBuildings)),
     ...Object.keys(state.unitCounts),
+    ...Object.keys(state.unitOrders),
     ...Object.keys(state.statistics.buildingsBuiltByKey),
     ...Object.keys(state.buildingCostOverrides),
     ...Object.keys(state.resources),
@@ -839,6 +856,12 @@ export const createSaveData = (
       value.toString(),
     ]),
   ),
+  // Only real (non-standard) orders are written; absence means standard on load.
+  unitOrders: Object.fromEntries(
+    Object.entries(state.unitOrders).filter(
+      (entry): entry is [string, BattleOrder] => entry[1] !== undefined,
+    ),
+  ),
   devProductionMultiplier: state.devProductionMultiplier.toString(),
   freeBuildings: state.freeBuildings,
   freeUnits: state.freeUnits,
@@ -877,6 +900,14 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
     unitCounts[key] = count;
   }
 
+  const unitOrders: Partial<Record<string, BattleOrder>> = {};
+  for (const [key, value] of Object.entries(data.unitOrders ?? {})) {
+    // A save may name an order this build no longer knows, or one the loaded
+    // age has not discovered; both fall back to `standard` rather than throwing.
+    if (!battleOrders.includes(value as BattleOrder)) continue;
+    unitOrders[key] = value as BattleOrder;
+  }
+
   const costOverrides: Record<string, BuildingCost[]> = {};
   for (const [key, costs] of Object.entries(data.buildingCostOverrides ?? {})) {
     costOverrides[key] = (costs ?? []).map(deserializeCost);
@@ -902,5 +933,6 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
     data.freeUnits ?? false,
     data.freeUpgrades ?? false,
     [...(data.boughtResearch ?? [])],
+    unitOrders,
   );
 };

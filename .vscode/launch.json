@@ -20,6 +20,26 @@
       "preLaunchTask": "Idle Civ: Start Battle Helper",
       "postDebugTask": "Idle Civ: Stop Battle Helper",
       "sourceMaps": true
+    },
+    {
+      "name": "Idle Civ: Simulation Debug (Cheapest 4500s)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--experimental-strip-types"],
+      "program": "${workspaceFolder}/tools/run-simulation.mjs",
+      "args": [
+        "--strategy",
+        "cheapest",
+        "--objective",
+        "timeLimit",
+        "--target",
+        "4500",
+        "--verbose"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
     }
   ]
 }
