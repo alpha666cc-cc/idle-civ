@@ -105,6 +105,17 @@
         "$connections = @(Get-NetTCPConnection -LocalPort 4174 -State Listen -ErrorAction SilentlyContinue); foreach ($connection in $connections) { Stop-Process -Id $connection.OwningProcess -Force -ErrorAction SilentlyContinue }"
       ],
       "problemMatcher": []
+    },
+    {
+      "label": "Idle Civ: Run Simulation Debug",
+      "type": "shell",
+      "command": "${workspaceFolder}\\tools\\run-simulation-debug.bat",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
     }
   ]
 }

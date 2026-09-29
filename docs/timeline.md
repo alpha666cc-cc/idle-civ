@@ -13,7 +13,7 @@
   - Suboptimal worker ratios split focus (cheapest uses 100% food vs 40-50% in others)
   - Conservative battle launch conditions (50 power threshold vs immediate simulation-based launches)
   - Missing economy scaling prevents natural progression through building types
-- **Age-0 progression spreadsheet updated:** `age_0_building_progression.csv` now uses actual simulation data from `temp/sim/sim-cheapest.csv` instead of estimates
+- **Age-0 progression spreadsheet updated:** `sim-output/age_0_building_progression.csv` now uses actual simulation data from `sim-output/sim/sim-cheapest.csv` instead of estimates
 - **Corrected data sources:** building counts and production rates extracted directly from simulation CSV at 4 checkpoints (before each battle and end of age)
 - **Short-term fixes applied (not yet benchmarked — see 2026-09-29 below):**
   - Increased food ratios to 0.65-0.8 in all strategies (citizens are critical)

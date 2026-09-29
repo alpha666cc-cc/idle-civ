@@ -2,7 +2,8 @@
 
 /**
  * Extract Age 0 building progression from actual cheapest strategy simulation
- * Uses temp/sim/sim-cheapest.csv to get real building counts and production rates
+ * Uses sim-output/sim/sim-cheapest.csv to get real building counts and production
+ * rates. Both paths live under the gitignored `sim-output/` folder.
  */
 
 import { readFileSync } from "fs";
@@ -14,7 +15,7 @@ const __dirname = dirname(__filename);
 
 // Load simulation CSV
 const csvData = readFileSync(
-  join(__dirname, "../temp/sim/sim-cheapest.csv"),
+  join(__dirname, "../sim-output/sim/sim-cheapest.csv"),
   "utf8",
 );
 const lines = csvData.trim().split("\n");
@@ -126,12 +127,12 @@ function generateCSV() {
 
 // Write CSV file
 const csv = generateCSV();
-const outputPath = join(__dirname, "../age_0_building_progression.csv");
+const outputPath = join(__dirname, "../sim-output/age_0_building_progression.csv");
 import { writeFileSync } from "fs";
 writeFileSync(outputPath, csv, "utf8");
 
 console.log(
-  "✅ CSV generated from simulation data: age_0_building_progression.csv",
+  "✅ CSV generated from simulation data: sim-output/age_0_building_progression.csv",
 );
 console.log("\nRows extracted from sim-cheapest.csv:");
 console.log("- BEFORE_BATTLE_1: row 18 (last row with battles_won=0)");

@@ -14,7 +14,7 @@
  * spreadsheet formulas over the `Inputs` and `Data` sheets, so the ratios can be
  * toyed with without re-running this script.
  *
- * Run: npm run gen:balance            (writes temp/balance-plan.fods + .csv)
+ * Run: npm run gen:balance            (writes sim-output/balance-plan.fods + .csv)
  *      npm run gen:balance -- --dump  (print the table to the console instead)
  */
 import fs from "node:fs";
@@ -1313,12 +1313,15 @@ const main = (): void => {
     ["Notes", notesRows()],
   ];
 
-  const outDir = path.join(process.cwd(), "temp");
+  // `sim-output/` is gitignored; the dir may not exist on a fresh clone.
+  const outDir = path.join(process.cwd(), "sim-output");
+  fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, "balance-plan.fods"), fodsDocument(sheets), "utf8");
   fs.writeFileSync(path.join(outDir, "balance-plan.csv"), csvText(plan), "utf8");
   for (const line of new Set(MISMATCHES)) console.warn(`model vs engine: ${line}`);
   console.log(
-    `wrote temp/balance-plan.fods (${sheets.length} sheets) and temp/balance-plan.csv ` +
+    `wrote sim-output/balance-plan.fods (${sheets.length} sheets) and ` +
+      `sim-output/balance-plan.csv ` +
       `(${measurements.length} milestones, ${plan[1].length} columns)`,
   );
 };
