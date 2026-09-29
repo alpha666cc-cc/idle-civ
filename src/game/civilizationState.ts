@@ -166,14 +166,6 @@ const crossoverToSqrt = (
 };
 
 /**
- * Global research pricing: the first tech costs 100 science and later purchases
- * follow the shared square-root curve, `100 × 10^(√n − 1)`, where n is the
- * purchase ordinal.
- */
-const researchFirstCost = ExpNumber.fromNumber(100);
-const researchCostFactor = ExpNumber.fromNumber(10);
-
-/**
  * Identity-keyed recompute caches. Every state array is replaced immutably and
  * never mutated, so array identity is a free "did anything change" test: a tick
  * that changes nothing reuses the cached values, and the one call after a real
@@ -676,54 +668,33 @@ export class CivilizationState {
   }
 
   /**
-   * The price scale one resource carries from every age entered so far. Ages
-   * never regress, so the tally is derived from `enteredAges` rather than stored
-   * (the same rule `activeBonuses()` follows for age bonuses). Multipliers
-   * compose, so an age that doubles a price after one that tripled it leaves 6x.
-   *
-   * Returns exactly `ExpNumber.ONE` when no entered age touches the resource,
-   * which keeps the common (age0) path allocation-free. This is deliberately
-   * resource-generic rather than a research special case: it is the inverse of a
-   * bonus, and any future age can use it to re-anchor any price curve.
-   */
-  getResourceCostMultiplier(resource: string): ExpNumber {
-    let total = ExpNumber.ONE;
-    for (const ageId of this.enteredAges) {
-      for (const entry of findAgeDefinition(ageId)?.costMultipliers ?? []) {
-        if (entry.resource === resource) total = total.mul(entry.factor);
-      }
-    }
-    return total;
-  }
-
-  /**
    * The cost of `count` sequential research purchases after the current bought
-   * count. This is the same global pricing curve as `getResearchNextCost()`.
-   *
-   * The science total is scaled by every entered age's science cost multiplier,
-   * applied here rather than at each call site so the Research panel, the
-   * Gamepedia, the strategies' affordability checks and the purchase itself can
-   * never quote different prices (the same guarantee `getBuildingCost()` gives
-   * the cost-reduction path, AGENTS.md §13.6).
+   * count. Uses the building cost reduction system to allow upgrades, battles,
+   * and ages to modify research costs.
    */
   getResearchCostForCount(count: number): BuildingCost[] {
     const purchases = Number.isFinite(count)
       ? Math.max(0, Math.floor(count))
       : 0;
     if (purchases === 0) return [];
+
+    // Original research formula: 100 × 10^(√n − 1) where n is the purchase ordinal
     let total = ExpNumber.ZERO;
     for (let offset = 0; offset < purchases; offset += 1) {
       const purchaseNumber = this.boughtResearch.length + offset + 1;
       total = total.add(
-        researchFirstCost.mul(
-          researchCostFactor.pow(Math.sqrt(purchaseNumber) - 1),
+        ExpNumber.fromNumber(100).mul(
+          ExpNumber.fromNumber(10).pow(Math.sqrt(purchaseNumber) - 1),
         ),
       );
     }
-    const scale = this.getResourceCostMultiplier("science");
-    return scale.eq(ExpNumber.ONE)
-      ? [{ resource: "science", base: total, factor: 1 }]
-      : [{ resource: "science", base: total.mul(scale), factor: 1 }];
+
+    // Apply cost reductions and multipliers from the bonus system
+    const { reductions } = this.getBuildingCostModifiers("research");
+    let scaledTotal = total.mul(reductions.percent);
+    scaledTotal = scaledTotal.mul(reductions.multiplier);
+
+    return [{ resource: "science", base: scaledTotal, factor: 1 }];
   }
 
   /**
@@ -1249,10 +1220,12 @@ export class CivilizationState {
   /** Cost-reduction bonuses targeting one buyable, folded the §13.1 way. */
   private costReductionsFor(buyableId: string) {
     const isBuilding = buildingDefinitions.some(({ key }) => key === buyableId);
+    const isResearch = buyableId === "research"; // Virtual building for research
     const unit = findUnitDefinition(buyableId);
     const targetMatches = (destination: string): boolean => {
       if (destination === buyableId) return true;
       if (isBuilding) return destination === "allBuildings";
+      if (isResearch) return destination === "allBuildings"; // Research uses building cost pipeline
       if (!unit) return destination === "allUnits";
       if (destination === "allUnits") return true;
       return (
@@ -1263,7 +1236,8 @@ export class CivilizationState {
     const sources = this.activeBonuses().filter(
       ([, bonus]) =>
         targetMatches(String(bonus.destination)) &&
-        bonus.type.startsWith("costReduction"),
+        (bonus.type.startsWith("costReduction") ||
+          bonus.type === "costMultiplier"),
     );
     return {
       sources,
@@ -1299,7 +1273,10 @@ export class CivilizationState {
   ): CostParameters[] {
     return costs.map((cost) => ({
       cost,
-      unitBase: ExpNumber.max(ExpNumber.ZERO, cost.base.mul(reductions.base)),
+      unitBase: ExpNumber.max(
+        ExpNumber.ZERO,
+        cost.base.mul(reductions.base).mul(reductions.multiplier),
+      ),
       unitFactor: ExpNumber.max(
         ExpNumber.fromNumber(1.01),
         ExpNumber.fromNumber(1.01).add(
@@ -2181,7 +2158,7 @@ export class CivilizationState {
     return encounterDefinitions.some(
       (encounter) =>
         !this.defeatedEncounters.includes(encounter.key) &&
-        !this.isAgeUnlocked(`age-${encounter.age}`),
+        !this.isAgeUnlocked(`age${encounter.age}`),
     );
   }
 
@@ -2884,7 +2861,10 @@ export class CivilizationState {
     // Age 0 is always unlocked
     if (ageIndex === 0) return true;
     // Check that the previous age has been entered
-    const prevAgeId = `age-${ageIndex - 1}`;
+    // Handle both formats: "age1" and "age-1"
+    const prevAgeId = ageId.startsWith("age-")
+      ? `age-${ageIndex - 1}`
+      : `age${ageIndex - 1}`;
     return this.enteredAges.includes(prevAgeId);
   }
 

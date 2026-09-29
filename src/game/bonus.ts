@@ -20,7 +20,8 @@ export type BonusType =
   | "costReductionFlat" // destination cost −N (absolute, per unit)
   | "costReductionPercent" // destination cost × (1 − N) per unit
   | "costReductionBase" // destination cost's base term reduced
-  | "costReductionFactor"; // destination cost's growth factor reduced multiplicatively (clamped at 1.01 minimum)
+  | "costReductionFactor" // destination cost's growth factor reduced multiplicatively (clamped at 1.01 minimum)
+  | "costMultiplier"; // destination cost ×N (for cost increases, e.g., age scaling)
 
 /** A bonus targets an attribute (resource, capacity or stat) or a buyable id. */
 export type BuyableCostTarget = "allBuildings" | "allUnits";
@@ -72,6 +73,7 @@ const bonusTypes: readonly BonusType[] = [
   "costReductionPercent",
   "costReductionBase",
   "costReductionFactor",
+  "costMultiplier",
 ];
 
 /**
@@ -98,7 +100,7 @@ export const parseBonus = (
   value: ExpNumber.from(value),
 });
 
-/** The four cost-reduction types folded into per-unit adjustments (§13.1). */
+/** The four cost-reduction types plus cost multiplier folded into per-unit adjustments (§13.1). */
 export type CostReductions = {
   /**
    * Π(1 − N) — base divisors compound (a value of 1/2 divides the base by 2);
@@ -115,6 +117,8 @@ export type CostReductions = {
   percent: ExpNumber;
   /** Σ absolute per-unit reductions, applied after percent, clamped at 0 per unit. */
   flat: ExpNumber;
+  /** Π cost multipliers compound (for cost increases, e.g., age scaling). */
+  multiplier: ExpNumber;
 };
 
 /**
@@ -128,6 +132,7 @@ export const collectCostReductions = (bonuses: Bonus[]): CostReductions => {
     factor: ExpNumber.ONE,
     percent: ExpNumber.ONE,
     flat: ExpNumber.ZERO,
+    multiplier: ExpNumber.ONE,
   };
   for (const bonus of bonuses) {
     switch (bonus.type) {
@@ -149,6 +154,9 @@ export const collectCostReductions = (bonuses: Bonus[]): CostReductions => {
         break;
       case "costReductionFlat":
         reductions.flat = reductions.flat.add(bonus.value);
+        break;
+      case "costMultiplier":
+        reductions.multiplier = reductions.multiplier.mul(bonus.value);
         break;
       default:
         break;

@@ -16,6 +16,11 @@
         "type": "attributeMultiplier",
         "destination": "buildingPower",
         "value": 2
+      },
+      {
+        "type": "costMultiplier",
+        "destination": "research",
+        "value": "100000"
       }
     ]
   },
@@ -37,8 +42,7 @@
         "destination": "buildingPower",
         "value": 1.5
       }
-    ],
-    "costMultipliers": [{ "resource": "science", "factor": 100000 }]
+    ]
   },
   {
     "guid": "1ddd7e6b-e76f-54c0-b668-bbdef695ed27",

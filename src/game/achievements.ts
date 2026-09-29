@@ -94,7 +94,12 @@ type AchievementRequirementData =
   | { type: "upgradeCount"; count: number }
   | { type: "offlineTime"; amount: number }
   | { type: "activeTime"; amount: number }
-  | { type: "famine"; resource: ResourceKey; amount: number; population: number };
+  | {
+      type: "famine";
+      resource: ResourceKey;
+      amount: number;
+      population: number;
+    };
 
 type AchievementData = {
   key: string;
@@ -295,8 +300,9 @@ const chainForId = (
 
 /** The open-ended chain family an id belongs to, or undefined for anything else. */
 export const chainFamilyForId = (id: string): string | undefined =>
-  openEndedHoarderChains.find(({ family }) => id.startsWith(`${family}-e`))
-    ?.family;
+  openEndedHoarderChains.find(
+    ({ family }) => id.startsWith(`${family}-e`) || id.startsWith(`${family}e`),
+  )?.family;
 
 const aggregateDefinitions = new Map<string, AchievementDefinition>();
 
