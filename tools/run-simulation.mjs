@@ -15,6 +15,8 @@
  *   --seed <number>        Random seed (default: 42)
  *   --output <file>        Output file for results (JSON)
  *   --no-snapshots         Disable snapshot recording
+ *   --save <path>          Start from a save file instead of a new game (e.g. saves/age1.json)
+ *   --save-out <path>      Write the final state out as a save (.json/.xml/.b64)
  *   --help                 Show this help
  */
 
@@ -22,7 +24,8 @@ import { createSimulationRunner } from "./simulationRunner.js";
 import { ageDefinitions } from "../src/game/ages.js";
 import { formatExpoNumber } from "./simFormat.js";
 import { getStrategy, getStrategyNames } from "./strategies.js";
-import { resolveAgeId } from "./simulation.js";
+import { GameSimulation, resolveAgeId } from "./simulation.js";
+import { describeSaveEntry, loadSaveEntry, writeSaveEntry } from "./saveEntry.js";
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -40,6 +43,8 @@ function parseArgs() {
     output: null,
     snapshots: true,
     verbose: false,
+    save: null,
+    saveOut: null,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -81,6 +86,12 @@ function parseArgs() {
       case "--no-snapshots":
         options.snapshots = false;
         break;
+      case "--save":
+        options.save = args[++i];
+        break;
+      case "--save-out":
+        options.saveOut = args[++i];
+        break;
       case "--verbose":
         options.verbose = true;
         break;
@@ -120,6 +131,8 @@ Options:
   --seed <number>        Random seed (default: 42)
   --output <file>        Output file for results (JSON)
   --no-snapshots         Disable snapshot recording
+  --save <path>          Start from a save file instead of a new game (e.g. saves/age1.json)
+  --save-out <path>      Write the final state out as a save (.json/.xml/.b64)
   --verbose              Enable verbose debug output
   --help                 Show this help
 
@@ -242,6 +255,8 @@ async function main() {
     recordSnapshots: options.snapshots,
     snapshotIntervalSeconds: snapshotInterval,
     verbose: options.verbose,
+    // A save is a mid-game state: the from-scratch prologue must not run.
+    fromScratch: options.save === null,
     onEvent: (event) => {
       console.log(
         `\n[EVENT] [${formatGameTime(event.time)}] ${event.type}: ${event.id}`,
@@ -256,8 +271,11 @@ async function main() {
         .join(", ");
       console.log(`    Production: { ${eventProductionList || "none"} }`);
     },
-    onSnapshot: (snapshot, index) => {
-      console.log(`\n[SNAPSHOT] Snapshot ${index + 1}:`);
+    onSnapshot: (snapshot) => {
+      const timing = snapshot.timing;
+      // The snapshot's own counter, not the callback's index, so the number
+      // printed here is the same one recorded in the snapshot and the CSV.
+      console.log(`\n[SNAPSHOT] Snapshot ${snapshot.index + 1}:`);
       console.log(`  Time: ${snapshot.timestamp}s`);
       console.log(`  Age: ${snapshot.age}`);
       console.log(`  Population: ${formatExpoNumber(snapshot.population)}`);
@@ -289,19 +307,42 @@ async function main() {
           `  Military Power: ${formatExpoNumber(snapshot.militaryPower)}`,
         );
       }
+      // The timing sampled at this instant, so a run that starts slowing down
+      // shows it snapshot by snapshot rather than only in the end-of-run totals.
+      console.log(
+        `  Tick timing: ${timing.ticks} ticks, mean ${timing.tickMeanMs.toFixed(4)}ms, max ${timing.tickMaxMs.toFixed(4)}ms`,
+      );
+      console.log(
+        `  Decision timing: ${timing.decisions} decisions, mean ${timing.decisionMeanMs.toFixed(4)}ms, max ${timing.decisionMaxMs.toFixed(4)}ms`,
+      );
     },
   };
 
+  // Resolve the entry state: a save when one is named, otherwise a new game.
+  // A bad path or malformed document must stop the run, not quietly fall back
+  // to a fresh civilization.
+  let entry = null;
+  if (options.save !== null) {
+    try {
+      entry = loadSaveEntry(options.save);
+    } catch (error) {
+      console.error(`Could not load the save: ${error.message}`);
+      process.exit(1);
+    }
+  }
+
   console.log(`Starting simulation with strategy: ${strategy.name}`);
   console.log(`Objective: ${JSON.stringify(objective)}`);
+  if (entry) console.log(describeSaveEntry(entry));
   console.log(
     `Config: ${JSON.stringify({ ...config, onEvent: undefined, onSnapshot: undefined }, null, 2)}`,
   );
   console.log("");
 
   const startTime = Date.now();
-  const runner = createSimulationRunner(strategy, config);
-  const result = runner.run();
+  const result = entry
+    ? new GameSimulation(entry.state, strategy, config).run()
+    : createSimulationRunner(strategy, config).run();
   const endTime = Date.now();
 
   console.log("");
@@ -361,6 +402,25 @@ async function main() {
     };
     fs.writeFileSync(options.output, JSON.stringify(outputData, null, 2));
     console.log(`Results written to ${options.output}`);
+  }
+
+  // Write the outcome back out as a real save so it can be opened in the game,
+  // or fed straight back in as a later `--save`. Resuming a save and writing one
+  // out keeps the same guid, so the pair is one continuous save-file.
+  if (options.saveOut !== null) {
+    try {
+      const written = writeSaveEntry(
+        options.saveOut,
+        result.finalState,
+        entry ? { from: entry } : {},
+      );
+      console.log(
+        `\nSave written: ${written.path} (${written.format}, v${written.version}, guid ${written.guid})`,
+      );
+    } catch (error) {
+      console.error(`Could not write the save: ${error.message}`);
+      process.exit(1);
+    }
   }
 
   process.exit(result.success ? 0 : 1);

@@ -92,6 +92,13 @@ export interface SimulationConfig {
   actionsPerSecond?: number; // strategy actions per simulated second (default 5)
   maxGameTime: number; // maximum simulation time in seconds
   recordSnapshots: boolean;
+  /**
+   * Manufacture the opening house and citizens before the main loop (default
+   * true). Set false when the run resumes a save: the prologue exists to bootstrap
+   * an empty civilization, and on a mid-game state it would build a redundant
+   * house and spend the save's food on citizens the player already has.
+   */
+  fromScratch?: boolean;
   /** Seconds between periodic snapshots (default 300). Battle wins always snapshot. */
   snapshotIntervalSeconds?: number;
   verbose?: boolean; // enable debug output
@@ -252,6 +259,8 @@ export class GameSimulation {
   private gameTime = 0;
   private events: SimulationEvent[] = [];
   private seenEvents = new Set<string>();
+  private lastMilestoneAge: string | undefined;
+  private lastMilestoneBattles = 0;
   private tickCount = 0;
   private tickTotalMs = 0;
   private tickMaxMs = 0;
@@ -267,6 +276,38 @@ export class GameSimulation {
     this.state = initialState;
     this.strategy = strategy;
     this.config = config;
+    this.primeBaseline();
+  }
+
+  /**
+   * Seed the diff baselines from the state the run starts on.
+   *
+   * Both the event recorder and the milestone checks work by diffing against
+   * what was already there, and both used to assume that was nothing. A run that
+   * resumes a save begins with battles won, upgrades bought, research done and
+   * achievements earned, so on the first tick every one of them read as *newly*
+   * acquired and was reported at 1s. Reading the baseline out of the snapshot
+   * list had a second flaw: with `recordSnapshots: false` there is no snapshot to
+   * read, so the battle milestone re-fired on every tick forever.
+   *
+   * A from-scratch run is unaffected — its starting state is empty, so this
+   * primes nothing.
+   */
+  private primeBaseline(): void {
+    for (const [type, ids] of [
+      ["age", this.state.enteredAges],
+      ["upgrade", this.state.boughtUpgrades],
+      ["achievement", this.state.earnedAchievements],
+      ["battle", this.state.defeatedEncounters],
+      ["research", this.state.boughtResearch],
+    ] as const) {
+      for (const id of ids) this.seenEvents.add(`${type}:${id}`);
+    }
+    // The last age actually *entered* (not merely the age the population puts
+    // you in), so a fresh run still announces entering its first age.
+    this.lastMilestoneAge =
+      this.state.enteredAges[this.state.enteredAges.length - 1];
+    this.lastMilestoneBattles = this.state.defeatedEncounters.length;
   }
 
   /** Log a message if verbose mode is enabled. */
@@ -365,19 +406,11 @@ export class GameSimulation {
   }
 
   /**
-   * Run the full simulation to completion.
+   * The from-scratch opening: gather wood, build a house, gather food, then
+   * build as many citizens as are affordable. Extracted from `run` so a run that
+   * resumes a save can skip it in one line.
    */
-  run(): SimulationResult {
-    const configuredActionsPerSecond = this.config.actionsPerSecond ?? 5;
-    const actionsPerSecond =
-      Number.isFinite(configuredActionsPerSecond) &&
-      configuredActionsPerSecond >= 1
-        ? Math.floor(configuredActionsPerSecond)
-        : 5;
-
-    // Initial burst: gather wood and build a house, then gather food and build people
-    // This sets up the initial population and workers
-
+  private bootstrapFromScratch(): void {
     this.log(
       "Initial houseCapacity:",
       this.state.resources.houseCapacity.toString(),
@@ -438,6 +471,23 @@ export class GameSimulation {
         );
       }
     }
+  }
+
+  /**
+   * Run the full simulation to completion.
+   */
+  run(): SimulationResult {
+    const configuredActionsPerSecond = this.config.actionsPerSecond ?? 5;
+    const actionsPerSecond =
+      Number.isFinite(configuredActionsPerSecond) &&
+      configuredActionsPerSecond >= 1
+        ? Math.floor(configuredActionsPerSecond)
+        : 5;
+
+    // Initial burst: gather wood and build a house, then gather food and build people
+    // This sets up the initial population and workers. A resumed run skips it —
+    // see `SimulationConfig.fromScratch`.
+    if (this.config.fromScratch !== false) this.bootstrapFromScratch();
 
     while (this.gameTime < this.config.maxGameTime) {
       // Check objective completion
@@ -697,20 +747,20 @@ export class GameSimulation {
     if (!currentAge) return;
 
     const ageId = currentAge.key;
-    const previousAge = this.snapshots[this.snapshots.length - 1]?.age;
-
-    // New age entered
-    if (previousAge !== ageId && this.state.enteredAges.includes(ageId)) {
+    if (
+      this.lastMilestoneAge !== ageId &&
+      this.state.enteredAges.includes(ageId)
+    ) {
+      this.lastMilestoneAge = ageId;
       this.recordSnapshot();
       this.strategy.onMilestone?.({ type: "ageEntered", ageId }, this.state);
     }
 
-    // Battle won (check if new battles defeated since last snapshot)
+    // Battle won (check if new battles defeated since the last milestone)
     const battlesWon = this.state.defeatedEncounters.length;
-    const previousBattles =
-      this.snapshots[this.snapshots.length - 1]?.battlesWon || 0;
-    if (battlesWon > previousBattles) {
+    if (battlesWon > this.lastMilestoneBattles) {
       const newBattle = this.state.defeatedEncounters[battlesWon - 1];
+      this.lastMilestoneBattles = battlesWon;
       this.recordSnapshot();
       this.strategy.onMilestone?.(
         { type: "battleWon", encounterId: newBattle },

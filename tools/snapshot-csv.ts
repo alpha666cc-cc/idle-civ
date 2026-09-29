@@ -15,6 +15,7 @@
  *
  * Usage:
  *   tsx tools/snapshot-csv.ts <strategy...> [--horizon=3600] [--interval=60] [--out=dir]
+ *                            [--save=path]
  *
  * Writes one CSV per simulation plus a combined ODS workbook with a sheet per
  * simulation. Kept as a tool because it is the fastest way to diff two runs.
@@ -29,6 +30,7 @@ import {
   createInitialState,
   type SnapshotTiming,
 } from "./simulation.js";
+import { describeSaveEntry, loadSaveEntry, type SaveEntry } from "./saveEntry.js";
 import { getStrategy, getStrategyNames } from "./strategies.js";
 import { buildingDefinitions, type BuildingKey, type BuildingCost } from "../src/game/buildings.js";
 import { emptyWorkerAssignments, producerResourceKeys } from "../src/game/attributes.js";
@@ -45,8 +47,25 @@ const horizon = Number(flag("horizon", "3600"));
 const interval = Number(flag("interval", "60"));
 const outDir = flag("out", DEFAULT_OUT_DIR);
 const seed = Number(flag("seed", "42"));
+const savePath = flag("save", "");
 const named = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const strategies = named.length > 0 ? named : getStrategyNames();
+
+// Every strategy in a sweep must start from the identical save state, so the
+// document is read once and each run gets its own state built from it. Reading
+// it per strategy would be wasteful, and handing every run the *same* state
+// object would let the first strategy's purchases leak into the rest.
+let saveEntry: SaveEntry | null = null;
+if (savePath) {
+  try {
+    saveEntry = loadSaveEntry(savePath);
+  } catch (error) {
+    console.error(`Could not load the save: ${error.message}`);
+    process.exit(1);
+  }
+  console.log(describeSaveEntry(saveEntry));
+  console.log("");
+}
 
 const UNITS = unitDefinitions.filter((unit) => isBuyableUnit(unit));
 const clock = (seconds: number): string =>
@@ -355,14 +374,20 @@ const runStrategy = (name: string): { sheet: Sheet; wall: number } | null => {
     },
   };
 
-  const result = new GameSimulation(createInitialState(), capture, {
-    seed,
-    objective: { type: "timeLimit", seconds: horizon },
-    gatherClicksPerAction: 10,
-    maxGameTime: horizon,
-    recordSnapshots: true,
-    snapshotIntervalSeconds: interval,
-  }).run();
+  const result = new GameSimulation(
+    saveEntry ? loadSaveEntry(saveEntry.path).state : createInitialState(),
+    capture,
+    {
+      seed,
+      objective: { type: "timeLimit", seconds: horizon },
+      gatherClicksPerAction: 10,
+      maxGameTime: horizon,
+      recordSnapshots: true,
+      snapshotIntervalSeconds: interval,
+      // A save is a mid-game state: the from-scratch prologue must not run.
+      fromScratch: saveEntry === null,
+    },
+  ).run();
 
   // The closing row reads the run's own final accumulators, so it reports the
   // whole-run mean rather than the cadence sample that preceded it.
