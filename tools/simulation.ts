@@ -25,9 +25,39 @@ export const resolveAgeId = (ageId: string): string | undefined =>
   findAgeDefinition(normalizeAgeId(ageId))?.key;
 
 /**
+ * Wall-clock cost of the two hot paths, sampled at one instant.
+ *
+ * These are *cumulative averages since the run started*, not per-snapshot
+ * deltas: a snapshot is exactly where you look to notice the simulation
+ * drifting, so a `tickMeanMs` that climbs row over row means each simulated
+ * second is costing more wall-clock than the last — the run is getting slower
+ * as the state grows. `tickMaxMs` / `decisionMaxMs` catch the opposite
+ * problem, a single pathological spike.
+ */
+export interface SnapshotTiming {
+  /** `state.tick()` calls measured so far. */
+  ticks: number;
+  tickMeanMs: number;
+  tickMaxMs: number;
+  /** `strategy.decideAction()` calls measured so far. */
+  decisions: number;
+  decisionMeanMs: number;
+  decisionMaxMs: number;
+}
+
+/**
  * A snapshot of game state at a milestone for analysis.
  */
 export interface SimulationSnapshot {
+  /**
+   * Zero-based ordinal of this snapshot, from the runner's own counter rather
+   * than the array length. A gap between consecutive `index` values means
+   * snapshots were skipped, and a `timestamp` that jumps without one marks
+   * exactly where the run stalled.
+   */
+  index: number;
+  /** Timing sampled at the instant this snapshot was taken. */
+  timing: SnapshotTiming;
   timestamp: number; // Game time in seconds
   age: string;
   population: number;
@@ -83,6 +113,7 @@ export interface SimulationResult {
   events: SimulationEvent[];
   finalProductionRates: Record<string, string>;
   tickTiming: TickTiming;
+  decisionTiming: DecisionTiming;
 }
 
 /**
@@ -108,15 +139,47 @@ export interface SimulationEvent {
 }
 
 /**
- * Aggregated wall-clock statistics for every state.tick() call made during
- * the simulation.
+ * Shared wall-clock statistics for a repeated simulation step. `totalMs` is the
+ * sum over every measured call and `maxMs` the slowest single one, so `meanMs`
+ * is a per-call average rather than a per-simulated-second one.
  */
-export interface TickTiming {
-  ticks: number;
+export interface StepTiming {
   totalMs: number;
   meanMs: number;
   maxMs: number;
 }
+
+/**
+ * Aggregated wall-clock statistics for every state.tick() call made during
+ * the simulation.
+ */
+export interface TickTiming extends StepTiming {
+  ticks: number;
+}
+
+/**
+ * Aggregated wall-clock statistics for every `strategy.decideAction()` call.
+ * This is the strategy's own decision cost, isolated from the engine tick, so
+ * it answers "is this strategy cheap enough to simulate a long horizon" without
+ * the state-tick noise.
+ */
+export interface DecisionTiming extends StepTiming {
+  decisions: number;
+}
+
+/**
+ * Fold accumulated totals into the shared shape. A zero count yields a zero
+ * mean rather than NaN, so an empty run still prints cleanly.
+ */
+const summarizeTiming = (
+  count: number,
+  totalMs: number,
+  maxMs: number,
+): StepTiming => ({
+  totalMs,
+  meanMs: count === 0 ? 0 : totalMs / count,
+  maxMs,
+});
 
 /**
  * Action types a strategy can request.
@@ -161,6 +224,12 @@ export interface SimulationStrategy {
 export interface SimulationContext {
   gameTime: number;
   snapshots: SimulationSnapshot[];
+  /**
+   * Live timing as of this decision. Strategies rarely want it, but it lets a
+   * capture hook stamp a row with the same figures the snapshots carry rather
+   * than reaching back to the previous one.
+   */
+  timing: SnapshotTiming;
 }
 
 /**
@@ -179,12 +248,16 @@ export class GameSimulation {
   private config: SimulationConfig;
   private strategy: SimulationStrategy;
   private snapshots: SimulationSnapshot[] = [];
+  private snapshotCount = 0;
   private gameTime = 0;
   private events: SimulationEvent[] = [];
   private seenEvents = new Set<string>();
   private tickCount = 0;
   private tickTotalMs = 0;
   private tickMaxMs = 0;
+  private decisionCount = 0;
+  private decisionTotalMs = 0;
+  private decisionMaxMs = 0;
 
   constructor(
     initialState: CivilizationState,
@@ -223,7 +296,7 @@ export class GameSimulation {
   /**
    * Log any progression ids that appeared since the last call, stamped with the
    * current game time. Diffing the whole state keeps this free of per-content
-   * conditionals — new event types only need a field on the state.
+   * conditionals â€” new event types only need a field on the state.
    */
   private recordEvents(): void {
     this.recordNewEvents("age", this.state.enteredAges);
@@ -376,10 +449,13 @@ export class GameSimulation {
       // one slot; gather consumes every remaining slot with that gather action.
       let remainingActions = actionsPerSecond;
       while (remainingActions > 0) {
+        const decidedAt = performance.now();
         const action = this.strategy.decideAction(this.state, {
           gameTime: this.gameTime,
           snapshots: this.snapshots,
+          timing: this.currentTiming(),
         });
+        this.recordDecisionTiming(performance.now() - decidedAt);
         if (!action) break;
         this.executeAction(action);
         remainingActions = action.type === "gather" ? 0 : remainingActions - 1;
@@ -661,6 +737,8 @@ export class GameSimulation {
 
     const currentAge = this.state.getCurrentAge();
     const snapshot: SimulationSnapshot = {
+      index: this.snapshotCount,
+      timing: this.currentTiming(),
       timestamp: this.gameTime,
       age: currentAge?.key || "unknown",
       population: this.state.population.toNumber(),
@@ -690,13 +768,51 @@ export class GameSimulation {
     };
 
     this.snapshots.push(snapshot);
+    this.snapshotCount += 1;
     this.config.onSnapshot?.(snapshot, this.snapshots.length - 1);
+  }
+
+  /**
+   * Fold the live accumulators into the snapshot-shaped timing. Returned by
+   * value, so a snapshot keeps the numbers as they were when it was taken
+   * instead of mutating as later ticks land.
+   */
+  private currentTiming(): SnapshotTiming {
+    const tick = summarizeTiming(this.tickCount, this.tickTotalMs, this.tickMaxMs);
+    const decision = summarizeTiming(
+      this.decisionCount,
+      this.decisionTotalMs,
+      this.decisionMaxMs,
+    );
+    return {
+      ticks: this.tickCount,
+      tickMeanMs: tick.meanMs,
+      tickMaxMs: tick.maxMs,
+      decisions: this.decisionCount,
+      decisionMeanMs: decision.meanMs,
+      decisionMaxMs: decision.maxMs,
+    };
   }
 
   /**
    * Create the final simulation result.
    */
   private createResult(success: boolean, reason: string): SimulationResult {
+    // Every termination path (both `Objective reached` returns and the final
+    // `Time limit reached`) funnels through here, so this is the one place that
+    // can guarantee the closing state is recorded. A run that stops on an
+    // objective returns before the next `checkMilestones`, so the last periodic
+    // snapshot can be up to a whole interval short of the real end state â€” and
+    // that is precisely the row a benchmark reads as "final". Skipped when the
+    // last snapshot already sits on `gameTime` (a time-limit run that ended
+    // exactly on an interval tick), so the common case gains no duplicate row.
+    if (
+      this.config.recordSnapshots &&
+      this.snapshots[this.snapshots.length - 1]?.timestamp !== this.gameTime
+    ) {
+      this.recordSnapshot();
+    }
+
     return {
       success,
       objectiveReached: this.checkObjective(),
@@ -709,11 +825,28 @@ export class GameSimulation {
       finalProductionRates: this.computeProductionRates(),
       tickTiming: {
         ticks: this.tickCount,
-        totalMs: this.tickTotalMs,
-        meanMs: this.tickCount === 0 ? 0 : this.tickTotalMs / this.tickCount,
-        maxMs: this.tickMaxMs,
+        ...summarizeTiming(this.tickCount, this.tickTotalMs, this.tickMaxMs),
+      },
+      decisionTiming: {
+        decisions: this.decisionCount,
+        ...summarizeTiming(
+          this.decisionCount,
+          this.decisionTotalMs,
+          this.decisionMaxMs,
+        ),
       },
     };
+  }
+
+  /**
+   * Accumulate one `decideAction` call. Calls that return null ("do nothing")
+   * are counted too — they still cost the strategy real time, and excluding
+   * them would flatter a strategy that idles.
+   */
+  private recordDecisionTiming(elapsed: number): void {
+    this.decisionCount += 1;
+    this.decisionTotalMs += elapsed;
+    this.decisionMaxMs = Math.max(this.decisionMaxMs, elapsed);
   }
 
   /**

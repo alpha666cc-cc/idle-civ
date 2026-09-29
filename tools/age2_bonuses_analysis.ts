@@ -104,14 +104,10 @@ let cumulativeScience = 40;
 let cumulativeMilitary = 72;
 let cumulativeMetalwork = 12;
 let cumulativeBuildingPower = 3;
-let cumulativeTownHallCapacity = 200;
 
 // Upgrade thresholds for Age 2 range (120-1200 for primary, 220 for advanced)
 // Primary production buildings: farm, lumber-yard, quarry, gold-mine
 // Advanced production buildings: barracks, university, smithy, market
-
-const primaryThresholds = [120, 98, 980, 9800]; // 98 and 980 are in range
-const advancedThresholds = [220]; // Starting point for advanced
 
 // Analyze upgrades for primary buildings in the 120-1200 range
 const primaryBuildings = ["farm", "lumberYard", "quarry", "goldMine"];

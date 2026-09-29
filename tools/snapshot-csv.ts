@@ -24,7 +24,11 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { deflateRawSync } from "node:zlib";
-import { GameSimulation, createInitialState } from "./simulation.js";
+import {
+  GameSimulation,
+  createInitialState,
+  type SnapshotTiming,
+} from "./simulation.js";
 import { getStrategy, getStrategyNames } from "./strategies.js";
 import { buildingDefinitions, type BuildingKey, type BuildingCost } from "../src/game/buildings.js";
 import { emptyWorkerAssignments, producerResourceKeys } from "../src/game/attributes.js";
@@ -208,10 +212,37 @@ for (const resource of producerResourceKeys) {
   header.push(`spent.${resource}`);
 }
 header.push("achievements_done", "upgrades_done", "research_done");
+// Per-snapshot timing, so a slow run is visible in the CSV itself. `snap.index`
+// is the runner's own counter: consecutive rows should step by 1, and a jump in
+// `sim_seconds` without one marks where the simulation stalled.
+header.push(
+  "snap.index",
+  "snap.ticks",
+  "snap.tick_mean_ms",
+  "snap.tick_max_ms",
+  "snap.decisions",
+  "snap.decision_mean_ms",
+  "snap.decision_max_ms",
+);
 
 /* -------------------------------------------------------------------- rows */
 
-const row = (state: CivilizationState, t: number): string[] => {
+/** The trailing timing block, shared by the cadence rows and the final row. */
+const timingCells = (timing: SnapshotTiming): string[] => [
+  String(timing.ticks),
+  timing.tickMeanMs.toFixed(4),
+  timing.tickMaxMs.toFixed(4),
+  String(timing.decisions),
+  timing.decisionMeanMs.toFixed(4),
+  timing.decisionMaxMs.toFixed(4),
+];
+
+const row = (
+  state: CivilizationState,
+  t: number,
+  timing: SnapshotTiming,
+  index: number,
+): string[] => {
   const cells: string[] = [
     String(t),
     clock(t),
@@ -278,6 +309,7 @@ const row = (state: CivilizationState, t: number): string[] => {
     state.boughtUpgrades.join("|"),
     state.boughtResearch.join("|"),
   );
+  cells.push(String(index), ...timingCells(timing));
   return cells;
 };
 
@@ -297,23 +329,28 @@ const runStrategy = (name: string): { sheet: Sheet; wall: number } | null => {
   const started = Date.now();
 
   // The capture rides on the strategy hook, so it sees exactly the state the
-  // runner would have snapshotted at that second.
+  // runner would have snapshotted at that second. `rowIndex` is a local counter
+  // rather than `rows.length`, so the emitted index stays contiguous even if a
+  // row is ever dropped.
   const rows: string[][] = [];
   let nextAt = 0;
+  let rowIndex = 0;
   const capture = {
     name: strategy.name,
     description: strategy.description,
     decideAction: (
       state: CivilizationState,
-      context: { gameTime: number; snapshots: never[] },
+      context: { gameTime: number; snapshots: never[]; timing: SnapshotTiming },
     ) => {
       if (context.gameTime >= nextAt) {
-        rows.push(row(state, context.gameTime));
+        rows.push(row(state, context.gameTime, context.timing, rowIndex));
+        rowIndex += 1;
         nextAt = context.gameTime + interval;
       }
       return strategy.decideAction(state, {
         gameTime: context.gameTime,
         snapshots: context.snapshots,
+        timing: context.timing,
       });
     },
   };
@@ -327,8 +364,25 @@ const runStrategy = (name: string): { sheet: Sheet; wall: number } | null => {
     snapshotIntervalSeconds: interval,
   }).run();
 
-  const finalRow = row(result.finalState, result.gameTime);
-  if (rows.length === 0 || rows[rows.length - 1][0] !== finalRow[0]) rows.push(finalRow);
+  // The closing row reads the run's own final accumulators, so it reports the
+  // whole-run mean rather than the cadence sample that preceded it.
+  const finalTiming: SnapshotTiming = {
+    ticks: result.tickTiming.ticks,
+    tickMeanMs: result.tickTiming.meanMs,
+    tickMaxMs: result.tickTiming.maxMs,
+    decisions: result.decisionTiming.decisions,
+    decisionMeanMs: result.decisionTiming.meanMs,
+    decisionMaxMs: result.decisionTiming.maxMs,
+  };
+  const finalRow = row(
+    result.finalState,
+    result.gameTime,
+    finalTiming,
+    rowIndex,
+  );
+  if (rows.length === 0 || rows[rows.length - 1][0] !== finalRow[0]) {
+    rows.push(finalRow);
+  }
   const lines = rows.map(csvLine);
   return {
     sheet: { name, header: csvLine(header), rows: lines },

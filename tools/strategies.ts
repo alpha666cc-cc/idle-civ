@@ -828,12 +828,30 @@ const getSimulatorGatherAction = (
   return null;
 };
 
-/** One legal next purchase considered by the cheapest strategy. */
+/**
+ * One legal next purchase considered by the cheapest strategy.
+ *
+ * `costs` is always the price of a *single* copy, because the candidate ranking
+ * compares one-of-each: choosing the cheapest purchase and then buying the max
+ * affordable of it is two separate decisions, and collapsing them would rank a
+ * cheap building that scales well against an expensive one that does not.
+ */
 type PurchaseCandidate = {
   readonly action: SimulationAction;
   readonly costs: readonly BuildingCost[];
   readonly order: number;
 };
+
+/** The repeatable purchases: the two buyables the engine can bulk-buy. */
+type RepeatableAction = Extract<
+  SimulationAction,
+  { type: "build" } | { type: "buyUnit" }
+>;
+
+const isRepeatableAction = (
+  action: SimulationAction,
+): action is RepeatableAction =>
+  action.type === "build" || action.type === "buyUnit";
 
 const purchaseCost = (costs: readonly BuildingCost[]): ExpNumber =>
   costs.reduce((total, { base }) => total.add(base), ExpNumber.ZERO);
@@ -947,6 +965,30 @@ const getCheapestPurchaseCandidate = (
     .sort(comparePurchaseCost);
   if (affordable.length > 0) return affordable[0];
   return candidates.sort(comparePurchaseCost)[0] ?? null;
+};
+
+/**
+ * The candidate's action with its count raised to the most the settlement can
+ * afford right now, for the two repeatable buyables. Research and upgrades are
+ * one-shot, so their actions pass through untouched.
+ *
+ * The MAX probes are capacity-aware, so this cannot overbuild: a building stops
+ * at its cap (and `people` additionally at the housing limit) and units stop at
+ * what is payable. The result is still re-clamped to at least 1 because the
+ * caller has already proven one copy is affordable — this only ever widens a
+ * purchase that was going to happen anyway, never introduces a new one.
+ */
+const withMaxAffordableCount = (
+  state: CivilizationState,
+  candidate: PurchaseCandidate,
+): SimulationAction => {
+  const { action } = candidate;
+  if (!isRepeatableAction(action)) return action;
+  const maxAffordable =
+    action.type === "build"
+      ? state.getMaxAffordableBuildings(action.building)
+      : state.getMaxAffordableUnits(action.unitId);
+  return { ...action, count: Math.max(1, maxAffordable) };
 };
 
 /**
@@ -1506,7 +1548,7 @@ export class CheapestStrategy extends BaseStrategy {
 
     const candidate = getCheapestPurchaseCandidate(state);
     if (candidate && isPurchaseAffordable(state, candidate)) {
-      return candidate.action;
+      return withMaxAffordableCount(state, candidate);
     }
 
     const workerAction = this.assignWorkersByRatio(

@@ -25,8 +25,9 @@
       "name": "Idle Civ: Simulation Debug (Cheapest 4500s)",
       "type": "node",
       "request": "launch",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "simulate", "--"],
+      "runtimeExecutable": "${workspaceFolder}\\tools\\node\\node.exe",
+      "runtimeArgs": ["--import", "tsx"],
+      "program": "${workspaceFolder}\\tools\\run-simulation.mjs",
       "args": [
         "--strategy",
         "cheapest",
@@ -37,7 +38,8 @@
         "--verbose"
       ],
       "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
+      "console": "internalConsole",
+      "sourceMaps": true,
       "skipFiles": ["<node_internals>/**"]
     }
   ]

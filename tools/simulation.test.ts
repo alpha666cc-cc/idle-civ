@@ -86,6 +86,188 @@ describe("simulation event snapshots", () => {
     expect(fiveMinutes.snapshots.length).toBeLessThan(minute.snapshots.length);
   });
 
+  it("records tick and strategy-decision timing", () => {
+    const noop: SimulationStrategy = {
+      name: "noop",
+      description: "does nothing",
+      decideAction: () => null,
+    };
+    const result = new GameSimulation(makeActionRateState(), noop, {
+      seed: 42,
+      objective: { type: "timeLimit", seconds: 10 },
+      gatherClicksPerAction: 1,
+      maxGameTime: 10,
+      recordSnapshots: false,
+    }).run();
+
+    // A null return ends that second's action loop, so a do-nothing strategy
+    // still costs exactly one decision per simulated second. Those null
+    // decisions are counted, not skipped — they are real strategy work.
+    expect(result.decisionTiming.decisions).toBe(10);
+    expect(result.decisionTiming.totalMs).toBeGreaterThanOrEqual(0);
+    expect(result.decisionTiming.maxMs).toBeGreaterThanOrEqual(0);
+    expect(result.decisionTiming.meanMs).toBe(
+      result.decisionTiming.totalMs / result.decisionTiming.decisions,
+    );
+    // max can never sit below the mean of the same sample.
+    expect(result.decisionTiming.maxMs).toBeGreaterThanOrEqual(
+      result.decisionTiming.meanMs,
+    );
+
+    expect(result.tickTiming.ticks).toBe(10);
+    expect(result.tickTiming.meanMs).toBe(
+      result.tickTiming.totalMs / result.tickTiming.ticks,
+    );
+    expect(result.tickTiming.maxMs).toBeGreaterThanOrEqual(
+      result.tickTiming.meanMs,
+    );
+  });
+
+  it("exposes a zero mean rather than NaN when a run records nothing", () => {
+    const noop: SimulationStrategy = {
+      name: "noop",
+      description: "does nothing",
+      decideAction: () => null,
+    };
+    // maxGameTime 0 means the main loop never runs, so neither a tick nor a
+    // decision is ever measured.
+    const result = new GameSimulation(makeActionRateState(), noop, {
+      seed: 42,
+      objective: { type: "timeLimit", seconds: 0 },
+      gatherClicksPerAction: 1,
+      maxGameTime: 0,
+      recordSnapshots: false,
+    }).run();
+
+    expect(result.decisionTiming.decisions).toBe(0);
+    expect(result.decisionTiming.meanMs).toBe(0);
+    expect(Number.isNaN(result.decisionTiming.meanMs)).toBe(false);
+    expect(result.tickTiming.ticks).toBe(0);
+    expect(result.tickTiming.meanMs).toBe(0);
+  });
+
+  it("stamps each snapshot with an index and its own timing sample", () => {
+    const state = () =>
+      new CivilizationState(
+        emptyResourceAmounts(),
+        emptyWorkerAssignments(),
+        {},
+        emptyResourceFactors(),
+        {},
+        0,
+        [],
+        [],
+        [],
+        [],
+        emptyStatistics(),
+      );
+    const noop: SimulationStrategy = {
+      name: "noop",
+      description: "does nothing",
+      decideAction: () => null,
+    };
+    const result = new GameSimulation(state(), noop, {
+      seed: 42,
+      objective: { type: "timeLimit", seconds: 300 },
+      gatherClicksPerAction: 1,
+      maxGameTime: 300,
+      recordSnapshots: true,
+      snapshotIntervalSeconds: 100,
+    }).run();
+
+    // Indices are the runner's own counter: 0-based and contiguous, so a gap
+    // would mean a snapshot went missing rather than a re-numbered row.
+    expect(result.snapshots.length).toBeGreaterThan(1);
+    expect(result.snapshots.map((s) => s.index)).toEqual(
+      result.snapshots.map((_, i) => i),
+    );
+    // Timestamps strictly increase, so a stall would show as a jump here.
+    expect(
+      result.snapshots.every(
+        (s, i) => i === 0 || s.timestamp > result.snapshots[i - 1].timestamp,
+      ),
+    ).toBe(true);
+
+    // The sample is cumulative, so the tick/decision counts never go backwards
+    // and the closing snapshot agrees with the run's own final totals.
+    const last = result.snapshots[result.snapshots.length - 1];
+    expect(
+      result.snapshots.every(
+        (s, i) =>
+          i === 0 ||
+          (s.timing.ticks >= result.snapshots[i - 1].timing.ticks &&
+            s.timing.decisions >= result.snapshots[i - 1].timing.decisions),
+      ),
+    ).toBe(true);
+    expect(last.timing.ticks).toBe(result.tickTiming.ticks);
+    expect(last.timing.decisions).toBe(result.decisionTiming.decisions);
+    expect(last.timing.tickMeanMs).toBeCloseTo(result.tickTiming.meanMs, 6);
+    expect(last.timing.decisionMeanMs).toBeCloseTo(
+      result.decisionTiming.meanMs,
+      6,
+    );
+    // Maxes are monotonic: a slow sample can only ever raise them.
+    expect(last.timing.tickMaxMs).toBe(result.tickTiming.maxMs);
+    expect(last.timing.decisionMaxMs).toBe(result.decisionTiming.maxMs);
+  });
+
+  it("ends on a snapshot at the true end of the run", () => {
+    const state = () =>
+      new CivilizationState(
+        emptyResourceAmounts(),
+        emptyWorkerAssignments(),
+        {},
+        emptyResourceFactors(),
+        {},
+        0,
+        [],
+        [],
+        [],
+        [],
+        emptyStatistics(),
+      );
+    const noop: SimulationStrategy = {
+      name: "noop",
+      description: "does nothing",
+      decideAction: () => null,
+    };
+    // 250s of game time against a 300s interval: the last periodic snapshot
+    // lands at 180s, so only a final snapshot can report the closing state.
+    const run = (recordSnapshots: boolean) =>
+      new GameSimulation(state(), noop, {
+        seed: 42,
+        objective: { type: "timeLimit", seconds: 250 },
+        gatherClicksPerAction: 1,
+        maxGameTime: 250,
+        recordSnapshots,
+        snapshotIntervalSeconds: 300,
+      }).run();
+
+    const recorded = run(true);
+    expect(recorded.gameTime).toBe(250);
+    const last = recorded.snapshots[recorded.snapshots.length - 1];
+    expect(last.timestamp).toBe(250);
+
+    // The final row must be the true end, not a stale interval tick.
+    expect(recorded.snapshots.every((s, i) => i === 0 || s.timestamp > recorded.snapshots[i - 1].timestamp)).toBe(true);
+
+    // `--no-snapshots` still records nothing, and the end-state snapshot must
+    // not fire twice when the run already ended on an interval tick.
+    expect(run(false).snapshots).toHaveLength(0);
+    const onTick = new GameSimulation(state(), noop, {
+      seed: 42,
+      objective: { type: "timeLimit", seconds: 300 },
+      gatherClicksPerAction: 1,
+      maxGameTime: 300,
+      recordSnapshots: true,
+      snapshotIntervalSeconds: 300,
+    }).run();
+    const stamps = onTick.snapshots.map((s) => s.timestamp);
+    expect(stamps[stamps.length - 1]).toBe(300);
+    // 300s is the final tick *and* the final snapshot, so it appears once.
+    expect(stamps.filter((t) => t === 300)).toHaveLength(1);
+  });
+
   it("executes five normal actions before one tick by default", () => {
     let decisions = 0;
     const strategy: SimulationStrategy = {

@@ -331,8 +331,21 @@ async function main() {
   console.log("=== Tick Timing ===");
   console.log(`  Ticks: ${tickTiming.ticks}`);
   console.log(`  Total: ${tickTiming.totalMs.toFixed(2)}ms`);
-  console.log(`  Mean: ${tickTiming.meanMs.toFixed(4)}ms`);
+  console.log(`  Mean (avg/tick): ${tickTiming.meanMs.toFixed(4)}ms`);
   console.log(`  Max: ${tickTiming.maxMs.toFixed(2)}ms`);
+
+  const decisionTiming = result.decisionTiming ?? {
+    decisions: 0,
+    totalMs: 0,
+    meanMs: 0,
+    maxMs: 0,
+  };
+  console.log("");
+  console.log("=== Strategy Decision Timing ===");
+  console.log(`  Decisions: ${decisionTiming.decisions}`);
+  console.log(`  Total: ${decisionTiming.totalMs.toFixed(2)}ms`);
+  console.log(`  Mean (avg/decision): ${decisionTiming.meanMs.toFixed(4)}ms`);
+  console.log(`  Max: ${decisionTiming.maxMs.toFixed(2)}ms`);
 
   // Output to file if requested
   if (options.output) {

@@ -217,7 +217,7 @@ const ageBonuses = {
 
 // Helper function to calculate building cost
 // Cost of next building = T(n) - T(n-1) where T(n) = base * (factor^sqrt(n) - 1)
-function calculateNextBuildingCost(building, currentCount, costReductions = {}) {
+function _calculateNextBuildingCost(building, currentCount, costReductions = {}) {
   const nextCost = {};
   for (const cost of building.costs) {
     const resource = cost.resource;
