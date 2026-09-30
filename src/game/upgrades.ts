@@ -46,7 +46,6 @@ type UpgradeData = {
   name: string;
   description: string;
   building: BuildingKey;
-  resource: ResourceKey;
   threshold: number;
   tier: number;
   costs: { resource: ResourceKey; base: number | string; factor: number }[];

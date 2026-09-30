@@ -2168,7 +2168,8 @@ export class CivilizationState {
    * callers can test `next === state`.
    */
   setUnitOrder(unitId: string, order: BattleOrder): CivilizationState {
-    if (!findUnitDefinition(unitId) || !this.isOrderUnlocked(order)) return this;
+    if (!findUnitDefinition(unitId) || !this.isOrderUnlocked(order))
+      return this;
     if (order === standardOrder) {
       if (this.unitOrders[unitId] === undefined) return this;
       const { [unitId]: _removed, ...rest } = this.unitOrders;
@@ -3197,9 +3198,9 @@ export class CivilizationState {
    * buying. The per-tick rows and a time skip each cap this against what the
    * settlement holds.
    */
-  private tradeRouteVolumeLegs(resource: TradeResourceKey):
-    | { units: ExpNumber; gold: ExpNumber }
-    | undefined {
+  private tradeRouteVolumeLegs(
+    resource: TradeResourceKey,
+  ): { units: ExpNumber; gold: ExpNumber } | undefined {
     const goldValue = this.tradeRouteValue(resource);
     if (goldValue.lte(ExpNumber.ZERO)) return undefined;
     const unitsPerGold = this.getTradePrice(resource).resourcePerGold;
@@ -3220,9 +3221,9 @@ export class CivilizationState {
    * stock on hand and what that stock is worth in gold. `undefined` when the route
    * has nothing to move.
    */
-  private tradeRouteLegs(resource: TradeResourceKey):
-    | { units: ExpNumber; gold: ExpNumber }
-    | undefined {
+  private tradeRouteLegs(
+    resource: TradeResourceKey,
+  ): { units: ExpNumber; gold: ExpNumber } | undefined {
     const raw = this.tradeRouteVolumeLegs(resource);
     if (!raw) return undefined;
     if (this.tradeRoutes[resource]?.mode === "buy") {

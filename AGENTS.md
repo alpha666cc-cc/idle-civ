@@ -703,7 +703,8 @@ dependency without explaining why.
 ### 7.2 Simulation changes must be benchmarked before and after
 
 > **Rule: any change under `tools/simulation.ts`, `tools/strategies.ts`,
-> `tools/roi.ts`, the engine's rate/cost/bonus paths (`getFactors`,
+> `tools/roi.ts`, `tools/tradeAdvisor.ts`, the engine's rate/cost/bonus paths
+> (`getFactors`,
 > `computeResourceRate`, `getBuildingCost`, `getResearchCostForCount`,
 > `getBuildingEffects`, `activeBonuses`), or any `src/game/data/*.json` payload
 > must be benchmarked against the recorded baseline both before and after. A

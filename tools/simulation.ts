@@ -15,6 +15,7 @@ import {
   producerResourceKeys,
   type ProductionResourceKey,
 } from "../src/game/attributes.js";
+import type { TradeResourceKey, TradeRoute } from "../src/game/trade.js";
 
 export const normalizeAgeId = (ageId: string): string => {
   const legacyAgeId = /^age-(\d+)$/.exec(ageId);
@@ -201,6 +202,8 @@ export type SimulationAction =
   | { type: "buyUnit"; unitId: string; count: number }
   | { type: "launchBattle"; encounterId: string }
   | { type: "enterAge"; ageId: string }
+  /** Point a market trade route at a resource. Costs nothing but an action slot. */
+  | { type: "setTradeRoute"; resource: TradeResourceKey; route: TradeRoute }
   | { type: "wait"; seconds: number };
 
 /**
@@ -630,6 +633,20 @@ export class GameSimulation {
         this.log(
           `enterAge ${action.ageId}`,
           entered ? "entered" : "already entered (skipped)",
+        );
+        break;
+      }
+      case "setTradeRoute": {
+        this.state = this.state.setTradeRoute(
+          action.resource,
+          action.route,
+        );
+        const route = this.state.getTradeRoute(action.resource);
+        this.log(
+          `trade route ${action.resource}`,
+          route.enabled
+            ? `${route.mode} at ${route.intensity} intensity`
+            : "disabled",
         );
         break;
       }

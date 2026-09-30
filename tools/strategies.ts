@@ -39,6 +39,12 @@ import {
   type UnitDefinition,
 } from "../src/game/units.js";
 import { getBestRoiAction, type BattleRoiPlan } from "./roi.js";
+import {
+  getTradeRouteAction,
+  tradeProfile,
+  type TradeProfile,
+} from "./tradeAdvisor.js";
+import { TRADE_INTENSITY_STOPS } from "../src/game/trade.js";
 
 /**
  * Worker assignment ratios for different strategies.
@@ -1043,6 +1049,28 @@ abstract class BaseStrategy implements SimulationStrategy {
     };
   }
 
+  /**
+   * How much this strategy leans on the market's trade routes, or `null` for none.
+   *
+   * Trade is opt-in per strategy rather than a step in the shared ladder, because
+   * it is the one economy lever with no default: an unused trade power reserve is
+   * inert, and a strategy that never opens a route must behave exactly as it did
+   * before routes existed.
+   */
+  protected getTradeProfile(): TradeProfile | null {
+    return null;
+  }
+
+  /**
+   * The market route the settlement should be running, when this strategy trades.
+   * Null for every strategy that does not, which is what keeps the ladder below
+   * free of a trade branch.
+   */
+  protected getTradeAction(state: CivilizationState): SimulationAction | null {
+    const profile = this.getTradeProfile();
+    return profile ? getTradeRouteAction(state, profile) : null;
+  }
+
   protected getBuildingPriority(): BuildingPriority {
     return [
       { building: "people", weight: 10 },
@@ -1350,6 +1378,14 @@ abstract class BaseStrategy implements SimulationStrategy {
     // purchases run this early; its gather hint is demoted to priority 7.
     const simulatorActions = this.getSimulatorActions(state);
     if (simulatorActions.length > 0) return simulatorActions[0];
+
+    // Priority 1.5: point the market's trade route at the settlement's largest
+    // imbalance. Configuring a route spends no resources and builds nothing, so it
+    // never competes with growth. It sits here rather than lower because the
+    // ladder's last resort is `gather`, and a gather consumes the whole simulated
+    // second — a route waiting below it would almost never get a turn at all.
+    const tradeAction = this.getTradeAction(state);
+    if (tradeAction) return tradeAction;
 
     const routeAction = getAgeRouteGrowthAction(state);
     if (routeAction) return this.focusWorkersForGather(state, routeAction);
@@ -1755,6 +1791,60 @@ export class EconomyStrategy extends BaseStrategy {
 }
 
 /**
+ * Trade-focused strategy: bank trade power at the market and route it at whatever
+ * the settlement is most out of balance on.
+ *
+ * The market unlocks in the Iron Age, so this strategy's route — like every other
+ * strategy's — is dormant until then and starts from an empty reserve. Until the
+ * reserve can move something, the advisor refuses to open a route at all rather
+ * than holding the single slot on a dead one.
+ */
+export class TradeStrategy extends BaseStrategy {
+  name = "trader";
+  description =
+    "Bank trade power at the market and route it to the settlement's largest imbalance";
+
+  protected getTradeProfile(): TradeProfile | null {
+    // The whole reserve, scaled by the flow the advisor wants to move.
+    return tradeProfile(TRADE_INTENSITY_STOPS, "auto");
+  }
+
+  protected getWorkerRatios(): WorkerRatios {
+    return {
+      food: 0.35,
+      wood: 0.25,
+      stone: 0.15,
+      gold: 0.25,
+      military: 0,
+      science: 0,
+      metalwork: 0,
+      trade: 0,
+    };
+  }
+
+  protected getBuildingPriority(): BuildingPriority {
+    return [
+      { building: "people", weight: 10 },
+      { building: "house", weight: 9 },
+      { building: "market", weight: 8 },
+      { building: "farm", weight: 7 },
+      { building: "goldMine", weight: 7 },
+      { building: "lumberYard", weight: 6 },
+      { building: "quarry", weight: 5 },
+      { building: "barracks", weight: 4 },
+      { building: "university", weight: 3 },
+      { building: "smithy", weight: 3 },
+      { building: "townHall", weight: 2 },
+    ];
+  }
+
+  protected getResourceToGather(_state: CivilizationState): string | null {
+    // Gold is the numeraire every route is priced in, so it is also the fuel.
+    return "gold";
+  }
+}
+
+/**
  * ROI-first speedrun strategy. Required campaign actions remain authoritative;
  * otherwise it asks the shared ROI evaluator for the best time-adjusted buy.
  */
@@ -1866,6 +1956,7 @@ export const strategyRegistry: Record<string, SimulationStrategy> = {
   "fast-age": new FastAgeStrategy(),
   economy: new EconomyStrategy(),
   speedrun: new SpeedrunStrategy(),
+  trader: new TradeStrategy(),
 };
 
 /**

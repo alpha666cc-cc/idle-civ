@@ -32,6 +32,40 @@ The simulation system allows you to:
 - **fast-age**: Push population growth to age up quickly
 - **economy**: Maximize gold and trade production
 - **speedrun**: Buy the highest time-adjusted ROI purchase for fast progression
+- **trader**: Bank trade power at the market and route it to the settlement's
+  largest imbalance
+
+### Trade Routes
+
+Trade power is a reserve nothing else spends, so a strategy that never opens a route
+banks it forever. `tools/tradeAdvisor.ts` is how a strategy spends it, through the
+real `CivilizationState.setTradeRoute()` — the same price, spread and per-tick drain
+rows the Trade tab produces. Its policy: **point the route at the resource whose
+stock has drifted furthest from what the settlement's own production justifies, and
+size it to the flow it should move rather than to the reserve it could liquidate.**
+
+- Each tradable resource gets a *buffer* of 600 seconds of its own net production.
+  Below it the resource is a shortage (buy), above it a surplus (sell). A resource
+  the settlement produces nothing of is sized against the slowest thing it does make.
+- Candidates are ranked in **gold** (`units × goldPerResource`, times the spread on
+  the buying side), because units of food and units of science are not comparable and
+  gold is the currency every price is quoted in.
+- A **sell** route moves one second of inflow, so a surplus drains as fast as it
+  builds; a **buy** route replaces the shortfall it found over a fixed window. A
+  resource with no production is never sold — a leftover stock is dead weight.
+- Every rate is read with the settlement's own route rows put back, so a route cannot
+  consume the production it is judged on and then decide it has none.
+- The intensity is quantised onto the same logarithmic slider stops the Trade tab
+  uses, so it only moves when the target flow moves by a factor of √10.
+
+Trade is opt-in per strategy: `BaseStrategy.getTradeProfile()` returns `null` by
+default, which is why the other seven strategies behave exactly as they did before
+routes existed. The `trader` strategy opts in with the full reserve. The market
+unlocks in the Iron Age, so every strategy's route is dormant until then, and an
+empty reserve never gets a route at all rather than holding a slot on a dead one.
+`tools/snapshot-csv.ts` records `trade_power`, `trade_power_rate`,
+`trade_routes_active` and one `route.<resource>` cell per snapshot, so a sweep can
+tell "no route was opened" from "a route opened that moved nothing".
 
 ### ROI Evaluation and Speedrun Planning
 

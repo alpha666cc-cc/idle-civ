@@ -34,6 +34,11 @@ import { describeSaveEntry, loadSaveEntry, type SaveEntry } from "./saveEntry.js
 import { getStrategy, getStrategyNames } from "./strategies.js";
 import { buildingDefinitions, type BuildingKey, type BuildingCost } from "../src/game/buildings.js";
 import { emptyWorkerAssignments, producerResourceKeys } from "../src/game/attributes.js";
+import {
+  tradeableResourceKeys,
+  tradeIntensityStop,
+  type TradeResourceKey,
+} from "../src/game/trade.js";
 import { unitDefinitions, isBuyableUnit, unitPower } from "../src/game/units.js";
 import type { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
@@ -188,6 +193,12 @@ const header: string[] = [
   "people_capacity",
   "total_buildings",
   "battles_won",
+  // Trade: the banked reserve, what feeds it, and one cell per route so a sweep can
+  // tell "the advisor never opened a route" from "it opened one that moved nothing".
+  "trade_power",
+  "trade_power_rate",
+  "trade_routes_active",
+  ...tradeableResourceKeys.map((resource) => `route.${resource}`),
 ];
 // The economy at a glance, before the research block. Only buildings that take
 // workers appear here — `people`, `house` and `townHall` would be three columns
@@ -256,6 +267,17 @@ const timingCells = (timing: SnapshotTiming): string[] => [
   timing.decisionMaxMs.toFixed(4),
 ];
 
+/**
+ * `sell@6` — the direction and the slider stop, or `off`. One stop is 1e-9 of the
+ * reserve up to all of it, so the stop is the honest way to read an intensity.
+ */
+const routeCell = (state: CivilizationState, resource: TradeResourceKey): string => {
+  const route = state.getTradeRoute(resource);
+  return route.enabled
+    ? `${route.mode}@${tradeIntensityStop(route.intensity)}`
+    : "off";
+};
+
 const row = (
   state: CivilizationState,
   t: number,
@@ -272,6 +294,10 @@ const row = (
       Object.values(state.builtBuildings).reduce((sum, count) => sum + (count ?? 0), 0),
     ),
     String(state.defeatedEncounters.length),
+    state.resources.trade.toString(),
+    state.getTradePowerRate().toString(),
+    String(state.getActiveTradeRoutes().length),
+    ...tradeableResourceKeys.map((resource) => routeCell(state, resource)),
   ];
 
   for (const building of WORKER_BUILDINGS) {

@@ -4,6 +4,42 @@
 > (`git --no-pager log`). Pair it with `docs/game-scope.md` (what the game
 > contains now) and `docs/roadmap.md` (what is planned).
 
+## 2026-09-30 — Trade routes in the balance simulator
+
+- **Added `tools/tradeAdvisor.ts`:** the policy that decides which market trade
+  route a strategy should run and at what intensity, driving the real
+  `CivilizationState.setTradeRoute()` so a simulated route is the same route the
+  Trade tab builds. The route points at the tradable resource whose stock has
+  drifted furthest from what the settlement's own production justifies (a 600-second
+  buffer per resource), the candidates are ranked in **gold** — the only unit in
+  which "sell this" and "buy that" are comparable — and the intensity is sized to
+  the *flow* the route should move rather than to the reserve it could liquidate,
+  quantised onto the Trade tab's own logarithmic slider stops.
+- **Two engine facts the policy had to respect, both found the hard way:**
+  - the reserve multiplies **every** production rate by `1 + log₁₀(reserve + 1)`, so
+    a 1e9 reserve is a ×10 on the whole economy — prices are unaffected (it cancels
+    in the production ratio) but flows are not;
+  - a route's own drain is part of `computeResourceRate`, so a sell route would read
+    the production it is consuming as gone and walk away from its own resource. The
+    advisor now adds the route rows back, exactly as `getTradePrice` reads base
+    factors for the same reason.
+- **`SimulationAction` gained `setTradeRoute`**, handled in the runner's
+  `executeAction`, and `snapshot-csv.ts` now records `trade_power`,
+  `trade_power_rate`, `trade_routes_active` and one `route.<resource>` cell so a
+  sweep can tell "no route was opened" from "a route opened that moved nothing".
+- **New `trader` strategy; trade is opt-in per strategy.** `BaseStrategy
+  .getTradeProfile()` returns `null` by default, so the other seven are untouched.
+  **Benchmarked (§7.2), horizon 1800 / interval 60, all eight strategies, before vs
+  after: every headline column identical for all seven existing strategies — no
+  regression.** At that horizon nothing reaches the Iron Age, and the market
+  (which unlocks in the Iron Age) is therefore never built, so the routes are
+  correctly dormant. Confirmed in the Iron Age too: a 7200-second `cheapest` run
+  banks a 2.2e8 reserve and still opens **no** route, which is the inert-by-default
+  property working in-sim.
+- **Tests:** `tools/tradeAdvisor.test.ts` (14 cases) covers the policy, the
+  flow-sizing, the slider-stop intensity, the slot hand-over, and the runner end to
+  end.
+
 ## 2026-09-28 — Strategy balance analysis and Age-0 progression documentation
 
 - **Strategy performance analysis:** analyzed 7 simulation strategies (cheapest, balanced, production, military, fast-age, economy, speedrun) at 60-minute mark
