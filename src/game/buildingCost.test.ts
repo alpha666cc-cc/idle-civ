@@ -11,6 +11,7 @@ import { researchDefinitions } from "./research";
 import { upgradeDefinitions } from "./upgrades";
 import { deserializeStatistics, serializeStatistics } from "./saveSystem";
 
+
 /** A fresh age0 state with the same pile of food and wood. */
 const stateWith = (stock = 1e12): CivilizationState =>
   new CivilizationState(

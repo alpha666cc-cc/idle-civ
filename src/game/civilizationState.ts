@@ -128,6 +128,23 @@ const capacitySlotCount = (capacity: ExpNumber): ExpNumber => {
   return capacity.floor();
 };
 
+/**
+ * A capacity as a whole number of slots, for the plain-number slot arithmetic
+ * (`count` vs `capacity`) that gates building purchases.
+ *
+ * `capacitySlotCount()` already returns an integral ExpNumber, but reading one
+ * back through `toNumber()` re-rounds the mantissa and can land a few ULP above
+ * the integer (4.4e2 -> 440.00000000000006). Left alone, that residue becomes
+ * the headroom against an equally-full count, so MAX answers "5.68e-14
+ * markets" and the player sees a fraction of a building. Slots are discrete, so
+ * the read floors. A non-finite capacity (unreachable stock) passes through so
+ * "no limit" still means no limit.
+ */
+const wholeSlots = (capacity: ExpNumber): number => {
+  const slots = capacity.toNumber();
+  return Number.isFinite(slots) ? Math.max(0, Math.floor(slots)) : slots;
+};
+
 /** How many leading units the flat cost reduction may zero out directly. */
 const flatClampWindow = 256;
 
@@ -1566,7 +1583,9 @@ export class CivilizationState {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return 0;
 
-    const capacityLimit = this.getBuildingMax(building.key).toNumber();
+    // Slots are discrete: floor the capacity headroom so a float residue in the
+    // capacity (see wholeSlots) can never become a fractional MAX answer.
+    const capacityLimit = wholeSlots(this.getBuildingMax(building.key));
     const currentCount = this.buildingCount(building.key);
     let maxPossible =
       capacityLimit > 0 ? Math.max(0, capacityLimit - currentCount) : Infinity;
@@ -1576,7 +1595,7 @@ export class CivilizationState {
         maxPossible,
         Math.max(
           0,
-          this.maximumPopulation.toNumber() - this.population.toNumber(),
+          wholeSlots(this.maximumPopulation) - wholeSlots(this.population),
         ),
       );
     }
@@ -1591,32 +1610,13 @@ export class CivilizationState {
 
     // Upper bound: capacity-limited. Enhancer tiers push capacity to 1e9 by the
     // endgame, so allow the full range; the doubling probe stays O(log N).
-    const upperBound = Math.min(
-      maxPossible === Infinity ? 1_000_000_000 : maxPossible,
-      1_000_000_000,
+    return maxAffordableCount(
+      canAffordCount,
+      Math.min(
+        maxPossible === Infinity ? 1_000_000_000 : maxPossible,
+        1_000_000_000,
+      ),
     );
-
-    if (!canAffordCount(1)) return 0;
-
-    // Doubling probe to find a tight upper bound (O(log N) calls, each O(1))
-    let probe = 1;
-    while (probe < upperBound && canAffordCount(probe * 2)) {
-      probe *= 2;
-    }
-    if (probe >= upperBound && canAffordCount(upperBound)) return upperBound;
-
-    // Binary search in [probe, probe*2] for the exact max
-    let lo = probe;
-    let hi = Math.min(probe * 2, upperBound);
-    while (lo < hi) {
-      const mid = Math.ceil((lo + hi) / 2);
-      if (canAffordCount(mid)) {
-        lo = mid;
-      } else {
-        hi = mid - 1;
-      }
-    }
-    return lo;
   }
 
   upgradeBuildingLimit(
@@ -1668,7 +1668,7 @@ export class CivilizationState {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return false;
     const count = this.buildingCount(building.key);
-    if (count >= this.getBuildingMax(building.key).toNumber()) return true;
+    if (count >= wholeSlots(this.getBuildingMax(building.key))) return true;
     if (buildingKey === "people" && this.population.gte(this.maximumPopulation))
       return true;
     return false;
@@ -1707,11 +1707,11 @@ export class CivilizationState {
     if (!building || !this.isBuildingAvailable(building.key)) return "locked";
 
     const currentCount = this.buildingCount(building.key);
-    if (currentCount + count > this.getBuildingMax(building.key).toNumber())
+    if (currentCount + count > wholeSlots(this.getBuildingMax(building.key)))
       return "capacity";
     if (
       buildingKey === "people" &&
-      this.population.toNumber() + count > this.maximumPopulation.toNumber()
+      wholeSlots(this.population) + count > wholeSlots(this.maximumPopulation)
     )
       return "capacity";
 
@@ -1721,7 +1721,12 @@ export class CivilizationState {
   }
 
   build(buildingKey: string, count: number = 1): CivilizationState {
-    if (count <= 0) return this;
+    // A building is a whole thing: refuse a fractional count outright rather
+    // than writing the fraction into `builtBuildings`, where it would persist
+    // and permanently offset every later capacity comparison.
+    const wholeCount = Math.floor(count);
+    if (wholeCount <= 0 || !Number.isFinite(wholeCount)) return this;
+    count = wholeCount;
     if (!this.canBuild(buildingKey, count)) return this;
     const builtCount = this.buildingCount(buildingKey);
     const cost = this.freeBuildings

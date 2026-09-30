@@ -2364,7 +2364,7 @@ function App() {
                           <>
                             {isMax && maxAffordable > 0 && (
                               <span className="building-cost-count">
-                                &times;{maxAffordable}{" "}
+                                &times;{fmtCount(maxAffordable)}{" "}
                               </span>
                             )}
                             {costs.map(({ resource, base }, index) => {
