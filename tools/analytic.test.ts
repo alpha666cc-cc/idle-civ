@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  calibratedSettleSeconds,
+  contextForScale,
   countAffordableBy,
   defaultElasticity,
   describeEconomy,
@@ -8,9 +10,11 @@ import {
   probeState,
   productionAt,
   progression,
+  settleAchievements,
   woodWorkerFloor,
 } from "./analytic.js";
 import { CivilizationState } from "../src/game/civilizationState.js";
+import { researchDefinitions } from "../src/game/research.js";
 
 /**
  * The closed-form cost inversion is the load-bearing claim of this module: it is
@@ -98,9 +102,10 @@ describe("the exact inverse direction", () => {
 
   it("agrees with the engine's own rate for the same shape", () => {
     // The whole claim of this direction is that it evaluates rather than models,
-    // so it must match a hand-built state.
+    // so it must match a hand-built state. Pinned on the `bare` stack, where the
+    // shape and the probe are trivially the same object graph.
     const shape = { farm: 40, people: 120, townHall: 5, house: 20 };
-    const described = describeEconomy(shape);
+    const described = describeEconomy(shape, undefined, "bare");
     expect(described.production.food).toBeCloseTo(
       probeState(shape).computeResourceRate("food").toNumber(),
       6,
@@ -114,8 +119,10 @@ describe("the exact inverse direction", () => {
   });
 
   it("prices the shape from an empty start", () => {
+    // Costs move with the bonus stack too — research and enhancers both cut them —
+    // so this pins the bare stack, where the engine's own cost is the reference.
     const engine = new CivilizationState();
-    expect(describeEconomy({ farm: 100 }).cost.food).toBeCloseTo(
+    expect(describeEconomy({ farm: 100 }, undefined, "bare").cost.food).toBeCloseTo(
       engine.getBuildingCost("farm", 0, 100)[0].base.toNumber(),
       6,
     );
@@ -125,6 +132,156 @@ describe("the exact inverse direction", () => {
     const small = productionAt({ farm: 10, people: 100 });
     const large = productionAt({ farm: 100, people: 100 });
     expect(large.food).toBeGreaterThan(small.food ?? 0);
+  });
+});
+
+describe("the realistic bonus stack", () => {
+  it("enters every age the population has passed", () => {
+    expect(contextForScale({ people: 0 }).ages).toEqual(["age0"]);
+    expect(contextForScale({ people: 1000 }).ages).toContain("age1");
+    expect(contextForScale({ people: 10_000 }).ages).toContain("age2");
+    // An unreached age must not leak into the context.
+    expect(contextForScale({ people: 999 }).ages ?? []).not.toContain("age1");
+  });
+
+  it("closes the research tree over the ages it has entered", () => {
+    const early = contextForScale({ people: 0 }).boughtResearch ?? [];
+    const later = contextForScale({ people: 10_000 }).boughtResearch ?? [];
+    expect(early.length).toBeGreaterThan(0);
+    expect(later.length).toBeGreaterThan(early.length);
+  });
+
+  it("respects research prerequisites rather than granting a whole age", () => {
+    // The tree is a DAG, so the bought set must be closed under prerequisites.
+    const bought = new Set(contextForScale({ people: 10_000 }).boughtResearch ?? []);
+    expect(bought.size).toBeGreaterThan(0);
+    for (const id of bought) {
+      // Every prerequisite of a bought tech must itself be bought.
+      const tech = researchDefinitions.find((t) => t.key === id);
+      if (!tech) continue;
+      for (const prerequisite of tech.prerequisites) {
+        expect(bought.has(prerequisite)).toBe(true);
+      }
+    }
+  });
+
+  it("unlocks the enhancer tiers the building counts reach", () => {
+    expect(contextForScale({ farm: 5 }).upgrades ?? []).not.toContain("farmEnhancer9");
+    expect(contextForScale({ farm: 9 }).upgrades ?? []).toContain("farmEnhancer9");
+    expect(contextForScale({ farm: 98 }).upgrades ?? []).toContain("farmEnhancer98");
+  });
+
+  it("is far above the bare stack, and the gap widens with scale", () => {
+    // The regression this guards: reporting a bare shape as if it were a real one
+    // understated 500-farm food production by a factor of 8e15.
+    const bare = describeEconomy({ farm: 500, people: 1000 }, undefined, "bare");
+    const real = describeEconomy({ farm: 500, people: 1000 });
+    expect(real.production.food ?? 0).toBeGreaterThan((bare.production.food ?? 0) * 1e12);
+  });
+
+  it("defaults to the settled stack so the bare reading cannot be mistaken for it", () => {
+    const shape = { farm: 500, people: 1000 };
+    // Default is `settled`, which must equal an explicit `settled` call.
+    expect(describeEconomy(shape).production.food).toBe(
+      describeEconomy(shape, undefined, "settled").production.food,
+    );
+    // And the three tiers must be strictly ordered: bare < realistic < settled.
+    const bare = describeEconomy(shape, undefined, "bare").production.food ?? 0;
+    const realistic = describeEconomy(shape, undefined, "realistic").production.food ?? 0;
+    const settled = describeEconomy(shape, undefined, "settled").production.food ?? 0;
+    expect(realistic).toBeGreaterThan(bare);
+    expect(settled).toBeGreaterThan(realistic);
+  });
+
+  it("raises production across every producer, not just food", () => {
+    const shape = { farm: 500, people: 1000 };
+    const bare = describeEconomy(shape, undefined, "bare").production;
+    const real = describeEconomy(shape).production;
+    for (const key of Object.keys(real)) {
+      expect(real[key] ?? 0).toBeGreaterThan(bare[key] ?? 0);
+    }
+  });
+
+  it("makes the same shape far cheaper under the realistic stack", () => {
+    // Research and enhancers both cut costs, so the payback picture changes too.
+    const shape = { farm: 500, people: 1000 };
+    expect(describeEconomy(shape).cost.food ?? 0).toBeLessThan(
+      describeEconomy(shape, undefined, "bare").cost.food ?? Infinity,
+    );
+  });
+});
+
+describe("settling a settlement for its achievement set", () => {
+  it("earns achievements the engine itself recognises", () => {
+    // The whole point of the settle pass: resource and hoarder achievements read
+    // live stock, so they can only be earned by actually letting the settlement
+    // accrue. Delegating to the engine's own `checkAchievements` keeps this honest.
+    const settled = settleAchievements({ farm: 500, people: 1000 });
+    expect(settled.earned).toBeGreaterThan(0);
+  });
+
+  it("accumulates real holdings over the settle window", () => {
+    const settled = settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 3600 });
+    expect(settled.held.food ?? 0).toBeGreaterThan(0);
+    expect(settled.held.wood ?? 0).toBeGreaterThan(0);
+  });
+
+  it("earns at least as much the longer it settles", () => {
+    const short = settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 60 });
+    const long = settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 7200 });
+    expect(long.earned).toBeGreaterThanOrEqual(short.earned);
+    expect(long.held.food ?? 0).toBeGreaterThan(short.held.food ?? 0);
+  });
+
+  it("beats the un-settled realistic stack on production", () => {
+    // The hoarder chains are logarithmic in held stock, so an hour of accrual is
+    // worth several tiers of flat multiplier — this is the gap being closed.
+    const shape = { farm: 500, people: 1000 };
+    const realistic = describeEconomy(shape, undefined, "realistic");
+    const settled = describeEconomy(shape, undefined, "settled");
+    expect(settled.production.food ?? 0).toBeGreaterThan(realistic.production.food ?? 0);
+  });
+
+  it("makes the same shape much cheaper, because research cuts costs", () => {
+    const shape = { farm: 500, people: 1000 };
+    expect(describeEconomy(shape, undefined, "settled").cost.food ?? 0).toBeLessThan(
+      describeEconomy(shape, undefined, "realistic").cost.food ?? Infinity,
+    );
+  });
+
+  it("uses the calibrated window by default", () => {
+    // Measured against sim-output/calib/sim-balanced.csv: 60 s is the optimum, and
+    // longer windows score worse. Pinned so a re-tune has to be deliberate.
+    expect(calibratedSettleSeconds).toBe(60);
+    expect(settleAchievements({ farm: 500, people: 1000 }).held.food).toBe(
+      settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 60 }).held.food,
+    );
+  });
+
+  it("scores worse with a longer window, as the calibration found", () => {
+    // The counter-intuitive result worth protecting: more accrual grants hoarder
+    // tiers a real run has not reached, because the static stack already supplied
+    // the implied bonus tier.
+    const short = settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 60 });
+    const long = settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 28800 });
+    expect(long.earned).toBeGreaterThan(short.earned);
+  });
+
+  it("does not grant battles to a shape that cannot field an army", () => {
+    // The recorded run has not won `wolfSlayer` while holding a 10-farm
+    // settlement; granting an entered age's whole encounter list over-reported.
+    expect(contextForScale({ farm: 10, people: 90 }).defeatedEncounters).toHaveLength(0);
+    expect(
+      (contextForScale({ farm: 10, people: 90, barracks: 5 }).defeatedEncounters ?? []).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("stays cheap — a bounded settle, not a strategy sweep", () => {
+    const started = Date.now();
+    settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 3600 });
+    // Generous ceiling: the point is that this is milliseconds, not the minutes a
+    // real 7200-second strategy run costs.
+    expect(Date.now() - started).toBeLessThan(2000);
   });
 });
 
