@@ -28,5 +28,11 @@
     "key": "buildingPower",
     "label": "Building power",
     "description": "Global multiplier folded into every production building's own power. Ages and endgame bonuses raise it for all buildings at once."
+  },
+  {
+    "guid": "ad01f113-0ed4-565f-93ec-852275150dd5",
+    "key": "tradeRoutes",
+    "label": "Trade routes",
+    "description": "How many market trade routes may run at once, each spending banked trade power. Based at one; bonuses open further routes."
   }
 ]

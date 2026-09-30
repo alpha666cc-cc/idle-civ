@@ -49,11 +49,17 @@ import {
 } from "./bonus";
 import {
   calculateTradeMultiplier,
+  clampTradeIntensity,
   DEFAULT_TRADE_SPREAD,
-  goldToResource,
-  isTradable,
-  resourceToGold,
+  GOLD_PER_TRADE_POWER,
+  defaultTradeRoute,
+  getTradePrice,
+  tradeRouteSource,
+  tradeableResourceKeys,
+  type TradePrice,
   type TradeResourceKey,
+  type TradeRoute,
+  type TradeRouteMap,
 } from "./trade";
 import {
   buildingDefinitions,
@@ -287,6 +293,7 @@ for (const key of [
   "buildingCostMultiplier",
   "wastedResources",
   "tradeProductionMultiplier",
+  "tradeRoutes",
   "buildingPower",
   ...buildingPowerAttributeDefinitions.map(({ key }) => key),
 ]) {
@@ -332,6 +339,12 @@ export class CivilizationState {
    * save written later than the player's age cannot smuggle in a locked order.
    */
   readonly unitOrders: Partial<Record<string, BattleOrder>>;
+  /**
+   * Trade routes keyed by resource (Trade tab). Only enabled routes are kept;
+   * how many may run at once is the `tradeRoutes` stat, so a later bonus opens
+   * another route without the engine naming that content (§13.2).
+   */
+  readonly tradeRoutes: TradeRouteMap;
   /** Dev-tools production multiplier (×N on every producer rate, shown as a factor). */
   readonly devProductionMultiplier: ExpNumber;
   /** Dev-tools free flags: skip affordability + cost deduction, keep capacity gates. */
@@ -358,6 +371,7 @@ export class CivilizationState {
     freeUpgrades = false,
     boughtResearch: readonly string[] = [],
     unitOrders: Partial<Record<string, BattleOrder>> = {},
+    tradeRoutes: TradeRouteMap = {},
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -373,6 +387,7 @@ export class CivilizationState {
     this.statistics = statistics;
     this.unitCounts = unitCounts;
     this.unitOrders = unitOrders;
+    this.tradeRoutes = tradeRoutes;
     this.devProductionMultiplier = devProductionMultiplier;
     this.freeBuildings = freeBuildings;
     this.freeUnits = freeUnits;
@@ -780,6 +795,8 @@ export class CivilizationState {
         this.computeResourceRate(resourceKey),
       );
     }
+    // Trade routes need no step of their own: their gold and goods legs ride the
+    // production factors this loop already applied.
     // One tick is one second of play time for both the lifetime counter and the
     // current run (a future prestige resets `runTimeMs` only).
     const activeStreakMs = this.statistics.activeStreakMs + tickMilliseconds;
@@ -1010,7 +1027,15 @@ export class CivilizationState {
     };
   }
 
-  getProductionFactors(resourceKey: ResourceKey): ResourceFactors {
+  /**
+   * The live rate of a resource with everything in it **except the trade route's
+   * own rows**: workers, buildings, bonuses, the dev multiplier, the trade
+   * multiplier, and every other drain — the citizen food upkeep among them. Trade
+   * routes are priced against these rates, so their legs can never feed back into
+   * their own price, and a time skip applies production at exactly this rate
+   * before the route itself runs for the window.
+   */
+  private baseProductionFactors(resourceKey: ResourceKey): ResourceFactors {
     const base = this.getFactors(resourceKey);
     const multiplicative = [...base.multiplicative];
 
@@ -1038,6 +1063,18 @@ export class CivilizationState {
       ...base,
       multiplicative,
     };
+  }
+
+  /**
+   * The full production factors for a resource, trade routes included. Every leg a
+   * route contributes is a drain row (see `tradeRouteFactor`), recomputed from the
+   * current state on every read so it is replaced each tick rather than stacked.
+   */
+  getProductionFactors(resourceKey: ResourceKey): ResourceFactors {
+    const base = this.baseProductionFactors(resourceKey);
+    const rows = this.tradeRouteFactor(resourceKey);
+    if (rows.length === 0) return base;
+    return { ...base, drain: [...base.drain, ...rows] };
   }
 
   computeResourceRate(resourceKey: ResourceKey): ExpNumber {
@@ -2581,6 +2618,8 @@ export class CivilizationState {
       this.freeUnits,
       this.freeUpgrades,
       this.boughtResearch,
+      this.unitOrders,
+      this.tradeRoutes,
     );
   }
 
@@ -2605,6 +2644,8 @@ export class CivilizationState {
       this.freeUnits,
       this.freeUpgrades,
       this.boughtResearch,
+      this.unitOrders,
+      this.tradeRoutes,
     );
   }
 
@@ -2661,6 +2702,7 @@ export class CivilizationState {
     freeUpgrades = this.freeUpgrades,
     boughtResearch = this.boughtResearch,
     unitOrders = this.unitOrders,
+    tradeRoutes = this.tradeRoutes,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -2681,6 +2723,7 @@ export class CivilizationState {
       freeUpgrades,
       boughtResearch,
       unitOrders,
+      tradeRoutes,
     );
   }
 
@@ -2779,12 +2822,19 @@ export class CivilizationState {
     const elapsed = Math.min(wholeSeconds, 86_400);
     const elapsedFactor = ExpNumber.fromNumber(elapsed);
     const resources = { ...this.resources };
+    // A time skip applies the full rate — every drain in it, the citizen food upkeep
+    // included — with only the route's own rows held back…
     for (const resourceKey of producerResourceKeys) {
       resources[resourceKey] = applyRate(
         resources[resourceKey],
-        this.computeResourceRate(resourceKey).mul(elapsedFactor),
+        computeResourceRate(this.baseProductionFactors(resourceKey)).mul(
+          elapsedFactor,
+        ),
       );
     }
+    // …and the route is then applied once for the whole window, its legs scaled by
+    // the seconds and each capped by the balance the window ended with.
+    this.applyTradeRouteSkip(resources, elapsedFactor);
     const activeStreakMs =
       this.statistics.activeStreakMs + elapsed * tickMilliseconds;
     const statistics: Statistics = {
@@ -2811,6 +2861,40 @@ export class CivilizationState {
     )
       .recordReachedAges()
       .checkAchievements();
+  }
+
+  /**
+   * The time skip's counterpart to the per-tick drain rows. The window's
+   * production lands first, on the full rate with every drain in it *except* the
+   * trade route's own rows; the route is then applied once for the whole window
+   * with its legs scaled by the seconds, and each leg capped by the balance the
+   * window ended with — so neither the goods sold nor the gold spent can take a
+   * balance below zero.
+   */
+  private applyTradeRouteSkip(
+    resources: ResourceAmounts,
+    seconds: ExpNumber,
+  ): void {
+    for (const resource of this.getActiveTradeRoutes()) {
+      const legs = this.tradeRouteVolumeLegs(resource);
+      if (!legs) continue;
+      const unitsPerGold = this.getTradePrice(resource).resourcePerGold;
+      if (this.tradeRoutes[resource]?.mode === "buy") {
+        const gold = ExpNumber.min(legs.gold.mul(seconds), resources.gold);
+        if (gold.lte(ExpNumber.ZERO)) continue;
+        resources.gold = resources.gold.sub(gold);
+        resources[resource] = resources[resource].add(
+          gold
+            .mul(unitsPerGold)
+            .div(ExpNumber.fromNumber(DEFAULT_TRADE_SPREAD)),
+        );
+        continue;
+      }
+      const units = ExpNumber.min(legs.units.mul(seconds), resources[resource]);
+      if (units.lte(ExpNumber.ZERO)) continue;
+      resources[resource] = resources[resource].sub(units);
+      resources.gold = resources.gold.add(units.div(unitsPerGold));
+    }
   }
 
   enterAge(ageId: string): CivilizationState {
@@ -2965,53 +3049,81 @@ export class CivilizationState {
   }
 
   /**
-   * Trade operations: sell resource for gold, buy resource with gold
-   * Trade power acts as a currency that can be converted to gold for trading
+   * Trade routes (Trade tab). A route buys or sells one resource for gold: it asks
+   * for `intensity` of the banked trade power each second, one trade power being one
+   * gold of goods, and moves `production(R) / production(gold)` units of the
+   * resource for that gold — a tenth of it when buying, the spread. Both legs are
+   * capped by what the settlement holds, and both ride the production factors as
+   * drain rows — debits positive, credits negative — so neither picks up a
+   * production multiplier and both show up in the Gamepedia's Drain list. The
+   * reserve is never spent.
    */
-  sellResource(
-    resource: TradeResourceKey,
-    amount: ExpNumber,
-  ): CivilizationState {
-    if (!isTradable(resource)) return this;
-    if (this.resources[resource].lt(amount)) return this;
-
-    const goldGained = resourceToGold(resource, amount);
-    const resources = { ...this.resources };
-    resources[resource] = resources[resource].sub(amount);
-    resources.gold = resources.gold.add(goldGained);
-
-    return this.withResources(resources);
+  getTradeRoute(resource: TradeResourceKey): TradeRoute {
+    return this.tradeRoutes[resource] ?? defaultTradeRoute;
   }
 
-  buyResource(
-    resource: TradeResourceKey,
-    amount: ExpNumber,
-    spread: number = DEFAULT_TRADE_SPREAD,
-  ): CivilizationState {
-    if (!isTradable(resource)) return this;
+  /** Routes currently running, in the order they are served. */
+  /** Trade power income per second — what markets and their boosts produce. */
+  getTradePowerRate(): ExpNumber {
+    return this.computeResourceRate("trade");
+  }
 
-    const goldCost = goldToResource(resource, amount, spread);
-    if (this.resources.gold.lt(goldCost)) return this;
-
-    const resources = { ...this.resources };
-    resources.gold = resources.gold.sub(goldCost);
-    resources[resource] = resources[resource].add(amount);
-
-    return this.withResources(resources);
+  /** The live mid price of one tradable resource, from the base rates. */
+  getTradePrice(resource: TradeResourceKey): TradePrice {
+    return getTradePrice(resource, (key) =>
+      computeResourceRate(this.baseProductionFactors(key)),
+    );
   }
 
   /**
-   * Convert trade power to gold for trading
-   * Trade power can be used as currency, converting it to gold at 1:1 ratio
+   * Configures a route. Enabling one is refused while every slot is taken (the
+   * caller surfaces that), and a no-op change returns `this`, so a UI can test
+   * `next === state`.
    */
-  convertTradeToGold(amount: ExpNumber): CivilizationState {
-    if (this.resources.trade.lt(amount)) return this;
-
-    const resources = { ...this.resources };
-    resources.trade = resources.trade.sub(amount);
-    resources.gold = resources.gold.add(amount);
-
-    return this.withResources(resources);
+  setTradeRoute(
+    resource: TradeResourceKey,
+    patch: Partial<TradeRoute>,
+  ): CivilizationState {
+    if (!tradeableResourceKeys.includes(resource)) return this;
+    const current = this.getTradeRoute(resource);
+    const next: TradeRoute = {
+      enabled: patch.enabled ?? current.enabled,
+      mode: patch.mode ?? current.mode,
+      intensity: clampTradeIntensity(patch.intensity ?? current.intensity),
+    };
+    if (
+      next.enabled === current.enabled &&
+      next.mode === current.mode &&
+      next.intensity === current.intensity
+    ) {
+      return this;
+    }
+    if (
+      next.enabled &&
+      !current.enabled &&
+      this.getActiveTradeRoutes().length >= this.getTradeRouteSlots()
+    ) {
+      return this;
+    }
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      { ...this.tradeRoutes, [resource]: next },
+    );
   }
 
   /**
@@ -3023,16 +3135,143 @@ export class CivilizationState {
   }
 
   /**
-   * Get the gold equivalent of wasted resources
-   * Used for tracking total lost value over time
+   * What one second of a route would move, for the Trade tab preview. It is
+   * computed from the settings alone, so the card can show it before the route is
+   * switched on. `tradePower` is the value the route asks for out of the reserve
+   * (one trade power being one gold of goods), and the two legs are capped by what
+   * the settlement actually holds — the same numbers the tick will apply.
    */
-  getWastedResourcesGoldEquivalent(): ExpNumber {
-    let total = ExpNumber.ZERO;
-    for (const [resource, amount] of Object.entries(this.resources)) {
-      if (isTradable(resource as TradeResourceKey)) {
-        total = total.add(resourceToGold(resource as TradeResourceKey, amount));
+  getTradeRouteThroughput(resource: TradeResourceKey): {
+    tradePower: ExpNumber;
+    resourcePerSecond: ExpNumber;
+    goldPerSecond: ExpNumber;
+  } {
+    const legs = this.tradeRouteLegs(resource);
+    return {
+      tradePower: this.tradeRouteValue(resource),
+      resourcePerSecond: legs?.units ?? ExpNumber.ZERO,
+      goldPerSecond: legs?.gold ?? ExpNumber.ZERO,
+    };
+  }
+
+  /** Routes that are actually served: enabled, and inside the slot cap. */
+  getActiveTradeRoutes(): TradeResourceKey[] {
+    return tradeableResourceKeys
+      .filter((resource) => this.tradeRoutes[resource]?.enabled === true)
+      .slice(0, this.getTradeRouteSlots());
+  }
+
+  /**
+   * How many routes may run at once. The cap is a derived stat based at one, so
+   * an `attributeFlat` bonus (research, achievement) opens a further route
+   * without the engine naming that content.
+   */
+  getTradeRouteSlots(): number {
+    const slots = Math.floor(this.getAttributeValue("tradeRoutes").toNumber());
+    return Number.isFinite(slots) ? Math.max(1, slots) : 1;
+  }
+
+  /**
+   * What a route asks for each second: its share of the banked trade power, at one
+   * trade power to one gold. The reserve is never spent, so this grows with the
+   * bank rather than with the income.
+   */
+  private tradeRouteValue(resource: TradeResourceKey): ExpNumber {
+    const route = this.tradeRoutes[resource];
+    if (!route) return ExpNumber.ZERO;
+    const intensity = clampTradeIntensity(route.intensity);
+    if (intensity <= 0) return ExpNumber.ZERO;
+    return this.resources.trade
+      .mul(ExpNumber.fromNumber(intensity))
+      .mul(ExpNumber.fromNumber(GOLD_PER_TRADE_POWER));
+  }
+
+  /**
+   * The two legs a route moves over a second, **uncapped**: what it asks for out
+   * of the reserve, priced at the production ratio, divided by the spread when
+   * buying. The per-tick rows and a time skip each cap this against what the
+   * settlement holds.
+   */
+  private tradeRouteVolumeLegs(resource: TradeResourceKey):
+    | { units: ExpNumber; gold: ExpNumber }
+    | undefined {
+    const goldValue = this.tradeRouteValue(resource);
+    if (goldValue.lte(ExpNumber.ZERO)) return undefined;
+    const unitsPerGold = this.getTradePrice(resource).resourcePerGold;
+    if (this.tradeRoutes[resource]?.mode === "buy") {
+      return {
+        gold: goldValue,
+        units: goldValue
+          .mul(unitsPerGold)
+          .div(ExpNumber.fromNumber(DEFAULT_TRADE_SPREAD)),
+      };
+    }
+    return { units: goldValue.mul(unitsPerGold), gold: goldValue };
+  }
+
+  /**
+   * One second of a route, each leg capped by what the settlement holds right now:
+   * buying by the purse and what the purse buys at the spread, selling by the
+   * stock on hand and what that stock is worth in gold. `undefined` when the route
+   * has nothing to move.
+   */
+  private tradeRouteLegs(resource: TradeResourceKey):
+    | { units: ExpNumber; gold: ExpNumber }
+    | undefined {
+    const raw = this.tradeRouteVolumeLegs(resource);
+    if (!raw) return undefined;
+    if (this.tradeRoutes[resource]?.mode === "buy") {
+      const gold = ExpNumber.min(raw.gold, this.resources.gold);
+      if (gold.lte(ExpNumber.ZERO)) return undefined;
+      const scale = raw.gold.lte(ExpNumber.ZERO)
+        ? ExpNumber.ZERO
+        : gold.div(raw.gold);
+      return { gold, units: raw.units.mul(scale) };
+    }
+    const units = ExpNumber.min(raw.units, this.resources[resource]);
+    if (units.lte(ExpNumber.ZERO)) return undefined;
+    return { units, gold: units.div(raw.units).mul(raw.gold) };
+  }
+
+  /**
+   * The drain rows the served routes contribute to one resource.
+   *
+   * Both legs are drains — debits positive, credits negative — so nothing a route
+   * does is multiplied by the production multipliers (the factor model multiplies
+   * `additional` rows and subtracts `drain` rows), and so every effect a route has
+   * lands in the Gamepedia's Drain list rather than an Add row. The values are read
+   * from the state on every call, so a drain is replaced on the next tick instead
+   * of stacking, and the tick applies them like any other production or upkeep —
+   * no separate trade step. Gold is the numeraire of every route, so its rows can
+   * come from several routes at once.
+   */
+  private tradeRouteFactor(resourceKey: ResourceKey): ResourceFactor[] {
+    const tradable =
+      resourceKey === "gold"
+        ? undefined
+        : tradeableResourceKeys.find((key) => key === resourceKey);
+    if (resourceKey !== "gold" && !tradable) return [];
+    // Cheap exit for the common case: no route is configured at all.
+    if (Object.keys(this.tradeRoutes).length === 0) return [];
+    const served = this.getActiveTradeRoutes();
+    if (served.length === 0) return [];
+    const rows: ResourceFactor[] = [];
+    for (const resource of served) {
+      const legs = this.tradeRouteLegs(resource);
+      if (!legs) continue;
+      const buying = this.tradeRoutes[resource]?.mode === "buy";
+      if (resourceKey === "gold") {
+        rows.push([
+          tradeRouteSource(resource, buying ? "" : "sale"),
+          buying ? legs.gold : legs.gold.neg(),
+        ]);
+      } else if (resourceKey === resource) {
+        rows.push([
+          tradeRouteSource(resource, buying ? "purchase" : ""),
+          buying ? legs.units.neg() : legs.units,
+        ]);
       }
     }
-    return total;
+    return rows;
   }
 }

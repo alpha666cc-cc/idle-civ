@@ -10,17 +10,22 @@
       {
         "type": "attributeMultiplier",
         "destination": "townHallCapacity",
-        "value": "10"
+        "value": "5"
       },
       {
         "type": "attributeMultiplier",
         "destination": "buildingPower",
-        "value": 2
+        "value": 1.2
       },
       {
         "type": "costMultiplier",
         "destination": "research",
         "value": "100000"
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "townHall",
+        "value": "-2"
       }
     ]
   },

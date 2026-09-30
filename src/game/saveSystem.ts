@@ -15,6 +15,15 @@ import type { DevLogDocument } from "./devLog";
 import { ExpNumber } from "./expNumber";
 import { CivilizationState } from "./civilizationState";
 import { emptyStatistics, type Statistics } from "./statistics";
+import {
+  clampTradeIntensity,
+  isTradeMode,
+  isTradeRouteSource,
+  tradeableResourceKeys,
+  type TradeMode,
+  type TradeResourceKey,
+  type TradeRouteMap,
+} from "./trade";
 
 /**
  * Save system (roadmap Milestone 3).
@@ -30,7 +39,7 @@ import { emptyStatistics, type Statistics } from "./statistics";
  */
 
 /** Bump when the shape changes; `migrateSaveData` handles older documents. */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /** How a save travels: the same document, three encodings. */
 export type SaveFormat = "base64" | "json" | "xml";
@@ -94,6 +103,20 @@ export type SerializedStatistics = {
   readonly wastedResources: string;
 };
 
+/**
+ * One enabled trade route, as written to a save. Routes are plain data — a
+ * direction and a 0–1 share of the bank — so an older build can read them and a
+ * renamed resource simply drops the route on load.
+ */
+export type SerializedTradeRoute = {
+  readonly enabled: boolean;
+  readonly mode: TradeMode;
+  readonly intensity: number;
+};
+
+/** Trade routes keyed by resource id; only enabled routes are written. */
+export type SerializedTradeRoutes = Record<string, SerializedTradeRoute>;
+
 export type SaveData = {
   readonly version: number;
   /** Created once and carried through every autosave and export. */
@@ -121,6 +144,8 @@ export type SaveData = {
   readonly unitCounts: Record<string, string>;
   /** Battle orders per unit id, added in version 5; empty for older documents. */
   readonly unitOrders?: Record<string, string>;
+  /** Enabled trade routes per resource id, added in version 6. */
+  readonly tradeRoutes?: SerializedTradeRoutes;
   readonly devProductionMultiplier: string;
   readonly freeBuildings: boolean;
   readonly freeUnits: boolean;
@@ -240,6 +265,10 @@ export const migrateSaveData = (data: SaveData): SaveData => {
     throw new SaveFormatError(
       `The save was written by a newer build (version ${data.version}).`,
     );
+  }
+  // v5 → v6: trade routes did not exist, so every old document starts with none.
+  if (data.version === 5) {
+    return { ...data, version: SAVE_VERSION, tradeRoutes: {} };
   }
   // v4 → v5: battle orders did not exist, so every old document starts on standard.
   if (data.version === 4) {
@@ -675,6 +704,18 @@ const serializeFactor = ([source, value]: ResourceFactor): [string, string] => [
   value.toString(),
 ];
 
+/**
+ * A save never carries a trade route's factor rows. They are derived from
+ * `tradeRoutes` on every read, so persisting them would freeze a stale drain
+ * into the document; the first tick after a reload puts the live rows back.
+ */
+const withoutTradeRouteRows = (
+  rows: ResourceFactor[],
+): ResourceFactor[] =>
+  rows.filter(
+    ([source]) => typeof source !== "string" || !isTradeRouteSource(source),
+  );
+
 const deserializeFactors = (
   data: SerializedFactors | undefined,
 ): ResourceFactors => {
@@ -682,11 +723,17 @@ const deserializeFactors = (
     source,
     ExpNumber.from(value),
   ];
+  // A route's rows are derived, never stored: a hand-written or older document
+  // carrying one is stripped on load, so it cannot add to the live drain.
+  const kept = (rows: readonly (readonly [string, string])[] | undefined) =>
+    (rows ?? [])
+      .filter(([source]) => !isTradeRouteSource(source))
+      .map(pair);
   return {
-    additional: (data?.additional ?? []).map(pair),
+    additional: kept(data?.additional),
     multiplicative: (data?.multiplicative ?? []).map(pair),
     additiveMultiplier: (data?.additiveMultiplier ?? []).map(pair),
-    drain: (data?.drain ?? []).map(pair),
+    drain: kept(data?.drain),
   };
 };
 
@@ -696,10 +743,10 @@ export const serializeFactorMap = (
   const serialized: SerializedResourceFactors = {};
   for (const [key, value] of Object.entries(factors)) {
     serialized[key] = {
-      additional: value.additional.map(serializeFactor),
+      additional: withoutTradeRouteRows(value.additional).map(serializeFactor),
       multiplicative: value.multiplicative.map(serializeFactor),
       additiveMultiplier: value.additiveMultiplier.map(serializeFactor),
-      drain: value.drain.map(serializeFactor),
+      drain: withoutTradeRouteRows(value.drain).map(serializeFactor),
     };
   }
   return serialized;
@@ -862,6 +909,14 @@ export const createSaveData = (
       (entry): entry is [string, BattleOrder] => entry[1] !== undefined,
     ),
   ),
+  // Only enabled routes are written; an absent resource means "not routed", so
+  // a route turned back off leaves no trace in the save.
+  tradeRoutes: Object.fromEntries(
+    Object.entries(state.tradeRoutes).filter(
+      (entry): entry is [string, SerializedTradeRoute] =>
+        entry[1]?.enabled === true,
+    ),
+  ),
   devProductionMultiplier: state.devProductionMultiplier.toString(),
   freeBuildings: state.freeBuildings,
   freeUnits: state.freeUnits,
@@ -913,6 +968,20 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
     costOverrides[key] = (costs ?? []).map(deserializeCost);
   }
 
+  const tradeRoutes: TradeRouteMap = {};
+  for (const [key, route] of Object.entries(data.tradeRoutes ?? {})) {
+    // A save may name a resource this build no longer trades, or a mode this
+    // build does not know; either falls back rather than throwing. Only enabled
+    // routes are written, so anything else is dropped.
+    if (!tradeableResourceKeys.includes(key as TradeResourceKey)) continue;
+    if (route?.enabled !== true) continue;
+    tradeRoutes[key as TradeResourceKey] = {
+      enabled: true,
+      mode: isTradeMode(route.mode) ? route.mode : "sell",
+      intensity: clampTradeIntensity(Number(route.intensity)),
+    };
+  }
+
   return new CivilizationState(
     resources,
     workers,
@@ -934,5 +1003,6 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
     data.freeUpgrades ?? false,
     [...(data.boughtResearch ?? [])],
     unitOrders,
+    tradeRoutes,
   );
 };

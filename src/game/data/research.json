@@ -522,7 +522,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "trade",
-        "value": "2"
+        "value": "3"
       },
       {
         "type": "costReductionPercent",
@@ -537,7 +537,7 @@
     "guid": "644c5231-abbd-561b-aefe-3452efb3f58d",
     "key": "masonry",
     "name": "Masonry",
-    "description": "building_capacity town_hall (x2); building_cost_reduction town_hall (small); building_cost_reduction house (small)",
+    "description": "building_capacity town_hall (x2); building_cost_reduction town_hall (small); building_cost_reduction house (huge)",
     "age": 1,
     "category": "civilian",
     "prerequisites": ["city_planning"],
@@ -553,9 +553,9 @@
         "value": "0.5"
       },
       {
-        "type": "costReductionPercent",
+        "type": "costReductionFactor",
         "destination": "house",
-        "value": "0.5"
+        "value": "0.20"
       }
     ],
     "unlocks": [],
@@ -578,6 +578,11 @@
       {
         "type": "attributeMultiplier",
         "destination": "allProduction",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "marketCapacity",
         "value": "2"
       }
     ],
@@ -619,12 +624,17 @@
       {
         "type": "attributeMultiplier",
         "destination": "science",
-        "value": "2"
+        "value": "3"
       },
       {
         "type": "costReductionPercent",
         "destination": "allBuildings",
         "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "people",
+        "value": "0.90"
       }
     ],
     "unlocks": [],
@@ -647,7 +657,7 @@
       {
         "type": "costReductionPercent",
         "destination": "allBuildings",
-        "value": "0.5"
+        "value": "0.9"
       }
     ],
     "unlocks": [],
@@ -665,12 +675,12 @@
       {
         "type": "costReductionPercent",
         "destination": "allBuildings",
-        "value": "0.5"
+        "value": "0.75"
       },
       {
         "type": "attributeMultiplier",
         "destination": "allProduction",
-        "value": "2"
+        "value": "3"
       }
     ],
     "unlocks": [],
@@ -716,6 +726,11 @@
       {
         "type": "attributeMultiplier",
         "destination": "gold",
+        "value": "3"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "smithyCapacity",
         "value": "2"
       }
     ],
@@ -739,7 +754,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "trade",
-        "value": "2"
+        "value": "3"
       }
     ],
     "unlocks": [],
@@ -757,12 +772,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "science",
-        "value": "2"
+        "value": "3"
       },
       {
         "type": "attributeMultiplier",
         "destination": "allProduction",
-        "value": "2"
+        "value": "3"
       }
     ],
     "unlocks": [],
@@ -873,6 +888,11 @@
         "type": "attributeMultiplier",
         "destination": "tag.armored.attack",
         "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": "5"
       }
     ],
     "unlocks": ["cavalry_iron"],
@@ -1056,7 +1076,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "allProduction",
-        "value": "2"
+        "value": "3"
       },
       {
         "type": "costReductionPercent",
@@ -1079,7 +1099,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "allProduction",
-        "value": "2"
+        "value": "10"
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "people",
+        "value": "0.10"
       }
     ],
     "unlocks": [],
@@ -1109,7 +1134,7 @@
       {
         "type": "costReductionPercent",
         "destination": "allBuildings",
-        "value": "0.5"
+        "value": "0.75"
       }
     ],
     "unlocks": [],
@@ -1789,19 +1814,12 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "houseCapacity",
-        "value": "100"
+        "destination": "peopleCapacity",
+        "value": "2"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "production_multiplier",
-        "target": "house",
-        "value": "small",
-        "reason": "capacity-adjacent "
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "14c57c8a-7f0a-52f9-b9b2-8705df16c2b9",
@@ -2232,61 +2250,6 @@
     "category": "civilian",
     "prerequisites": ["architecture"],
     "bonuses": [
-      {
-        "type": "attributeMultiplier",
-        "destination": "peopleCapacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "houseCapacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "farmCapacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "lumberYardCapacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "quarryCapacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "goldMineCapacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "townHallCapacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "barracksCapacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "universityCapacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "smithyCapacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "marketCapacity",
-        "value": "100"
-      },
       {
         "type": "attributeMultiplier",
         "destination": "allProduction",
@@ -2878,19 +2841,12 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "houseCapacity",
-        "value": "100"
+        "destination": "peopleCapacity",
+        "value": "5"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "population_growth",
-        "target": "population",
-        "value": "large",
-        "reason": "population is derived from citizens"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "688216aa-9b34-5dec-84eb-ec58a549803c",

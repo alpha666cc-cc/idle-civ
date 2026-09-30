@@ -63,9 +63,36 @@ toward a 10-billion population and an interstellar colony ship
   current age + previous age, age = boss victories) and the `unit` Gamepedia
   category with per-stat subtabs. Unit icons are vendored game-icons.net SVGs
   (`public/units/`, CC BY 3.0 — regenerate with `node tools/gen/icons.mjs`).
+  **Implemented (trade slice):** trade routes in `src/game/trade.ts` + the Trade tab
+  (`components/TradePanel.tsx`). Each route has an on/off toggle, a buy/sell toggle
+  and a 0–100% intensity slider. Each second a route asks for
+  `resources.trade × intensity` as a gold value (**the banked reserve, never the
+  income, and never spent**) and moves `goldValue × production(resource) /
+  production(gold)` units — a tenth of that when buying, the spread. **Both legs are
+  capped by what the settlement actually holds**: a sale is limited by the stock and
+  credits the gold that stock is worth, a purchase by the purse and buys what the
+  purse covers. The price comes from the production ratio against gold (static
+  `tradeRatios` as the zero-rate fallback), read from `baseProductionFactors()` so a
+  route cannot price itself.
+
+  Both legs are `drain` rows in `getProductionFactors()` — debits positive, credits
+  negative — so **nothing a route does picks up the production multipliers** (the
+  factor model multiplies `additional` rows and subtracts `drain` rows) and every
+  effect a route has lands in the Gamepedia's **Drain** list, labelled
+  `food route` / `food route sale` / `food route purchase`, rather than needing an Add
+  row. Values are recomputed from the state on every read, so a drain is replaced
+  each tick and never stacked, and the normal tick applies them like any other
+  production or upkeep — no separate trade step. Routes live on the state
+  (`tradeRoutes`, only enabled ones written, persisted in `SAVE_VERSION = 6`), the
+  cap on how many run at once is the `tradeRoutes` stat (base 1, so an
+  `attributeFlat` bonus opens a further route). Each card shows the whole chain —
+  `<n> trade power → +X food −Y gold per second`, computed even while the route is
+  off — and the header states the value (1 trade power = 1 gold). The gold card and
+  the old trade-power conversion are gone.
   **Not yet implemented:** saves, ages, research,
-  offline progress, `attributeDrain`/`costReductionFlat` bonus data, unit
-  retirement (old units stay owned and counted in army power).
+  offline progress (trade routes do not run offline), `attributeDrain`/`costReductionFlat` bonus data, unit
+  retirement (old units stay owned and counted in army power), more than one
+  simultaneous route (nothing grants the second slot yet).
   Full bonus/buyable/upgrade design: **§13**.
 - **Current implementation target: the first loop** — one playthrough from Ancient through
   the 10-billion population goal and the colony-ship launch. Prestige is deliberately
@@ -131,6 +158,7 @@ idle-civ/
       GamepediaModal.tsx    codex modal: list, search, per-category detail views
       ArmyPanel.tsx         Army tab: unit roster, buy path, battle panel (1 round/sec playback)
       ResearchPanel.tsx     Research tab: the technology tree grid + arrow overlay
+      TradePanel.tsx        Trade tab: one market route per tradable resource (on/off, buy/sell, 0–100% intensity)
       unitIcons.ts          per-unit icon resolution (vendored SVG map + lucide fallback)
     game/                   pure domain layer, zero React imports
       gameObject.ts         abstract GameObject base (id, description, seen)
@@ -143,6 +171,7 @@ idle-civ/
       battle.ts             deterministic stack battle simulation + armyPower
       achievements.ts       AchievementDefinition registry (JSON-backed) + requirements + rewards
       statistics.ts         Statistics type: clicks, buildings built, play time, best times
+      trade.ts              trade routes: the price model (production ratio vs gold), the spread, route settings
       data/                 JSON definition payloads (buildings, upgrades, encounters, achievements, stats)
       workerProduction.ts   WorkerProduction: per-resource worker + auto-click maths
       civilizationState.ts  the engine: state, tick, gather, build, workers, costs (585 lines)
@@ -320,6 +349,10 @@ Getters: `population` (= `resources.population`), `maximumPopulation` /
 | `computeClickPower()`                 | The global click power stat: base 1, `attributeFlat` bonuses sum, `attributeMultiplier` bonuses compound                                                                                                                                    |
 | `getAttributeValue(key)`              | Current value of any attribute: computed for derived stats, stored amount/capacity base otherwise                                                                                                                                           |
 | `getDerivedAttributeFactors(key)`     | Base term + every active flat/multiplier bonus targeting a derived attribute, paired with source ids (feeds the Gamepedia stat page)                                                                                                        |
+| `getTradeRoute(id)` / `setTradeRoute(id, patch)` | Trade-route settings (on/off, buy/sell, 0–1 intensity share of the trade power bank). Enabling one is refused while every slot is taken; a no-op patch returns `this`                                                      |
+| `getActiveTradeRoutes()` / `getTradeRouteSlots()` | The routes running, and how many may (the `tradeRoutes` stat, based at 1 — an `attributeFlat` bonus opens a further slot with no engine change)                                                                                                                                        |
+| `getTradePrice(id)` / `getTradeRouteThroughput(id)` | The live mid price from the production ratio vs gold (read from `baseProductionFactors`, so a route's own legs cannot price it), and the chain the card shows: banked trade power → goods/gold per second |
+| `getTradePowerRate()`                | Trade power income per second — what markets and their boosts produce                                                                                                                                                                   |
 | `buyUpgrade(id)`                      | No-op unless unlocked and affordable; pays the cost and appends the id                                                                                                                                                                      |
 | `defeatEncounter(id)`                 | Idempotent; appends the encounter id and records the fastest victory time                                                                                                                                                                   |
 | `enterAge(id)`                        | Idempotent; appends the age id and records the fastest entry time                                                                                                                                                                           |
@@ -439,8 +472,11 @@ when a non-production key is used) silently yields `ExpNumber.ZERO` rather than 
   `Army`, `Research`, `Trade`, `Settings`, `Stats`, `Dev Tools`, rendered inline via
   `{activeTab === "X" && (...)}`. **`Army` renders `components/ArmyPanel.tsx`**
   (roster + battle panel; it opens only once a battle has been revealed/won),
+  **`Trade` renders `components/TradePanel.tsx`** (one market route per tradable
+  resource — on/off, buy/sell and a 0–100% intensity slider; the tab opens with
+  the market at `age1`),
   `Research` still renders no section at all
-  (blank content area) and `Trade` is placeholder copy; `Achievements` renders one
+  (blank content area) and `Achievements` renders one
   cumulative card per milestone-chain `family` — earned tiers' rewards, live progress via
   `getNextAchievementGoal()`/`getRequirementValue()`, `locked`/`partial`/`complete`
   states — plus the singleton achievements with earned/locked states, and clicking a

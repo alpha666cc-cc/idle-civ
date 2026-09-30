@@ -37,6 +37,7 @@ import { type BuildingKey } from "./buildings";
 import { entryGuidById, entryIdByGuid } from "./dataIds";
 import { ExpNumber } from "./expNumber";
 import { emptyStatistics } from "./statistics";
+import { isTradeRouteSource, type TradeMode } from "./trade";
 import {
   achievementDefinitions,
   findAchievementDefinition,
@@ -335,6 +336,130 @@ describe("loading a state", () => {
     const loaded = loadSaveData(data);
     loaded.builtBuildings["mutant" as BuildingKey] = 1;
     expect(data.buildingCounts).not.toHaveProperty("mutant");
+  });
+});
+
+describe("trade routes in the save", () => {
+  it("round-trips an enabled route", () => {
+    const data: SaveData = {
+      ...sampleSave(),
+      tradeRoutes: { food: { enabled: true, mode: "buy", intensity: 0.5 } },
+    };
+
+    expect(loadSaveData(data).tradeRoutes.food).toEqual({
+      enabled: true,
+      mode: "buy",
+      intensity: 0.5,
+    });
+  });
+
+  it("writes only the routes that are actually running", () => {
+    const idle = sampleState().setTradeRoute("food", {
+      enabled: true,
+      intensity: 0.4,
+    });
+
+    expect(createSaveData(idle, "routes", 1).tradeRoutes).toEqual({
+      food: { enabled: true, mode: "sell", intensity: 0.4 },
+    });
+    // Turning the route back off leaves no trace in the document.
+    const off = idle.setTradeRoute("food", { enabled: false });
+    expect(createSaveData(off, "routes", 1).tradeRoutes).toEqual({});
+  });
+
+  it("drops routes the market no longer trades and repairs the rest", () => {
+    const data: SaveData = {
+      ...sampleSave(),
+      tradeRoutes: {
+        gold: { enabled: true, mode: "sell", intensity: 1 },
+        wood: { enabled: true, mode: "barter" as TradeMode, intensity: 7 },
+        stone: { enabled: false, mode: "sell", intensity: 1 },
+      },
+    };
+    const routes = loadSaveData(data).tradeRoutes;
+
+    // `in`, not a property read: gold is not a tradeable resource, so the key
+    // cannot even be named on `TradeRouteMap` — that is the point of the test.
+    expect("gold" in routes).toBe(false);
+    expect("stone" in routes).toBe(false);
+    expect(routes.wood).toEqual({ enabled: true, mode: "sell", intensity: 1 });
+  });
+
+  it("never writes a route's drain rows, and the first tick restores them", () => {
+    // A routed settlement with a banked reserve, so the live rows are real.
+    const routed = new CivilizationState(
+      {
+        ...emptyResourceAmounts(),
+        trade: ExpNumber.fromNumber(100),
+        food: ExpNumber.fromNumber(1e6),
+      },
+      emptyWorkerAssignments(),
+      {},
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      [],
+      emptyStatistics(),
+      {},
+      ExpNumber.ONE,
+      false,
+      false,
+      false,
+      [],
+      {},
+      { food: { enabled: true, mode: "sell", intensity: 1 } },
+    );
+    const data = createSaveData(routed, "route-rows", 1);
+    const written = Object.values(data.resourceFactors).flatMap((group) => [
+      ...group.drain,
+      ...group.additional,
+    ]);
+
+    // The rows are derived from `tradeRoutes` on every read, so the document
+    // carries none of them: a stale drain cannot survive a reload.
+    expect(written.some(([source]) => isTradeRouteSource(source))).toBe(false);
+
+    // The first tick after a reload puts the live rows back.
+    const restored = loadSaveData(data);
+    const drains = restored.getProductionFactors("food").drain.map(
+      ([source]) => String(source),
+    );
+    expect(drains.some((source) => isTradeRouteSource(source))).toBe(true);
+  });
+
+  it("strips a route row a hand-edited document carries", () => {
+    const poisoned: SaveData = {
+      ...sampleSave(),
+      resourceFactors: {
+        food: {
+          additional: [],
+          multiplicative: [],
+          additiveMultiplier: [],
+          drain: [["food route", "9.99e99"]],
+        },
+      },
+    };
+    const restored = loadSaveData(poisoned);
+    // The injected row is gone: only the engine's own rows remain, never a second
+    // route drain stacked on the live one.
+    const drains = restored
+      .getProductionFactors("food")
+      .drain.map(([source]) => String(source));
+    expect(drains.some((source) => isTradeRouteSource(source))).toBe(false);
+  });
+
+  it("carries no routes at all in a version-5 document", () => {
+    const { tradeRoutes: _ignored, ...legacy } = sampleSave();
+    const migrated = migrateSaveData({
+      ...legacy,
+      version: 5,
+    } as SaveData);
+
+    expect(migrated.version).toBe(SAVE_VERSION);
+    expect(loadSaveData(migrated).tradeRoutes).toEqual({});
   });
 });
 describe("renamed content repair", () => {

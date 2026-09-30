@@ -44,7 +44,8 @@ export type DerivedAttributeKey =
   | "autoClickRate"
   | "buildingCostMultiplier"
   | "wastedResources"
-  | "tradeProductionMultiplier";
+  | "tradeProductionMultiplier"
+  | "tradeRoutes";
 
 /** Every value-side key a bonus destination may name; buyable ids are separate. */
 export type AttributeKey = ResourceKey | DerivedAttributeKey;
@@ -84,7 +85,13 @@ export const productionDefinitions: AttributeDefinition[] = [
   new AttributeDefinition("military", "Military", "amount", undefined, 0.1),
   new AttributeDefinition("science", "Science", "amount", undefined, 0.1),
   new AttributeDefinition("metalwork", "Metalwork", "amount", undefined, 0.1),
-  new AttributeDefinition("trade", "trade", "amount", undefined, 0.1),
+  new AttributeDefinition(
+    "trade",
+    "Trade power",
+    "amount",
+    "Trade power is the reserve the market accumulates and never spends: an open trade route forwards `reserve × intensity` worth of it as gold each second, and the reserve also multiplies every production rate by 1 + log₁₀(reserve + 1).",
+    0.1,
+  ),
 ];
 
 export const populationDefinition = new AttributeDefinition(

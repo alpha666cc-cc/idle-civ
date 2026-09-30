@@ -54,7 +54,7 @@ produced by the advanced buildings themselves, one per second each.
 | `military`  | building | 🟢     | `barracks`, +1/s each                                  | gated at 90 citizens; also the primary unit cost; spendable as a trade resource                 |
 | `science`   | building | 🟢     | `university`, +1/s each                                | gated on battle `age0_1_first_fire`; funds the research tree                                    |
 | `metalwork` | building | 🟢     | `smithy`, +1/s each                                    | gated at 5 town halls; also an enhancer cost from tier 3 on                                    |
-| `trade`     | building | 🟢     | `market`, +1/s each                                    | gated on `age1`; spendable as the trade resource (Trade tab is still placeholder UI)          |
+| `trade`     | building | 🟢     | `market`, +1/s each                                    | gated on `age1`; the Trade tab's fuel — a route asks for `reserve × intensity` as a gold value every second, capped by what is held, and never spends the reserve, which also raises every production rate by `1 + log₁₀(reserve + 1)` |
 
 Implemented: `click power` and `automated click power` are derived **attributes**
 (`attributes.ts`, `family: "derived"`; own `stat` Gamepedia category + stats tab) — 🟢.

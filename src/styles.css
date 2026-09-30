@@ -548,7 +548,7 @@ button:focus-visible {
 /* Trade Tab Styles */
 .trade-overview {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
   margin: 16px 0;
   padding: 12px;
@@ -577,7 +577,7 @@ button:focus-visible {
 
 .trade-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 12px;
   margin: 16px 0;
 }
@@ -592,137 +592,248 @@ button:focus-visible {
   gap: 8px;
 }
 
+.trade-route-card.active {
+  border-color: var(--accent);
+  background: rgba(169, 199, 74, 0.16);
+}
+
 .trade-resource-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 8px;
 }
 
-.trade-resource-header .resource-name {
+.trade-route-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
   font-weight: 600;
   color: #344239;
-  text-transform: capitalize;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.trade-resource-header .resource-ratio {
-  font-size: 11px;
-  color: #78877b;
-}
-
-.trade-balances {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
-}
-
-.balance-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.balance-item .balance-label {
-  font-size: 10px;
-  color: #78877b;
+.trade-toggle {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  font:
+    500 10px "DM Mono",
+    monospace;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: #78877b;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(67, 86, 68, 0.3);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.balance-item .balance-value {
-  font-size: 12px;
-  font-weight: 500;
+.trade-toggle.on {
+  color: #285b24;
+  background: rgba(169, 199, 74, 0.35);
+  border-color: var(--accent);
+}
+
+.trade-toggle[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.trade-price {
+  margin: 0;
+  font:
+    500 12px "DM Mono",
+    monospace;
   color: #344239;
 }
 
-.trade-actions {
+/* Each price line is its own line and never wraps, so the pair of them keeps a
+   fixed height whatever the numbers do. */
+.trade-price-line,
+.trade-price small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-price small {
+  font-size: 10px;
+  color: #78877b;
+}
+
+.trade-mode-group {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 
-.trade-action {
+.trade-mode {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 12px;
+  padding: 7px 10px;
   font-size: 12px;
   font-weight: 500;
+  color: #344239;
+  background: rgba(255, 255, 255, 0.5);
   border: 1px solid rgba(67, 86, 68, 0.3);
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.5);
-  color: #344239;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.trade-action:hover:not(:disabled) {
-  background: rgba(169, 199, 74, 0.3);
+.trade-mode:hover {
   border-color: var(--accent);
 }
 
-.trade-action:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.trade-action.sell {
-  color: #285b24;
-}
-
-.trade-action.buy {
+.trade-mode.buy.on {
   color: #8a2727;
+  background: rgba(169, 199, 74, 0.3);
 }
 
-.trade-action .icon {
-  width: 14px;
-  height: 14px;
+.trade-mode.sell.on {
+  color: #285b24;
+  background: rgba(169, 199, 74, 0.3);
 }
 
-.trade-conversion {
-  margin-top: 16px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-}
-
-.trade-conversion h4 {
-  margin: 0 0 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #344239;
-}
-
-.conversion-controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+.trade-intensity-row {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-.conversion-button {
-  padding: 10px 16px;
-  font-size: 12px;
-  font-weight: 500;
+.trade-slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.trade-intensity {
+  /* Wide enough for the longest readout the log scale can produce
+     (`0.0000001`), right-aligned so it reads as a figure beside its `%`. */
+  width: 78px;
+  flex: 0 0 auto;
+  padding: 4px 6px;
+  font:
+    500 11px "DM Mono",
+    monospace;
+  text-align: right;
+  color: #344239;
+  background: rgba(255, 255, 255, 0.6);
   border: 1px solid rgba(67, 86, 68, 0.3);
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.5);
+}
+
+.trade-intensity-suffix {
+  font-size: 11px;
+  color: #78877b;
+}
+
+.trade-intensity-caption {
+  margin: 0;
+  overflow: hidden;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: #78877b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The route's rectangle: the direction and the unit on top, the values it moves
+   below, the way the earlier card read. */
+.trade-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(67, 86, 68, 0.12);
+  border-radius: 3px;
+}
+
+.trade-frame-head {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.trade-frame-direction {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.trade-frame-direction.buy {
+  color: #8a2727;
+}
+
+.trade-frame-direction.sell {
+  color: #285b24;
+}
+
+.trade-frame-unit {
+  margin-left: auto;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #78877b;
+  white-space: nowrap;
+}
+
+.trade-values {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  font:
+    500 12px "DM Mono",
+    monospace;
   color: #344239;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
 
-.conversion-button:hover:not(:disabled) {
-  background: rgba(169, 199, 74, 0.3);
-  border-color: var(--accent);
+/* One line, always: a leg that outgrows its half of the frame clips instead of
+   wrapping onto a second row, so the card never changes height as numbers grow. */
+.trade-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.conversion-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.trade-value:last-child {
+  text-align: right;
+}
+
+.trade-value.gain {
+  color: #285b24;
+}
+
+.trade-value.drain {
+  color: #8a2727;
+}
+
+/* The direction spelled out, so the card reads without its buttons. */
+.trade-hint {
+  margin: 0;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #78877b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-hint.on {
+  color: #344239;
 }
 .dev-tools-control {
   display: flex;
