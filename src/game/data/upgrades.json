@@ -5,7 +5,6 @@
     "name": "Enhanced Farm I",
     "description": "increase Farm capacity and food production",
     "building": "farm",
-    "resource": "food",
     "threshold": 9,
     "tier": 0,
     "costs": [
@@ -26,7 +25,6 @@
         "destination": "farmPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -45,7 +43,6 @@
     "name": "Enhanced Farm II",
     "description": "increase Farm capacity and food production",
     "building": "farm",
-    "resource": "food",
     "threshold": 98,
     "tier": 1,
     "costs": [
@@ -66,7 +63,6 @@
         "destination": "farmPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -85,7 +81,6 @@
     "name": "Enhanced Farm III",
     "description": "increase Farm capacity and food production",
     "building": "farm",
-    "resource": "food",
     "threshold": 980,
     "tier": 2,
     "costs": [
@@ -111,7 +106,6 @@
         "destination": "farmPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -135,7 +129,6 @@
     "name": "Enhanced Farm IV",
     "description": "increase Farm capacity and food production",
     "building": "farm",
-    "resource": "food",
     "threshold": 9800,
     "tier": 3,
     "costs": [
@@ -161,7 +154,6 @@
         "destination": "farmPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -185,7 +177,6 @@
     "name": "Enhanced Farm V",
     "description": "increase Farm capacity and food production",
     "building": "farm",
-    "resource": "food",
     "threshold": 98000,
     "tier": 4,
     "costs": [
@@ -211,7 +202,6 @@
         "destination": "farmPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -235,7 +225,6 @@
     "name": "Enhanced Farm VI",
     "description": "increase Farm capacity and food production",
     "building": "farm",
-    "resource": "food",
     "threshold": 980000,
     "tier": 5,
     "costs": [
@@ -261,7 +250,6 @@
         "destination": "farmPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -285,7 +273,6 @@
     "name": "Enhanced Farm VII",
     "description": "increase Farm capacity and food production",
     "building": "farm",
-    "resource": "food",
     "threshold": 9800000,
     "tier": 6,
     "costs": [
@@ -311,7 +298,6 @@
         "destination": "farmPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -335,7 +321,6 @@
     "name": "Enhanced Farm VIII",
     "description": "increase Farm capacity and food production",
     "building": "farm",
-    "resource": "food",
     "threshold": 98000000,
     "tier": 7,
     "costs": [
@@ -361,7 +346,6 @@
         "destination": "farmPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "farmCapacity",
@@ -385,7 +369,6 @@
     "name": "Enhanced Lumber Yard I",
     "description": "increase Lumber Yard capacity and wood production",
     "building": "lumberYard",
-    "resource": "wood",
     "threshold": 9,
     "tier": 0,
     "costs": [
@@ -406,7 +389,6 @@
         "destination": "lumberYardPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "lumberYardCapacity",
@@ -425,7 +407,6 @@
     "name": "Enhanced Lumber Yard II",
     "description": "increase Lumber Yard capacity and wood production",
     "building": "lumberYard",
-    "resource": "wood",
     "threshold": 98,
     "tier": 1,
     "costs": [
@@ -446,7 +427,6 @@
         "destination": "lumberYardPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "lumberYardCapacity",
@@ -465,7 +445,6 @@
     "name": "Enhanced Lumber Yard III",
     "description": "increase Lumber Yard capacity and wood production",
     "building": "lumberYard",
-    "resource": "wood",
     "threshold": 980,
     "tier": 2,
     "costs": [
@@ -491,7 +470,6 @@
         "destination": "lumberYardPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "lumberYardCapacity",
@@ -515,7 +493,6 @@
     "name": "Enhanced Lumber Yard IV",
     "description": "increase Lumber Yard capacity and wood production",
     "building": "lumberYard",
-    "resource": "wood",
     "threshold": 9800,
     "tier": 3,
     "costs": [
@@ -541,7 +518,6 @@
         "destination": "lumberYardPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "lumberYardCapacity",
@@ -565,7 +541,6 @@
     "name": "Enhanced Lumber Yard V",
     "description": "increase Lumber Yard capacity and wood production",
     "building": "lumberYard",
-    "resource": "wood",
     "threshold": 98000,
     "tier": 4,
     "costs": [
@@ -591,7 +566,6 @@
         "destination": "lumberYardPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "lumberYardCapacity",
@@ -615,7 +589,6 @@
     "name": "Enhanced Lumber Yard VI",
     "description": "increase Lumber Yard capacity and wood production",
     "building": "lumberYard",
-    "resource": "wood",
     "threshold": 980000,
     "tier": 5,
     "costs": [
@@ -641,7 +614,6 @@
         "destination": "lumberYardPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "lumberYardCapacity",
@@ -665,7 +637,6 @@
     "name": "Enhanced Lumber Yard VII",
     "description": "increase Lumber Yard capacity and wood production",
     "building": "lumberYard",
-    "resource": "wood",
     "threshold": 9800000,
     "tier": 6,
     "costs": [
@@ -691,7 +662,6 @@
         "destination": "lumberYardPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "lumberYardCapacity",
@@ -715,7 +685,6 @@
     "name": "Enhanced Lumber Yard VIII",
     "description": "increase Lumber Yard capacity and wood production",
     "building": "lumberYard",
-    "resource": "wood",
     "threshold": 98000000,
     "tier": 7,
     "costs": [
@@ -741,7 +710,6 @@
         "destination": "lumberYardPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "lumberYardCapacity",
@@ -765,7 +733,6 @@
     "name": "Enhanced Quarry I",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
-    "resource": "stone",
     "threshold": 9,
     "tier": 0,
     "costs": [
@@ -781,7 +748,6 @@
         "destination": "quarryPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -800,7 +766,6 @@
     "name": "Enhanced Quarry II",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
-    "resource": "stone",
     "threshold": 98,
     "tier": 1,
     "costs": [
@@ -816,7 +781,6 @@
         "destination": "quarryPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -835,7 +799,6 @@
     "name": "Enhanced Quarry III",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
-    "resource": "stone",
     "threshold": 980,
     "tier": 2,
     "costs": [
@@ -856,7 +819,6 @@
         "destination": "quarryPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -880,7 +842,6 @@
     "name": "Enhanced Quarry IV",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
-    "resource": "stone",
     "threshold": 9800,
     "tier": 3,
     "costs": [
@@ -901,7 +862,6 @@
         "destination": "quarryPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -925,7 +885,6 @@
     "name": "Enhanced Quarry V",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
-    "resource": "stone",
     "threshold": 98000,
     "tier": 4,
     "costs": [
@@ -946,7 +905,6 @@
         "destination": "quarryPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -970,7 +928,6 @@
     "name": "Enhanced Quarry VI",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
-    "resource": "stone",
     "threshold": 980000,
     "tier": 5,
     "costs": [
@@ -991,7 +948,6 @@
         "destination": "quarryPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -1015,7 +971,6 @@
     "name": "Enhanced Quarry VII",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
-    "resource": "stone",
     "threshold": 9800000,
     "tier": 6,
     "costs": [
@@ -1036,7 +991,6 @@
         "destination": "quarryPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -1060,7 +1014,6 @@
     "name": "Enhanced Quarry VIII",
     "description": "increase Quarry capacity and stone production",
     "building": "quarry",
-    "resource": "stone",
     "threshold": 98000000,
     "tier": 7,
     "costs": [
@@ -1081,7 +1034,6 @@
         "destination": "quarryPower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "quarryCapacity",
@@ -1105,7 +1057,6 @@
     "name": "Enhanced Gold Mine I",
     "description": "increase Gold Mine capacity and gold production",
     "building": "goldMine",
-    "resource": "gold",
     "threshold": 9,
     "tier": 0,
     "costs": [
@@ -1126,7 +1077,6 @@
         "destination": "goldMinePower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "goldMineCapacity",
@@ -1145,7 +1095,6 @@
     "name": "Enhanced Gold Mine II",
     "description": "increase Gold Mine capacity and gold production",
     "building": "goldMine",
-    "resource": "gold",
     "threshold": 98,
     "tier": 1,
     "costs": [
@@ -1166,7 +1115,6 @@
         "destination": "goldMinePower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "goldMineCapacity",
@@ -1185,7 +1133,6 @@
     "name": "Enhanced Gold Mine III",
     "description": "increase Gold Mine capacity and gold production",
     "building": "goldMine",
-    "resource": "gold",
     "threshold": 980,
     "tier": 2,
     "costs": [
@@ -1211,7 +1158,6 @@
         "destination": "goldMinePower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "goldMineCapacity",
@@ -1235,7 +1181,6 @@
     "name": "Enhanced Gold Mine IV",
     "description": "increase Gold Mine capacity and gold production",
     "building": "goldMine",
-    "resource": "gold",
     "threshold": 9800,
     "tier": 3,
     "costs": [
@@ -1261,7 +1206,6 @@
         "destination": "goldMinePower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "goldMineCapacity",
@@ -1285,7 +1229,6 @@
     "name": "Enhanced Gold Mine V",
     "description": "increase Gold Mine capacity and gold production",
     "building": "goldMine",
-    "resource": "gold",
     "threshold": 98000,
     "tier": 4,
     "costs": [
@@ -1311,7 +1254,6 @@
         "destination": "goldMinePower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "goldMineCapacity",
@@ -1335,7 +1277,6 @@
     "name": "Enhanced Gold Mine VI",
     "description": "increase Gold Mine capacity and gold production",
     "building": "goldMine",
-    "resource": "gold",
     "threshold": 980000,
     "tier": 5,
     "costs": [
@@ -1361,7 +1302,6 @@
         "destination": "goldMinePower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "goldMineCapacity",
@@ -1385,7 +1325,6 @@
     "name": "Enhanced Gold Mine VII",
     "description": "increase Gold Mine capacity and gold production",
     "building": "goldMine",
-    "resource": "gold",
     "threshold": 9800000,
     "tier": 6,
     "costs": [
@@ -1411,7 +1350,6 @@
         "destination": "goldMinePower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "goldMineCapacity",
@@ -1435,7 +1373,6 @@
     "name": "Enhanced Gold Mine VIII",
     "description": "increase Gold Mine capacity and gold production",
     "building": "goldMine",
-    "resource": "gold",
     "threshold": 98000000,
     "tier": 7,
     "costs": [
@@ -1461,7 +1398,6 @@
         "destination": "goldMinePower",
         "value": 1
       },
-
       {
         "type": "attributeMultiplier",
         "destination": "goldMineCapacity",
@@ -1485,7 +1421,6 @@
     "name": "Enhanced Barracks I",
     "description": "increase Barracks power and military production",
     "building": "barracks",
-    "resource": "military",
     "threshold": 9,
     "tier": 0,
     "costs": [
@@ -1524,7 +1459,6 @@
     "name": "Enhanced Barracks II",
     "description": "increase Barracks power and military production",
     "building": "barracks",
-    "resource": "military",
     "threshold": 98,
     "tier": 1,
     "costs": [
@@ -1563,7 +1497,6 @@
     "name": "Enhanced Barracks III",
     "description": "increase Barracks power and military production",
     "building": "barracks",
-    "resource": "military",
     "threshold": 980,
     "tier": 2,
     "costs": [
@@ -1612,7 +1545,6 @@
     "name": "Enhanced Barracks IV",
     "description": "increase Barracks power and military production",
     "building": "barracks",
-    "resource": "military",
     "threshold": 9800,
     "tier": 3,
     "costs": [
@@ -1661,7 +1593,6 @@
     "name": "Enhanced Barracks V",
     "description": "increase Barracks power and military production",
     "building": "barracks",
-    "resource": "military",
     "threshold": 98000,
     "tier": 4,
     "costs": [
@@ -1710,7 +1641,6 @@
     "name": "Enhanced Barracks VI",
     "description": "increase Barracks power and military production",
     "building": "barracks",
-    "resource": "military",
     "threshold": 980000,
     "tier": 5,
     "costs": [
@@ -1759,7 +1689,6 @@
     "name": "Enhanced Barracks VII",
     "description": "increase Barracks power and military production",
     "building": "barracks",
-    "resource": "military",
     "threshold": 9800000,
     "tier": 6,
     "costs": [
@@ -1808,7 +1737,6 @@
     "name": "Enhanced Barracks VIII",
     "description": "increase Barracks power and military production",
     "building": "barracks",
-    "resource": "military",
     "threshold": 98000000,
     "tier": 7,
     "costs": [
@@ -1857,7 +1785,6 @@
     "name": "Enhanced University I",
     "description": "increase University power and science production",
     "building": "university",
-    "resource": "science",
     "threshold": 9,
     "tier": 0,
     "costs": [
@@ -1896,7 +1823,6 @@
     "name": "Enhanced University II",
     "description": "increase University power and science production",
     "building": "university",
-    "resource": "science",
     "threshold": 98,
     "tier": 1,
     "costs": [
@@ -1935,7 +1861,6 @@
     "name": "Enhanced University III",
     "description": "increase University power and science production",
     "building": "university",
-    "resource": "science",
     "threshold": 980,
     "tier": 2,
     "costs": [
@@ -1984,7 +1909,6 @@
     "name": "Enhanced University IV",
     "description": "increase University power and science production",
     "building": "university",
-    "resource": "science",
     "threshold": 9800,
     "tier": 3,
     "costs": [
@@ -2033,7 +1957,6 @@
     "name": "Enhanced University V",
     "description": "increase University power and science production",
     "building": "university",
-    "resource": "science",
     "threshold": 98000,
     "tier": 4,
     "costs": [
@@ -2082,7 +2005,6 @@
     "name": "Enhanced University VI",
     "description": "increase University power and science production",
     "building": "university",
-    "resource": "science",
     "threshold": 980000,
     "tier": 5,
     "costs": [
@@ -2131,7 +2053,6 @@
     "name": "Enhanced University VII",
     "description": "increase University power and science production",
     "building": "university",
-    "resource": "science",
     "threshold": 9800000,
     "tier": 6,
     "costs": [
@@ -2180,7 +2101,6 @@
     "name": "Enhanced University VIII",
     "description": "increase University power and science production",
     "building": "university",
-    "resource": "science",
     "threshold": 98000000,
     "tier": 7,
     "costs": [
@@ -2229,7 +2149,6 @@
     "name": "Enhanced Smithy I",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
-    "resource": "metalwork",
     "threshold": 9,
     "tier": 0,
     "costs": [
@@ -2263,7 +2182,6 @@
     "name": "Enhanced Smithy II",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
-    "resource": "metalwork",
     "threshold": 98,
     "tier": 1,
     "costs": [
@@ -2297,7 +2215,6 @@
     "name": "Enhanced Smithy III",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
-    "resource": "metalwork",
     "threshold": 980,
     "tier": 2,
     "costs": [
@@ -2341,7 +2258,6 @@
     "name": "Enhanced Smithy IV",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
-    "resource": "metalwork",
     "threshold": 9800,
     "tier": 3,
     "costs": [
@@ -2385,7 +2301,6 @@
     "name": "Enhanced Smithy V",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
-    "resource": "metalwork",
     "threshold": 98000,
     "tier": 4,
     "costs": [
@@ -2429,7 +2344,6 @@
     "name": "Enhanced Smithy VI",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
-    "resource": "metalwork",
     "threshold": 980000,
     "tier": 5,
     "costs": [
@@ -2473,7 +2387,6 @@
     "name": "Enhanced Smithy VII",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
-    "resource": "metalwork",
     "threshold": 9800000,
     "tier": 6,
     "costs": [
@@ -2517,7 +2430,6 @@
     "name": "Enhanced Smithy VIII",
     "description": "increase Smithy power and metalwork production",
     "building": "smithy",
-    "resource": "metalwork",
     "threshold": 98000000,
     "tier": 7,
     "costs": [
@@ -2561,7 +2473,6 @@
     "name": "Enhanced Market I",
     "description": "increase Market power and trade production",
     "building": "market",
-    "resource": "trade",
     "threshold": 9,
     "tier": 0,
     "costs": [
@@ -2595,7 +2506,6 @@
     "name": "Enhanced Market II",
     "description": "increase Market power and trade production",
     "building": "market",
-    "resource": "trade",
     "threshold": 98,
     "tier": 1,
     "costs": [
@@ -2629,7 +2539,6 @@
     "name": "Enhanced Market III",
     "description": "increase Market power and trade production",
     "building": "market",
-    "resource": "trade",
     "threshold": 980,
     "tier": 2,
     "costs": [
@@ -2673,7 +2582,6 @@
     "name": "Enhanced Market IV",
     "description": "increase Market power and trade production",
     "building": "market",
-    "resource": "trade",
     "threshold": 9800,
     "tier": 3,
     "costs": [
@@ -2717,7 +2625,6 @@
     "name": "Enhanced Market V",
     "description": "increase Market power and trade production",
     "building": "market",
-    "resource": "trade",
     "threshold": 98000,
     "tier": 4,
     "costs": [
@@ -2761,7 +2668,6 @@
     "name": "Enhanced Market VI",
     "description": "increase Market power and trade production",
     "building": "market",
-    "resource": "trade",
     "threshold": 980000,
     "tier": 5,
     "costs": [
@@ -2805,7 +2711,6 @@
     "name": "Enhanced Market VII",
     "description": "increase Market power and trade production",
     "building": "market",
-    "resource": "trade",
     "threshold": 9800000,
     "tier": 6,
     "costs": [
@@ -2849,7 +2754,6 @@
     "name": "Enhanced Market VIII",
     "description": "increase Market power and trade production",
     "building": "market",
-    "resource": "trade",
     "threshold": 98000000,
     "tier": 7,
     "costs": [
@@ -2884,6 +2788,39 @@
         "type": "costReductionFactor",
         "destination": "market",
         "value": 0.01
+      }
+    ]
+  },
+  {
+    "guid": "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
+    "key": "wonder0",
+    "name": "Great Monument",
+    "description": "A magnificent structure that reduces the cost of all buildings by 10%",
+    "building": "people",
+    "threshold": 5000,
+    "tier": 0,
+    "costs": [
+      {
+        "resource": "gold",
+        "base": "1e4",
+        "factor": 1
+      },
+      {
+        "resource": "wood",
+        "base": "5e3",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "5e3",
+        "factor": 1
+      }
+    ],
+    "bonuses": [
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings",
+        "value": 0.1
       }
     ]
   }
