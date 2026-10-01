@@ -39,7 +39,11 @@ import {
 import { describeSaveEntry, loadSaveEntry, type SaveEntry } from "./saveEntry.js";
 import { getStrategy, getStrategyNames } from "./strategies.js";
 import { buildingDefinitions, type BuildingKey, type BuildingCost } from "../src/game/buildings.js";
-import { emptyWorkerAssignments, producerResourceKeys } from "../src/game/attributes.js";
+import {
+  emptyWorkerAssignments,
+  producerResourceKeys,
+  type ResourceKey,
+} from "../src/game/attributes.js";
 import {
   tradeableResourceKeys,
   tradeIntensityStop,
@@ -72,7 +76,7 @@ if (savePath) {
   try {
     saveEntry = loadSaveEntry(savePath);
   } catch (error) {
-    console.error(`Could not load the save: ${error.message}`);
+    console.error(`Could not load the save: ${String(error)}`);
     process.exit(1);
   }
   console.log(describeSaveEntry(saveEntry));
@@ -98,7 +102,7 @@ const clock = (seconds: number): string =>
  */
 const WORKER_KEYS = new Set(Object.keys(emptyWorkerAssignments()));
 
-const WORKER_RESOURCES = new Map<BuildingKey, string>(
+const WORKER_RESOURCES = new Map<BuildingKey, ResourceKey>(
   buildingDefinitions.flatMap((building) => {
     const candidates = [
       ...(building.effects.additiveMultiplier ?? []),

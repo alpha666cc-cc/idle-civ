@@ -61,6 +61,8 @@ const label = (action: ReturnType<typeof base.decideAction>): string => {
       return `launchBattle ${action.encounterId}`;
     case "enterAge":
       return `enterAge ${action.ageId}`;
+    case "setTradeRoute":
+      return `setTradeRoute ${action.resource} ${action.route.mode}`;
     case "wait":
       return "wait";
   }

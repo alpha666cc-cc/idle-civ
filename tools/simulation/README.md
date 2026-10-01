@@ -7,6 +7,7 @@ A headless simulation engine for balance testing and strategy optimization in th
 ## Overview
 
 The simulation system allows you to:
+
 - Run automated game simulations with configurable strategies
 - Test different gameplay approaches (balanced, production-focused, military-focused, etc.)
 - Compare multiple strategies in parallel
@@ -44,7 +45,7 @@ rows the Trade tab produces. Its policy: **point the route at the resource whose
 stock has drifted furthest from what the settlement's own production justifies, and
 size it to the flow it should move rather than to the reserve it could liquidate.**
 
-- Each tradable resource gets a *buffer* of 600 seconds of its own net production.
+- Each tradable resource gets a _buffer_ of 600 seconds of its own net production.
   Below it the resource is a shortage (buy), above it a surplus (sell). A resource
   the settlement produces nothing of is sized against the slowest thing it does make.
 - Candidates are ranked in **gold** (`units × goldPerResource`, times the spread on
@@ -205,13 +206,15 @@ npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
 ### Milestones
 
 Snapshots are automatically recorded at:
-- Age entry (when population thresholds are reached)
+
+- Age entry (when the ordered age transition is completed)
 - Battle victories
 - Regular intervals (every 5 minutes for long simulations)
 
 ### Objectives
 
 The simulation can terminate based on:
+
 - **buildingCount**: Build N of a specific building
 - **ageReach**: Enter a specific age
 - **battleVictory**: Win a specific battle
@@ -244,14 +247,21 @@ console.log(`Buildings: ${result.snapshots}`);
 To create a custom strategy, implement the `SimulationStrategy` interface:
 
 ```typescript
-import type { SimulationStrategy, SimulationAction, SimulationContext } from "./simulation.js";
+import type {
+  SimulationStrategy,
+  SimulationAction,
+  SimulationContext,
+} from "./simulation.js";
 import { CivilizationState } from "../src/game/civilizationState.js";
 
 class MyCustomStrategy implements SimulationStrategy {
   name = "my-custom";
   description = "My custom strategy description";
 
-  decideAction(state: CivilizationState, context: SimulationContext): SimulationAction | null {
+  decideAction(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulationAction | null {
     // Your decision logic here
     return { type: "build", building: "farm", count: 1 };
   }

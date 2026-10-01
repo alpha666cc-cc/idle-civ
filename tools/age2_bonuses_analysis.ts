@@ -7,6 +7,25 @@
 import { upgradeDefinitions } from "../src/game/upgrades.js";
 import { encounterDefinitions } from "../src/game/encounters.js";
 import { ageDefinitions } from "../src/game/ages.js";
+import {
+  buildingDefinitions,
+  type BuildingKey,
+} from "../src/game/buildings.js";
+import { ExpNumber } from "../src/game/expNumber.js";
+
+/**
+ * The resource a production building boosts, read off its definition rather than
+ * matched on the key: primary buildings carry an `additiveMultiplier` effect, the
+ * advanced ones a `resourceProduction` effect, and this is what the analysis compares
+ * a bonus destination against to tell a production multiplier from a capacity one.
+ */
+const boostedResource = (building: BuildingKey): string | undefined => {
+  const definition = buildingDefinitions.find(({ key }) => key === building);
+  return (
+    definition?.effects.additiveMultiplier?.[0]?.resource ??
+    definition?.effects.resourceProduction?.[0]?.resource
+  );
+};
 
 interface BonusEntry {
   stage: string;
@@ -14,7 +33,7 @@ interface BonusEntry {
   source: string;
   type: string;
   destination: string;
-  value: number | string;
+  value: number | string | ExpNumber;
   cumulativeEffect: string;
   notes: string;
 }
@@ -28,7 +47,7 @@ function addEntry(
   source: string,
   type: string,
   destination: string,
-  value: number | string,
+  value: number | string | ExpNumber,
   cumulativeEffect: string,
   notes: string
 ) {
@@ -110,24 +129,29 @@ let cumulativeBuildingPower = 3;
 // Advanced production buildings: barracks, university, smithy, market
 
 // Analyze upgrades for primary buildings in the 120-1200 range
-const primaryBuildings = ["farm", "lumberYard", "quarry", "goldMine"];
-const advancedBuildings = ["barracks", "university", "smithy", "market"];
+const primaryBuildings: BuildingKey[] = [
+  "farm",
+  "lumberYard",
+  "quarry",
+  "goldMine",
+];
+const advancedBuildings: BuildingKey[] = [
+  "barracks",
+  "university",
+  "smithy",
+  "market",
+];
 
 // Primary building upgrades (tier 1: threshold 98, tier 2: threshold 980)
 // Note: tier 0 (threshold 9) is below 120, tier 1 (98) is below 120
 // So we start with tier 2 (threshold 980) which is in range
 
-for (const building of primaryBuildings) {
-  const buildingKey = building as
-    | "farm"
-    | "lumberYard"
-    | "quarry"
-    | "goldMine";
-
+for (const buildingKey of primaryBuildings) {
   // Tier 2 (threshold 980) - this is in range 120-1200
   const tier2Upgrade = upgradeDefinitions.find(
-    (u) => u.building === buildingKey && u.threshold === 980
+    (u) => u.unlock.building === buildingKey && u.unlock.threshold === 980
   );
+  const boosted = boostedResource(buildingKey);
 
   if (tier2Upgrade) {
     for (const bonus of tier2Upgrade.bonuses) {
@@ -140,10 +164,10 @@ for (const building of primaryBuildings) {
             "attributeMultiplier",
             bonus.destination,
             bonus.value,
-            `×${Number(bonus.value) * 10}`,
+            `×${bonus.value.toNumber() * 10}`,
             `Capacity +${bonus.value}×`
           );
-        } else if (bonus.destination === tier2Upgrade.resource) {
+        } else if (bonus.destination === boosted) {
           // Cumulative effect
           let currentCumulative = 1;
           if (buildingKey === "farm") currentCumulative = cumulativeFood;
@@ -151,7 +175,7 @@ for (const building of primaryBuildings) {
           else if (buildingKey === "quarry") currentCumulative = cumulativeStone;
           else if (buildingKey === "goldMine") currentCumulative = cumulativeGold;
 
-          const newCumulative = currentCumulative * Number(bonus.value);
+          const newCumulative = currentCumulative * bonus.value.toNumber();
           addEntry(
             "UPGRADE_TIER_2",
             "Upgrade",
@@ -170,7 +194,7 @@ for (const building of primaryBuildings) {
           else if (buildingKey === "goldMine") cumulativeGold = newCumulative;
         }
       } else if (bonus.type === "attributeFlat") {
-        cumulativeBuildingPower += Number(bonus.value);
+        cumulativeBuildingPower += bonus.value.toNumber();
         addEntry(
           "UPGRADE_TIER_2",
           "Upgrade",
@@ -189,7 +213,7 @@ for (const building of primaryBuildings) {
           "costReductionPercent",
           bonus.destination,
           bonus.value,
-          `×${Number(bonus.value)}`,
+          `×${bonus.value.toNumber()}`,
           "Cost reduction"
         );
       }
@@ -202,17 +226,12 @@ for (const building of primaryBuildings) {
 // For advanced buildings, we assume they start at 220 and can reach tier 2 (980)
 // But 980 is beyond 220, so only tier 1 (98) might be accessible if it's <= 220
 
-for (const building of advancedBuildings) {
-  const buildingKey = building as
-    | "barracks"
-    | "university"
-    | "smithy"
-    | "market";
-
+for (const buildingKey of advancedBuildings) {
   // Tier 1 (threshold 98) - accessible from 220
   const tier1Upgrade = upgradeDefinitions.find(
-    (u) => u.building === buildingKey && u.threshold === 98
+    (u) => u.unlock.building === buildingKey && u.unlock.threshold === 98
   );
+  const boosted = boostedResource(buildingKey);
 
   if (tier1Upgrade) {
     for (const bonus of tier1Upgrade.bonuses) {
@@ -225,17 +244,17 @@ for (const building of advancedBuildings) {
             "attributeMultiplier",
             bonus.destination,
             bonus.value,
-            `×${Number(bonus.value) * 10}`,
+            `×${bonus.value.toNumber() * 10}`,
             `Capacity +${bonus.value}×`
           );
-        } else if (bonus.destination === tier1Upgrade.resource) {
+        } else if (bonus.destination === boosted) {
           let currentCumulative = 1;
           if (buildingKey === "barracks") currentCumulative = cumulativeMilitary;
           else if (buildingKey === "university") currentCumulative = cumulativeScience;
           else if (buildingKey === "smithy") currentCumulative = cumulativeMetalwork;
           else if (buildingKey === "market") currentCumulative = 1; // Trade not tracked yet
 
-          const newCumulative = currentCumulative * Number(bonus.value);
+          const newCumulative = currentCumulative * bonus.value.toNumber();
           addEntry(
             "UPGRADE_TIER_1",
             "Upgrade",
@@ -253,7 +272,7 @@ for (const building of advancedBuildings) {
           else if (buildingKey === "smithy") cumulativeMetalwork = newCumulative;
         }
       } else if (bonus.type === "attributeFlat") {
-        cumulativeBuildingPower += Number(bonus.value);
+        cumulativeBuildingPower += bonus.value.toNumber();
         addEntry(
           "UPGRADE_TIER_1",
           "Upgrade",
@@ -272,7 +291,7 @@ for (const building of advancedBuildings) {
           "costReductionPercent",
           bonus.destination,
           bonus.value,
-          `×${Number(bonus.value)}`,
+          `×${bonus.value.toNumber()}`,
           "Cost reduction"
         );
       }
@@ -298,7 +317,7 @@ for (let i = 0; i < battleOrder.length; i++) {
       else if (bonus.destination === "unitAll.hp") currentCumulative = 1;
       else if (bonus.destination === "unitAll.attack") currentCumulative = 1;
 
-      const newCumulative = currentCumulative * Number(bonus.value);
+      const newCumulative = currentCumulative * bonus.value.toNumber();
       addEntry(
         stage,
         "Battle Bonus",

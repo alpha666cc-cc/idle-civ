@@ -69,34 +69,34 @@ Balance workflow:
 
 ## Milestone 2: Ages and era progression
 
-Define seven ages that frame the campaign from the first family to the interstellar launch. An age is entered when population crosses the next power of ten, from 10^0 (1) to 10^10 (10 billion). The opening age is deliberately compressed to a thousand population so the early game moves fast; each later age stays at roughly one order of magnitude:
+Define seven ages that frame the campaign from the first family to the interstellar launch. Ages progress in order when the current age's battles are won and the next age's total-building threshold is reached. The threshold data replaces the former population milestones, scaled by 1.5; population no longer selects the current age:
 
-- **Ancient:** 1 – 1,000 population — fast opening age, merging the Prehistoric, Stone Age, and Bronze Age starts
-- **Iron Age:** 1,000 – 10,000
-- **Classical:** 10,000 – 1,000,000
-- **Middle Ages:** 1,000,000 – 10,000,000
-- **Renaissance:** 10,000,000 – 100,000,000
-- **Industrial:** 100,000,000 – 1,000,000,000
-- **Modern / Space:** 1,000,000,000 – 10,000,000,000
+- **Ancient:** starting age (0 building threshold) — fast opening age, merging the Prehistoric, Stone Age, and Bronze Age starts
+- **Iron Age:** 1,500 buildings
+- **Classical:** 15,000 buildings
+- **Middle Ages:** 1.5 million buildings
+- **Renaissance:** 150 million buildings
+- **Industrial:** 1.5 billion buildings
+- **Modern / Space:** 15 billion buildings; the final age has no later age to unlock
 
-With seven ages, crossing from one million to ten million population is the Middle Ages — the exact midpoint age — and the colony ship launches near the end of the final age.
+The colony ship launches near the end of the final age; population remains an independent campaign objective.
 
 Design:
 
-- Define each age as data with a stable ID, name, and population threshold. The research tree `era` field and any age-gated content reference these IDs:
+- Define each age as data with a stable ID, name, and total-building threshold to reach that age. The current age's building target is the next age's threshold; the final age uses its own threshold. The research tree `era` field and any age-gated content reference these IDs:
 
 ```ts
 type AgeDefinition = {
   id: string;
   name: string;
-  populationThreshold: number;
+  buildingThreshold: number;
   unlocks?: string[]; // buildings or combat units unlocked by this age
   upgrades?: string[]; // upgrades or research made available
   encounters?: string[]; // two regular battles + an age-end boss (see Milestone 8)
 };
 ```
 
-- Compute the current age as the highest threshold reached; do not persist an age counter in the save. Keep ages data-driven so the engine has no era-specific conditionals.
+- Compute the current age as the first age not yet completed; do not persist an age counter in the save. Population does not select or advance the current age. Keep ages data-driven so the engine has no era-specific conditionals.
 - Make building availability age-driven data instead of the current hard-coded `available` boolean; `canBuild` then reflects the current age.
 - Emit age-transition events so statistics and achievements can record them and the game-length simulation (see Milestone 10) can report time-to-age.
 - Expect **23 battles across the campaign** — two regular fights plus an age-end boss per age (five battles in Modern/Space); see Milestone 8 and the campaign prototype. The first is a wolf in the opening Ancient age whose defeat expands the townHall count beyond its default cap of 10; each age-end boss unlocks the next age.
@@ -248,7 +248,7 @@ Ancient age; defeating it expands the townHall count beyond the default cap of 1
 victory applies a data-driven reward (bonuses, unlocks, enemy boosts on the same bonus
 channel as upgrades). **Implemented (first battle slice):** unit definitions
 (`src/game/units.ts` + `data/units.json`, hp/attack scaled ×8 per age; unit cost factor
-  5 except the Age-0 Tribesman ×4 and Bronze Spearman/Axeman ×3),
+5 except the Age-0 Tribesman ×4 and Bronze Spearman/Axeman ×3),
 a deterministic seeded stack/hp-pool simulation (`src/game/battle.ts`, ≤ 200 rounds with
 an explicit stalemate outcome), `armyPower = attack × accuracy × √(hp ÷ (1 − armor))`
 summed over stacks, and an Army tab that buys units and plays battles back at one round
@@ -282,21 +282,21 @@ The game-length simulation should resolve encounters as they unlock so pacing es
 
 ## Gameplay pacing reference — a 7-day first loop (for balancing, not a target)
 
-The length of the first loop is an *emergent property*, not a design parameter. This
+The length of the first loop is an _emergent property_, not a design parameter. This
 matrix is a **playstyle reference for the Balance agent**, not a plan and not a target.
 It assumes an **active-time-dominant** player who spends only a few minutes per session
 and otherwise lets the game sit (the 12-hour offline cap from the Milestone 3
 `E_off` mechanic is why the idle split works like this).
 
-| Age | Population window | Active play per age | Idle/real-wait per age | Night pauses | Cumulative real-world |
-| --- | --- | --- | --- | --- | --- |
-| 1 · Ancient | 1 → 1,000 | 30 min | 15 min | — | 45 min |
-| 2 · Iron | 1,000 → 10,000 | 20 min | 1 h 10 min | — | ~2.25 h |
-| 3 · Classical | 10,000 → 1,000,000 | 30 min | 3 h 30 min | +1 night (12 h cap) | ~16 h (end of Day 1) |
-| 4 · Middle Ages | 1,000,000 → 10,000,000 | 40 min | 11 h 20 min | +1 night | ~40 h (Day 2 → 3) |
-| 5 · Renaissance | 10,000,000 → 100,000,000 | 50 min | 23 h 10 min | +1 night | ~64 h (Day 3 → 4) |
-| 6 · Industrial | 100,000,000 → 1,000,000,000 | 60 min | 35 h 00 min | +2 nights (24 h) | ~124 h (Day 5 → 6) |
-| 7 · Modern/Space | 1,000,000,000 → 10,000,000,000 | 70 min | 42 h 50 min (cap of 12 h/day baked into the idle column) | +3 nights | ends ~Day 7 |
+| Age              | Population window              | Active play per age | Idle/real-wait per age                                   | Night pauses        | Cumulative real-world |
+| ---------------- | ------------------------------ | ------------------- | -------------------------------------------------------- | ------------------- | --------------------- |
+| 1 · Ancient      | 1 → 1,000                      | 30 min              | 15 min                                                   | —                   | 45 min                |
+| 2 · Iron         | 1,000 → 10,000                 | 20 min              | 1 h 10 min                                               | —                   | ~2.25 h               |
+| 3 · Classical    | 10,000 → 1,000,000             | 30 min              | 3 h 30 min                                               | +1 night (12 h cap) | ~16 h (end of Day 1)  |
+| 4 · Middle Ages  | 1,000,000 → 10,000,000         | 40 min              | 11 h 20 min                                              | +1 night            | ~40 h (Day 2 → 3)     |
+| 5 · Renaissance  | 10,000,000 → 100,000,000       | 50 min              | 23 h 10 min                                              | +1 night            | ~64 h (Day 3 → 4)     |
+| 6 · Industrial   | 100,000,000 → 1,000,000,000    | 60 min              | 35 h 00 min                                              | +2 nights (24 h)    | ~124 h (Day 5 → 6)    |
+| 7 · Modern/Space | 1,000,000,000 → 10,000,000,000 | 70 min              | 42 h 50 min (cap of 12 h/day baked into the idle column) | +3 nights           | ends ~Day 7           |
 
 Reading the matrix:
 
@@ -304,7 +304,7 @@ Reading the matrix:
   near 7 days. This is the one tuning dial for play pace; everything else follows.
 - The idle columns assume the Milestone 3 **offline efficiency `E_off` (25–50%)** and the
   **12-hour offline cap** — change `E_off` and the idle column collapses or stretches, and
-  the total loop length changes accordingly. So `E_off` is the *second* pacing dial.
+  the total loop length changes accordingly. So `E_off` is the _second_ pacing dial.
 - The population windows here are the **age boundaries from the roadmap's 7-age model**, not
   the per-battle `popMin`/`popMax` windows from `temp/campaign_v2.json` (those are a separate
   pacing layer for battle entrance, handled by Milestone 8 and the pacing simulation).
@@ -314,13 +314,12 @@ Reading the matrix:
 
 Notes for the Balance agent:
 
-- This is a *scenario*, not the plan. The priority is that the loop feels right for a
+- This is a _scenario_, not the plan. The priority is that the loop feels right for a
   first-time player, with the 10-billion goal as the first-loop end — not that it fit on
   seven calendar days.
 - Active time per age and `E_off` are the two cross-cutting pacing dials. Pacing tests
   (Milestone 10) should verify that the walker reaches 10 billion in a plausible session
   budget without requiring the player to babysit the game through middle ages.
-
 
 Define minimum damage, armor interaction, attack cooldown, range rules, and target selection. Add deterministic tests for melee, ranged, armor, and defeated units before adding animations.
 
@@ -380,7 +379,11 @@ type SimulationResult = {
   ticksToGoal: number;
   estimatedMinutes: number;
   milestones: Array<{ label: string; tick: number }>;
-  series: Array<{ tick: number; population: number; resources: ResourceAmounts }>;
+  series: Array<{
+    tick: number;
+    population: number;
+    resources: ResourceAmounts;
+  }>;
   bottlenecks: string[];
 };
 ```
@@ -425,7 +428,7 @@ Balance target: reaching 10 billion should be a substantial campaign milestone, 
 ## Recommended order
 
 1. Refactor definitions into data modules.
-2. Define the seven-age progression with population thresholds.
+2. Define the seven-age progression with data-driven building thresholds.
 3. Introduce command-style engine actions and result events.
 4. Add statistics from those events.
 5. Add JSON saves and migrations.

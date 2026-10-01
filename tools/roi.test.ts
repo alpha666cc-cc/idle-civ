@@ -194,7 +194,7 @@ describe("simulation ROI evaluation", () => {
       .map(({ key }) => key);
     const ready = makeState({
       people: 1000,
-      buildings: { farm: 250, university: 1 },
+      buildings: { farm: 500, university: 1 },
       defeatedEncounters: ageZeroBattles,
     });
     expect(ready.canEnterAge("age0")).toBe(true);
@@ -229,7 +229,7 @@ describe("simulation ROI evaluation", () => {
       .map(({ key }) => key);
     let state = makeState({
       people: 1000,
-      buildings: { farm: 250, university: 1 },
+      buildings: { farm: 500, university: 1 },
       defeatedEncounters: ageZeroBattles,
     });
     const ageResearch = researchDefinitions.filter(({ age }) => age === 0);

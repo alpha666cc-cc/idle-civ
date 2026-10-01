@@ -64,7 +64,11 @@ type CategoryTab = {
   icon: LucideIcon;
 };
 
-type FactorTab = "additional" | "additiveMultiplier" | "multiplicative" | "drain";
+type FactorTab =
+  | "additional"
+  | "additiveMultiplier"
+  | "multiplicative"
+  | "drain";
 
 const categoryTabs: CategoryTab[] = [
   { category: "resource", label: "Resources", icon: Leaf },
@@ -363,12 +367,8 @@ export default function GamepediaModal({
             Per unit: base → growth → percentage → flat, on a base × growth^√n
             curve. Costs floor at 0; growth floors at 1.01.
           </p>
-          <p>
-            Base multiplier: ×{formatAmount(reductions.base)}
-          </p>
-          <p>
-            Growth power: ^{formatAmount(reductions.factor)}
-          </p>
+          <p>Base multiplier: ×{formatAmount(reductions.base)}</p>
+          <p>Growth power: ^{formatAmount(reductions.factor)}</p>
           <p>
             Cost remaining after percentage reductions:{" "}
             {formatAmount(reductions.percent.mul(ExpNumber.fromNumber(100)))}%
@@ -551,7 +551,8 @@ export default function GamepediaModal({
           {formatAmount(summary.additional)}
           {derived && ")"}
           {" × "}
-          {formatAmount(summary.totalMultiplier)} − {formatAmount(summary.drain)}
+          {formatAmount(summary.totalMultiplier)} −{" "}
+          {formatAmount(summary.drain)}
           {" = "}
           <strong>
             {formatAmount(summary.result)}
@@ -568,11 +569,11 @@ export default function GamepediaModal({
     const rate = gameState.computeResourceRate(key);
     const factors = gameState.getProductionFactors(key);
     const factorTabs: FactorTab[] = [
-    "additional",
-    "additiveMultiplier",
-    "multiplicative",
-    "drain",
-  ];
+      "additional",
+      "additiveMultiplier",
+      "multiplicative",
+      "drain",
+    ];
     const isPopulation = key === "population";
     const hasWorkers = productionDefinitions.some(
       ({ key: resourceKey }) => resourceKey === key,
@@ -626,9 +627,7 @@ export default function GamepediaModal({
               {hasWorkers && workerProduction !== undefined && (
                 <div className="gamepedia-stat">
                   <span>Workers</span>
-                  <strong>
-                    {formatCount(workerProduction.workers)}
-                  </strong>
+                  <strong>{formatCount(workerProduction.workers)}</strong>
                 </div>
               )}
               {workerProduction !== undefined && (
@@ -821,11 +820,10 @@ export default function GamepediaModal({
           ))}
         </div>
         <p className="gamepedia-recap">
-          Research is priced by the age you are in ({ageName ?? "unknown"}),
-          not by the tech's own age, and the counter restarts on every age
-          change — {gameState.getResearchCount()} bought this age. Buying a tech
-          from an earlier age costs this same price and does not advance the
-          counter.
+          Research is priced by the age you are in ({ageName ?? "unknown"}), not
+          by the tech's own age, and the counter restarts on every age change —{" "}
+          {gameState.getResearchCount()} bought this age. Buying a tech from an
+          earlier age costs this same price and does not advance the counter.
         </p>
 
         {research.bonuses.length > 0 && (
@@ -1023,6 +1021,10 @@ export default function GamepediaModal({
   const renderUnitDetail = (entry: GamepediaEntry) => {
     const unit = entry.object as UnitDefinition;
     const effective = gameState.getUnitStats(unit.key) ?? unit.stats;
+    const unitCosts = gameState.getUnitCost(unit.key);
+    const costParameters = gameState.getUnitCostParameters(unit.key);
+    const { sources, reductions } = gameState.getUnitCostModifiers(unit.key);
+    const owned = gameState.getUnitCount(unit.key);
     return (
       <div className="gamepedia-detail">
         {renderDetailHeader(entry)}
@@ -1049,13 +1051,67 @@ export default function GamepediaModal({
         </div>
         {unit.costs.length > 0 ? (
           <>
-            <p className="gamepedia-category">Base cost (next unit)</p>
-            <div className="gamepedia-stats">
-              {unit.costs.map(({ resource, base }) => (
-                <div className="gamepedia-stat" key={resource}>
-                  <span>{renderReference(resource)}</span>
-                  <strong>{formatAmount(base)}</strong>
+            <p className="gamepedia-category">Price (next unit)</p>
+            <div className="gamepedia-cost-list">
+              {unitCosts.map(({ resource, base }) => {
+                const factor = costParameters.find(
+                  ({ cost }) => cost.resource === resource,
+                )?.unitFactor;
+                return (
+                  <div className="gamepedia-cost-row" key={resource}>
+                    <div className="gamepedia-cost-copy">
+                      {renderReference(resource)}
+                      {factor && (
+                        <span className="gamepedia-cost-meta">
+                          growth ×{formatAmount(factor)}^√n (effective)
+                        </span>
+                      )}
+                    </div>
+                    <strong className="gamepedia-cost-next">
+                      {formatAmount(base)} next
+                    </strong>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="gamepedia-category">Cost reductions</p>
+            <div className="gamepedia-recap">
+              <p>
+                Owned: {formatCount(owned)}. Per unit: base → growth →
+                percentage → flat, on a base × growth^√n curve. Costs floor at
+                0; growth floors at 1.01.
+              </p>
+              <p>Base multiplier: ×{formatAmount(reductions.base)}</p>
+              <p>Growth power: ^{formatAmount(reductions.factor)}</p>
+              <p>
+                Cost remaining after percentage reductions:{" "}
+                {formatAmount(
+                  reductions.percent.mul(ExpNumber.fromNumber(100)),
+                )}
+                %
+              </p>
+              <p>
+                Flat reduction per cost resource:{" "}
+                {formatAmount(reductions.flat)}
+              </p>
+              {costParameters.map(({ cost, unitBase, unitFactor }) => (
+                <div key={cost.resource}>
+                  {renderReference(cost.resource)}
+                  <p>
+                    Base: {formatAmount(cost.base)} → {formatAmount(unitBase)}
+                  </p>
+                  <p>
+                    Growth: ×{formatAmount(cost.factor)} → ×
+                    {formatAmount(unitFactor)}
+                  </p>
                 </div>
+              ))}
+              {sources.length === 0 && <p>No active cost reductions.</p>}
+              {sources.map(([source, bonus], index) => (
+                <p key={`${source}-${index}`}>
+                  {renderReference(source)} — {bonusEffectLabel(bonus)}:{" "}
+                  {bonusValueText(bonus, numberFormat)}
+                </p>
               ))}
             </div>
           </>

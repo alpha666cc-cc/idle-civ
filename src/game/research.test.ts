@@ -8,6 +8,8 @@ import {
 import { emptyStatistics } from "./statistics";
 import { ExpNumber } from "./expNumber";
 import { findAgeDefinition, ageDefinitions } from "./ages";
+import { encounterDefinitions } from "./encounters";
+import type { BuildingKey } from "./buildings";
 import {
   findResearchDefinition,
   researchDefinitions,
@@ -25,10 +27,8 @@ import { UpgradeDefinition, upgradeDefinitions } from "./upgrades";
 import { parseBonus } from "./bonus";
 
 /**
- * An age0 state with a pool of science to buy research with. `people` defaults
- * to 1 so `getCurrentAge()` has a population to read; research is priced by the
- * age the player is *in*, so a test that wants age1 pricing must raise it past
- * age1's threshold.
+ * An age0 state with a pool of science to buy research with. Research is priced
+ * by the first age not yet completed, so age1 pricing needs age0 in enteredAges.
  */
 const stateWith = (
   science: number,
@@ -36,6 +36,11 @@ const stateWith = (
   unitCounts: Record<string, ExpNumber> = {},
   people = 1,
   boughtUpgrades: string[] = [],
+  defeatedEncounters: string[] = [],
+  builtBuildings: Partial<Record<BuildingKey, number>> = {
+    townHall: 1,
+    people,
+  },
 ): CivilizationState =>
   new CivilizationState(
     {
@@ -43,12 +48,12 @@ const stateWith = (
       science: ExpNumber.fromNumber(science),
     },
     emptyWorkerAssignments(),
-    { townHall: 1, people },
+    builtBuildings,
     emptyResourceFactors(),
     {},
     0,
     boughtUpgrades,
-    [],
+    defeatedEncounters,
     enteredAges,
     [],
     emptyStatistics(),
@@ -59,6 +64,30 @@ const stateWith = (
     false,
     [],
   );
+
+describe("age progression", () => {
+  const ageZeroBattles = encounterDefinitions
+    .filter(({ age }) => age === 0)
+    .map(({ key }) => key);
+
+  it("keeps the current age ordered regardless of population", () => {
+    expect(stateWith(0, [], {}, 1e12).getCurrentAge()?.key).toBe("age0");
+    expect(stateWith(0, ["age0"], {}, 1).getCurrentAge()?.key).toBe("age1");
+  });
+
+  it("uses the age building threshold to gate completion", () => {
+    const belowTarget = stateWith(0, [], {}, 1, [], ageZeroBattles, {
+      townHall: 1499,
+    });
+    const atTarget = stateWith(0, [], {}, 1, [], ageZeroBattles, {
+      townHall: 1500,
+    });
+
+    expect(belowTarget.getAgeBuildingProgress()).toEqual([1499, 1500]);
+    expect(belowTarget.canEnterAge("age0")).toBe(false);
+    expect(atTarget.canEnterAge("age0")).toBe(true);
+  });
+});
 
 /** Buys a tech's full transitive prerequisite closure, deepest first. */
 const buyPrerequisiteClosure = (
@@ -170,7 +199,7 @@ const buildCostState = (bonus: {
       ),
     );
   }
-  return stateWith(1e30, ["age0"], {}, 1, [key]);
+  return stateWith(1e30, [], {}, 1, [key]);
 };
 
 describe("research buying", () => {
@@ -178,7 +207,7 @@ describe("research buying", () => {
   const second = researchDefinitions[1];
 
   it("charges the current age's base for its first tech, then climbs by its factor", () => {
-    const state = stateWith(1e10).enterAge("age0");
+    const state = stateWith(1e10);
     expect(state.getResearchNextCost()[0].resource).toBe("science");
     expect(state.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(
       age0Schedule.base.toNumber(),
@@ -201,7 +230,7 @@ describe("research buying", () => {
   it("costs every tech on the current age's schedule, whatever age it comes from", () => {
     // Research is priced by the age the player is IN, not the tech's own age:
     // in the Iron Age even an age-0 tech costs the Iron Age price.
-    const state = stateWith(1e30, ["age0"], {}, 2000).enterAge("age1");
+    const state = stateWith(1e30, ["age0"]);
     expect(state.getCurrentAge()?.key).toBe("age1");
     expect(state.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(
       age1FirstPrice(),
@@ -211,14 +240,14 @@ describe("research buying", () => {
 
   it("resets the research counter on an age change", () => {
     // The counter is per age, so a new age starts again at its own base.
-    let state = stateWith(1e30, ["age0"]);
+    let state = stateWith(1e30);
     state = buyPrerequisiteClosure(state, second.key);
     state = state.buyResearch(first.key);
     state = state.buyResearch(second.key);
     expect(state.getResearchCount()).toBe(2);
 
-    // Cross age1's 1,000-citizen threshold and enter it: the counter is 0 again.
-    const inAge1 = stateWith(1e30, ["age0"], {}, 2000).enterAge("age1");
+    // Complete age0 and enter age1: the counter is 0 again.
+    const inAge1 = stateWith(1e30, ["age0"]);
     expect(inAge1.getResearchCount()).toBe(0);
     expect(inAge1.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(
       age1FirstPrice(),
@@ -229,7 +258,7 @@ describe("research buying", () => {
   it("does not advance the counter for a tech bought from an earlier age", () => {
     // Buying an age-0 tech while in the Iron Age pays the Iron Age price but
     // leaves the Iron Age counter untouched, so the next tech costs the same.
-    let state = stateWith(1e30, ["age0"], {}, 2000).enterAge("age1");
+    let state = stateWith(1e30, ["age0"]);
     const priceBefore = state.getResearchNextCost()[0].base.toNumber();
 
     const age0Tech = researchDefinitions.find(
@@ -260,13 +289,13 @@ describe("research buying", () => {
    */
   describe("research cost pipeline", () => {
     it("uses the age's own base for the first tech", () => {
-      const state = stateWith(1e30, ["age0"]);
+      const state = stateWith(1e30);
       const firstCost = state.getResearchNextCost()[0].base.toNumber();
       expect(firstCost).toBeCloseTo(age0Schedule.base.toNumber(), 9);
     });
 
     it("scales with purchase count using sqrt curve", () => {
-      const state = stateWith(1e30, ["age0"]);
+      const state = stateWith(1e30);
       const costs = state.getResearchCostForCount(3);
       expect(costs).toHaveLength(1);
       // Read the base from ages.json: a rebalance of the schedule must not stale
@@ -280,10 +309,10 @@ describe("research buying", () => {
       // Research is not a building. `writing` grants a 50% `allBuildings` cost
       // discount, and the Master Builder chain drives the global
       // `buildingCostMultiplier` stat: neither may reach a research price.
-      let state = stateWith(1e30, ["age0"]);
-      expect(state.getResearchCostModifiers().reductions.percent.toNumber()).toBe(
-        1,
-      );
+      let state = stateWith(1e30);
+      expect(
+        state.getResearchCostModifiers().reductions.percent.toNumber(),
+      ).toBe(1);
 
       state = buyPrerequisiteClosure(state, "writing").buyResearch("writing");
 
@@ -292,11 +321,15 @@ describe("research buying", () => {
         state.getBuildingCostModifiers("farm").reductions.percent.toNumber(),
       ).toBeLessThan(1);
       // ...while research keeps the plain age schedule.
-      expect(state.getResearchCostModifiers().reductions.percent.toNumber()).toBe(
+      expect(
+        state.getResearchCostModifiers().reductions.percent.toNumber(),
+      ).toBe(1);
+      expect(state.getResearchCostModifiers().reductions.base.toNumber()).toBe(
         1,
       );
-      expect(state.getResearchCostModifiers().reductions.base.toNumber()).toBe(1);
-      expect(state.getResearchCostModifiers().globalMultiplier.toNumber()).toBe(1);
+      expect(state.getResearchCostModifiers().globalMultiplier.toNumber()).toBe(
+        1,
+      );
     });
 
     it("applies a costReductionBase naming research to the base term", () => {
@@ -308,13 +341,18 @@ describe("research buying", () => {
         destination: "research",
         value: 0.5,
       });
-      expect(state.getResearchCostModifiers().reductions.base.toNumber()).toBe(0.5);
+      expect(state.getResearchCostModifiers().reductions.base.toNumber()).toBe(
+        0.5,
+      );
       expect(state.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(
         age0Schedule.base.toNumber() * 0.5,
         9,
       );
       // It scales the curve, not just the first unit: n=2 halves too.
-      const n2 = state.buyResearch(first.key).getResearchNextCost()[0].base.toNumber();
+      const n2 = state
+        .buyResearch(first.key)
+        .getResearchNextCost()[0]
+        .base.toNumber();
       expect(n2).toBeCloseTo(age0Price(2) * 0.5, 6);
     });
 
@@ -342,7 +380,7 @@ describe("research buying", () => {
     it("sums the per-unit price across a multi-tech purchase", () => {
       // getResearchCostForCount(n) must be the sum of n consecutive unit prices,
       // not one price scaled by n — each unit walks the sqrt curve.
-      const state = stateWith(1e30, ["age0"]);
+      const state = stateWith(1e30);
       expect(state.getResearchCostForCount(3)[0].base.toNumber()).toBeCloseTo(
         age0Price(1) + age0Price(2) + age0Price(3),
         6,
@@ -358,11 +396,10 @@ describe("research buying", () => {
         ["age2", 20000],
         ["age3", 2000000],
       ] as const) {
-        // Every earlier age is already completed, so `getCurrentAge()` lands on
-        // ageKey once the population clears its threshold.
+        // Every earlier age is completed, so `getCurrentAge()` lands on ageKey.
         const target = ageDefinitions.findIndex((a) => a.key === ageKey);
         const entered = ageDefinitions.slice(0, target).map(({ key }) => key);
-        const state = stateWith(1e30, entered, {}, people).enterAge(ageKey);
+        const state = stateWith(1e30, entered, {}, people);
         expect(state.getCurrentAge()?.key).toBe(ageKey);
         expect(state.getResearchCount()).toBe(0);
         const schedule = findAgeDefinition(ageKey)!.research;
@@ -377,7 +414,7 @@ describe("research buying", () => {
       // Guards the specific number: with no "research"-targeted discount the
       // first Iron Age tech must equal the age1 base to the last bit, i.e. the
       // curve term factor^(sqrt(1) - 1) resolves to exactly 1.
-      const state = stateWith(1e30, ["age0"], {}, 2000).enterAge("age1");
+      const state = stateWith(1e30, ["age0"]);
       const cost = state.getResearchNextCost()[0].base;
       expect(cost.eq(ExpNumber.fromNumber(1e9))).toBe(true);
       expect(cost.sub(ExpNumber.fromNumber(1e9)).toString()).toBe("0");
@@ -392,7 +429,9 @@ describe("research buying", () => {
         destination: "research",
         value: 0.5,
       });
-      expect(withPercent.getResearchCostModifiers().reductions.percent.toNumber()).toBe(0.5);
+      expect(
+        withPercent.getResearchCostModifiers().reductions.percent.toNumber(),
+      ).toBe(0.5);
       expect(withPercent.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(
         age0Schedule.base.toNumber() * 0.5,
         9,
@@ -403,19 +442,21 @@ describe("research buying", () => {
         destination: "research",
         value: 0.99,
       });
-      const plain = stateWith(1e30, ["age0"]);
+      const plain = stateWith(1e30);
       const curved = plain.buyResearch(first.key).buyResearch(second.key);
-      const discounted = withFactor.buyResearch(first.key).buyResearch(second.key);
-      expect(
-        discounted.getResearchNextCost()[0].base.toNumber(),
-      ).toBeLessThan(curved.getResearchNextCost()[0].base.toNumber());
+      const discounted = withFactor
+        .buyResearch(first.key)
+        .buyResearch(second.key);
+      expect(discounted.getResearchNextCost()[0].base.toNumber()).toBeLessThan(
+        curved.getResearchNextCost()[0].base.toNumber(),
+      );
     });
 
     it("re-prices research when the age changes", () => {
       // Each age owns its schedule, so crossing into age1 jumps to the age1 base
       // and the counter restarts — the opposite of the old flat global curve.
-      const age0State = stateWith(1e30, ["age0"]);
-      const age1State = stateWith(1e30, ["age0"], {}, 2000).enterAge("age1");
+      const age0State = stateWith(1e30);
+      const age1State = stateWith(1e30, ["age0"]);
 
       expect(age0State.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(
         age0Schedule.base.toNumber(),
@@ -429,7 +470,7 @@ describe("research buying", () => {
   });
 
   it("prices only unbought research needed for a new unit type", () => {
-    const state = stateWith(1e30).enterAge("age0");
+    const state = stateWith(1e30);
     const required = state.getResearchForUnitTypes(["slinger"]);
 
     expect(required.ids).toEqual(["agriculture", "pottery", "sling_throwing"]);
@@ -466,13 +507,13 @@ describe("research buying", () => {
 
     // Before the transition, age2 (Classical) has not been reached, so its
     // tech must stay locked even with unlimited science.
-    let state = stateWith(1e30, ["age0", "age1"]);
+    let state = stateWith(1e30, ["age0"]);
     expect(state.isResearchUnlocked(ageTwo.key)).toBe(false);
     expect(state.getResearchFailureReason(ageTwo.key)).toBe("locked");
     expect(state.buyResearch(ageTwo.key)).toBe(state);
 
     // Entering Classical unlocks age2 research once its prerequisites are met.
-    state = state.enterAge("age2");
+    state = state.enterAge("age1");
     expect(state.isResearchUnlocked(ageTwo.key)).toBe(
       ageTwo.prerequisites.every((prerequisite) =>
         state.boughtResearch.includes(prerequisite),
@@ -487,7 +528,7 @@ describe("research buying", () => {
 
     // The era card advances into the Iron Age; its own techs must be available
     // immediately, even though `age1` has not been completed yet.
-    let state = stateWith(1e30, ["age0"]).enterAge("age1");
+    let state = stateWith(1e30, ["age0"]);
     state = buyPrerequisiteClosure(state, ironAge.key);
     expect(state.isResearchUnlocked(ironAge.key)).toBe(true);
     expect(state.buyResearch(ironAge.key).isResearchBought(ironAge.key)).toBe(
@@ -498,7 +539,7 @@ describe("research buying", () => {
   it("pays science and applies bonuses through the shared factor path", () => {
     // Fund exactly the first tech's price for the age, read from ages.json so a
     // rebalance of the schedule does not turn this into a partial-payment test.
-    const entered = stateWith(age0Schedule.base.toNumber(), ["age0"]).enterAge("age0");
+    const entered = stateWith(age0Schedule.base.toNumber());
     const multiplier = first.bonuses.find(
       (bonus) => bonus.type === "attributeMultiplier",
     );
@@ -514,7 +555,7 @@ describe("research buying", () => {
   });
 
   it("is idempotent and refuses an unaffordable purchase", () => {
-    const entered = stateWith(age0Schedule.base.toNumber(), ["age0"]).enterAge("age0");
+    const entered = stateWith(age0Schedule.base.toNumber());
     const bought = entered.buyResearch(first.key);
     expect(bought.buyResearch(first.key)).toBe(bought);
     expect(bought.canBuyResearch(first.key)).toBe(false);
@@ -527,7 +568,7 @@ describe("research buying", () => {
     const child = researchDefinitions.find((r) => r.prerequisites.length > 0);
     expect(child).toBeDefined();
     if (!child) return;
-    const state = stateWith(1e12, ["age0"]).enterAge("age0");
+    const state = stateWith(1e12);
     // Child tech should be locked until prerequisites are bought
     expect(state.isResearchUnlocked(child.key)).toBe(false);
     expect(state.getResearchFailureReason(child.key)).toBe("locked");
@@ -576,7 +617,7 @@ describe("research buying", () => {
     ).toBe(true);
 
     const state = buyPrerequisiteClosure(
-      stateWith(1e30, ["age0"]).enterAge("age1"),
+      stateWith(1e30, ["age0"]),
       "iron_shielding",
     ).buyResearch("iron_shielding");
     expect(state.isResearchBought("iron_shielding")).toBe(true);
@@ -603,7 +644,7 @@ describe("research unlocks units", () => {
     const unitId = unlocker.unlocks[0];
     const unit = unitDefinitions.find((candidate) => candidate.key === unitId);
     expect(isBuyableUnit(unit!)).toBe(true);
-    let state = stateWith(1e30, ["age0"]).enterAge("age1");
+    let state = stateWith(1e30);
     state = buyPrerequisiteClosure(state, unlocker.key);
     state = state.buyResearch(unlocker.key);
     expect(state.isResearchBought(unlocker.key)).toBe(true);
@@ -620,9 +661,11 @@ describe("research unit conversions", () => {
   });
   if (!conversion) return;
   const { from, to, ratio } = conversion.conversions[0];
-  const pairKey = `age${conversion.age}`;
   const buyAt = (science: number, units: Record<string, ExpNumber> = {}) => {
-    let state = stateWith(science, [pairKey], units).enterAge(pairKey);
+    const enteredAges = ageDefinitions
+      .slice(0, conversion.age)
+      .map(({ key }) => key);
+    let state = stateWith(science, enteredAges, units);
     state = buyPrerequisiteClosure(state, conversion.key);
     return state.buyResearch(conversion.key);
   };
@@ -649,9 +692,7 @@ describe("research unit conversions", () => {
 
 describe("research in the save system", () => {
   it("round-trips bought research through a save document", () => {
-    const state = stateWith(1e10, ["age0"])
-      .enterAge("age0")
-      .buyResearch("agriculture");
+    const state = stateWith(1e10).buyResearch("agriculture");
     const data = createSaveData(state, "guid", 1000);
     const loaded = loadSaveData(data);
     expect(loaded.boughtResearch).toEqual(["agriculture"]);

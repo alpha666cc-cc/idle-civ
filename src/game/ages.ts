@@ -26,16 +26,12 @@ export type AgeResearchCost = {
   factor: number;
 };
 
-/** One age in the campaign: a population band with a name, optional unlocks, and
- * optional data-driven bonuses applied on entry (AGENTS.md §13.4). Bonuses reuse the
- * existing factor model (`attributeFlat`/`attributeMultiplier`/`attributeDrain`) and the
- * cost-reduction pipeline, so age awards are just another bonus source alongside upgrades,
- * encounters, research and achievements. */
+/** One ordered campaign age with its building target and optional entry bonuses. */
 export class AgeDefinition extends GameObject {
   readonly key: string;
   readonly name: string;
   readonly description: string;
-  readonly populationThreshold: number;
+  readonly buildingThreshold: number;
   readonly unlocks: readonly string[];
   readonly bonuses: readonly Bonus[];
   /** Resource prices this age scales up, applied from the moment it is entered. */
@@ -51,7 +47,7 @@ export class AgeDefinition extends GameObject {
     key: string,
     name: string,
     description: string,
-    populationThreshold: number,
+    buildingThreshold: number,
     unlocks: readonly string[] = [],
     bonuses: readonly Bonus[] = [],
     costMultipliers: readonly ResourceCostMultiplier[] = [],
@@ -61,7 +57,7 @@ export class AgeDefinition extends GameObject {
     this.key = key;
     this.name = name;
     this.description = description;
-    this.populationThreshold = populationThreshold;
+    this.buildingThreshold = buildingThreshold;
     this.unlocks = unlocks;
     this.bonuses = bonuses;
     this.costMultipliers = costMultipliers;
@@ -73,7 +69,7 @@ type AgeData = {
   key: string;
   name: string;
   description: string;
-  populationThreshold: number;
+  buildingThreshold: number;
   unlocks?: string[];
   bonuses?: {
     type: string;
@@ -89,7 +85,7 @@ const toAgeDefinition = (data: AgeData): AgeDefinition =>
     data.key,
     data.name,
     data.description,
-    data.populationThreshold,
+    data.buildingThreshold,
     data.unlocks ?? [],
     (data.bonuses ?? []).map((b) => parseBonus(b.type, b.destination, b.value)),
     (data.costMultipliers ?? []).map(({ resource, factor }) => ({
@@ -97,15 +93,16 @@ const toAgeDefinition = (data: AgeData): AgeDefinition =>
       factor: ExpNumber.from(factor),
     })),
     data.research
-      ? { base: ExpNumber.from(data.research.base), factor: data.research.factor }
+      ? {
+          base: ExpNumber.from(data.research.base),
+          factor: data.research.factor,
+        }
       : undefined,
   );
 
 export const ageDefinitions: AgeDefinition[] = ageData.map(toAgeDefinition);
 
-export const findAgeDefinition = (
-  ageId: string,
-): AgeDefinition | undefined =>
+export const findAgeDefinition = (ageId: string): AgeDefinition | undefined =>
   ageDefinitions.find(({ key }) => key === ageId);
 
 /** The age that owns a unit, so the engine can retire N-2 units on entry. */

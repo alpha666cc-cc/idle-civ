@@ -866,8 +866,7 @@ export class CivilizationState {
       ),
     };
     // Achievements are evaluated after the tick's changes so the check always runs
-    // after a domain event has landed (roadmap Milestone 6). Age-reach times are
-    // recorded first, so a record reflects the tick the threshold was met.
+    // after a domain event has landed (roadmap Milestone 6).
     return this.withState(
       resources,
       this.buildingCostOverrides,
@@ -879,7 +878,7 @@ export class CivilizationState {
       this.earnedAchievements,
       statistics,
     )
-      .recordReachedAges()
+      .recordCurrentAge()
       .checkAchievements();
   }
 
@@ -1398,10 +1397,7 @@ export class CivilizationState {
   ): CostParameters[] {
     return costs.map((cost) => ({
       cost,
-      unitBase: ExpNumber.max(
-        ExpNumber.ZERO,
-        cost.base.mul(reductions.base),
-      ),
+      unitBase: ExpNumber.max(ExpNumber.ZERO, cost.base.mul(reductions.base)),
       unitFactor: ExpNumber.max(
         ExpNumber.fromNumber(1.01),
         ExpNumber.fromNumber(cost.factor).pow(reductions.factor),
@@ -2435,22 +2431,15 @@ export class CivilizationState {
     return { ...times, [id]: this.statistics.runTimeMs };
   }
 
-  /**
-   * Records the run time at which each age's population threshold was first met.
-   * `getCurrentAge()` keys an age off population, so crossing the threshold is what
-   * "arriving" at an age means — the fastest time is the first tick that sees it.
-   * `enterAge()` records too (it is the later of the two events), and both go through
-   * the min-keeping `recordFastest()` rule, so the earliest sighting always wins.
-   */
-  private recordReachedAges(): CivilizationState {
-    let fastestAgeMs = this.statistics.fastestAgeMs;
-    for (const age of ageDefinitions) {
-      if (this.population.toNumber() < age.populationThreshold) continue;
-      if (fastestAgeMs[age.key] !== undefined) continue;
-      fastestAgeMs = { ...fastestAgeMs, [age.key]: this.statistics.runTimeMs };
-    }
-    if (fastestAgeMs === this.statistics.fastestAgeMs) return this;
-    return this.withStatistics({ ...this.statistics, fastestAgeMs });
+  /** Records the first time the ordered age progression reaches its current age. */
+  private recordCurrentAge(): CivilizationState {
+    const age = this.getCurrentAge();
+    if (!age || this.statistics.fastestAgeMs[age.key] !== undefined)
+      return this;
+    return this.withStatistics({
+      ...this.statistics,
+      fastestAgeMs: this.recordFastest(this.statistics.fastestAgeMs, age.key),
+    });
   }
 
   /** Play time (ms) of the fastest recorded run that won this encounter, if any. */
@@ -2921,7 +2910,7 @@ export class CivilizationState {
       this.earnedAchievements,
       statistics,
     )
-      .recordReachedAges()
+      .recordCurrentAge()
       .checkAchievements();
   }
 
@@ -2993,44 +2982,37 @@ export class CivilizationState {
     // capacity" with a data-driven path.
     const afterBonuses = this.applyAttributeBonuses(age.bonuses, ageId, this);
 
-    return afterBonuses.withState(
-      afterBonuses.resources,
-      afterBonuses.buildingCostOverrides,
-      afterBonuses.builtBuildings,
-      afterBonuses.autoClicksPerSecond,
-      afterBonuses.boughtUpgrades,
-      afterBonuses.defeatedEncounters,
-      [...afterBonuses.enteredAges, ageId],
-      afterBonuses.earnedAchievements,
-      {
-        ...afterBonuses.statistics,
-        fastestAgeMs: afterBonuses.recordFastest(
-          afterBonuses.statistics.fastestAgeMs,
-          ageId,
-        ),
-        wastedResources: afterBonuses.statistics.wastedResources.add(wasted),
-      },
-      newUnitCounts,
-    );
+    return afterBonuses
+      .withState(
+        afterBonuses.resources,
+        afterBonuses.buildingCostOverrides,
+        afterBonuses.builtBuildings,
+        afterBonuses.autoClicksPerSecond,
+        afterBonuses.boughtUpgrades,
+        afterBonuses.defeatedEncounters,
+        [...afterBonuses.enteredAges, ageId],
+        afterBonuses.earnedAchievements,
+        {
+          ...afterBonuses.statistics,
+          fastestAgeMs: afterBonuses.recordFastest(
+            afterBonuses.statistics.fastestAgeMs,
+            ageId,
+          ),
+          wastedResources: afterBonuses.statistics.wastedResources.add(wasted),
+        },
+        newUnitCounts,
+      )
+      .recordCurrentAge();
   }
 
-  /** The current age, based on population thresholds (highest threshold ≤ population).
-   *  Capped at the first unentered age so population can never skip an unfinished
-   *  age: the current age only advances past an age once it has been entered. */
+  /** Current age is the first age not yet completed, independent of population. */
   getCurrentAge(): AgeDefinition | undefined {
-    let popIndex = -1;
-    const pop = this.population.toNumber();
-    for (let i = 0; i < ageDefinitions.length; i++) {
-      if (pop >= ageDefinitions[i].populationThreshold) popIndex = i;
-    }
-    // Below the first threshold the village is still in the first age.
-    if (popIndex < 0) popIndex = 0;
     const firstUnentered = ageDefinitions.findIndex(
       (a) => !this.enteredAges.includes(a.key),
     );
-    // Every age entered: the pop-based age is current.
-    if (firstUnentered < 0) return ageDefinitions[popIndex];
-    return ageDefinitions[Math.min(popIndex, firstUnentered)];
+    const currentIndex =
+      firstUnentered < 0 ? ageDefinitions.length - 1 : firstUnentered;
+    return ageDefinitions[currentIndex];
   }
 
   /** Battle progress in the current age: [wonCount, totalCount]. */
@@ -3047,8 +3029,7 @@ export class CivilizationState {
     return [wonBattles, totalBattles];
   }
 
-  /** Building progress in the current age: [buildings, target].
-   *  Target is 125% of the age's pop max (the next age's population threshold). */
+  /** Building progress in the current age: [buildings, target]. */
   getAgeBuildingProgress(): [number, number] {
     const age = this.getCurrentAge();
     if (!age) return [0, 0];
@@ -3060,19 +3041,21 @@ export class CivilizationState {
     return [buildings, target];
   }
 
-  /** Building target for an age: 125% of the next age's threshold (this age's pop max). */
+  /** Total buildings required to complete the age. */
   private getAgeBuildingTarget(age: AgeDefinition): number {
-    const ageIndex = ageDefinitions.findIndex((a) => a.key === age.key);
-    const next = ageIndex >= 0 ? ageDefinitions[ageIndex + 1] : undefined;
-    const base = next ? next.populationThreshold : age.populationThreshold;
-    return Math.ceil(base * 1.25);
+    const ageIndex = ageDefinitions.findIndex(({ key }) => key === age.key);
+    if (ageIndex < 0) return age.buildingThreshold;
+    return (
+      ageDefinitions[ageIndex + 1]?.buildingThreshold ?? age.buildingThreshold
+    );
   }
 
-  /** Whether the player can enter the given age (battles done + buildings ≥ 125% age pop max). */
+  /** Whether the current age can be completed (all its battles + its building target). */
   canEnterAge(ageId: string): boolean {
     const age = findAgeDefinition(ageId);
     if (!age) return false;
     if (this.enteredAges.includes(ageId)) return false;
+    if (this.getCurrentAge()?.key !== ageId) return false;
 
     // Check battles: all battles in this age must be won
     const ageIndex = parseInt(age.key.slice(-1), 10);
@@ -3082,7 +3065,7 @@ export class CivilizationState {
     );
     if (!allBattlesWon) return false;
 
-    // Check buildings: total buildings ≥ 125% of the age's pop max
+    // Check buildings against this age's data-defined completion target.
     const target = this.getAgeBuildingTarget(age);
     const totalBuildings = Object.values(this.builtBuildings).reduce(
       (sum, count) => sum + count,

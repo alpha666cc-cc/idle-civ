@@ -4,7 +4,7 @@
     "key": "age0",
     "name": "Ancient",
     "description": "The first settlements rise from scattered families into a village. Fire, bronze, and the first walls.",
-    "populationThreshold": 0,
+    "buildingThreshold": 0,
     "unlocks": [],
     "research": { "base": 200, "factor": 12 },
     "bonuses": [
@@ -30,7 +30,7 @@
     "key": "age1",
     "name": "Iron Age",
     "description": "Iron replaces bronze. Empires rise on chariots and disciplined spearmen.",
-    "populationThreshold": 1000,
+    "buildingThreshold": 1500,
     "unlocks": [],
     "research": { "base": "1e9", "factor": 200 },
     "bonuses": [
@@ -51,7 +51,7 @@
     "key": "age2",
     "name": "Classical",
     "description": "City-states and legions. The old units fall, and a new order takes the field.",
-    "populationThreshold": 10000,
+    "buildingThreshold": 15000,
     "unlocks": [],
     "research": { "base": "1e15", "factor": 2000 },
     "bonuses": []
@@ -61,7 +61,7 @@
     "key": "age3",
     "name": "Middle Ages",
     "description": "Knights and castles. Feudal lords gather wealth across continents.",
-    "populationThreshold": 1000000,
+    "buildingThreshold": 1.5e6,
     "unlocks": [],
     "research": { "base": "1e21", "factor": 20000 },
     "bonuses": []
@@ -71,7 +71,7 @@
     "key": "age4",
     "name": "Renaissance",
     "description": "Artillery and exploration. The world grows smaller as empires reach across the sea.",
-    "populationThreshold": 100000000,
+    "buildingThreshold": 1.5e8,
     "unlocks": [],
     "research": { "base": "1e27", "factor": 200000 },
     "bonuses": []
@@ -81,7 +81,7 @@
     "key": "age5",
     "name": "Industrial",
     "description": "Railways, factories, and mass armies. The scale of war changes forever.",
-    "populationThreshold": 1000000000,
+    "buildingThreshold": 1.5e9,
     "unlocks": [],
     "research": { "base": "1e33", "factor": 2000000 },
     "bonuses": []
@@ -91,7 +91,7 @@
     "key": "age6",
     "name": "Modern / Space",
     "description": "Tanks, aircraft, and orbital weapons. The final age before the stars.",
-    "populationThreshold": 10000000000,
+    "buildingThreshold": 1.5e10,
     "unlocks": [],
     "research": { "base": "1e39", "factor": 20000000 },
     "bonuses": []

@@ -6,12 +6,17 @@
     "types": ["node"],
     "skipLibCheck": true,
 
-    /* Node mode */
-    "module": "nodenext",
+    /* Bundler mode — the tools run under tsx/vitest, and the `src/` modules they
+       import are written for bundler resolution (extensionless paths, JSON imports
+       without an attribute). `nodenext` would reject all of those. */
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "jsx": "react-jsx",
 
     /* Linting */
     "noUnusedLocals": true,

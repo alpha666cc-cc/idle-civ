@@ -25,10 +25,14 @@ import {
   emptyWorkerAssignments,
   productionDefinitions,
   type ProductionResourceKey,
+  type ResourceFactorSource,
 } from "../../src/game/attributes.js";
 import { achievementDefinitions } from "../../src/game/achievements.js";
 import { ageDefinitions } from "../../src/game/ages.js";
-import { buildingDefinitions, type BuildingKey } from "../../src/game/buildings.js";
+import {
+  buildingDefinitions,
+  type BuildingKey,
+} from "../../src/game/buildings.js";
 import { CivilizationState } from "../../src/game/civilizationState.js";
 import { encounterDefinitions } from "../../src/game/encounters.js";
 import { ExpNumber } from "../../src/game/expNumber.js";
@@ -42,28 +46,119 @@ for (let exponent = 1; exponent <= 10; exponent += 1)
   for (const lead of [1, 2, 5]) CITIZENS.push(lead * 10 ** exponent);
 
 /** The five resources the plan tracks. */
-const TRACKED: ProductionResourceKey[] = ["food", "wood", "stone", "gold", "science"];
+const TRACKED: ProductionResourceKey[] = [
+  "food",
+  "wood",
+  "stone",
+  "gold",
+  "science",
+];
 
-type InputRow = { key: string; label: string; value: number | string; note: string };
+type InputRow = {
+  key: string;
+  label: string;
+  value: number | string;
+  note: string;
+};
 
 /** Assumptions; the generated engine columns are measured with these values. */
 const INPUTS: InputRow[] = [
-  { key: "citizensPerFarm", label: "Citizens per farm", value: 5, note: "farm ≈ citizens / this" },
-  { key: "citizensPerLumberYard", label: "Citizens per lumber yard", value: 5, note: "lumber yard ≈ citizens / this" },
-  { key: "citizensPerQuarry", label: "Citizens per quarry", value: 5, note: "quarry ≈ citizens / this" },
-  { key: "citizensPerGoldMine", label: "Citizens per gold mine", value: 5, note: "gold mine ≈ citizens / this" },
-  { key: "citizensPerUniversity", label: "Citizens per university", value: 10, note: "university ≈ citizens / this" },
-  { key: "citizensPerBarracks", label: "Citizens per barracks", value: 10, note: "barracks ≈ citizens / this" },
-  { key: "citizensPerSmithy", label: "Citizens per smithy", value: 20, note: "smithy ≈ citizens / this" },
-  { key: "citizensPerHouse", label: "Citizens per house", value: 10, note: "houses = citizens / this (1 house = 10 people capacity)" },
-  { key: "housesPerTownHall", label: "Houses per town hall", value: 10, note: "town halls = houses / this (1 town hall = 10 house capacity)" },
-  { key: "shareFood", label: "Worker share: food", value: 0.4, note: "fraction of citizens on food" },
-  { key: "shareWood", label: "Worker share: wood", value: 0.2, note: "fraction of citizens on wood" },
-  { key: "shareStone", label: "Worker share: stone", value: 0.2, note: "fraction of citizens on stone" },
-  { key: "shareGold", label: "Worker share: gold", value: 0.2, note: "fraction of citizens on gold" },
-  { key: "shareScience", label: "Worker share: science", value: 0, note: "fraction of citizens on science" },
-  { key: "boughtResearchShare", label: "Research bought share", value: 1, note: "0..1 — share of the pre-age research assumed bought" },
-  { key: "targetBuilding", label: "Target building", value: "farm", note: "building whose next unit the timing columns price" },
+  {
+    key: "citizensPerFarm",
+    label: "Citizens per farm",
+    value: 5,
+    note: "farm ≈ citizens / this",
+  },
+  {
+    key: "citizensPerLumberYard",
+    label: "Citizens per lumber yard",
+    value: 5,
+    note: "lumber yard ≈ citizens / this",
+  },
+  {
+    key: "citizensPerQuarry",
+    label: "Citizens per quarry",
+    value: 5,
+    note: "quarry ≈ citizens / this",
+  },
+  {
+    key: "citizensPerGoldMine",
+    label: "Citizens per gold mine",
+    value: 5,
+    note: "gold mine ≈ citizens / this",
+  },
+  {
+    key: "citizensPerUniversity",
+    label: "Citizens per university",
+    value: 10,
+    note: "university ≈ citizens / this",
+  },
+  {
+    key: "citizensPerBarracks",
+    label: "Citizens per barracks",
+    value: 10,
+    note: "barracks ≈ citizens / this",
+  },
+  {
+    key: "citizensPerSmithy",
+    label: "Citizens per smithy",
+    value: 20,
+    note: "smithy ≈ citizens / this",
+  },
+  {
+    key: "citizensPerHouse",
+    label: "Citizens per house",
+    value: 10,
+    note: "houses = citizens / this (1 house = 10 people capacity)",
+  },
+  {
+    key: "housesPerTownHall",
+    label: "Houses per town hall",
+    value: 10,
+    note: "town halls = houses / this (1 town hall = 10 house capacity)",
+  },
+  {
+    key: "shareFood",
+    label: "Worker share: food",
+    value: 0.4,
+    note: "fraction of citizens on food",
+  },
+  {
+    key: "shareWood",
+    label: "Worker share: wood",
+    value: 0.2,
+    note: "fraction of citizens on wood",
+  },
+  {
+    key: "shareStone",
+    label: "Worker share: stone",
+    value: 0.2,
+    note: "fraction of citizens on stone",
+  },
+  {
+    key: "shareGold",
+    label: "Worker share: gold",
+    value: 0.2,
+    note: "fraction of citizens on gold",
+  },
+  {
+    key: "shareScience",
+    label: "Worker share: science",
+    value: 0,
+    note: "fraction of citizens on science",
+  },
+  {
+    key: "boughtResearchShare",
+    label: "Research bought share",
+    value: 1,
+    note: "0..1 — share of the pre-age research assumed bought",
+  },
+  {
+    key: "targetBuilding",
+    label: "Target building",
+    value: "farm",
+    note: "building whose next unit the timing columns price",
+  },
 ];
 
 const inputValue = (key: string): number =>
@@ -72,7 +167,8 @@ const inputString = (key: string): string =>
   String(INPUTS.find(({ key: entryKey }) => entryKey === key)?.value ?? "");
 
 const productionPerWorker = (resource: ProductionResourceKey): number =>
-  productionDefinitions.find(({ key }) => key === resource)?.productionPerWorker ?? 1;
+  productionDefinitions.find(({ key }) => key === resource)
+    ?.productionPerWorker ?? 1;
 
 type BuildingInfo = {
   key: BuildingKey;
@@ -163,13 +259,19 @@ const UPGRADES = upgradeDefinitions.map((upgrade) => ({
   threshold: upgrade.unlock.threshold,
 }));
 
-const RESEARCH = researchDefinitions as unknown as { key: string; age: number }[];
+const RESEARCH = researchDefinitions as unknown as {
+  key: string;
+  age: number;
+}[];
 const AGES = ageDefinitions as unknown as {
   key: string;
   name: string;
-  populationThreshold: number;
+  buildingThreshold: number;
 }[];
-const ENCOUNTERS = encounterDefinitions as unknown as { id: string; age: number }[];
+const ENCOUNTERS = encounterDefinitions as unknown as {
+  id: string;
+  age: number;
+}[];
 
 const ENCOUNTERS_IDS = new Set(ENCOUNTERS.map(({ id }) => id));
 const RESEARCH_IDS = new Set(RESEARCH.map(({ key }) => key));
@@ -177,8 +279,15 @@ const ACHIEVEMENT_IDS = new Set(ACHIEVEMENTS.map(({ key }) => key));
 const UPGRADE_IDS = new Set(UPGRADES.map(({ key }) => key));
 const BUILDING_IDS = new Set(BUILDINGS.map(({ key }) => key));
 
-/** Which bonus source a factor belongs to: the sheet's multiplier breakdown. */
-const categoryOf = (sourceId: string): string => {
+/**
+ * Which bonus source a factor belongs to: the sheet's multiplier breakdown.
+ *
+ * A factor source is a `ResourceFactorSource` — either a free-form id string or the
+ * `AttributeDefinition` the factor is attributed to — so resolve it to the id the
+ * registry sets are keyed by before classifying.
+ */
+const categoryOf = (source: ResourceFactorSource): string => {
+  const sourceId = typeof source === "string" ? source : source.key;
   if (BUILDING_IDS.has(sourceId as BuildingKey)) return "building";
   if (UPGRADE_IDS.has(sourceId)) return "upgrade";
   if (RESEARCH_IDS.has(sourceId)) return "research";
@@ -203,15 +312,27 @@ const countOf = (key: BuildingKey, citizens: number): number => {
     case "farm":
       return Math.max(1, Math.ceil(citizens / inputValue("citizensPerFarm")));
     case "lumberYard":
-      return Math.max(1, Math.ceil(citizens / inputValue("citizensPerLumberYard")));
+      return Math.max(
+        1,
+        Math.ceil(citizens / inputValue("citizensPerLumberYard")),
+      );
     case "quarry":
       return Math.max(1, Math.ceil(citizens / inputValue("citizensPerQuarry")));
     case "goldMine":
-      return Math.max(1, Math.ceil(citizens / inputValue("citizensPerGoldMine")));
+      return Math.max(
+        1,
+        Math.ceil(citizens / inputValue("citizensPerGoldMine")),
+      );
     case "university":
-      return Math.max(1, Math.ceil(citizens / inputValue("citizensPerUniversity")));
+      return Math.max(
+        1,
+        Math.ceil(citizens / inputValue("citizensPerUniversity")),
+      );
     case "barracks":
-      return Math.max(1, Math.ceil(citizens / inputValue("citizensPerBarracks")));
+      return Math.max(
+        1,
+        Math.ceil(citizens / inputValue("citizensPerBarracks")),
+      );
     case "smithy":
       return Math.max(1, Math.ceil(citizens / inputValue("citizensPerSmithy")));
     default:
@@ -221,13 +342,20 @@ const countOf = (key: BuildingKey, citizens: number): number => {
 
 const buildCounts = (citizens: number): Record<string, number> =>
   Object.fromEntries(
-    BUILDINGS.map((building) => [building.key, countOf(building.key, citizens)]),
+    BUILDINGS.map((building) => [
+      building.key,
+      countOf(building.key, citizens),
+    ]),
   );
 
-const ageIndexOf = (citizens: number): number => {
+const ageIndexOf = (counts: Record<string, number>): number => {
+  const totalBuildings = Object.values(counts).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
   let index = 0;
   AGES.forEach((age, position) => {
-    if (citizens >= age.populationThreshold) index = position;
+    if (totalBuildings >= age.buildingThreshold) index = position;
   });
   return index;
 };
@@ -241,18 +369,23 @@ type Assumptions = {
 };
 
 const assumedUpgrades = (counts: Record<string, number>): string[] =>
-  UPGRADES.filter((upgrade) => (counts[upgrade.building] ?? 0) >= upgrade.threshold).map(
-    ({ key }) => key,
-  );
+  UPGRADES.filter(
+    (upgrade) => (counts[upgrade.building] ?? 0) >= upgrade.threshold,
+  ).map(({ key }) => key);
 
 const assumedResearch = (ageIndex: number): string[] => {
   const available = RESEARCH.filter((research) => research.age < ageIndex);
   const share = inputValue("boughtResearchShare");
-  return available.slice(0, Math.round(available.length * share)).map(({ key }) => key);
+  return available
+    .slice(0, Math.round(available.length * share))
+    .map(({ key }) => key);
 };
 
 const workerAssignments = (citizens: number): Record<string, ExpNumber> => {
-  const workers = emptyWorkerAssignments() as unknown as Record<string, ExpNumber>;
+  const workers = emptyWorkerAssignments() as unknown as Record<
+    string,
+    ExpNumber
+  >;
   for (const resource of Object.keys(workers)) {
     const key = `share${resource.charAt(0).toUpperCase()}${resource.slice(1)}`;
     workers[resource] = ExpNumber.fromNumber(
@@ -271,7 +404,9 @@ const makeState = (
 ): CivilizationState => {
   const resources = emptyResourceAmounts();
   for (const [resource, amount] of Object.entries(stocks))
-    if (amount > 0) resources[resource as keyof typeof resources] = ExpNumber.fromNumber(amount);
+    if (amount > 0)
+      resources[resource as keyof typeof resources] =
+        ExpNumber.fromNumber(amount);
   return new CivilizationState(
     resources,
     workers as never,
@@ -333,13 +468,15 @@ type Measurement = {
 
 /** Everything the sheet needs about one citizen milestone, from the real engine. */
 const measure = (citizens: number): Measurement => {
-  const ageIndex = ageIndexOf(citizens);
   const counts = buildCounts(citizens);
+  const ageIndex = ageIndexOf(counts);
   const workers = workerAssignments(citizens);
   const assumptions: Assumptions = {
     upgrades: assumedUpgrades(counts),
     research: assumedResearch(ageIndex),
-    encounters: ENCOUNTERS.filter(({ age }) => age < ageIndex).map(({ id }) => id),
+    encounters: ENCOUNTERS.filter(({ age }) => age < ageIndex).map(
+      ({ id }) => id,
+    ),
     ages: AGES.slice(0, ageIndex + 1).map(({ key }) => key),
     achievements: [],
   };
@@ -352,19 +489,32 @@ const measure = (citizens: number): Measurement => {
   const targetCount = counts[targetBuilding] ?? 0;
   const targetCosts = preview
     .getBuildingCost(targetBuilding, targetCount, 1)
-    .map(({ resource, base: amount }) => ({ resource, amount: amount.toNumber() }));
+    .map(({ resource, base: amount }) => ({
+      resource,
+      amount: amount.toNumber(),
+    }));
   const researchScience = preview.getResearchNextCost()[0].base.toNumber();
   const stocks: Record<string, number> = { science: researchScience };
   for (const { resource, amount } of targetCosts)
     stocks[resource] = Math.max(stocks[resource] ?? 0, amount);
 
-  const state = makeState(counts, workers, { ...assumptions, achievements: previewEarned }, stocks);
+  const state = makeState(
+    counts,
+    workers,
+    // `earnedAchievements` is a readonly id list; `Assumptions` wants a mutable one.
+    { ...assumptions, achievements: [...previewEarned] },
+    stocks,
+  );
   const earned = state.checkAchievements().earnedAchievements;
 
   const engines: Measurement["engines"] = {};
   const categories: Measurement["categories"] = {};
   const rates: Record<string, number> = {};
-  for (const resource of [...TRACKED, "military", "metalwork"] as ProductionResourceKey[]) {
+  for (const resource of [
+    ...TRACKED,
+    "military",
+    "metalwork",
+  ] as ProductionResourceKey[]) {
     const summary = state.getModifierSummary(resource);
     engines[resource] = {
       additional: summary.additional.toNumber(),
@@ -429,7 +579,10 @@ const measure = (citizens: number): Measurement => {
     ageName: AGES[ageIndex]?.name ?? `Age ${ageIndex}`,
     counts,
     workers: Object.fromEntries(
-      Object.entries(workers).map(([resource, value]) => [resource, value.toNumber()]),
+      Object.entries(workers).map(([resource, value]) => [
+        resource,
+        value.toNumber(),
+      ]),
     ),
     rates,
     engines,
@@ -509,7 +662,10 @@ const cellXml = (cell: Cell): string => {
 const sheetXml = (name: string, rows: Cell[][]): string =>
   `<table:table table:name="${xmlEscape(name)}">` +
   rows
-    .map((row) => `<table:table-row>${row.map(cellXml).join("")}</table:table-row>`)
+    .map(
+      (row) =>
+        `<table:table-row>${row.map(cellXml).join("")}</table:table-row>`,
+    )
     .join("") +
   "</table:table>";
 
@@ -555,7 +711,9 @@ const csvCell = (cell: Cell): string => {
     return Number.isFinite(cell) ? String(cell) : cell > 0 ? "inf" : "-inf";
   if (typeof cell === "string") return cell;
   if ("text" in cell) return cell.text;
-  return typeof cell.value === "number" ? String(cell.value) : String(cell.value);
+  return typeof cell.value === "number"
+    ? String(cell.value)
+    : String(cell.value);
 };
 
 const csvText = (rows: Cell[][]): string =>
@@ -613,11 +771,19 @@ const constantsRows = (): Cell[][] => {
     ["ppwWood", "Production per worker: wood", productionPerWorker("wood")],
     ["ppwStone", "Production per worker: stone", productionPerWorker("stone")],
     ["ppwGold", "Production per worker: gold", productionPerWorker("gold")],
-    ["ppwScience", "Production per worker: science", productionPerWorker("science")],
+    [
+      "ppwScience",
+      "Production per worker: science",
+      productionPerWorker("science"),
+    ],
     ["universityScience", "Science per university per second", 1],
     ["citizenDrain", "Food eaten per citizen per second", 1],
     ["researchFirstCost", "Science for the first research", 100],
-    ["researchCostFactor", "Research price factor on the square-root curve", 10],
+    [
+      "researchCostFactor",
+      "Research price factor on the square-root curve",
+      10,
+    ],
     ["upgradeTierMultiplier", "Production per upgrade tier", 2],
   ];
   constants.forEach(([key, label, value], index) => {
@@ -629,13 +795,47 @@ const constantsRows = (): Cell[][] => {
 
 const buildingsRows = (): Cell[][] => {
   const rows: Cell[][] = [
-    ["Buildings — costs in the engine's own slot order", null, null, null, null, null, null, null, null, null, null, "own effect", null, "own production", null],
-    ["key", "name", "slot 1 resource", "slot 1 base", "slot 1 factor", "slot 2 resource", "slot 2 base", "slot 2 factor", "slot 3 resource", "slot 3 base", "slot 3 factor", "multiplier resource", "multiplier factor", "production resource", "production amount"],
+    [
+      "Buildings — costs in the engine's own slot order",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "own effect",
+      null,
+      "own production",
+      null,
+    ],
+    [
+      "key",
+      "name",
+      "slot 1 resource",
+      "slot 1 base",
+      "slot 1 factor",
+      "slot 2 resource",
+      "slot 2 base",
+      "slot 2 factor",
+      "slot 3 resource",
+      "slot 3 base",
+      "slot 3 factor",
+      "multiplier resource",
+      "multiplier factor",
+      "production resource",
+      "production amount",
+    ],
   ];
   BUILDINGS.forEach((building, index) => {
     if (index === 0) DATA.buildingFirstRow = rows.length + 1;
     BUILDING_ROW.set(building.key, rows.length + 1);
-    const definition = buildingDefinitions.find(({ key }) => key === building.key);
+    const definition = buildingDefinitions.find(
+      ({ key }) => key === building.key,
+    );
     const row: Cell[] = [building.key, building.name];
     for (let slot = 0; slot < 3; slot += 1) {
       const cost = definition?.costs[slot];
@@ -664,7 +864,17 @@ const chainRows = (): Cell[][] => {
     ),
   );
   const rows: Cell[][] = [
-    ["Achievement multiplier chains — buildingCount threshold → multiplier", null, null, null, null, null, null, null, null],
+    [
+      "Achievement multiplier chains — buildingCount threshold → multiplier",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ],
     ["tier", "threshold", ...TRACKED_CHAIN_RESOURCES],
   ];
   DATA.chainFirstRow = rows.length + 1;
@@ -693,8 +903,11 @@ const upgradeRows = (): Cell[][] => {
   ];
   for (const building of UPGRADE_BUILDINGS) {
     const resource =
-      BUILDINGS.find(({ key }) => key === building)?.multiplier?.resource ?? building;
-    const thresholds = UPGRADES.filter((upgrade) => upgrade.building === building)
+      BUILDINGS.find(({ key }) => key === building)?.multiplier?.resource ??
+      building;
+    const thresholds = UPGRADES.filter(
+      (upgrade) => upgrade.building === building,
+    )
       .map((upgrade) => upgrade.threshold)
       .sort((left, right) => left - right);
     const first = rows.length + 1;
@@ -716,25 +929,52 @@ const hoarderRows = (): Cell[][] => [
 
 const agesRows = (): Cell[][] => [
   ["Ages", null, null],
-  ["index", "age", "population threshold"],
-  ...AGES.map((age, index) => [index, age.name, age.populationThreshold] as Cell[]),
+  ["index", "age", "building threshold"],
+  ...AGES.map(
+    (age, index) => [index, age.name, age.buildingThreshold] as Cell[],
+  ),
 ];
 
 const notesRows = (): Cell[][] => [
   ["How to read this workbook"],
   [""],
-  ["Plan", "one row per citizen milestone (10 … 10 B). (model) columns are formulas over Inputs + Data; (engine) columns are values read from the real game engine for the assumed build. Change an Inputs value to re-price the model columns — the engine columns stay as measured."],
-  ["Targets", "one row per milestone × building: the next unit's cost, the capacity limit and the time to afford it at that milestone's rates."],
-  ["Assumed build", "houses = citizens / Inputs.citizensPerHouse; town halls = houses / Inputs.housesPerTownHall; every other building = citizens / its ratio, rounded up. The engine is measured with exactly these counts, so the engine and model columns start in agreement."],
-  ["Workers", "citizens × the worker-share inputs, rounded down. Each worker produces 1/s (food, wood, stone, gold) or 0.1/s (science)."],
-  ["Production (engine)", "the engine's own rate: (Σ flat) × (Π multipliers) − (Σ drain). Food carries the citizen upkeep, −1/s per citizen."],
-  ["Multiplier columns", "building × = the building's own per-unit factor ^ count; achievement × = the ‹resource›-multiplier chain tiers unlocked by that building count; upgrade × = ×2 per enhancer tier passed; other × = research + battle + age bonuses (engine values — edit them to test a different research pace)."],
-  ["Times", "next building = the slowest of its cost resources (unit cost / that resource's production). Next research = the current age's base × factor^(√n − 1), where n counts research bought in that age (restarting at each age change). 'Time incl. research' takes the slower of the two, because science and resources accrue in parallel."],
-  ["Approximations", "upgrades are assumed bought as soon as their buildingCount threshold is met; research is assumed bought for every earlier age (Inputs.boughtResearchShare trims that); battles are assumed won for every earlier age; resources are assumed held at exactly the next purchase's cost, which is what unlocks the hoarder tiers."],
-  ["Reading the balance", "the engine columns are the current data's answer, not a target. Where they explode or stall is what to tune — start with the cost factors on Data and the ratios on Inputs."],
+  [
+    "Plan",
+    "one row per citizen milestone (10 … 10 B). (model) columns are formulas over Inputs + Data; (engine) columns are values read from the real game engine for the assumed build. Change an Inputs value to re-price the model columns — the engine columns stay as measured.",
+  ],
+  [
+    "Targets",
+    "one row per milestone × building: the next unit's cost, the capacity limit and the time to afford it at that milestone's rates.",
+  ],
+  [
+    "Assumed build",
+    "houses = citizens / Inputs.citizensPerHouse; town halls = houses / Inputs.housesPerTownHall; every other building = citizens / its ratio, rounded up. The engine is measured with exactly these counts, so the engine and model columns start in agreement.",
+  ],
+  [
+    "Workers",
+    "citizens × the worker-share inputs, rounded down. Each worker produces 1/s (food, wood, stone, gold) or 0.1/s (science).",
+  ],
+  [
+    "Production (engine)",
+    "the engine's own rate: (Σ flat) × (Π multipliers) − (Σ drain). Food carries the citizen upkeep, −1/s per citizen.",
+  ],
+  [
+    "Multiplier columns",
+    "building × = the building's own per-unit factor ^ count; achievement × = the ‹resource›-multiplier chain tiers unlocked by that building count; upgrade × = ×2 per enhancer tier passed; other × = research + battle + age bonuses (engine values — edit them to test a different research pace).",
+  ],
+  [
+    "Times",
+    "next building = the slowest of its cost resources (unit cost / that resource's production). Next research = the current age's base × factor^(√n − 1), where n counts research bought in that age (restarting at each age change). 'Time incl. research' takes the slower of the two, because science and resources accrue in parallel.",
+  ],
+  [
+    "Approximations",
+    "upgrades are assumed bought as soon as their buildingCount threshold is met; research is assumed bought for every earlier age (Inputs.boughtResearchShare trims that); battles are assumed won for every earlier age; resources are assumed held at exactly the next purchase's cost, which is what unlocks the hoarder tiers.",
+  ],
+  [
+    "Reading the balance",
+    "the engine columns are the current data's answer, not a target. Where they explode or stall is what to tune — start with the cost factors on Data and the ratios on Inputs.",
+  ],
 ];
-
-
 
 // --- Plan / Inputs / Targets rows -------------------------------------------
 
@@ -754,7 +994,15 @@ const PLAN_BUILDINGS: BuildingKey[] = [
   "smithy",
 ];
 const WORKER_RESOURCES = ["food", "wood", "stone", "gold", "science"];
-const PLAN_RESOURCES = ["food", "wood", "stone", "gold", "science", "military", "metalwork"];
+const PLAN_RESOURCES = [
+  "food",
+  "wood",
+  "stone",
+  "gold",
+  "science",
+  "military",
+  "metalwork",
+];
 const RES_SLOTS = [
   "production",
   "structural",
@@ -787,44 +1035,63 @@ const multiplierBuilding = (resource: string): BuildingInfo | undefined =>
   BUILDINGS.find((building) => building.multiplier?.resource === resource);
 
 const close = (model: number, engine: number): boolean =>
-  model === engine || Math.abs(model - engine) <= 1e-6 * Math.max(1, Math.abs(engine));
+  model === engine ||
+  Math.abs(model - engine) <= 1e-6 * Math.max(1, Math.abs(engine));
 
 /** Numeric side of every Plan model column: what the formulas evaluate to. */
 const resourceModels = (m: Measurement): Record<string, ResourceModel> => {
   const models: Record<string, ResourceModel> = {};
   for (const resource of PLAN_RESOURCES) {
-    const engine = m.engines[resource] ?? { additional: 0, multiplier: 1, drain: 0, result: 0 };
+    const engine = m.engines[resource] ?? {
+      additional: 0,
+      multiplier: 1,
+      drain: 0,
+      result: 0,
+    };
     let structural = 0;
     if (WORKER_RESOURCES.includes(resource))
       structural +=
-        (m.workers[resource] ?? 0) * productionPerWorker(resource as ProductionResourceKey);
+        (m.workers[resource] ?? 0) *
+        productionPerWorker(resource as ProductionResourceKey);
     for (const building of BUILDINGS)
       if (building.production?.resource === resource)
-        structural += (m.counts[building.key] ?? 0) * building.production.amount;
+        structural +=
+          (m.counts[building.key] ?? 0) * building.production.amount;
     const flats = engine.additional - structural;
     const owned = multiplierBuilding(resource);
-    const buildingX = owned ? owned.multiplier!.factor ** (m.counts[owned.key] ?? 0) : 1;
+    const buildingX = owned
+      ? owned.multiplier!.factor ** (m.counts[owned.key] ?? 0)
+      : 1;
     const ownerCount = m.counts[OWNER_BUILDING[resource]] ?? 0;
     const chainX = (MULTIPLIER_CHAINS[resource] ?? []).reduce(
-      (product, tier) => (ownerCount >= tier.threshold ? product * tier.value : product),
+      (product, tier) =>
+        ownerCount >= tier.threshold ? product * tier.value : product,
       1,
     );
     const achievementX = m.categories[resource]?.achievement ?? 1;
     const tiersPassed = UPGRADES.filter(
       (upgrade) =>
-        upgrade.building === OWNER_BUILDING[resource] && upgrade.threshold <= ownerCount,
+        upgrade.building === OWNER_BUILDING[resource] &&
+        upgrade.threshold <= ownerCount,
     ).length;
     const upgradeX = DATA.upgradeRows[resource] ? 2 ** tiersPassed : 1;
     const categories = m.categories[resource] ?? {};
     const otherX = Object.entries(categories)
-      .filter(([key]) => key !== "building" && key !== "upgrade" && key !== "achievement")
+      .filter(
+        ([key]) =>
+          key !== "building" && key !== "upgrade" && key !== "achievement",
+      )
       .reduce((product, [, value]) => product * value, 1);
     const engineBuilding = categories.building ?? 1;
     const engineUpgrade = categories.upgrade ?? 1;
     if (!close(buildingX, engineBuilding))
-      MISMATCHES.push(`${resource}@${m.citizens}: building ${buildingX} vs engine ${engineBuilding}`);
+      MISMATCHES.push(
+        `${resource}@${m.citizens}: building ${buildingX} vs engine ${engineBuilding}`,
+      );
     if (!close(upgradeX, engineUpgrade))
-      MISMATCHES.push(`${resource}@${m.citizens}: upgrade ${upgradeX} vs engine ${engineUpgrade}`);
+      MISMATCHES.push(
+        `${resource}@${m.citizens}: upgrade ${upgradeX} vs engine ${engineUpgrade}`,
+      );
     models[resource] = {
       structural,
       flats,
@@ -833,7 +1100,9 @@ const resourceModels = (m: Measurement): Record<string, ResourceModel> => {
       achievement: achievementX,
       upgrade: upgradeX,
       other: otherX,
-      production: (structural + flats) * buildingX * achievementX * upgradeX * otherX - engine.drain,
+      production:
+        (structural + flats) * buildingX * achievementX * upgradeX * otherX -
+        engine.drain,
       singulars: chainX > 0 ? achievementX / chainX : achievementX,
     };
   }
@@ -842,17 +1111,21 @@ const resourceModels = (m: Measurement): Record<string, ResourceModel> => {
 
 const inputsRows = (): Cell[][] => [
   ["Balance inputs", null, null, null],
-  ["edit the value column — the Plan and Targets model columns re-price from it"],
+  [
+    "edit the value column — the Plan and Targets model columns re-price from it",
+  ],
   ["label", "value", "key", "note"],
-  ...INPUTS.map((entry) => [entry.label, entry.value, entry.key, entry.note] as Cell[]),
+  ...INPUTS.map(
+    (entry) => [entry.label, entry.value, entry.key, entry.note] as Cell[],
+  ),
 ];
 
 /** Which ratio input prices each Plan building count. */
 const RATIO_INPUT: Record<string, string> = {
   farm: "citizensPerFarm",
-  "lumberYard": "citizensPerLumberYard",
+  lumberYard: "citizensPerLumberYard",
   quarry: "citizensPerQuarry",
-  "goldMine": "citizensPerGoldMine",
+  goldMine: "citizensPerGoldMine",
   university: "citizensPerUniversity",
   barracks: "citizensPerBarracks",
   smithy: "citizensPerSmithy",
@@ -924,8 +1197,10 @@ const planLayout = (): PlanCols => {
   };
   cols.citizens = push("Milestone", "citizens");
   push("Milestone", "age (engine)");
-  for (const key of PLAN_BUILDINGS) cols.count[key] = push("Buildings (model)", key);
-  for (const key of WORKER_RESOURCES) cols.worker[key] = push("Workers (model)", key);
+  for (const key of PLAN_BUILDINGS)
+    cols.count[key] = push("Buildings (model)", key);
+  for (const key of WORKER_RESOURCES)
+    cols.worker[key] = push("Workers (model)", key);
   for (const resource of PLAN_RESOURCES) {
     cols.res[resource] = {};
     for (const slot of RES_SLOTS)
@@ -980,7 +1255,9 @@ const planResourceRow = (
     const buildingRow = BUILDING_ROW.get(building.key);
     const countColumn = cols.count[building.key];
     if (buildingRow === undefined || countColumn === undefined) continue;
-    terms.push(`${ref(countColumn, n)}*${dataRef("Buildings", 15, buildingRow)}`);
+    terms.push(
+      `${ref(countColumn, n)}*${dataRef("Buildings", 15, buildingRow)}`,
+    );
   }
   cells.push(
     terms.length > 0
@@ -1014,14 +1291,21 @@ const planResourceRow = (
     cells.push(
       Math.abs(model.singulars - 1) < 1e-12
         ? { formula: `=${chain}`, value: model.achievement }
-        : { formula: `=(${chain})*${model.singulars}`, value: model.achievement },
+        : {
+            formula: `=(${chain})*${model.singulars}`,
+            value: model.achievement,
+          },
     );
   } else cells.push(model.achievement); // achievement x (model)
 
   const upgradeRange = DATA.upgradeRows[resource];
   if (upgradeRange && ownerColumn !== undefined) {
     const parts: string[] = [];
-    for (let upgradeRow = upgradeRange[0]; upgradeRow <= upgradeRange[1]; upgradeRow += 1)
+    for (
+      let upgradeRow = upgradeRange[0];
+      upgradeRow <= upgradeRange[1];
+      upgradeRow += 1
+    )
       parts.push(
         `IF(${ref(ownerColumn, n)}>=[Upgrades.$C$${upgradeRow}];${dataRef("Data", 3, DATA.constants.upgradeTierMultiplier)};1)`,
       );
@@ -1053,7 +1337,8 @@ const planData = (
 
   for (const key of PLAN_BUILDINGS) {
     const value = m.counts[key] ?? 0;
-    if (key === "people") row.push({ formula: `=${ref(cols.citizens, n)}`, value });
+    if (key === "people")
+      row.push({ formula: `=${ref(cols.citizens, n)}`, value });
     else if (key === "house")
       row.push({
         formula: `=MAX(1;ROUNDUP(${ref(cols.citizens, n)}/${inputRef("citizensPerHouse")};0))`,
@@ -1068,7 +1353,12 @@ const planData = (
       const inputKey = RATIO_INPUT[key];
       const input = inputKey ? inputRef(inputKey) : null;
       row.push(
-        input ? { formula: `=MAX(1;ROUNDUP(${ref(cols.citizens, n)}/${input};0))`, value } : value,
+        input
+          ? {
+              formula: `=MAX(1;ROUNDUP(${ref(cols.citizens, n)}/${input};0))`,
+              value,
+            }
+          : value,
       );
     }
   }
@@ -1086,7 +1376,9 @@ const planData = (
 
   const sentinel = "POWER(10;307)";
   const targetKey = inputString("targetBuilding");
-  const targetDefinition = buildingDefinitions.find(({ key }) => key === targetKey);
+  const targetDefinition = buildingDefinitions.find(
+    ({ key }) => key === targetKey,
+  );
   const targetCountColumn = cols.count[targetKey];
   row.push(targetKey);
   row.push(
@@ -1141,21 +1433,31 @@ const planData = (
   row.push(Math.max(m.target.seconds, m.nextResearch.seconds));
   row.push({
     formula: `=MAX(${ref(cols.targetModelSeconds, n)};${ref(cols.researchModelSeconds, n)})`,
-    value: Math.max(rawSeconds, scienceRate > 0 ? modelScienceCost / scienceRate : 1e307),
+    value: Math.max(
+      rawSeconds,
+      scienceRate > 0 ? modelScienceCost / scienceRate : 1e307,
+    ),
   });
   row.push(m.clickPower, m.earned, m.boughtUpgrades);
   return row;
 };
 
-const planRows = (measurements: Measurement[]): { rows: Cell[][]; cols: PlanCols } => {
+const planRows = (
+  measurements: Measurement[],
+): { rows: Cell[][]; cols: PlanCols } => {
   const cols = planLayout();
   const rows: Cell[][] = [cols.groupRow, cols.headerRow];
-  measurements.forEach((m, index) => rows.push(planData(m, cols, resourceModels(m), 3 + index)));
+  measurements.forEach((m, index) =>
+    rows.push(planData(m, cols, resourceModels(m), 3 + index)),
+  );
   return { rows, cols };
 };
 
 /** One row per milestone × building: price and timing of that next unit. */
-const targetsRows = (measurements: Measurement[], planCols: PlanCols): Cell[][] => {
+const targetsRows = (
+  measurements: Measurement[],
+  planCols: PlanCols,
+): Cell[][] => {
   const headers: Cell[] = [
     "citizens",
     "building",
@@ -1201,7 +1503,10 @@ const targetsRows = (measurements: Measurement[], planCols: PlanCols): Cell[][] 
         m.citizens,
         building.key,
         countColumn !== undefined
-          ? { formula: `=${otherSheetRef("Plan", countColumn, planRow)}`, value: target.count }
+          ? {
+              formula: `=${otherSheetRef("Plan", countColumn, planRow)}`,
+              value: target.count,
+            }
           : target.count,
         target.capacity,
       ];
@@ -1316,9 +1621,18 @@ const main = (): void => {
   // `sim-output/` is gitignored; the dir may not exist on a fresh clone.
   const outDir = path.join(process.cwd(), "sim-output");
   fs.mkdirSync(outDir, { recursive: true });
-  fs.writeFileSync(path.join(outDir, "balance-plan.fods"), fodsDocument(sheets), "utf8");
-  fs.writeFileSync(path.join(outDir, "balance-plan.csv"), csvText(plan), "utf8");
-  for (const line of new Set(MISMATCHES)) console.warn(`model vs engine: ${line}`);
+  fs.writeFileSync(
+    path.join(outDir, "balance-plan.fods"),
+    fodsDocument(sheets),
+    "utf8",
+  );
+  fs.writeFileSync(
+    path.join(outDir, "balance-plan.csv"),
+    csvText(plan),
+    "utf8",
+  );
+  for (const line of new Set(MISMATCHES))
+    console.warn(`model vs engine: ${line}`);
   console.log(
     `wrote sim-output/balance-plan.fods (${sheets.length} sheets) and ` +
       `sim-output/balance-plan.csv ` +
@@ -1327,6 +1641,3 @@ const main = (): void => {
 };
 
 main();
-
-
-

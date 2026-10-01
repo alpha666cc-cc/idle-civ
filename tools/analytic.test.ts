@@ -31,8 +31,13 @@ describe("the closed-form cost inversion", () => {
     // above the true one. Two decimals is the honest tolerance; the error does not
     // grow with count, which is the property that matters at scale.
     for (const count of [100, 1000, 5000, 50_000]) {
-      const engineCost = engine.getBuildingCost("farm", 0, count)[0].base.toNumber();
-      expect(countAffordableBy("farm", "food", engineCost)).toBeCloseTo(count, 2);
+      const engineCost = engine
+        .getBuildingCost("farm", 0, count)[0]
+        .base.toNumber();
+      expect(countAffordableBy("farm", "food", engineCost)).toBeCloseTo(
+        count,
+        2,
+      );
     }
   });
 
@@ -42,8 +47,13 @@ describe("the closed-form cost inversion", () => {
     // That is a documented limitation, asserted so it stays visible rather than
     // being discovered later as a surprise.
     for (const count of [500, 1000, 5000]) {
-      const engineCost = engine.getBuildingCost("people", 0, count)[0].base.toNumber();
-      expect(countAffordableBy("people", "food", engineCost)).toBeCloseTo(count, 4);
+      const engineCost = engine
+        .getBuildingCost("people", 0, count)[0]
+        .base.toNumber();
+      expect(countAffordableBy("people", "food", engineCost)).toBeCloseTo(
+        count,
+        4,
+      );
     }
     // Below the crossover it is an over-estimate, never an under-estimate.
     const small = engine.getBuildingCost("people", 0, 10)[0].base.toNumber();
@@ -66,15 +76,22 @@ describe("the closed-form cost inversion", () => {
 
   it("reads the same curve the engine uses, not a hardcoded one", () => {
     // A data change to the base or factor must move both sides together.
-    const engineCost = engine.getBuildingCost("quarry", 0, 250)[0].base.toNumber();
-    expect(countAffordableBy("quarry", "stone", engineCost)).toBeCloseTo(250, 4);
+    const engineCost = engine
+      .getBuildingCost("quarry", 0, 250)[0]
+      .base.toNumber();
+    expect(countAffordableBy("quarry", "stone", engineCost)).toBeCloseTo(
+      250,
+      4,
+    );
   });
 });
 
 describe("the housing chain", () => {
   it("supports the population it is asked for", () => {
     for (const population of [10, 100, 1000, 10000]) {
-      expect(housingFor(population).supported).toBeGreaterThanOrEqual(population);
+      expect(housingFor(population).supported).toBeGreaterThanOrEqual(
+        population,
+      );
     }
   });
 
@@ -122,10 +139,9 @@ describe("the exact inverse direction", () => {
     // Costs move with the bonus stack too — research and enhancers both cut them —
     // so this pins the bare stack, where the engine's own cost is the reference.
     const engine = new CivilizationState();
-    expect(describeEconomy({ farm: 100 }, undefined, "bare").cost.food).toBeCloseTo(
-      engine.getBuildingCost("farm", 0, 100)[0].base.toNumber(),
-      6,
-    );
+    expect(
+      describeEconomy({ farm: 100 }, undefined, "bare").cost.food,
+    ).toBeCloseTo(engine.getBuildingCost("farm", 0, 100)[0].base.toNumber(), 6);
   });
 
   it("scales production with the farm count", () => {
@@ -136,24 +152,26 @@ describe("the exact inverse direction", () => {
 });
 
 describe("the realistic bonus stack", () => {
-  it("enters every age the population has passed", () => {
+  it("enters ages according to total buildings, not population bands", () => {
     expect(contextForScale({ people: 0 }).ages).toEqual(["age0"]);
-    expect(contextForScale({ people: 1000 }).ages).toContain("age1");
-    expect(contextForScale({ people: 10_000 }).ages).toContain("age2");
+    expect(contextForScale({ people: 1500 }).ages).toContain("age1");
+    expect(contextForScale({ people: 15_000 }).ages).toContain("age2");
     // An unreached age must not leak into the context.
-    expect(contextForScale({ people: 999 }).ages ?? []).not.toContain("age1");
+    expect(contextForScale({ people: 1499 }).ages ?? []).not.toContain("age1");
   });
 
   it("closes the research tree over the ages it has entered", () => {
     const early = contextForScale({ people: 0 }).boughtResearch ?? [];
-    const later = contextForScale({ people: 10_000 }).boughtResearch ?? [];
+    const later = contextForScale({ people: 15_000 }).boughtResearch ?? [];
     expect(early.length).toBeGreaterThan(0);
     expect(later.length).toBeGreaterThan(early.length);
   });
 
   it("respects research prerequisites rather than granting a whole age", () => {
     // The tree is a DAG, so the bought set must be closed under prerequisites.
-    const bought = new Set(contextForScale({ people: 10_000 }).boughtResearch ?? []);
+    const bought = new Set(
+      contextForScale({ people: 15_000 }).boughtResearch ?? [],
+    );
     expect(bought.size).toBeGreaterThan(0);
     for (const id of bought) {
       // Every prerequisite of a bought tech must itself be bought.
@@ -166,17 +184,29 @@ describe("the realistic bonus stack", () => {
   });
 
   it("unlocks the enhancer tiers the building counts reach", () => {
-    expect(contextForScale({ farm: 5 }).upgrades ?? []).not.toContain("farmEnhancer9");
-    expect(contextForScale({ farm: 9 }).upgrades ?? []).toContain("farmEnhancer9");
-    expect(contextForScale({ farm: 98 }).upgrades ?? []).toContain("farmEnhancer98");
+    expect(contextForScale({ farm: 5 }).upgrades ?? []).not.toContain(
+      "farmEnhancer9",
+    );
+    expect(contextForScale({ farm: 9 }).upgrades ?? []).toContain(
+      "farmEnhancer9",
+    );
+    expect(contextForScale({ farm: 98 }).upgrades ?? []).toContain(
+      "farmEnhancer98",
+    );
   });
 
   it("is far above the bare stack, and the gap widens with scale", () => {
     // The regression this guards: reporting a bare shape as if it were a real one
     // understated 500-farm food production by a factor of 8e15.
-    const bare = describeEconomy({ farm: 500, people: 1000 }, undefined, "bare");
+    const bare = describeEconomy(
+      { farm: 500, people: 1000 },
+      undefined,
+      "bare",
+    );
     const real = describeEconomy({ farm: 500, people: 1000 });
-    expect(real.production.food ?? 0).toBeGreaterThan((bare.production.food ?? 0) * 1e12);
+    expect(real.production.food ?? 0).toBeGreaterThan(
+      (bare.production.food ?? 0) * 1e12,
+    );
   });
 
   it("defaults to the settled stack so the bare reading cannot be mistaken for it", () => {
@@ -187,8 +217,10 @@ describe("the realistic bonus stack", () => {
     );
     // And the three tiers must be strictly ordered: bare < realistic < settled.
     const bare = describeEconomy(shape, undefined, "bare").production.food ?? 0;
-    const realistic = describeEconomy(shape, undefined, "realistic").production.food ?? 0;
-    const settled = describeEconomy(shape, undefined, "settled").production.food ?? 0;
+    const realistic =
+      describeEconomy(shape, undefined, "realistic").production.food ?? 0;
+    const settled =
+      describeEconomy(shape, undefined, "settled").production.food ?? 0;
     expect(realistic).toBeGreaterThan(bare);
     expect(settled).toBeGreaterThan(realistic);
   });
@@ -221,14 +253,23 @@ describe("settling a settlement for its achievement set", () => {
   });
 
   it("accumulates real holdings over the settle window", () => {
-    const settled = settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 3600 });
+    const settled = settleAchievements(
+      { farm: 500, people: 1000 },
+      { settleSeconds: 3600 },
+    );
     expect(settled.held.food ?? 0).toBeGreaterThan(0);
     expect(settled.held.wood ?? 0).toBeGreaterThan(0);
   });
 
   it("earns at least as much the longer it settles", () => {
-    const short = settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 60 });
-    const long = settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 7200 });
+    const short = settleAchievements(
+      { farm: 500, people: 1000 },
+      { settleSeconds: 60 },
+    );
+    const long = settleAchievements(
+      { farm: 500, people: 1000 },
+      { settleSeconds: 7200 },
+    );
     expect(long.earned).toBeGreaterThanOrEqual(short.earned);
     expect(long.held.food ?? 0).toBeGreaterThan(short.held.food ?? 0);
   });
@@ -239,12 +280,16 @@ describe("settling a settlement for its achievement set", () => {
     const shape = { farm: 500, people: 1000 };
     const realistic = describeEconomy(shape, undefined, "realistic");
     const settled = describeEconomy(shape, undefined, "settled");
-    expect(settled.production.food ?? 0).toBeGreaterThan(realistic.production.food ?? 0);
+    expect(settled.production.food ?? 0).toBeGreaterThan(
+      realistic.production.food ?? 0,
+    );
   });
 
   it("makes the same shape much cheaper, because research cuts costs", () => {
     const shape = { farm: 500, people: 1000 };
-    expect(describeEconomy(shape, undefined, "settled").cost.food ?? 0).toBeLessThan(
+    expect(
+      describeEconomy(shape, undefined, "settled").cost.food ?? 0,
+    ).toBeLessThan(
       describeEconomy(shape, undefined, "realistic").cost.food ?? Infinity,
     );
   });
@@ -254,7 +299,8 @@ describe("settling a settlement for its achievement set", () => {
     // longer windows score worse. Pinned so a re-tune has to be deliberate.
     expect(calibratedSettleSeconds).toBe(60);
     expect(settleAchievements({ farm: 500, people: 1000 }).held.food).toBe(
-      settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 60 }).held.food,
+      settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 60 })
+        .held.food,
     );
   });
 
@@ -262,17 +308,28 @@ describe("settling a settlement for its achievement set", () => {
     // The counter-intuitive result worth protecting: more accrual grants hoarder
     // tiers a real run has not reached, because the static stack already supplied
     // the implied bonus tier.
-    const short = settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 60 });
-    const long = settleAchievements({ farm: 500, people: 1000 }, { settleSeconds: 28800 });
+    const short = settleAchievements(
+      { farm: 500, people: 1000 },
+      { settleSeconds: 60 },
+    );
+    const long = settleAchievements(
+      { farm: 500, people: 1000 },
+      { settleSeconds: 28800 },
+    );
     expect(long.earned).toBeGreaterThan(short.earned);
   });
 
   it("does not grant battles to a shape that cannot field an army", () => {
     // The recorded run has not won `wolfSlayer` while holding a 10-farm
     // settlement; granting an entered age's whole encounter list over-reported.
-    expect(contextForScale({ farm: 10, people: 90 }).defeatedEncounters).toHaveLength(0);
     expect(
-      (contextForScale({ farm: 10, people: 90, barracks: 5 }).defeatedEncounters ?? []).length,
+      contextForScale({ farm: 10, people: 90 }).defeatedEncounters,
+    ).toHaveLength(0);
+    expect(
+      (
+        contextForScale({ farm: 10, people: 90, barracks: 5 })
+          .defeatedEncounters ?? []
+      ).length,
     ).toBeGreaterThan(0);
   });
 
@@ -400,10 +457,10 @@ describe("the probe state", () => {
   });
 
   it("raises capacity so a shape is never silently truncated", () => {
-    expect(probeState({ farm: 500 }).buildingCount("farm")).toBe(500);
+    expect(probeState({ farm: 500 }).getBuildingCount("farm")).toBe(500);
   });
 
   it("refuses fractional counts rather than storing them", () => {
-    expect(probeState({ farm: 10.9 }).buildingCount("farm")).toBe(10);
+    expect(probeState({ farm: 10.9 }).getBuildingCount("farm")).toBe(10);
   });
 });

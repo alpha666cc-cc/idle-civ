@@ -709,7 +709,11 @@ describe("required progression strategy", () => {
       unitCounts: { warrior: 1_000_000 },
     });
     expect(
-      strategy.decideAction(beforeFirst, { gameTime: 0, snapshots: [], timing: zeroTiming })?.type,
+      strategy.decideAction(beforeFirst, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      })?.type,
     ).not.toBe("launchBattle");
 
     const atFirst = makeState({
@@ -719,7 +723,11 @@ describe("required progression strategy", () => {
       unitCounts: { warrior: 1_000_000 },
     });
     expect(
-      strategy.decideAction(atFirst, { gameTime: 0, snapshots: [], timing: zeroTiming }),
+      strategy.decideAction(atFirst, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      }),
     ).toEqual({ type: "launchBattle", encounterId: firstBattle.key });
 
     const beforeSecond = makeState({
@@ -730,7 +738,11 @@ describe("required progression strategy", () => {
       defeatedEncounters: [firstBattle.key],
     });
     expect(
-      strategy.decideAction(beforeSecond, { gameTime: 0, snapshots: [], timing: zeroTiming })?.type,
+      strategy.decideAction(beforeSecond, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      })?.type,
     ).not.toBe("launchBattle");
 
     const atSecond = makeState({
@@ -741,7 +753,11 @@ describe("required progression strategy", () => {
       defeatedEncounters: [firstBattle.key],
     });
     expect(
-      strategy.decideAction(atSecond, { gameTime: 0, snapshots: [], timing: zeroTiming })?.type,
+      strategy.decideAction(atSecond, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      })?.type,
     ).toBe("launchBattle");
   });
 
@@ -834,7 +850,11 @@ describe("required progression strategy", () => {
     });
 
     expect(
-      strategy.decideAction(state, { gameTime: 0, snapshots: [], timing: zeroTiming }),
+      strategy.decideAction(state, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      }),
     ).toEqual({ type: "buyResearch", researchId: "agriculture" });
     expect(strategy.simulatorPlanCalls).toBe(0);
   });
@@ -896,15 +916,14 @@ describe("required progression strategy", () => {
 
   it("advances the age whenever the engine allows it, whatever the population", () => {
     // Regression: the strategy helper used to add its own population gate, so a
-    // run that had won every age0 battle and cleared the building target still
-    // sat at 999 citizens — one short of the next age's 1000 threshold — and
-    // never asked to advance, even though `canEnterAge` said it could.
+    // run that met the building target and won every age0 battle still did not
+    // ask to advance when population was below the indicative 1,000 mark.
     const ageZeroBattles = encounterDefinitions
       .filter(({ age }) => age === 0)
       .map(({ key }) => key);
     const state = makeState({
       people: 999,
-      // Clears the 125% building target for age0 with room to spare.
+      // Clears the 1,500-building target for age0 with room to spare.
       buildings: { farm: 1200 },
       resources: richResources,
       defeatedEncounters: ageZeroBattles,
@@ -946,7 +965,11 @@ describe("required progression strategy", () => {
       4,
     );
     expect(
-      strategy?.decideAction(state, { gameTime: 0, snapshots: [], timing: zeroTiming }),
+      strategy?.decideAction(state, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      }),
     ).toEqual({
       type: "buyUnit",
       unitId: "warrior",
@@ -975,7 +998,11 @@ describe("required progression strategy", () => {
     expect(plan).not.toBeNull();
     expect(plan?.research.ids).toEqual([]);
     expect(
-      strategy?.decideAction(state, { gameTime: 0, snapshots: [], timing: zeroTiming })?.type,
+      strategy?.decideAction(state, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      })?.type,
     ).not.toBe("buyResearch");
   });
 
@@ -997,15 +1024,27 @@ describe("required progression strategy", () => {
     });
 
     expect(
-      strategy.decideAction(state, { gameTime: 0, snapshots, timing: zeroTiming }),
+      strategy.decideAction(state, {
+        gameTime: 0,
+        snapshots,
+        timing: zeroTiming,
+      }),
     ).toEqual({
       type: "build",
       building: "house",
       count: 1,
     });
-    strategy.decideAction(state, { gameTime: 30, snapshots, timing: zeroTiming });
+    strategy.decideAction(state, {
+      gameTime: 30,
+      snapshots,
+      timing: zeroTiming,
+    });
     expect(strategy.simulatorPlanCalls).toBe(1);
-    strategy.decideAction(state, { gameTime: 60, snapshots, timing: zeroTiming });
+    strategy.decideAction(state, {
+      gameTime: 60,
+      snapshots,
+      timing: zeroTiming,
+    });
     expect(strategy.simulatorPlanCalls).toBe(2);
   });
 
@@ -1099,8 +1138,7 @@ describe("required progression strategy", () => {
     };
     // A run that reached here had already bought every upgrade it could afford,
     // so none is left to divert the ladder above the worker step.
-    const boughtUpgrades =
-      makeState(fixture).getAffordableUpgrades?.() ?? [];
+    const boughtUpgrades = makeState(fixture).getAffordableUpgrades?.() ?? [];
     let state = makeState({ ...fixture, boughtUpgrades });
 
     const labels: string[] = [];
@@ -1160,7 +1198,11 @@ describe("required progression strategy", () => {
       resources: { ...richResources, peopleCapacity: 100 },
     });
     expect(
-      strategy.decideAction(atGate, { gameTime: 90, snapshots: [], timing: zeroTiming }),
+      strategy.decideAction(atGate, {
+        gameTime: 90,
+        snapshots: [],
+        timing: zeroTiming,
+      }),
     ).toEqual({
       type: "build",
       building: "barracks",
@@ -1174,7 +1216,7 @@ describe("required progression strategy", () => {
       .map(({ key }) => key);
     const ready = makeState({
       people: 1000,
-      buildings: { farm: 250 },
+      buildings: { farm: 499 },
       resources: richResources,
       defeatedEncounters: ageZeroBattles,
     });
@@ -1202,7 +1244,7 @@ describe("required progression strategy", () => {
       .map(({ key }) => key);
     const ready = makeState({
       people: 1000,
-      buildings: { farm: 250 },
+      buildings: { farm: 500 },
       resources: richResources,
       defeatedEncounters: ageZeroBattles,
     });
@@ -1230,7 +1272,7 @@ describe("required progression strategy", () => {
       .map(({ key }) => key);
     const ready = makeState({
       people: 1000,
-      buildings: { farm: 250 },
+      buildings: { farm: 499 },
       resources: richResources,
       defeatedEncounters: ageZeroBattles,
     });
@@ -1238,13 +1280,13 @@ describe("required progression strategy", () => {
     // only asks for battles and buildings — so this is still ready to advance.
     const oneCitizenShort = makeState({
       people: 999,
-      buildings: { farm: 250 },
+      buildings: { farm: 500 },
       resources: richResources,
       defeatedEncounters: ageZeroBattles,
     });
     const missingBattle = makeState({
       people: 1000,
-      buildings: { farm: 250 },
+      buildings: { farm: 499 },
       resources: richResources,
       defeatedEncounters: ageZeroBattles.slice(1),
     });

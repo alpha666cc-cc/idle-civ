@@ -197,8 +197,10 @@ describe("simulation trade advisor", () => {
     // two decisions: free it, then take it.
     const freed = routed.setTradeRoute("wood", { enabled: false });
     const next = getTradeRouteAction(freed, fullProfile);
-    expect(next?.resource).toBe("food");
-    expect(next?.route.enabled).toBe(true);
+    expect(next?.type).toBe("setTradeRoute");
+    if (next?.type !== "setTradeRoute") return;
+    expect(next.resource).toBe("food");
+    expect(next.route.enabled).toBe(true);
   });
 
   it("moves both legs through the engine on the next tick", () => {

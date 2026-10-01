@@ -18,7 +18,7 @@
  *     `T(n) = base x factor^(sqrt(n) - 1)` (§4.4), which inverts in closed form
  *     to `n = (1 + log(T/base)/log(factor))^2`. Cost is never integrated.
  *  3. The bonus stack a settlement of a given scale runs under is derivable from
- *     that scale — ages from population, research from the prerequisite DAG,
+ *     that scale — ages from total buildings, research from the prerequisite DAG,
  *     enhancers from building counts (`contextForScale`).
  *
  * **A shape is not a settlement.** Production depends far more on what the
@@ -93,7 +93,7 @@ export const defaultContext: AnalyticContext = {};
  * `farmPower`, itself raised by enhancer tiers, research and achievements.
  *
  * What is included is derived from the shape itself, not hand-picked:
- *  - **ages** — every age whose population threshold the settlement has passed;
+ *  - **ages** — every age whose building threshold the settlement has passed;
  *  - **research** — every tech whose age has been entered and whose prerequisites
  *    are satisfied, closed transitively, since the tree is a DAG;
  *  - **encounters** — every battle in an entered age;
@@ -110,13 +110,19 @@ export const contextForScale = (
   options: { includeResearch?: boolean } = {},
 ): AnalyticContext => {
   const includeResearch = options.includeResearch ?? true;
-  const population = whole(shape.people);
+  const totalBuildings = Object.values(shape).reduce(
+    (sum, count) => sum + whole(count),
+    0,
+  );
 
-  // Ages: a settlement has entered every age whose threshold it has passed.
+  // Ages: a settlement has entered every age whose building threshold it has met.
   const ages = ageDefinitions
-    .filter((age) => population >= age.populationThreshold)
+    .filter((age) => totalBuildings >= age.buildingThreshold)
     .map((age) => age.key);
-  const highestAge = ages.length > 0 ? ageDefinitions.findIndex((a) => a.key === ages[ages.length - 1]) : 0;
+  const highestAge =
+    ages.length > 0
+      ? ageDefinitions.findIndex((a) => a.key === ages[ages.length - 1])
+      : 0;
 
   // Research: a tech needs its age entered and all prerequisites bought. The
   // prerequisites form a DAG, so a fixed-point pass over the whole registry
@@ -143,7 +149,8 @@ export const contextForScale = (
   // Granting every encounter of an entered age unconditionally was measured to
   // over-report achievements by 7 early on, so the gate is the count of army-
   // producing buildings the shape actually holds.
-  const canFieldAnArmy = whole(shape.barracks) > 0 || whole(shape.university) > 0;
+  const canFieldAnArmy =
+    whole(shape.barracks) > 0 || whole(shape.university) > 0;
   const encounters = canFieldAnArmy
     ? encounterDefinitions
         .filter((encounter) => encounter.age <= highestAge)
@@ -181,7 +188,10 @@ const achievementMeets = (
 ): boolean => {
   const requirement = achievement.requirement;
   if (!requirement) return false;
-  const total = Object.values(shape).reduce((sum, count) => sum + whole(count), 0);
+  const total = Object.values(shape).reduce(
+    (sum, count) => sum + whole(count),
+    0,
+  );
   switch (requirement.type) {
     case "population":
       return whole(shape.people) >= requirement.amount.toNumber();
@@ -373,7 +383,9 @@ export const housingFor = (
     const base = probeState({ townHall: halls }, context);
     const houses = base.getMaxAffordableBuildings("house");
     return wholeSlotsOf(
-      probeState({ townHall: halls, house: houses }, context).getBuildingMax("people"),
+      probeState({ townHall: halls, house: houses }, context).getBuildingMax(
+        "people",
+      ),
     );
   };
 
@@ -396,7 +408,10 @@ export const housingFor = (
     else low = middle + 1;
   }
   const townHalls = Math.max(1, low);
-  const houses = probeState({ townHall: townHalls }, context).getMaxAffordableBuildings("house");
+  const houses = probeState(
+    { townHall: townHalls },
+    context,
+  ).getMaxAffordableBuildings("house");
   return { townHalls, houses, supported: capacityWith(townHalls) };
 };
 
@@ -481,7 +496,11 @@ export const calibratedSettleSeconds = 60;
 export const settleAchievements = (
   shape: EconomyShape,
   options: { settleSeconds?: number; progression?: Progression } = {},
-): { context: AnalyticContext; held: Record<string, number>; earned: number } => {
+): {
+  context: AnalyticContext;
+  held: Record<string, number>;
+  earned: number;
+} => {
   const settleSeconds = options.settleSeconds ?? calibratedSettleSeconds;
   const progression = options.progression ?? "realistic";
   const people = whole(shape.people);
@@ -490,7 +509,9 @@ export const settleAchievements = (
   // These earn the achievements that only need a building count or a population,
   // which in turn unlock more bonuses for the next round.
   let context =
-    progression === "realistic" ? contextForScale({ ...shape, people }) : defaultContext;
+    progression === "realistic"
+      ? contextForScale({ ...shape, people })
+      : defaultContext;
 
   const round = (current: AnalyticContext): CivilizationState => {
     const housing = housingFor(people, current);
@@ -511,7 +532,10 @@ export const settleAchievements = (
   const first = round(context);
   context = {
     ...context,
-    achievements: [...(context.achievements ?? []), ...first.earnedAchievements],
+    achievements: [
+      ...(context.achievements ?? []),
+      ...first.earnedAchievements,
+    ],
   };
 
   const second = round(context);
@@ -555,7 +579,8 @@ export const describeEconomy = (
   // first, then let that context price the housing it implies.
   const resolved0: EconomyShape = { ...shape, people: whole(shape.people) };
   let effective = context;
-  if (!effective && progression === "realistic") effective = contextForScale(resolved0);
+  if (!effective && progression === "realistic")
+    effective = contextForScale(resolved0);
   if (!effective && progression === "settled") {
     effective = settleAchievements(resolved0, { settleSeconds }).context;
   }
@@ -577,10 +602,15 @@ export const describeEconomy = (
 
   const empty = probeState({}, effective);
   const cost: Record<string, number> = {};
-  for (const [key, count] of Object.entries(resolved) as [BuildingKey, number][]) {
+  for (const [key, count] of Object.entries(resolved) as [
+    BuildingKey,
+    number,
+  ][]) {
     const amount = whole(count);
     if (amount === 0) continue;
-    for (const [resource, value] of Object.entries(cumulativeCost(empty, key, amount))) {
+    for (const [resource, value] of Object.entries(
+      cumulativeCost(empty, key, amount),
+    )) {
       cost[resource] = (cost[resource] ?? 0) + value;
     }
   }
@@ -729,28 +759,47 @@ export const estimateAtTime = (
             { farm: farms, people: population, house: houses },
             context,
           ).computeResourceRate("food"),
-        ) * (elapsed / divisor);
+        ) *
+        (elapsed / divisor);
       if (!(budget > 0)) break;
 
       const allowance = budget * farmShare;
-      const ladderCount = Math.max(1, Math.floor(countAffordableBy("farm", "food", allowance)));
-      const ladderCost = affordableEnhancers(ladderCount, allowance, upgrades).reduce(
-        (total, id) => total + (enhancerCost(id) ?? 0),
-        0,
+      const ladderCount = Math.max(
+        1,
+        Math.floor(countAffordableBy("farm", "food", allowance)),
       );
-      const farmable = Math.max(0, allowance - (ladderCost <= allowance ? ladderCost : 0));
+      const ladderCost = affordableEnhancers(
+        ladderCount,
+        allowance,
+        upgrades,
+      ).reduce((total, id) => total + (enhancerCost(id) ?? 0), 0);
+      const farmable = Math.max(
+        0,
+        allowance - (ladderCost <= allowance ? ladderCost : 0),
+      );
       // Grow to whatever this budget supports, but never below the current count.
       // The clamp is what makes the escalation monotone; without it the ladder
       // feedback (a tier raises the rate, which raises the budget) oscillates.
-      const nextFarms = Math.max(farms, Math.floor(countAffordableBy("farm", "food", farmable)));
-      const spent = cumulativeCost(probeState({}, context), "farm", nextFarms).food ?? 0;
+      const nextFarms = Math.max(
+        farms,
+        Math.floor(countAffordableBy("farm", "food", farmable)),
+      );
+      const spent =
+        cumulativeCost(probeState({}, context), "farm", nextFarms).food ?? 0;
       const nextPeople = Math.max(
         population,
-        Math.floor(countAffordableBy("people", "food", Math.max(0, budget - spent))),
+        Math.floor(
+          countAffordableBy("people", "food", Math.max(0, budget - spent)),
+        ),
       );
       const nextHouses = Math.max(houses, Math.ceil(nextPeople / 10));
 
-      if (nextFarms === farms && nextPeople === population && nextHouses === houses) break;
+      if (
+        nextFarms === farms &&
+        nextPeople === population &&
+        nextHouses === houses
+      )
+        break;
       farms = nextFarms;
       population = nextPeople;
       houses = nextHouses;
@@ -759,10 +808,18 @@ export const estimateAtTime = (
 
   for (let step = 0; step < 64; step += 1) {
     const working: AnalyticContext = { ...context, upgrades };
-    const shape: EconomyShape = { farm: farms, people: population, house: houses };
+    const shape: EconomyShape = {
+      farm: farms,
+      people: population,
+      house: houses,
+    };
 
-    const foodRate = toNumber(probeState(shape, working).computeResourceRate("food"));
-    const woodRate = toNumber(probeState(shape, working).computeResourceRate("wood"));
+    const foodRate = toNumber(
+      probeState(shape, working).computeResourceRate("food"),
+    );
+    const woodRate = toNumber(
+      probeState(shape, working).computeResourceRate("wood"),
+    );
     const foodBudget = (foodRate * elapsed) / divisor;
     const woodBudget = (woodRate * elapsed) / divisor;
 
@@ -792,7 +849,11 @@ export const estimateAtTime = (
       1,
       Math.floor(countAffordableBy("farm", "food", farmAllowance)),
     );
-    const ladder = affordableEnhancers(ladderFarmCount, farmAllowance, upgrades);
+    const ladder = affordableEnhancers(
+      ladderFarmCount,
+      farmAllowance,
+      upgrades,
+    );
     const ladderCost = ladder.reduce(
       (total, id) => total + (enhancerCost(id) ?? 0),
       0,
@@ -804,7 +865,11 @@ export const estimateAtTime = (
     const nextFarms = Math.max(
       1,
       Math.floor(
-        countAffordableBy("farm", "food", Math.max(0, farmAllowance - affordableLadderCost)),
+        countAffordableBy(
+          "farm",
+          "food",
+          Math.max(0, farmAllowance - affordableLadderCost),
+        ),
       ),
     );
     const farmsSpent =
@@ -843,7 +908,11 @@ export const estimateAtTime = (
     upgrades = nextUpgrades;
   }
 
-  const shape: EconomyShape = { farm: farms, people: population, house: houses };
+  const shape: EconomyShape = {
+    farm: farms,
+    people: population,
+    house: houses,
+  };
   for (const key of PRIMARY_PRODUCERS) shape[key] = farms;
   return describeEconomy(shape, { ...context, upgrades });
 };
@@ -874,7 +943,10 @@ export const woodWorkerFloor = 18;
 const viableFarmFloor = (population: number): number => {
   for (let farms = 1; farms < 64; farms += 1) {
     const rate = toNumber(
-      probeState({ farm: farms, people: population }, defaultContext).computeResourceRate("food"),
+      probeState(
+        { farm: farms, people: population },
+        defaultContext,
+      ).computeResourceRate("food"),
     );
     if (rate > 0) return farms;
   }

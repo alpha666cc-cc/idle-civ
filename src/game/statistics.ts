@@ -37,7 +37,7 @@ export type Statistics = {
   readonly longestActiveMs: number;
   /** Active streak in progress, reset when an offline gap is recorded. */
   readonly activeStreakMs: number;
-  /** Fastest run time (ms) at which each age's population threshold was met, by age id. */
+  /** Fastest run time (ms) at which each ordered age was reached, by age id. */
   readonly fastestAgeMs: Record<string, number>;
   /** Fastest run time (ms) at which each encounter was won, by encounter id. */
   readonly fastestBattleMs: Record<string, number>;
