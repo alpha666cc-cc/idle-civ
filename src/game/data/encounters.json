@@ -312,17 +312,17 @@
       {
         "type": "attributeMultiplier",
         "destination": "wood",
-        "value": "50"
+        "value": 50
       },
       {
         "type": "attributeMultiplier",
         "destination": "food",
-        "value": "1000"
+        "value": 1000
       },
       {
         "type": "attributeMultiplier",
         "destination": "stone",
-        "value": "50"
+        "value": 50
       }
     ],
     "unlocks": []

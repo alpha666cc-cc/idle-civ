@@ -4,7 +4,11 @@ import { GameObject } from "./gameObject";
 import { buildingDefinitions } from "./buildings";
 import { parseBonusType, type Bonus } from "./bonus";
 import { findAttributeDefinition } from "./attributes";
-import { findUnitDefinition, parseUnitStatTarget } from "./units";
+import {
+  findUnitDefinition,
+  parseUnitStatTarget,
+  unitDomainLabels,
+} from "./units";
 
 /**
  * A one-shot unit upgrade attached to a research: when the tech is bought, every
@@ -250,12 +254,14 @@ for (const research of researchDefinitions) {
     if (parseUnitStatTarget(destination)) continue;
     if (findAttributeDefinition(destination)) continue;
     if (buildingDefinitions.some(({ key }) => key === destination)) continue;
-    if (
-      destination === "allBuildings" ||
-      destination === "allUnits" ||
-      destination.startsWith("tag.")
-    )
-      continue;
+    if (destination === "allBuildings" || destination === "allUnits") continue;
+    // Group scopes: `tag.<t>` reaches every unit carrying a tag and
+    // `domain.<d>` every unit in a battlefield domain. The domain is checked
+    // against the real vocabulary so a typo fails loudly here instead of
+    // matching no unit forever.
+    if (destination.startsWith("tag.")) continue;
+    const domain = /^domain\.([a-z]+)$/.exec(destination);
+    if (domain && domain[1] in unitDomainLabels) continue;
     // Cost reductions may target a unit id (§13.3: units are buyables).
     if (findUnitDefinition(destination)) continue;
     throw new Error(

@@ -379,12 +379,12 @@
       {
         "resource": "military",
         "base": 69525000,
-        "factor": 4.5
+        "factor": 2.5
       },
       {
         "resource": "metalwork",
         "base": 6952500,
-        "factor": 4.5
+        "factor": 2.5
       }
     ]
   },
@@ -410,12 +410,12 @@
       {
         "resource": "military",
         "base": 140980000,
-        "factor": 4.5
+        "factor": 2.5
       },
       {
         "resource": "metalwork",
         "base": 14098000,
-        "factor": 4.5
+        "factor": 2.5
       }
     ]
   },
@@ -441,12 +441,12 @@
       {
         "resource": "military",
         "base": 285890000,
-        "factor": 4.5
+        "factor": 3.5
       },
       {
         "resource": "metalwork",
         "base": 28589000,
-        "factor": 4.5
+        "factor": 3.5
       }
     ]
   },
@@ -472,12 +472,12 @@
       {
         "resource": "military",
         "base": 579720000,
-        "factor": 4.5
+        "factor": 3.5
       },
       {
         "resource": "metalwork",
         "base": 57972000,
-        "factor": 4.5
+        "factor": 3.5
       }
     ]
   },
@@ -539,12 +539,12 @@
       {
         "resource": "military",
         "base": 2383800000,
-        "factor": 4.5
+        "factor": 4
       },
       {
         "resource": "metalwork",
         "base": 238380000,
-        "factor": 4.5
+        "factor": 4
       },
       {
         "resource": "food",
@@ -575,12 +575,12 @@
       {
         "resource": "military",
         "base": 4833800000,
-        "factor": 4.5
+        "factor": 4
       },
       {
         "resource": "metalwork",
         "base": 483380000,
-        "factor": 4.5
+        "factor": 4
       }
     ]
   },
@@ -642,12 +642,12 @@
       {
         "resource": "military",
         "base": 19876000000,
-        "factor": 4.5
+        "factor": 1.5
       },
       {
         "resource": "metalwork",
         "base": 1987600000,
-        "factor": 4.5
+        "factor": 1.5
       }
     ]
   },

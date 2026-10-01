@@ -837,7 +837,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.infantry.hp",
-        "value": "1.25"
+        "value": "1.5"
       }
     ],
     "unlocks": ["swordsman_iron"],
@@ -862,7 +862,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.armored.attack",
-        "value": "1.25"
+        "value": "1.5"
       }
     ],
     "unlocks": ["chariot_iron"],
@@ -887,7 +887,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.armored.attack",
-        "value": "1.25"
+        "value": "1.5"
       },
       {
         "type": "attributeMultiplier",
@@ -910,7 +910,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.naval.attack",
-        "value": "1.25"
+        "value": "1.5"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 100
       }
     ],
     "unlocks": ["war_galley_iron"],
@@ -928,7 +933,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.armored.attack",
-        "value": "1.5"
+        "value": "2"
       }
     ],
     "unlocks": ["elephant_iron"],
@@ -946,7 +951,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.ranged.attack",
-        "value": "1.25"
+        "value": "5"
       }
     ],
     "unlocks": ["ballista"],
@@ -964,7 +969,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.naval.attack",
-        "value": "1.25"
+        "value": "1.5"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.naval.hp",
+        "value": "1.5"
       }
     ],
     "unlocks": ["quinquereme"],
@@ -985,9 +995,9 @@
         "value": "1.25"
       },
       {
-        "type": "costReductionPercent",
-        "destination": "allUnits",
-        "value": "0.5"
+        "type": "costReductionFactor",
+        "destination": "domain.ground",
+        "value": "0.9"
       }
     ],
     "unlocks": [],
@@ -1005,7 +1015,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.armored.attack",
-        "value": "1.25"
+        "value": "1.5"
       },
       {
         "type": "costReductionPercent",
@@ -1028,7 +1038,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.naval.hp",
-        "value": "1.25"
+        "value": "2"
       },
       {
         "type": "costReductionPercent",

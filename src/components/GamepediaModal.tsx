@@ -20,9 +20,11 @@ import type { LucideIcon } from "lucide-react";
 import type { BuildingDefinition } from "../game/buildings";
 import type { EncounterDefinition } from "../game/encounters";
 import {
+  unitDomainLabels,
   unitStatKeys,
   unitStatLabels,
   type UnitDefinition,
+  type UnitDomain,
   type UnitStatKey,
 } from "../game/units";
 import type { AchievementDefinition } from "../game/achievements";
@@ -134,7 +136,25 @@ const factorSourceId = (source: ResourceFactor[0]): string | undefined =>
 /** Display name of a bonus destination (resource, capacity, building or stat id). */
 const bonusDestinationName = (destination: string): string => {
   const entry = gamepedia.get(destination);
-  return entry ? displayName(entry.object) : destination;
+  if (entry) return displayName(entry.object);
+  return groupDestinationLabel(destination) ?? destination;
+};
+
+/**
+ * Label for a destination that names a *group* rather than a Gamepedia entry:
+ * the `allUnits` / `allBuildings` buyable blankets, a `tag.<t>` unit-tag scope
+ * and a `domain.<d>` battlefield-domain scope. Undefined for a real id, so the
+ * caller falls back to the raw destination.
+ */
+const groupDestinationLabel = (destination: string): string | undefined => {
+  if (destination === "allUnits") return "Every unit";
+  if (destination === "allBuildings") return "Every building";
+  const tag = /^tag\.([a-z-]+)$/.exec(destination);
+  if (tag) return `${tag[1]} units`;
+  const domain = /^domain\.([a-z]+)$/.exec(destination);
+  if (domain && domain[1] in unitDomainLabels)
+    return `${unitDomainLabels[domain[1] as UnitDomain]} units`;
+  return undefined;
 };
 
 /** What a bonus modifies, e.g. "Food production" or "Click power". */

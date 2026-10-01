@@ -1332,6 +1332,12 @@ export class CivilizationState {
       if (isBuilding) return destination === "allBuildings";
       if (!unit) return destination === "allUnits";
       if (destination === "allUnits") return true;
+      // `tag.<t>` and `domain.<d>` are group scopes, not content ids: a
+      // research can name "every ground unit" without enumerating the roster.
+      // `domain` is separate from `tag` because the battlefield domain is its
+      // own field on a unit — no unit carries a "ground" tag.
+      if (destination.startsWith("domain."))
+        return unit.domain === destination.slice("domain.".length);
       return (
         destination.startsWith("tag.") &&
         unit.tags.includes(destination.slice(4))

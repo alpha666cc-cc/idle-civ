@@ -558,6 +558,36 @@ describe("research buying", () => {
       ]),
     );
   });
+
+  it("scopes iron_shielding's cost factor to ground units only", () => {
+    // `domain.ground` is a scope, not a unit id: it must reach every ground unit
+    // and leave naval and air units untouched. The other allUnits percent cuts
+    // in the tree (trapping, masonry, ...) never target domain.ground, so a
+    // single bought tech isolates the factor.
+    const shielding = findResearchDefinition("iron_shielding");
+    expect(
+      shielding?.bonuses.some(
+        (bonus) =>
+          bonus.type === "costReductionFactor" &&
+          String(bonus.destination) === "domain.ground" &&
+          bonus.value.eq(ExpNumber.fromNumber(0.9)),
+      ),
+      "iron_shielding should carry a costReductionFactor of 0.9 on domain.ground",
+    ).toBe(true);
+
+    const state = buyPrerequisiteClosure(
+      stateWith(1e30, ["age0"]).enterAge("age1"),
+      "iron_shielding",
+    ).buyResearch("iron_shielding");
+    expect(state.isResearchBought("iron_shielding")).toBe(true);
+
+    const factorOf = (unitId: string) =>
+      state.getUnitCostModifiers(unitId).reductions.factor.toNumber();
+    // warrior is ground, canoe naval, zeppelin air.
+    expect(factorOf("warrior")).toBeCloseTo(0.9, 6);
+    expect(factorOf("canoe")).toBe(1);
+    expect(factorOf("zeppelin")).toBe(1);
+  });
 });
 
 describe("research unlocks units", () => {
