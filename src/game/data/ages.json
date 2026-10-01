@@ -6,6 +6,7 @@
     "description": "The first settlements rise from scattered families into a village. Fire, bronze, and the first walls.",
     "populationThreshold": 0,
     "unlocks": [],
+    "research": { "base": 1000, "factor": 10 },
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -18,14 +19,9 @@
         "value": 1.2
       },
       {
-        "type": "costMultiplier",
-        "destination": "research",
-        "value": "100000"
-      },
-      {
         "type": "costReductionFactor",
         "destination": "townHall",
-        "value": "-2"
+        "value": "1.6"
       }
     ]
   },
@@ -36,6 +32,7 @@
     "description": "Iron replaces bronze. Empires rise on chariots and disciplined spearmen.",
     "populationThreshold": 1000,
     "unlocks": [],
+    "research": { "base": "1e9", "factor": 200 },
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -56,6 +53,7 @@
     "description": "City-states and legions. The old units fall, and a new order takes the field.",
     "populationThreshold": 10000,
     "unlocks": [],
+    "research": { "base": "1e15", "factor": 2000 },
     "bonuses": []
   },
   {
@@ -65,6 +63,7 @@
     "description": "Knights and castles. Feudal lords gather wealth across continents.",
     "populationThreshold": 1000000,
     "unlocks": [],
+    "research": { "base": "1e21", "factor": 20000 },
     "bonuses": []
   },
   {
@@ -74,6 +73,7 @@
     "description": "Artillery and exploration. The world grows smaller as empires reach across the sea.",
     "populationThreshold": 100000000,
     "unlocks": [],
+    "research": { "base": "1e27", "factor": 200000 },
     "bonuses": []
   },
   {
@@ -83,6 +83,7 @@
     "description": "Railways, factories, and mass armies. The scale of war changes forever.",
     "populationThreshold": 1000000000,
     "unlocks": [],
+    "research": { "base": "1e33", "factor": 2000000 },
     "bonuses": []
   },
   {
@@ -92,6 +93,7 @@
     "description": "Tanks, aircraft, and orbital weapons. The final age before the stars.",
     "populationThreshold": 10000000000,
     "unlocks": [],
+    "research": { "base": "1e39", "factor": 20000000 },
     "bonuses": []
   }
 ]

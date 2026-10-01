@@ -14,10 +14,13 @@
     "key": "famine",
     "name": "Famine",
     "description": "hidden",
-    "requirement": { "type": "famine", "resource": "food", "amount": 0, "population": 1001 },
-    "bonuses": [
-      { "type": "removeDrain", "destination": "food", "value": 1 }
-    ]
+    "requirement": {
+      "type": "famine",
+      "resource": "food",
+      "amount": 0,
+      "population": 1001
+    },
+    "bonuses": [{ "type": "removeDrain", "destination": "food", "value": 1 }]
   },
   {
     "guid": "b2d84f07-6c19-5a3e-8f42-1e7b05c9d6a3",
@@ -90,7 +93,7 @@
     "guid": "cc1999e4-d9bf-50c0-89a8-ec0f4f065f88",
     "key": "hallOfHalls",
     "name": "Hall of Halls",
-    "description": "Build 10 town halls to raise a true capital. Reward: all building costs scale 1% slower.",
+    "description": "Build 10 town halls to raise a true capital. Reward: all building costs scale 2% slower.",
     "requirement": {
       "type": "buildingCount",
       "building": "townHall",
@@ -100,7 +103,7 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings",
-        "value": 0.02
+        "value": 0.98
       }
     ]
   },

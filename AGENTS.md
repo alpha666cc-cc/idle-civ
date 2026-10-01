@@ -279,8 +279,12 @@ type BuildingEffects = {
   production buildings 8, barracks/university wood+food 10 (stone 12), town halls 15,
   and smithy/market 12. The Age-0 unit generator likewise uses factor 5 except the
   Tribesman (4) and Bronze Spearman/Axeman (3); their base costs are explicit in
-  `tools/gen/units.mjs`. Research is globally priced by the engine at
-  `100 × 10^(√n − 1)` for purchase `n`; `research.json` does not contain per-tech costs.
+  `tools/gen/units.mjs`. Research is **priced by the age the player is in**, not
+  globally: each age carries a `research: { base, factor }` in `ages.json` and
+  prices purchase `n` of that age at `base × factor^(√n − 1)`, where `n` counts
+  only research bought *in that age*. Entering an age resets `n` to 0, and a tech
+  bought from an earlier age costs the current age's next price without advancing
+  `n`. `research.json` does not contain per-tech costs.
 
 - Cumulative curve: `T(n) = base × (factor^√n − 1)` is the total spent owning `n`
   units, so unit `n` costs `T(n) − T(n−1)` and buying `count` more from `alreadyBuilt` is
@@ -1011,8 +1015,8 @@ type BonusType =
   // buyable-targeted: the destination is a buyable (building or unit)
   | "costReductionFlat" // destination cost −N (absolute)
   | "costReductionPercent" // destination cost × (1 − N)
-  | "costReductionBase" // base term × Π(1 − N) — divides the base
-  | "costReductionFactor"; // destination cost's growth factor reduced
+  | "costReductionBase" // base term ×N — <1 reduces, >1 augments
+  | "costReductionFactor"; // destination cost's growth factor raised to the power N
 
 type BonusDestination = AttributeKey | BuyableId;
 
@@ -1030,8 +1034,8 @@ type Bonus = {
 | `attributeDrain`       | attribute (resource, capacity or stat) | subtracts a flat per-second amount (consumption)                                                   | `ResourceFactors.drain`                  |
 | `costReductionFlat`    | buyable                                | lowers every cost entry of the buyable by an absolute amount                                       | **none** (new)                           |
 | `costReductionPercent` | buyable                                | lowers every cost entry by a percentage                                                            | **none** (new)                           |
-| `costReductionBase`    | buyable                                | divides the base term _before_ geometric growth (Π(1 − N), compounding; e.g. Master Builder tiers) | `buildingCostOverrides` precursor        |
-| `costReductionFactor`  | buyable                                | reduces the growth factor multiplicatively (clamped at 1.01 minimum)                               | crude precursor: `buildingCostOverrides` |
+| `costReductionBase`    | buyable                                | multiplies the base term: Π(N) compounding, `< 1` discounts and `> 1` augments (absorbs the old `costMultiplier`)  | `buildingCostOverrides` precursor        |
+| `costReductionFactor`  | buyable                                | raises the growth factor to the power `N`, scaling the log-growth exponent by exactly N on every building (floored at 1.01) | crude precursor: `buildingCostOverrides` |
 
 The first three map exactly onto today's factor model, so they can reuse
 `ResourceFactors` and `computeResourceRate()` (`(Σ flat) × (Π mult) − (Σ drain)`) and the
@@ -1051,13 +1055,14 @@ hatch — do not add it pre-emptively.
 **Cost-reduction stacking (decided, §13.6).** Per buyable, the four types are collected
 from all bought sources and applied per unit in the fixed order
 `base → factor → percent → flat`: `base` reductions **sum** (floor 0), `factor`
-reductions **sum** (floor 1 — below 1, later buildings would cost less than earlier
-ones), `percent` reductions **compound** as `Π(1 − N)` with each source clamped at a
+values are **powers** that **multiply** as `Π(N)` (each N is a power, e.g. 0.99
+means "costs grow at 99% of the default rate"; values below 0 clamp to 0 and the
+resulting growth factor is floored at 1.01),
+`percent` reductions **compound** as `Π(1 − N)` with each source clamped at a
 0 floor, and `flat` reductions **sum** and absorb each unit's cost after the percent
 step, clamped at 0 per unit. The enhancer upgrades use this: tiers 3–5 each add
 `costReductionPercent` 0.5 (compounding to ÷8) and tiers 6–8 each add
-`costReductionFactor` 0.01 on their building (multiplicative reduction of the growth factor,
-clamped at 1.01 minimum).
+`costReductionFactor` 0.99 on their building (cost growth ^0.99 per tier).
 
 Because a bonus names its destination, and building/unit ids are Gamepedia ids, a bonus
 list is also a **relation graph**: it feeds `GamepediaEntry.relatedIds` the same way
@@ -1067,8 +1072,8 @@ building costs and effects do today (§4.6/§4.7). Design them so the Gamepedia 
 **Application order and clamping (decided).** Cost reductions apply **per unit**, in this
 fixed order — `base → factor → percent → flat`:
 
-1. `costReductionBase` — reduce the cost's `base` term.
-2. `costReductionFactor` — reduce the growth `factor` multiplicatively (clamped at 1.01 minimum). Formula: `1.01 + (baseFactor - 1.01) * Π(1 - N)`, where each N reduces the (factor - 1.01) range by N% multiplicatively.
+1. `costReductionBase` — multiply the cost's `base` term by `Π(N)`. The value is the multiplier itself (floor 0): `< 1` discounts the base, `> 1` makes it dearer. This type absorbed the former `costMultiplier`, which expressed the same ×N as a separate type. Use `costReductionPercent` when a percentage is what you want to express.
+2. `costReductionFactor` — raise the growth `factor` to the power `N` itself (values below 0 clamp to 0; the result is floored at 1.01). Formula: `max(1.01, baseFactor^Π(N))`, where N compounds across sources (e.g. 0.99 = costs grow at 99% of the default rate). The power scales the **log-growth exponent** by exactly N for every growth factor — `ln(F_eff)/ln(F) = N` exactly (0.900000 on F = 2.5, 8, 10, 12, 15 alike), whereas the earlier `1.01 + (F − 1.01)·N` form drifted 0.933 → 0.964 over the same range. So one number means "grow at N× the rate" wherever it lands, which is what makes it reusable from a single building to `allBuildings`. (This is a property of the exponent, not of the cost ratio: cost still scales with F at high n, since F is the per-building design knob.)
 3. `costReductionPercent` — scale the resulting unit cost by `(1 − N)`.
 4. `costReductionFlat` — subtract `N` from the unit cost last.
 

@@ -139,9 +139,12 @@ The Age-0 rebalance adds these bands:
 | Bronze Spearman (`spearman_bronze`) | military 100,000; metalwork 5,000 | 3 |
 | Bronze Axeman (`axeman_bronze`) | military 300,000; metalwork 20,000 | 3 |
 
-All other buyable units use factor 5. The 172 research definitions globally price the
-first purchase at 100 science and purchase `n` at `100 × 10^(√n − 1)`; individual
-research records do not store costs.
+All other buyable units use factor 5. The 172 research definitions carry no individual
+price: each age owns a `research: { base, factor }` schedule (`age0` 1,000/10, `age1`
+1e9/200, then ×1e6 base and ×10 factor per age) and prices purchase `n` of that age at
+`base × factor^(√n − 1)`. The counter `n` counts only research bought in the current age,
+so it restarts at 0 on every age change, and buying a tech from an earlier age costs the
+current price without advancing it.
 
 ## 5. Upgrades (64, all 🟢)
 
@@ -151,14 +154,14 @@ research records do not store costs.
 - **Applies to:** farm → food, lumberYard → wood, quarry → stone, goldMine → gold.
 - **Unlock condition:** building count ≥ 98% of its current effective capacity (self-sequencing: each tier raises capacity ×10, so the next tier appears ~10× later).
 - **Effects (every tier):** building capacity **×10**; resource production **×2** (stacks multiplicatively across tiers).
-- **Cost reductions (per tier):** tiers 3–5 (1k/10k/100k) add `costReductionPercent` 0.5 on their building — compounding to **÷8** across the three; tiers 6–8 (1M+) add `costReductionFactor` 0.01 — growth factor reduced multiplicatively, clamped at 1.01 minimum (formula: `1.01 + (baseFactor - 1.01) * Π(1 - N)`).
+- **Cost reductions (per tier):** tiers 3–5 (1k/10k/100k) add `costReductionPercent` 0.5 on their building — compounding to **÷8** across the three; tiers 6–8 (1M+) add `costReductionFactor` 0.99 — the value is a **power**: the cost curve is re-shaped as `(F^√n)^0.99`, i.e. costs grow at 99% of the default rate (formula: `max(1.01, F^Π(N))`, floored at 1.01).
 - **Metalwork gate:** tiers 3+ (1k and beyond) also cost **1,000 metalwork** — a deliberate progression wall until battles unlock the smithy.
 - **Cost formula (placeholder, Balance-pending):** `ceil(120 s × (90 food / 9 other workers) × 1.1^(0.98 × threshold) × 2^tierIndex)` per cost resource of the building — roughly two minutes of estimated production at the moment the tier unlocks. Worker assumption mirrors the current housing ceiling (population ≤ 110).
 - **Endgame:** tier 8 raises capacity to 1e9 — the max expected per building at the end of the first loop.
 
 **Cost-reduction engine (🟢):** applied per unit inside `getBuildingCost()` in the fixed
 order `base → factor → percent → flat`; base/percent/flat clamp at 0, growth factor
-clamps at 1.01 minimum. Percent reductions compound as `Π(1 − N)`, factor reductions compound multiplicatively as `Π(1 − N)` and apply to the range above 1.01 (formula: `1.01 + (baseFactor - 1.01) * Π(1 - N)`). Used
+clamps at 1.01 minimum. Percent reductions compound as `Π(1 − N)`; factor reductions are **powers** that compound as `Π(N)` and re-shape the curve as `(F^√n)^N` (formula: `max(1.01, F^Π(N))`) — the log-growth exponent is scaled by exactly N on every growth factor, so one value means the same thing wherever it is applied. Used
 today: `costReductionPercent` + `costReductionFactor` (enhancers). Defined but unused:
 `costReductionBase`, `costReductionFlat` (engine path exists, no data).
 

@@ -409,8 +409,8 @@ const convertEffect = (tech, effect) => {
 // every prerequisite before its dependants, and costing by source index keeps
 // every existing tech's cost byte-identical when prerequisites are edited (a
 // topological re-sort would renumber the whole tail of the tree). The engine
-// prices research globally (`getResearchNextCost()`), so this array is a stable
-// record rather than a live price list.
+// prices research by the current age (`getResearchNextCost()`), so this array is
+// a stable record rather than a live price list.
 const sourceIndex = new Map(techs.map((tech, index) => [tech.id, index]));
 const orderViolations = [];
 for (const tech of techs) {
@@ -469,7 +469,7 @@ const entries = techs.map((tech) => {
     age: tech.age,
     category: tech.category,
     prerequisites: [...(tech.prerequisites ?? [])],
-    // The engine prices research globally; don't inject per-tech cost records.
+    // The engine prices research by the current age; don't inject per-tech cost records.
     bonuses,
     unlocks: [...new Set(tech.unlockedUnits ?? [])],
     // Only emitted when a tech converts something: an empty array on all 172

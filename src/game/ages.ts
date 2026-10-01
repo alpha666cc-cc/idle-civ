@@ -16,6 +16,16 @@ export type ResourceCostMultiplier = {
   factor: ExpNumber;
 };
 
+/**
+ * The price schedule an age uses for research: `base × factor^(√n − 1)`,
+ * where `n` is the number of research bought *in that age*. `base` is what the
+ * age's first tech costs and `factor` how fast the curve climbs within it.
+ */
+export type AgeResearchCost = {
+  base: ExpNumber;
+  factor: number;
+};
+
 /** One age in the campaign: a population band with a name, optional unlocks, and
  * optional data-driven bonuses applied on entry (AGENTS.md §13.4). Bonuses reuse the
  * existing factor model (`attributeFlat`/`attributeMultiplier`/`attributeDrain`) and the
@@ -30,6 +40,12 @@ export class AgeDefinition extends GameObject {
   readonly bonuses: readonly Bonus[];
   /** Resource prices this age scales up, applied from the moment it is entered. */
   readonly costMultipliers: readonly ResourceCostMultiplier[];
+  /**
+   * This age's research price schedule (AGENTS.md §4.5). Research is costed by
+   * the age the player is *in*, so entering a new age restarts the curve at its
+   * own base and a fresh counter.
+   */
+  readonly research: AgeResearchCost;
 
   constructor(
     key: string,
@@ -39,6 +55,7 @@ export class AgeDefinition extends GameObject {
     unlocks: readonly string[] = [],
     bonuses: readonly Bonus[] = [],
     costMultipliers: readonly ResourceCostMultiplier[] = [],
+    research: AgeResearchCost = { base: ExpNumber.fromNumber(100), factor: 10 },
   ) {
     super(key, description);
     this.key = key;
@@ -48,6 +65,7 @@ export class AgeDefinition extends GameObject {
     this.unlocks = unlocks;
     this.bonuses = bonuses;
     this.costMultipliers = costMultipliers;
+    this.research = research;
   }
 }
 
@@ -63,6 +81,7 @@ type AgeData = {
     value: number | string;
   }[];
   costMultipliers?: { resource: string; factor: number | string }[];
+  research?: { base: number | string; factor: number };
 };
 
 const toAgeDefinition = (data: AgeData): AgeDefinition =>
@@ -77,6 +96,9 @@ const toAgeDefinition = (data: AgeData): AgeDefinition =>
       resource: resource as ResourceKey,
       factor: ExpNumber.from(factor),
     })),
+    data.research
+      ? { base: ExpNumber.from(data.research.base), factor: data.research.factor }
+      : undefined,
   );
 
 export const ageDefinitions: AgeDefinition[] = ageData.map(toAgeDefinition);

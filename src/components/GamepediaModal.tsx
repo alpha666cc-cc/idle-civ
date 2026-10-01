@@ -171,13 +171,14 @@ const bonusValueText = (bonus: Bonus, format: NumberFormat): string => {
     case "attributeMultiplier":
       return `×${formatNumber(bonus.value, format)}`;
     case "costReductionPercent":
-    case "costReductionBase":
       return `−${formatNumber(
         bonus.value.mul(ExpNumber.fromNumber(100)),
         format,
       )}%`;
+    case "costReductionBase":
+      return `×${formatNumber(bonus.value, format)}`;
     case "costReductionFactor":
-      return `−${formatNumber(bonus.value.mul(ExpNumber.fromNumber(100)), format)} percentage points`;
+      return `^${formatNumber(bonus.value, format)}`;
     case "costReductionFlat":
       return `−${formatNumber(bonus.value, format)}`;
     case "attributeFlat":
@@ -343,12 +344,10 @@ export default function GamepediaModal({
             curve. Costs floor at 0; growth floors at 1.01.
           </p>
           <p>
-            Base remaining:{" "}
-            {formatAmount(reductions.base.mul(ExpNumber.fromNumber(100)))}%
+            Base multiplier: ×{formatAmount(reductions.base)}
           </p>
           <p>
-            Growth reduction remaining:{" "}
-            {formatAmount(reductions.factor.mul(ExpNumber.fromNumber(100)))}%
+            Growth power: ^{formatAmount(reductions.factor)}
           </p>
           <p>
             Cost remaining after percentage reductions:{" "}
@@ -769,6 +768,7 @@ export default function GamepediaModal({
 
   const renderResearchDetail = (entry: GamepediaEntry) => {
     const research = entry.object as ResearchDefinition;
+    const ageName = gameState.getCurrentAge()?.name;
     const unlockedResearch = researchDefinitions.filter((candidate) =>
       candidate.prerequisites.includes(research.key),
     );
@@ -800,6 +800,13 @@ export default function GamepediaModal({
             </div>
           ))}
         </div>
+        <p className="gamepedia-recap">
+          Research is priced by the age you are in ({ageName ?? "unknown"}),
+          not by the tech's own age, and the counter restarts on every age
+          change — {gameState.getResearchCount()} bought this age. Buying a tech
+          from an earlier age costs this same price and does not advance the
+          counter.
+        </p>
 
         {research.bonuses.length > 0 && (
           <>

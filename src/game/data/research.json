@@ -555,7 +555,7 @@
       {
         "type": "costReductionFactor",
         "destination": "house",
-        "value": "0.20"
+        "value": "0.8"
       }
     ],
     "unlocks": [],
@@ -1104,7 +1104,7 @@
       {
         "type": "costReductionFactor",
         "destination": "people",
-        "value": "0.10"
+        "value": "0.9"
       }
     ],
     "unlocks": [],

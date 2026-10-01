@@ -19,9 +19,12 @@ export type BonusType =
   // buyable-targeted: the destination is a buyable (building or unit) id
   | "costReductionFlat" // destination cost −N (absolute, per unit)
   | "costReductionPercent" // destination cost × (1 − N) per unit
-  | "costReductionBase" // destination cost's base term reduced
-  | "costReductionFactor" // destination cost's growth factor reduced multiplicatively (clamped at 1.01 minimum)
-  | "costMultiplier"; // destination cost ×N (for cost increases, e.g., age scaling)
+  // destination cost's base term ×N — <1 reduces, >1 augments. Absorbs what used
+  // to be a separate `costMultiplier`, which expressed the same ×N with a
+  // confusing sign: a value above 1 is now a price *increase*, not a discount.
+  | "costReductionBase"
+  // destination cost's growth factor raised to the power N (floored at 1.01)
+  | "costReductionFactor";
 
 /** A bonus targets an attribute (resource, capacity or stat) or a buyable id. */
 export type BuyableCostTarget = "allBuildings" | "allUnits";
@@ -73,7 +76,6 @@ const bonusTypes: readonly BonusType[] = [
   "costReductionPercent",
   "costReductionBase",
   "costReductionFactor",
-  "costMultiplier",
 ];
 
 /**
@@ -100,25 +102,34 @@ export const parseBonus = (
   value: ExpNumber.from(value),
 });
 
-/** The four cost-reduction types plus cost multiplier folded into per-unit adjustments (§13.1). */
+/** The four cost-reduction types folded into per-unit adjustments (§13.1). */
 export type CostReductions = {
   /**
-   * Π(1 − N) — base divisors compound (a value of 1/2 divides the base by 2);
-   * each source clamped at a 0 floor.
+   * Π of the base-term multipliers — the value IS the multiplier, so `< 1`
+   * discounts the base and `> 1` augments it (clamped at a 0 floor). This also
+   * carries what used to be the separate `costMultiplier` type, so an age that
+   * made a resource *dearer* is now just a base multiplier above 1.
    */
   base: ExpNumber;
   /**
-   * Π multiplicative factor reductions (clamped at 1.01 minimum).
-   * Each 0.01 value reduces the (factor - 1.01) range by 1% multiplicatively.
-   * Formula: 1.01 + (baseFactor - 1.01) * Π(1 - value)
+   * Π of the growth-factor *powers*: the curve is re-shaped as
+   * `B · ((F^√n)^Π(value) − 1)`, applied as `max(1.01, F^Π(value))`.
+   *
+   * The point of a power is that it scales the **log-growth exponent** by
+   * exactly `value` for every growth factor — `ln(F_eff)/ln(F)` is precisely
+   * `value` (measured 0.900000 on F = 2.5, 8, 10, 12 and 15 alike), whereas the
+   * old `1.01 + (F − 1.01)·m` form drifted from 0.933 to 0.964 across that same
+   * range. So "0.9" means "grow at 90% of the rate" wherever it lands, which is
+   * what makes a single value reusable from one building to `allBuildings`.
+   *
+   * Note this is a statement about the *exponent*, not the cost ratio: cost still
+   * scales with F at high n, because F itself is the design knob.
    */
   factor: ExpNumber;
   /** Π(1 − N) — percent reductions compound; each source clamped at a 0 floor. */
   percent: ExpNumber;
   /** Σ absolute per-unit reductions, applied after percent, clamped at 0 per unit. */
   flat: ExpNumber;
-  /** Π cost multipliers compound (for cost increases, e.g., age scaling). */
-  multiplier: ExpNumber;
 };
 
 /**
@@ -132,19 +143,22 @@ export const collectCostReductions = (bonuses: Bonus[]): CostReductions => {
     factor: ExpNumber.ONE,
     percent: ExpNumber.ONE,
     flat: ExpNumber.ZERO,
-    multiplier: ExpNumber.ONE,
   };
   for (const bonus of bonuses) {
     switch (bonus.type) {
       case "costReductionBase":
+        // The value is the multiplier itself: <1 discounts the base, >1 makes it
+        // dearer. (Use costReductionPercent when a percentage is wanted.)
         reductions.base = reductions.base.mul(
-          ExpNumber.max(ExpNumber.ZERO, ExpNumber.ONE.sub(bonus.value)),
+          ExpNumber.max(ExpNumber.ZERO, bonus.value),
         );
         break;
       case "costReductionFactor":
-        // Multiplicative factor reduction: each value reduces the (factor - 1.01) range
+        // The value is a power, not a multiplier: 0.99 means "costs grow at 99%
+        // of the default rate" for every growth factor, so powers compound by
+        // multiplication (F^a then ^b is F^(a·b)).
         reductions.factor = reductions.factor.mul(
-          ExpNumber.max(ExpNumber.ZERO, ExpNumber.ONE.sub(bonus.value)),
+          ExpNumber.max(ExpNumber.ZERO, bonus.value),
         );
         break;
       case "costReductionPercent":
@@ -154,9 +168,6 @@ export const collectCostReductions = (bonuses: Bonus[]): CostReductions => {
         break;
       case "costReductionFlat":
         reductions.flat = reductions.flat.add(bonus.value);
-        break;
-      case "costMultiplier":
-        reductions.multiplier = reductions.multiplier.mul(bonus.value);
         break;
       default:
         break;

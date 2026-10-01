@@ -291,13 +291,9 @@ const describeBonus = (bonus: Bonus, fmt: Props["fmt"]): string => {
       return `${percent}% cheaper ${label}`;
     }
     case "costReductionFactor":
-      return `${label} cost scaling −${value}`;
-    case "costReductionBase": {
-      const divisor = ExpNumber.ONE.div(
-        ExpNumber.max(bonus.value, ExpNumber.fromNumber(1e-9)),
-      );
-      return `${label} base cost ÷${fmt(divisor)}`;
-    }
+      return `${label} cost growth ^${value}`;
+    case "costReductionBase":
+      return `${label} base cost ×${value}`;
     case "costReductionFlat":
       return `${label} cost −${value}`;
     case "attributeDrain":
@@ -453,6 +449,7 @@ export default function ResearchPanel({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const nextResearchCost = gameState.getResearchNextCost()[0];
+  const currentAge = gameState.getCurrentAge();
 
   const relatedKeys = useMemo(() => {
     if (!selectedKey) return new Set<string>();
@@ -519,7 +516,7 @@ export default function ResearchPanel({
         </div>
         <p
           className="research-global-cost"
-          title="Current science / cost of the next research"
+          title={`Current science / cost of the next research in ${currentAge?.name ?? "your age"} (priced by age; the counter restarts each age)`}
         >
           <FlaskConical size={13} strokeWidth={1.7} aria-hidden />
           {fmt(gameState.resources.science)} / {fmt(nextResearchCost.base)}
@@ -527,6 +524,12 @@ export default function ResearchPanel({
         <p className="research-progress">
           {gameState.boughtResearch.length} / {researchDefinitions.length}{" "}
           researched
+          {currentAge && (
+            <>
+              {" · "}
+              {currentAge.name} pricing: {gameState.getResearchCount()} bought
+            </>
+          )}
         </p>
       </div>
       <div

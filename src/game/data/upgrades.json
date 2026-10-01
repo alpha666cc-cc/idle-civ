@@ -263,7 +263,7 @@
       {
         "type": "costReductionFactor",
         "destination": "farm",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -311,7 +311,7 @@
       {
         "type": "costReductionFactor",
         "destination": "farm",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -359,7 +359,7 @@
       {
         "type": "costReductionFactor",
         "destination": "farm",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -627,7 +627,7 @@
       {
         "type": "costReductionFactor",
         "destination": "lumberYard",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -675,7 +675,7 @@
       {
         "type": "costReductionFactor",
         "destination": "lumberYard",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -723,7 +723,7 @@
       {
         "type": "costReductionFactor",
         "destination": "lumberYard",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -961,7 +961,7 @@
       {
         "type": "costReductionFactor",
         "destination": "quarry",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -1004,7 +1004,7 @@
       {
         "type": "costReductionFactor",
         "destination": "quarry",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -1047,7 +1047,7 @@
       {
         "type": "costReductionFactor",
         "destination": "quarry",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -1315,7 +1315,7 @@
       {
         "type": "costReductionFactor",
         "destination": "goldMine",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -1363,7 +1363,7 @@
       {
         "type": "costReductionFactor",
         "destination": "goldMine",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -1411,7 +1411,7 @@
       {
         "type": "costReductionFactor",
         "destination": "goldMine",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -1679,7 +1679,7 @@
       {
         "type": "costReductionFactor",
         "destination": "barracks",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -1727,7 +1727,7 @@
       {
         "type": "costReductionFactor",
         "destination": "barracks",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -1775,7 +1775,7 @@
       {
         "type": "costReductionFactor",
         "destination": "barracks",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -2043,7 +2043,7 @@
       {
         "type": "costReductionFactor",
         "destination": "university",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -2091,7 +2091,7 @@
       {
         "type": "costReductionFactor",
         "destination": "university",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -2139,7 +2139,7 @@
       {
         "type": "costReductionFactor",
         "destination": "university",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -2377,7 +2377,7 @@
       {
         "type": "costReductionFactor",
         "destination": "smithy",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -2420,7 +2420,7 @@
       {
         "type": "costReductionFactor",
         "destination": "smithy",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -2463,7 +2463,7 @@
       {
         "type": "costReductionFactor",
         "destination": "smithy",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -2701,7 +2701,7 @@
       {
         "type": "costReductionFactor",
         "destination": "market",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -2744,7 +2744,7 @@
       {
         "type": "costReductionFactor",
         "destination": "market",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
@@ -2787,12 +2787,12 @@
       {
         "type": "costReductionFactor",
         "destination": "market",
-        "value": 0.01
+        "value": 0.99
       }
     ]
   },
   {
-    "guid": "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d",
+    "guid": "11286f0a-08ff-5644-939e-8868e6cb82bc",
     "key": "wonder0",
     "name": "Great Monument",
     "description": "A magnificent structure that reduces the cost of all buildings by 10%",
@@ -2820,7 +2820,7 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings",
-        "value": 0.1
+        "value": 0.9
       }
     ]
   }

@@ -335,9 +335,13 @@ Create a branching technology tree inspired by broad civilization progression:
 - Writing, administration, and mathematics
 - Navigation, engineering, and organized warfare
 
-Research is a globally priced, one-shot technology tree: the first purchase costs 100
-science and purchase `n` costs `100 × 10^(√n − 1)`. A research definition stores its
-stable id, name, age, category, prerequisites, bonuses, unit unlocks/conversions and
+Research is a one-shot technology tree priced **by the age the player is in**, not
+globally: each age carries a `research: { base, factor }` schedule and prices its
+purchase `n` at `base × factor^(√n − 1)`, where `n` counts only research bought in
+that age. Entering an age resets `n` to 0; buying a tech from an earlier age costs
+the current age's next price and does not advance the counter. A research definition
+stores its stable id, name, age, category, prerequisites, bonuses, unit
+unlocks/conversions and
 ignored-effect report—not an individual price. Age-0 includes Torsion Physics, so the
 Ancient roster reaches its final Catapult before the Iron Age.
 

@@ -711,9 +711,30 @@ export class CivilizationState {
   }
 
   /**
+   * Research bought **in the current age** — the ordinal `n` the price curve is
+   * evaluated at. It is derived rather than stored, which gives the reset for
+   * free: entering a new age means nothing in that age has been bought yet, so
+   * the counter reads 0. It also means a tech bought from an *earlier* age never
+   * advances it.
+   */
+  getResearchCount(): number {
+    const currentAge = this.getCurrentAge();
+    if (!currentAge) return 0;
+    const ageIndex = ageDefinitions.findIndex(
+      ({ key }) => key === currentAge.key,
+    );
+    let count = 0;
+    for (const id of this.boughtResearch) {
+      if (findResearchDefinition(id)?.age === ageIndex) count += 1;
+    }
+    return count;
+  }
+
+  /**
    * The cost of `count` sequential research purchases after the current bought
-   * count. Uses the building cost reduction system to allow upgrades, battles,
-   * and ages to modify research costs.
+   * count. Priced by the **current** age's schedule (`base × factor^(√n − 1)`),
+   * so a tech bought from an earlier age costs this same price and simply does
+   * not advance the curve. Cost-reduction bonuses still apply on top.
    */
   getResearchCostForCount(count: number): BuildingCost[] {
     const purchases = Number.isFinite(count)
@@ -721,13 +742,20 @@ export class CivilizationState {
       : 0;
     if (purchases === 0) return [];
 
-    // Original research formula: 100 × 10^(√n − 1) where n is the purchase ordinal
+    const schedule =
+      this.getCurrentAge()?.research ??
+      ({ base: ExpNumber.fromNumber(100), factor: 10 } as const);
+    const bought = this.getResearchCount();
+
+    // base × factor^(√n − 1) where n is the purchase ordinal within this age.
     let total = ExpNumber.ZERO;
     for (let offset = 0; offset < purchases; offset += 1) {
-      const purchaseNumber = this.boughtResearch.length + offset + 1;
+      const purchaseNumber = bought + offset + 1;
       total = total.add(
-        ExpNumber.fromNumber(100).mul(
-          ExpNumber.fromNumber(10).pow(Math.sqrt(purchaseNumber) - 1),
+        schedule.base.mul(
+          ExpNumber.fromNumber(schedule.factor).pow(
+            Math.sqrt(purchaseNumber) - 1,
+          ),
         ),
       );
     }
@@ -735,15 +763,15 @@ export class CivilizationState {
     // Apply cost reductions and multipliers from the bonus system
     const { reductions } = this.getBuildingCostModifiers("research");
     let scaledTotal = total.mul(reductions.percent);
-    scaledTotal = scaledTotal.mul(reductions.multiplier);
+    scaledTotal = scaledTotal.mul(reductions.base);
 
     return [{ resource: "science", base: scaledTotal, factor: 1 }];
   }
 
   /**
-   * The cost of the next research purchase, global across the whole tree. The
-   * purchase ordinal starts at 1, so the first tech still costs 100 science and
-   * later purchases use `100 × 10^(√n − 1)`.
+   * The cost of the next research purchase, on the current age's schedule. The
+   * purchase ordinal starts at 1 within the age, so the first tech of an age
+   * costs exactly that age's base.
    */
   getResearchNextCost(): BuildingCost[] {
     return this.getResearchCostForCount(1);
@@ -1301,8 +1329,7 @@ export class CivilizationState {
     const sources = this.activeBonuses().filter(
       ([, bonus]) =>
         targetMatches(String(bonus.destination)) &&
-        (bonus.type.startsWith("costReduction") ||
-          bonus.type === "costMultiplier"),
+        bonus.type.startsWith("costReduction"),
     );
     return {
       sources,
@@ -1331,7 +1358,12 @@ export class CivilizationState {
     return this.costReductionsFor(unitId);
   }
 
-  /** Per-unit pipeline inputs, shared by buildings, units and their previews. */
+  /**
+   * Per-unit pipeline inputs, shared by buildings, units and their previews.
+   * `unitFactor` raises the growth factor to `reductions.factor` (the product of
+   * every `costReductionFactor` power, bonus.ts), floored at 1.01. Raising to a
+   * power scales the log-growth exponent by exactly that power on every factor.
+   */
   private costParameters(
     costs: BuildingCost[],
     reductions: CostReductions,
@@ -1340,15 +1372,11 @@ export class CivilizationState {
       cost,
       unitBase: ExpNumber.max(
         ExpNumber.ZERO,
-        cost.base.mul(reductions.base).mul(reductions.multiplier),
+        cost.base.mul(reductions.base),
       ),
       unitFactor: ExpNumber.max(
         ExpNumber.fromNumber(1.01),
-        ExpNumber.fromNumber(1.01).add(
-          ExpNumber.fromNumber(cost.factor)
-            .sub(ExpNumber.fromNumber(1.01))
-            .mul(reductions.factor),
-        ),
+        ExpNumber.fromNumber(cost.factor).pow(reductions.factor),
       ),
       reductions,
     }));

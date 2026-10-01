@@ -1128,17 +1128,13 @@ function App() {
         return `${target} cost −${percent}%`;
       }
       if (bonus.type === "costReductionFactor") {
-        return `${target} growth factor −${fmt(bonus.value)}`;
+        return `${target} cost growth ^${fmt(bonus.value)}`;
       }
       if (bonus.type === "costReductionFlat") {
         return `${target} cost −${fmt(bonus.value)}`;
       }
       if (bonus.type === "costReductionBase") {
-        const percent =
-          Math.round(
-            bonus.value.mul(ExpNumber.fromNumber(100)).toNumber() * 10,
-          ) / 10;
-        return `${target} base cost −${percent}%`;
+        return `${target} base cost ×${fmt(bonus.value)}`;
       }
     }
     return bonus.type;
@@ -1167,9 +1163,10 @@ function App() {
       return `${target} ×${fmt(bonus.value)}`;
     }
     if (bonus.type === "costReductionBase") {
-      return `${target} base cost −${Math.round(
-        bonus.value.mul(ExpNumber.fromNumber(100)).toNumber(),
-      )}%`;
+      return `${target} base cost ×${fmt(bonus.value)}`;
+    }
+    if (bonus.type === "costReductionFactor") {
+      return `${target} cost growth ^${fmt(bonus.value)}`;
     }
     if (bonus.type.startsWith("costReduction")) {
       return `${target} −${fmt(bonus.value)}`;
@@ -1184,10 +1181,11 @@ function App() {
       const previous = grouped.get(key);
       const value = !previous
         ? bonus.value
-        : bonus.type === "attributeMultiplier"
+        : bonus.type === "attributeMultiplier" ||
+            bonus.type === "costReductionBase" ||
+            bonus.type === "costReductionFactor"
           ? previous.value.mul(bonus.value)
-          : bonus.type === "costReductionBase" ||
-              bonus.type === "costReductionPercent"
+          : bonus.type === "costReductionPercent"
             ? ExpNumber.ONE.sub(
                 ExpNumber.ONE.sub(previous.value).mul(
                   ExpNumber.ONE.sub(bonus.value),

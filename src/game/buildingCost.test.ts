@@ -207,7 +207,7 @@ describe("resources spent", () => {
     const target = researchDefinitions.find((r) => start.isResearchUnlocked(r.key))!;
     const next = start.buyResearch(target.key);
     expect(next.isResearchBought(target.key)).toBe(true);
-    expect(spent(next, "science")).toBeCloseTo(100, 6);
+    expect(spent(next, "science")).toBeCloseTo(1000, 6);
   });
 
   it("records an upgrade purchase", () => {
