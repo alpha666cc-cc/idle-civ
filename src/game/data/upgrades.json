@@ -2802,17 +2802,17 @@
     "costs": [
       {
         "resource": "gold",
-        "base": "1e4",
+        "base": "1e18",
         "factor": 1
       },
       {
         "resource": "wood",
-        "base": "5e3",
+        "base": "5e17",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "5e3",
+        "base": "5e18",
         "factor": 1
       }
     ],
@@ -2821,6 +2821,16 @@
         "type": "costReductionFactor",
         "destination": "allBuildings",
         "value": 0.9
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allUnits",
+        "value": 0.8
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "people",
+        "value": 0.95
       }
     ]
   }

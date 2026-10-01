@@ -247,13 +247,18 @@
     "enemyArmy": [
       {
         "unitId": "spearman_iron",
-        "count": 30000,
+        "count": 20000,
         "label": "30k defenders"
       },
       {
         "unitId": "ballista",
         "count": 10,
         "label": "10 ballista"
+      },
+      {
+        "unitId": "bowman_bronze",
+        "count": 10000,
+        "label": "10k archers"
       }
     ],
     "enemyBoosts": [],
@@ -288,7 +293,7 @@
       },
       {
         "unitId": "cavalry_iron",
-        "count": 50000,
+        "count": 10000,
         "label": "5 sea peoples cavalry"
       },
       {
@@ -298,7 +303,7 @@
       },
       {
         "unitId": "bowman_bronze",
-        "count": 30000,
+        "count": 50000,
         "label": "3k bowmen"
       }
     ],
@@ -306,18 +311,18 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "military",
-        "value": 1.1
+        "destination": "wood",
+        "value": "50"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "unitAll.hp",
-        "value": 1.05
+        "destination": "food",
+        "value": "1000"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "unitAll.attack",
-        "value": 1.05
+        "destination": "stone",
+        "value": "50"
       }
     ],
     "unlocks": []

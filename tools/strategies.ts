@@ -1107,6 +1107,7 @@ const getCheapestHousingAction = (
 abstract class BaseStrategy implements SimulationStrategy {
   abstract name: string;
   abstract description: string;
+  private gatherFocus: ProductionResourceKey | undefined;
   private cachedSimulatorPlan:
     | {
         snapshots: SimulationContext["snapshots"];
@@ -1283,12 +1284,11 @@ abstract class BaseStrategy implements SimulationStrategy {
     ) {
       return action;
     }
+    const resource = action.resource as ProductionResourceKey;
+    this.gatherFocus = resource;
     return (
-      this.assignWorkersByRatio(
-        state,
-        this.getWorkerRatios(),
-        action.resource as ProductionResourceKey,
-      ) ?? action
+      this.assignWorkersByRatio(state, this.getWorkerRatios(), resource) ??
+      action
     );
   }
 
@@ -1518,11 +1518,25 @@ abstract class BaseStrategy implements SimulationStrategy {
     if (upgradeAction) return upgradeAction;
 
     // Priority 5: Assign workers
-    const workerAction = this.assignWorkersByRatio(
-      state,
-      this.getWorkerRatios(),
-    );
-    if (workerAction) return workerAction;
+    const gatherFocus = this.gatherFocus;
+    if (gatherFocus) {
+      this.gatherFocus = undefined;
+      const focusedWorkerAction = this.assignWorkersByRatio(
+        state,
+        this.getWorkerRatios(),
+        gatherFocus,
+      );
+      if (focusedWorkerAction) {
+        this.gatherFocus = gatherFocus;
+        return focusedWorkerAction;
+      }
+    } else {
+      const workerAction = this.assignWorkersByRatio(
+        state,
+        this.getWorkerRatios(),
+      );
+      if (workerAction) return workerAction;
+    }
 
     // Priority 6: Build buildings (try to build multiple if affordable)
     const building = this.findBestBuilding(state, this.getBuildingPriority());
