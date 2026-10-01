@@ -9,7 +9,15 @@ describe("player-facing number rounding", () => {
     expect(formatNumber(noisy, "named")).toBe("240");
     expect(formatNumber(noisy, "compact")).toBe("240");
     expect(formatNumber(noisy, "scientific")).toBe("2.4e2");
-    expect(formatNumber(noisy, "engineering")).toBe("240e0");
+    expect(formatNumber(noisy, "engineering")).toBe("240");
+  });
+
+  it("omits the e0 tier in engineering format", () => {
+    expect(formatNumber(1, "engineering")).toBe("1");
+    expect(formatNumber(999, "engineering")).toBe("999");
+    expect(formatNumber(1000, "engineering")).toBe("1e3");
+    expect(formatNumber(12_500, "engineering")).toBe("12.5e3");
+    expect(formatNumber(-240, "engineering")).toBe("-240");
   });
 
   it("rounds an ExpNumber without changing its stored value", () => {

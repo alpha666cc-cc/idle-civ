@@ -3,7 +3,8 @@
  *
  * Supported formats:
  *   "scientific"  – 1.23e9      (mantissa 1–10, any exponent)
- *   "engineering" – 12.35e9     (mantissa 1–1000, exponent a multiple of 3)
+ *   "engineering" – 12.35e9     (mantissa 1–1000, exponent a multiple of 3,
+ *                                omitted entirely below 1000)
  *   "named"       – 1.23B       (K, M, B, T, Qa, Qi, Sx, Sp, Oc, No, …)
  *   "compact"     – 1.23C       (none, A, B, … Z, AA, … ZZ, AAA, …)
  */
@@ -208,6 +209,8 @@ export function formatNumber(
       const tier = Math.floor(exponent / 3);
       const exp = tier * 3;
       const display = mantissa * 10 ** (exponent - exp);
+      // Tier 0 spans 1–999, where a bare number reads better than a bare "e0".
+      if (exp === 0) return withSign(scaled(display));
       return withSign(`${scaled(display)}e${formatExponent(exp)}`);
     }
 

@@ -441,8 +441,9 @@ with a negative base and a non-integer exponent yields `NAN`.
 
 `formatNumber(value, format)` accepts an `ExpNumber` **or** a plain number, in four
 formats: `"scientific"` (`1.23e9`), `"engineering"` (`12.35e9`, exponent a multiple of
-3), `"named"` (`1.23K/M/B/T/Qa…Tr`, falling back to Excel-style column letters) and
-`"compact"` (`1.23C`, Excel-style `A…Z, AA…ZZ, AAA…`). `|value| < 1` renders as `"0"`;
+3 and omitted below 1000), `"named"` (`1.23K/M/B/T/Qa…Tr`, falling back to
+Excel-style column letters) and `"compact"` (`1.23C`, Excel-style `A…Z, AA…ZZ,
+AAA…`). `|value| < 1` renders as `"0"`;
 two decimals; past `Number.MAX_SAFE_INTEGER` the exponent itself prints in scientific
 notation. `compactSuffix(tier)` is exported for reuse.
 
