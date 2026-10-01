@@ -24,6 +24,7 @@ import { GameSimulation, createInitialState } from "./simulation";
 import type { SimulationStrategy } from "./simulation";
 import {
   BalancedStrategy,
+  CheapestStrategy,
   getAgeRouteGrowthAction,
   getAgeRouteTargetPopulation,
   getRequiredAgeAction,
@@ -408,7 +409,11 @@ describe("simulation event snapshots", () => {
     expect(last.timestamp).toBe(250);
 
     // The final row must be the true end, not a stale interval tick.
-    expect(recorded.snapshots.every((s, i) => i === 0 || s.timestamp > recorded.snapshots[i - 1].timestamp)).toBe(true);
+    expect(
+      recorded.snapshots.every(
+        (s, i) => i === 0 || s.timestamp > recorded.snapshots[i - 1].timestamp,
+      ),
+    ).toBe(true);
 
     // `--no-snapshots` still records nothing, and the end-state snapshot must
     // not fire twice when the run already ended on an interval tick.
@@ -932,9 +937,16 @@ describe("required progression strategy", () => {
   });
 
   it("buys the cheapest affordable purchase instead of a priority purchase", () => {
-    const strategy = getStrategy("cheapest");
-    expect(strategy).toBeDefined();
-    if (!strategy) return;
+    class PlanCountingCheapestStrategy extends CheapestStrategy {
+      simulatorPlanCalls = 0;
+
+      protected getSimulatorActions(_state: CivilizationState) {
+        this.simulatorPlanCalls += 1;
+        return [];
+      }
+    }
+
+    const strategy = new PlanCountingCheapestStrategy();
 
     const state = makeState({
       resources: { wood: 10, food: 0, stone: 0, gold: 0 },
@@ -947,6 +959,7 @@ describe("required progression strategy", () => {
       building: "house",
       count: 1,
     });
+    expect(strategy.simulatorPlanCalls).toBe(0);
   });
 
   it("keeps the cheapest strategy in the simulation registry", () => {
@@ -1134,167 +1147,180 @@ describe("required progression strategy", () => {
     expect(missingBuildings.canEnterAge("age0")).toBe(false);
   });
 
-describe("saveEntry", () => {
-  /** A mid-game settlement with a known run clock and a real building set. */
-  const saveableState = (runTimeMs = 0) =>
-    new CivilizationState(
-      {
-        ...emptyResourceAmounts(),
-        food: ExpNumber.fromNumber(1e6),
-        wood: ExpNumber.fromNumber(1e6),
-      },
-      emptyWorkerAssignments(),
-      { townHall: 1, house: 3, farm: 2, people: 40 },
-      emptyResourceFactors(),
-      {},
-      0,
-      ["farmEnhancer1"],
-      ["age0_1_first_fire"],
-      ["age0"],
-      ["foodHoarder1"],
-      { ...emptyStatistics(), runTimeMs },
-    );
-
-  const withTempDir = (body: (dir: string) => void) => {
-    const dir = mkdtempSync(join(tmpdir(), "idle-civ-save-"));
-    try {
-      body(dir);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  };
-
-  it("round-trips a save through every encoding", () => {
-    withTempDir((dir) => {
-      const source = saveableState();
-      const data = createSaveData(source, "entry-test", 1000);
-      for (const format of ["json", "xml", "base64"] as const) {
-        const path = join(dir, `save.${format}`);
-        writeFileSync(path, serializeSave(data, format), "utf8");
-        const entry = loadSaveEntry(path);
-        expect(entry.format).toBe(format);
-        expect(entry.version).toBe(SAVE_VERSION);
-        // The state really came from the file, not a fresh civilization.
-        expect(entry.state.getBuildingCount("house")).toBe(3);
-        expect(entry.state.getBuildingCount("people")).toBe(40);
-        expect(entry.state.boughtUpgrades).toEqual(["farmEnhancer1"]);
-        expect(entry.state.defeatedEncounters).toEqual(["age0_1_first_fire"]);
-        expect(entry.state.enteredAges).toEqual(["age0"]);
-      }
-    });
-  });
-
-  it("reports the elapsed play time so a run can be lined up with the save", () => {
-    withTempDir((dir) => {
-      // 90 seconds of run time is 1m 30s on the save's own clock.
-      const path = join(dir, "save.json");
-      writeFileSync(
-        path,
-        serializeSave(createSaveData(saveableState(90_000), "elapsed", 1), "json"),
-        "utf8",
-      );
-      const entry = loadSaveEntry(path);
-      expect(entry.elapsedSeconds).toBe(90);
-      expect(describeSaveEntry(entry)).toContain("1m 30s");
-    });
-  });
-
-  it("refuses a missing file and a file that is not a save", () => {
-    withTempDir((dir) => {
-      expect(() => loadSaveEntry(join(dir, "nope.json"))).toThrow(
-        /Could not read the save file/,
-      );
-      const notASave = join(dir, "plain.json");
-      writeFileSync(notASave, JSON.stringify({ hello: "world" }), "utf8");
-      expect(() => loadSaveEntry(notASave)).toThrow();
-    });
-  });
-
-  it("writes a run's outcome as a save that loads back identically", () => {
-    withTempDir((dir) => {
-      const result = new GameSimulation(saveableState(), {
-        name: "noop",
-        description: "does nothing",
-        decideAction: () => null,
-      }, {
-        seed: 42,
-        objective: { type: "timeLimit", seconds: 10 },
-        gatherClicksPerAction: 1,
-        maxGameTime: 10,
-        recordSnapshots: false,
-        fromScratch: false,
-      }).run();
-
-      for (const [suffix, format] of [
-        [".json", "json"],
-        [".xml", "xml"],
-        [".b64", "base64"],
-      ] as const) {
-        const path = join(dir, `out${suffix}`);
-        const written = writeSaveEntry(path, result.finalState);
-        expect(written.format).toBe(format);
-        expect(written.version).toBe(SAVE_VERSION);
-
-        // The whole point: what was written can be read straight back in.
-        const reloaded = loadSaveEntry(path);
-        expect(reloaded.state.getBuildingCount("house")).toBe(
-          result.finalState.getBuildingCount("house"),
-        );
-        expect(reloaded.state.population.toString()).toBe(
-          result.finalState.population.toString(),
-        );
-        expect(reloaded.state.enteredAges).toEqual(
-          result.finalState.enteredAges,
-        );
-        expect(reloaded.state.boughtUpgrades).toEqual(
-          result.finalState.boughtUpgrades,
-        );
-      }
-    });
-  });
-
-  it("carries the source save's identity when continuing one", () => {
-    withTempDir((dir) => {
-      const source = join(dir, "source.json");
-      writeFileSync(
-        source,
-        serializeSave(createSaveData(saveableState(60_000), "fixed-guid", 4242), "json"),
-        "utf8",
-      );
-      const entry = loadSaveEntry(source);
-      expect(entry.guid).toBe("fixed-guid");
-      expect(entry.createdAtMs).toBe(4242);
-
-      // Resuming a save and writing one back is one continuous save-file, so
-      // the identity carries across rather than a fresh document being minted.
-      const continued = writeSaveEntry(join(dir, "next.json"), saveableState(), {
-        from: entry,
-      });
-      expect(continued.guid).toBe("fixed-guid");
-      expect(loadSaveEntry(join(dir, "next.json")).createdAtMs).toBe(4242);
-
-      // A run with no source save mints its own.
-      expect(writeSaveEntry(join(dir, "fresh.json"), saveableState()).guid).not.toBe(
-        "fixed-guid",
-      );
-    });
-  });
-
-  it("migrates the checked-in saves/age1.json from version 4", () => {
-    // age1.json predates SAVE_VERSION 5, so the loader must migrate it rather
-    // than reject it. Reading the real file also keeps the CLI's headline
-    // example covered.
-    const entry = loadSaveEntry("saves/age1.json");
-    expect(entry.version).toBe(SAVE_VERSION);
-    expect(entry.elapsedSeconds).toBeGreaterThan(0);
-    expect(entry.state.defeatedEncounters.length).toBeGreaterThan(0);
-    expect(
-      Object.values(entry.state.builtBuildings).reduce(
-        (sum, count) => sum + (count ?? 0),
+  describe("saveEntry", () => {
+    /** A mid-game settlement with a known run clock and a real building set. */
+    const saveableState = (runTimeMs = 0) =>
+      new CivilizationState(
+        {
+          ...emptyResourceAmounts(),
+          food: ExpNumber.fromNumber(1e6),
+          wood: ExpNumber.fromNumber(1e6),
+        },
+        emptyWorkerAssignments(),
+        { townHall: 1, house: 3, farm: 2, people: 40 },
+        emptyResourceFactors(),
+        {},
         0,
-      ),
-    ).toBeGreaterThan(0);
-  });
-});
+        ["farmEnhancer1"],
+        ["age0_1_first_fire"],
+        ["age0"],
+        ["foodHoarder1"],
+        { ...emptyStatistics(), runTimeMs },
+      );
 
+    const withTempDir = (body: (dir: string) => void) => {
+      const dir = mkdtempSync(join(tmpdir(), "idle-civ-save-"));
+      try {
+        body(dir);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    };
+
+    it("round-trips a save through every encoding", () => {
+      withTempDir((dir) => {
+        const source = saveableState();
+        const data = createSaveData(source, "entry-test", 1000);
+        for (const format of ["json", "xml", "base64"] as const) {
+          const path = join(dir, `save.${format}`);
+          writeFileSync(path, serializeSave(data, format), "utf8");
+          const entry = loadSaveEntry(path);
+          expect(entry.format).toBe(format);
+          expect(entry.version).toBe(SAVE_VERSION);
+          // The state really came from the file, not a fresh civilization.
+          expect(entry.state.getBuildingCount("house")).toBe(3);
+          expect(entry.state.getBuildingCount("people")).toBe(40);
+          expect(entry.state.boughtUpgrades).toEqual(["farmEnhancer1"]);
+          expect(entry.state.defeatedEncounters).toEqual(["age0_1_first_fire"]);
+          expect(entry.state.enteredAges).toEqual(["age0"]);
+        }
+      });
+    });
+
+    it("reports the elapsed play time so a run can be lined up with the save", () => {
+      withTempDir((dir) => {
+        // 90 seconds of run time is 1m 30s on the save's own clock.
+        const path = join(dir, "save.json");
+        writeFileSync(
+          path,
+          serializeSave(
+            createSaveData(saveableState(90_000), "elapsed", 1),
+            "json",
+          ),
+          "utf8",
+        );
+        const entry = loadSaveEntry(path);
+        expect(entry.elapsedSeconds).toBe(90);
+        expect(describeSaveEntry(entry)).toContain("1m 30s");
+      });
+    });
+
+    it("refuses a missing file and a file that is not a save", () => {
+      withTempDir((dir) => {
+        expect(() => loadSaveEntry(join(dir, "nope.json"))).toThrow(
+          /Could not read the save file/,
+        );
+        const notASave = join(dir, "plain.json");
+        writeFileSync(notASave, JSON.stringify({ hello: "world" }), "utf8");
+        expect(() => loadSaveEntry(notASave)).toThrow();
+      });
+    });
+
+    it("writes a run's outcome as a save that loads back identically", () => {
+      withTempDir((dir) => {
+        const result = new GameSimulation(
+          saveableState(),
+          {
+            name: "noop",
+            description: "does nothing",
+            decideAction: () => null,
+          },
+          {
+            seed: 42,
+            objective: { type: "timeLimit", seconds: 10 },
+            gatherClicksPerAction: 1,
+            maxGameTime: 10,
+            recordSnapshots: false,
+            fromScratch: false,
+          },
+        ).run();
+
+        for (const [suffix, format] of [
+          [".json", "json"],
+          [".xml", "xml"],
+          [".b64", "base64"],
+        ] as const) {
+          const path = join(dir, `out${suffix}`);
+          const written = writeSaveEntry(path, result.finalState);
+          expect(written.format).toBe(format);
+          expect(written.version).toBe(SAVE_VERSION);
+
+          // The whole point: what was written can be read straight back in.
+          const reloaded = loadSaveEntry(path);
+          expect(reloaded.state.getBuildingCount("house")).toBe(
+            result.finalState.getBuildingCount("house"),
+          );
+          expect(reloaded.state.population.toString()).toBe(
+            result.finalState.population.toString(),
+          );
+          expect(reloaded.state.enteredAges).toEqual(
+            result.finalState.enteredAges,
+          );
+          expect(reloaded.state.boughtUpgrades).toEqual(
+            result.finalState.boughtUpgrades,
+          );
+        }
+      });
+    });
+
+    it("carries the source save's identity when continuing one", () => {
+      withTempDir((dir) => {
+        const source = join(dir, "source.json");
+        writeFileSync(
+          source,
+          serializeSave(
+            createSaveData(saveableState(60_000), "fixed-guid", 4242),
+            "json",
+          ),
+          "utf8",
+        );
+        const entry = loadSaveEntry(source);
+        expect(entry.guid).toBe("fixed-guid");
+        expect(entry.createdAtMs).toBe(4242);
+
+        // Resuming a save and writing one back is one continuous save-file, so
+        // the identity carries across rather than a fresh document being minted.
+        const continued = writeSaveEntry(
+          join(dir, "next.json"),
+          saveableState(),
+          {
+            from: entry,
+          },
+        );
+        expect(continued.guid).toBe("fixed-guid");
+        expect(loadSaveEntry(join(dir, "next.json")).createdAtMs).toBe(4242);
+
+        // A run with no source save mints its own.
+        expect(
+          writeSaveEntry(join(dir, "fresh.json"), saveableState()).guid,
+        ).not.toBe("fixed-guid");
+      });
+    });
+
+    it("migrates the checked-in saves/age1.json from version 4", () => {
+      // age1.json predates SAVE_VERSION 5, so the loader must migrate it rather
+      // than reject it. Reading the real file also keeps the CLI's headline
+      // example covered.
+      const entry = loadSaveEntry("saves/age1.json");
+      expect(entry.version).toBe(SAVE_VERSION);
+      expect(entry.elapsedSeconds).toBeGreaterThan(0);
+      expect(entry.state.defeatedEncounters.length).toBeGreaterThan(0);
+      expect(
+        Object.values(entry.state.builtBuildings).reduce(
+          (sum, count) => sum + (count ?? 0),
+          0,
+        ),
+      ).toBeGreaterThan(0);
+    });
+  });
 });

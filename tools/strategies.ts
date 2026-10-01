@@ -1579,9 +1579,6 @@ export class CheapestStrategy extends BaseStrategy {
       return this.focusWorkersForGather(state, requiredPreparationAction);
     }
 
-    const simulatorActions = this.getSimulatorActions(state);
-    if (simulatorActions.length > 0) return simulatorActions[0];
-
     const candidate = getCheapestPurchaseCandidate(state);
     if (candidate && isPurchaseAffordable(state, candidate)) {
       return withMaxAffordableCount(state, candidate);
