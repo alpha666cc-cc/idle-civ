@@ -702,6 +702,23 @@ const getSimulatorUnitActions = (
   return actions;
 };
 
+const getRemainingSimulatorPlan = (
+  state: CivilizationState,
+  plan: SimulatorResult,
+): SimulatorResult => {
+  const composition = new Map<string, number>();
+  for (const [unitId, targetCount] of plan.totalComposition) {
+    const missing = targetCount
+      .sub(state.getUnitCount(unitId))
+      .ceil()
+      .toNumber();
+    if (Number.isFinite(missing) && missing > 0) {
+      composition.set(unitId, missing);
+    }
+  }
+  return { ...plan, composition };
+};
+
 /** Unlock research required for the new unit types in the simulator plan. */
 const getSimulatorResearchIds = (
   state: CivilizationState,
@@ -1027,6 +1044,48 @@ const gatherForPurchase = (
     if (rightDeficit.gt(leftDeficit)) return 1;
     return left.resource.localeCompare(right.resource);
   })[0].resource;
+};
+
+const getCheapestHousingAction = (
+  state: CivilizationState,
+): SimulationAction | null => {
+  if (
+    !state.isBuildingAvailable("people") ||
+    !state.population.gt(ExpNumber.ZERO) ||
+    !state.population.gte(state.maximumPopulation.floor())
+  ) {
+    return null;
+  }
+  if (state.canBuild("house")) {
+    return { type: "build", building: "house", count: 1 };
+  }
+  if (state.canBuild("townHall")) {
+    return { type: "build", building: "townHall", count: 1 };
+  }
+
+  const nextHousing =
+    state.canBuild("house") || !state.canBuild("townHall")
+      ? "house"
+      : "townHall";
+  const costs = state.getBuildingCost(
+    nextHousing,
+    state.getBuildingCount(nextHousing),
+    1,
+  );
+  const missing = costs
+    .filter(
+      ({ resource, base }) =>
+        state.resources[resource].lt(base) &&
+        isResourceGatherable(state, resource),
+    )
+    .sort((left, right) => {
+      const leftDeficit = left.base.sub(state.resources[left.resource]);
+      const rightDeficit = right.base.sub(state.resources[right.resource]);
+      if (leftDeficit.gt(rightDeficit)) return -1;
+      if (rightDeficit.gt(leftDeficit)) return 1;
+      return left.resource.localeCompare(right.resource);
+    });
+  return missing[0] ? { type: "gather", resource: missing[0].resource } : null;
 };
 
 /**
@@ -1546,6 +1605,48 @@ abstract class BaseStrategy implements SimulationStrategy {
 export class CheapestStrategy extends BaseStrategy {
   name = "cheapest";
   description = "Always buy the cheapest legal purchase";
+  private cachedSimulatorPlan:
+    | {
+        snapshots: SimulationContext["snapshots"];
+        battleId: string;
+        plannedAt: number;
+        plan: SimulatorResult | null;
+      }
+    | undefined;
+
+  protected computeSimulatorPlan(
+    state: CivilizationState,
+  ): SimulatorResult | null {
+    return getSimulatorBattlePlan(state);
+  }
+
+  private getCachedSimulatorPlan(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulatorResult | null {
+    const battle = getRequiredBattle(state);
+    if (!battle) {
+      this.cachedSimulatorPlan = undefined;
+      return null;
+    }
+
+    const cached = this.cachedSimulatorPlan;
+    if (
+      !cached ||
+      cached.snapshots !== context.snapshots ||
+      cached.battleId !== battle.key ||
+      context.gameTime - cached.plannedAt >= 60
+    ) {
+      const plan = this.computeSimulatorPlan(state);
+      this.cachedSimulatorPlan = {
+        snapshots: context.snapshots,
+        battleId: battle.key,
+        plannedAt: context.gameTime,
+        plan,
+      };
+    }
+    return this.cachedSimulatorPlan.plan;
+  }
 
   protected shouldLaunchBattle(_state: CivilizationState): boolean {
     return true;
@@ -1566,7 +1667,7 @@ export class CheapestStrategy extends BaseStrategy {
 
   decideAction(
     state: CivilizationState,
-    _context: SimulationContext,
+    context: SimulationContext,
   ): SimulationAction | null {
     const requiredAgeAction = getRequiredAgeAction(state);
     if (requiredAgeAction) return requiredAgeAction;
@@ -1579,6 +1680,22 @@ export class CheapestStrategy extends BaseStrategy {
       return this.focusWorkersForGather(state, requiredPreparationAction);
     }
 
+    const requiredResearchAction = this.getResearchAction(state);
+    if (requiredResearchAction) return requiredResearchAction;
+
+    const plan = this.getCachedSimulatorPlan(state, context);
+    const remainingPlan = plan ? getRemainingSimulatorPlan(state, plan) : null;
+    if (plan) {
+      const researchAction = getSimulatorResearchAction(state, plan);
+      if (researchAction) return researchAction;
+
+      const unitActions = getSimulatorUnitActions(state, remainingPlan!);
+      if (unitActions.length > 0) return unitActions[0];
+    }
+
+    const housingAction = getCheapestHousingAction(state);
+    if (housingAction) return this.focusWorkersForGather(state, housingAction);
+
     const candidate = getCheapestPurchaseCandidate(state);
     if (candidate && isPurchaseAffordable(state, candidate)) {
       return withMaxAffordableCount(state, candidate);
@@ -1589,6 +1706,13 @@ export class CheapestStrategy extends BaseStrategy {
       this.getWorkerRatios(),
     );
     if (workerAction) return workerAction;
+
+    if (remainingPlan) {
+      const simulatorGather = getSimulatorGatherAction(state, remainingPlan);
+      if (simulatorGather) {
+        return this.focusWorkersForGather(state, simulatorGather);
+      }
+    }
 
     if (candidate) {
       const resource = gatherForPurchase(state, candidate);

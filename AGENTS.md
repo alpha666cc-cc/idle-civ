@@ -282,9 +282,19 @@ type BuildingEffects = {
   `tools/gen/units.mjs`. Research is **priced by the age the player is in**, not
   globally: each age carries a `research: { base, factor }` in `ages.json` and
   prices purchase `n` of that age at `base × factor^(√n − 1)`, where `n` counts
-  only research bought *in that age*. Entering an age resets `n` to 0, and a tech
-  bought from an earlier age costs the current age's next price without advancing
-  `n`. `research.json` does not contain per-tech costs.
+  only research bought *in that age*. The pricing age is `getCurrentAge()` — the age
+  the player has advanced **into** by *completing* the previous one (its battles +
+  its building target) and taking that age's completion reward. Age bonuses in
+  `ages.json` are **completion rewards**, not entry bonuses: they are paid out by
+  `enterAge(id)` for the age named `id`, so Ancient's rewards arrive when Ancient is
+  completed and the player moves into the Iron Age. Advancing resets `n` to 0, and a
+  tech bought from an earlier age costs the current age's next price without advancing
+  `n`. `research.json` does not contain per-tech costs. Research is a **buyable**
+like buildings and units — it takes the same four cost-reduction types, folding
+them **per unit** in the §13.1 order `base → factor → percent → flat`, clamped at 0.
+It is not a building, though, so only a bonus naming `"research"` explicitly
+reaches it; the blanket `allBuildings` reductions and the global
+`buildingCostMultiplier` stat do not (`getResearchCostModifiers()` enforces this).
 
 - Cumulative curve: `T(n) = base × (factor^√n − 1)` is the total spent owning `n`
   units, so unit `n` costs `T(n) − T(n−1)` and buying `count` more from `alreadyBuilt` is

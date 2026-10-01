@@ -798,6 +798,30 @@ describe("required progression strategy", () => {
     expect(getRequiredResearchAction(state)).toBeNull();
   });
 
+  it("prioritizes required research without invoking the battle planner", () => {
+    class PlanCountingCheapestStrategy extends CheapestStrategy {
+      simulatorPlanCalls = 0;
+
+      protected computeSimulatorPlan(_state: CivilizationState) {
+        this.simulatorPlanCalls += 1;
+        return null;
+      }
+    }
+
+    const strategy = new PlanCountingCheapestStrategy();
+    const state = makeState({
+      people: 100,
+      buildings: { house: 10, barracks: 1, university: 1, smithy: 1 },
+      resources: { ...simulatorResources, peopleCapacity: 110 },
+      defeatedEncounters: ["age0_1_first_fire"],
+    });
+
+    expect(
+      strategy.decideAction(state, { gameTime: 0, snapshots: [] }),
+    ).toEqual({ type: "buyResearch", researchId: "agriculture" });
+    expect(strategy.simulatorPlanCalls).toBe(0);
+  });
+
   it("does not gather toward a battle plan blocked on unproducible resources", () => {
     // The advisor wants warriors, which cost military. With no barracks there is
     // no military production, so the plan is blocked on infrastructure: the
@@ -940,26 +964,28 @@ describe("required progression strategy", () => {
     class PlanCountingCheapestStrategy extends CheapestStrategy {
       simulatorPlanCalls = 0;
 
-      protected getSimulatorActions(_state: CivilizationState) {
+      protected computeSimulatorPlan(_state: CivilizationState) {
         this.simulatorPlanCalls += 1;
-        return [];
+        return null;
       }
     }
 
     const strategy = new PlanCountingCheapestStrategy();
+    const snapshots: [] = [];
 
     const state = makeState({
       resources: { wood: 10, food: 0, stone: 0, gold: 0 },
     });
 
-    expect(
-      strategy.decideAction(state, { gameTime: 0, snapshots: [] }),
-    ).toEqual({
+    expect(strategy.decideAction(state, { gameTime: 0, snapshots })).toEqual({
       type: "build",
       building: "house",
       count: 1,
     });
-    expect(strategy.simulatorPlanCalls).toBe(0);
+    strategy.decideAction(state, { gameTime: 30, snapshots });
+    expect(strategy.simulatorPlanCalls).toBe(1);
+    strategy.decideAction(state, { gameTime: 60, snapshots });
+    expect(strategy.simulatorPlanCalls).toBe(2);
   });
 
   it("keeps the cheapest strategy in the simulation registry", () => {
