@@ -7,6 +7,7 @@
  */
 import { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
+import { ageDefinitions } from "../src/game/ages.js";
 import {
   buildingDefinitions,
   type BuildingCost,
@@ -23,6 +24,7 @@ import { isBuyableUnit, unitDefinitions } from "../src/game/units.js";
 import { isResourceGatherable, type SimulationAction } from "./simulation.js";
 
 export type RoiBuyableKind =
+  | "age"
   | "building"
   | "research"
   | "upgrade"
@@ -30,6 +32,7 @@ export type RoiBuyableKind =
   | "battle";
 
 export type RoiBuyable =
+  | { kind: "age"; id: string }
   | { kind: "building"; id: BuildingKey }
   | { kind: "research"; id: string }
   | { kind: "upgrade"; id: string }
@@ -53,6 +56,8 @@ export type RoiOptions = {
   gatherClicksPerSecond?: number;
   /** Extra preference for the intentionally large enhancer effects. */
   upgradeMultiplier?: number;
+  /** Population milestone currently targeted by campaign progression. */
+  populationTarget?: number;
   /** Units are available to the evaluator, but speedrun leaves recruitment
    * to the battle simulator. */
   includeUnits?: boolean;
@@ -70,6 +75,8 @@ export type RoiMetrics = {
   military: number;
   unlocks: number;
   costSavings: number;
+  campaign: number;
+  campaignTime: number;
 };
 
 export type RoiEvaluation = {
@@ -145,10 +152,15 @@ const waitForCosts = (
   state: CivilizationState,
   costs: readonly BuildingCost[],
   gatherClicksPerSecond: number,
+  stockState: CivilizationState = state,
+  useCurrentStock = true,
 ): number => {
   let wait = 0;
   for (const { resource, base } of costs) {
-    const missing = base.sub(state.resources[resource]);
+    const available = useCurrentStock
+      ? stockState.resources[resource]
+      : ExpNumber.ZERO;
+    const missing = base.sub(available);
     if (missing.lte(ExpNumber.ZERO)) continue;
     const income = effectiveIncome(state, resource, gatherClicksPerSecond);
     if (!income.gt(ExpNumber.ZERO)) return Number.POSITIVE_INFINITY;
@@ -232,6 +244,8 @@ const applyBuyable = (
       return state.buyUpgrade(buyable.id);
     case "unit":
       return state.buyUnit(buyable.id, 1);
+    case "age":
+      return state.enterAge(buyable.id);
     // Battles are never applied directly: `evaluateBattle` arms a probe with the
     // plan's army first, which is the whole point of the evaluation.
     case "battle":
@@ -360,6 +374,8 @@ const costsFor = (
   buyable: RoiBuyable,
 ): readonly BuildingCost[] => {
   switch (buyable.kind) {
+    case "age":
+      return [];
     case "building":
       return state.freeBuildings
         ? []
@@ -381,6 +397,11 @@ const costsFor = (
 
 const isLegal = (state: CivilizationState, buyable: RoiBuyable): boolean => {
   switch (buyable.kind) {
+    case "age":
+      return (
+        state.getCurrentAge()?.key === buyable.id &&
+        state.canEnterAge(buyable.id)
+      );
     case "building":
       return (
         state.isBuildingAvailable(buyable.id) &&
@@ -430,6 +451,7 @@ const compareCapacity = (
   before: CivilizationState,
   after: CivilizationState,
 ): number =>
+  logGain(before.maximumPopulation, after.maximumPopulation) +
   buildingDefinitions.reduce(
     (total, building) =>
       total +
@@ -460,12 +482,30 @@ const buildMetrics = (
   before: CivilizationState,
   after: CivilizationState,
   buyable: RoiBuyable,
+  populationTarget?: number,
+  campaignTime = 0,
 ): RoiMetrics => {
   const armyBefore = before.getArmyPower();
   const armyAfter = after.getArmyPower();
+  const capacity = compareCapacity(before, after);
+  const ageIndex = ageDefinitions.findIndex(({ key }) => key === buyable.id);
+  const ageResearchComplete =
+    buyable.kind === "age" &&
+    ageIndex >= 0 &&
+    researchDefinitions
+      .filter(({ age }) => age === ageIndex)
+      .every(({ key }) => before.isResearchBought(key));
+  const populationGoalPending =
+    populationTarget !== undefined &&
+    before.population.lt(ExpNumber.fromNumber(populationTarget));
+  const contributesToPopulationGoal =
+    buyable.kind === "building" &&
+    (buyable.id === "people" ||
+      ((buyable.id === "house" || buyable.id === "townHall") &&
+        before.population.gte(before.maximumPopulation.floor())));
   return {
     production: compareProduction(before, after),
-    capacity: compareCapacity(before, after),
+    capacity,
     population: logGain(before.population, after.population),
     military: logGain(armyBefore, armyAfter),
     unlocks:
@@ -477,11 +517,22 @@ const buildMetrics = (
           )
         : 0,
     costSavings: compareCosts(before, after),
+    campaignTime,
+    campaign:
+      buyable.kind === "battle"
+        ? 1 + (capacity > 0 ? 100 : 0)
+        : ageResearchComplete
+          ? maxLog
+          : populationGoalPending && contributesToPopulationGoal
+            ? maxLog
+            : 0,
   };
 };
 
 const actionFor = (buyable: RoiBuyable): SimulationAction => {
   switch (buyable.kind) {
+    case "age":
+      return { type: "enterAge", ageId: buyable.id };
     case "building":
       return { type: "build", building: buyable.id, count: 1 };
     case "research":
@@ -536,9 +587,10 @@ const structuralKey = (state: CivilizationState): string =>
 const cachedMetrics = (
   buyable: RoiBuyable,
   structureKey: string,
+  contextKey: string,
   measure: () => RoiMetrics | null,
 ): RoiMetrics | null => {
-  const key = `${structureKey}::${buyable.kind}:${(buyable as { id: string }).id}`;
+  const key = `${structureKey}::${contextKey}:${buyable.kind}:${(buyable as { id: string }).id}`;
   const hit = metricsCache.get(key);
   if (hit !== undefined) return hit;
   const metrics = measure();
@@ -563,6 +615,8 @@ const metricWeights = {
   military: 0.9,
   unlocks: 0.6,
   costSavings: 0.25,
+  campaign: 20,
+  campaignTime: 50,
 } as const;
 
 const weightedBenefit = (metrics: RoiMetrics): number =>
@@ -571,7 +625,9 @@ const weightedBenefit = (metrics: RoiMetrics): number =>
   metrics.population * metricWeights.population +
   metrics.military * metricWeights.military +
   metrics.unlocks * metricWeights.unlocks +
-  metrics.costSavings * metricWeights.costSavings;
+  metrics.costSavings * metricWeights.costSavings +
+  metrics.campaign * metricWeights.campaign +
+  metrics.campaignTime * metricWeights.campaignTime;
 
 /**
  * The cost of one more recruit toward a plan: what a single buy action actually
@@ -589,6 +645,109 @@ const nextRecruitCost = (
     }
   }
   return null;
+};
+
+const campaignTimeSavings = (
+  state: CivilizationState,
+  after: CivilizationState,
+  options: RoiOptions,
+  gatherClicksPerSecond: number,
+): number => {
+  const savings = (beforeWait: number, afterWait: number): number => {
+    if (!Number.isFinite(beforeWait)) {
+      return Number.isFinite(afterWait) ? 1 : 0;
+    }
+    if (!Number.isFinite(afterWait)) return 0;
+    return Math.max(
+      0,
+      Math.min(1, (beforeWait - afterWait) / (1 + beforeWait)),
+    );
+  };
+
+  let bestSavings = 0;
+  const battle = state.getNextBattle();
+  if (battle && options.planBattle) {
+    const beforePlan = options.planBattle(state, battle.key);
+    const afterPlan = options.planBattle(after, battle.key);
+    if (beforePlan && afterPlan) {
+      const beforeCosts = beforePlan.costs.map((cost) => ({
+        ...cost,
+        factor: 1,
+      }));
+      const afterCosts = afterPlan.costs.map((cost) => ({
+        ...cost,
+        factor: 1,
+      }));
+      const beforeWait = waitForCosts(
+        state,
+        beforeCosts,
+        gatherClicksPerSecond,
+        state,
+        false,
+      );
+      const afterWait = waitForCosts(
+        after,
+        afterCosts,
+        gatherClicksPerSecond,
+        state,
+        false,
+      );
+      bestSavings = savings(beforeWait, afterWait);
+    }
+  }
+
+  const target = options.populationTarget;
+  if (
+    target === undefined ||
+    state.population.gte(ExpNumber.fromNumber(target))
+  ) {
+    return bestSavings;
+  }
+  const growthCosts = (
+    candidate: CivilizationState,
+  ): readonly BuildingCost[] => {
+    if (candidate.population.gte(candidate.maximumPopulation.floor())) {
+      const housing = candidate.isBuildingAtCapacity("house")
+        ? "townHall"
+        : "house";
+      if (
+        !candidate.isBuildingAvailable(housing) ||
+        candidate.isBuildingAtCapacity(housing)
+      ) {
+        return [];
+      }
+      return candidate.getBuildingCost(
+        housing,
+        candidate.getBuildingCount(housing),
+        1,
+      );
+    }
+    return candidate.getBuildingCost(
+      "people",
+      candidate.getBuildingCount("people"),
+      1,
+    );
+  };
+  const beforeCosts = growthCosts(state);
+  const afterCosts = growthCosts(after);
+  if (beforeCosts.length > 0) {
+    const beforeWait = waitForCosts(
+      state,
+      beforeCosts,
+      gatherClicksPerSecond,
+      state,
+      false,
+    );
+    const afterWait = waitForCosts(
+      after,
+      afterCosts,
+      gatherClicksPerSecond,
+      state,
+      false,
+    );
+    bestSavings = Math.max(bestSavings, savings(beforeWait, afterWait));
+  }
+  return bestSavings;
 };
 
 /** Evaluate one legal buyable against a resource-rich domain transition. */
@@ -619,12 +778,27 @@ export const getBuyableRoi = (
     // price is the next single recruit, not the whole army.
     const costs = winnable ? [] : (nextRecruitCost(state, plan) ?? totalCost);
     const waitSeconds = waitForCosts(state, costs, gatherClicksPerSecond);
-    const metrics = cachedMetrics(buyable, structureKey, () => {
-      const resolved = evaluateBattle(state, buyable.id, plan);
-      return resolved
-        ? buildMetrics(resolved.armed, resolved.won, buyable)
-        : null;
-    });
+    const investmentWaitSeconds = waitForCosts(
+      state,
+      totalCost,
+      gatherClicksPerSecond,
+    );
+    const metrics = cachedMetrics(
+      buyable,
+      structureKey,
+      String(options.populationTarget ?? ""),
+      () => {
+        const resolved = evaluateBattle(state, buyable.id, plan);
+        return resolved
+          ? buildMetrics(
+              resolved.armed,
+              resolved.won,
+              buyable,
+              options.populationTarget,
+            )
+          : null;
+      },
+    );
     if (!metrics) return null;
     const gatherResource = gatherResourceForCosts(
       state,
@@ -640,8 +814,8 @@ export const getBuyableRoi = (
       metrics,
       benefit,
       waitSeconds,
-      score: Number.isFinite(waitSeconds)
-        ? benefit / (1 + Math.max(0, waitSeconds))
+      score: Number.isFinite(investmentWaitSeconds)
+        ? benefit / (1 + Math.max(0, investmentWaitSeconds))
         : 0,
       affordable: waitSeconds === 0,
       reachable: Number.isFinite(waitSeconds),
@@ -652,14 +826,37 @@ export const getBuyableRoi = (
 
   const costs = costsFor(state, buyable);
   const waitSeconds = waitForCosts(state, costs, gatherClicksPerSecond);
-  const metrics = cachedMetrics(buyable, structureKey, () => {
-    const probe = makeProbeState(state, costs);
-    const after = applyBuyable(probe, buyable);
-    return after === probe ? null : buildMetrics(probe, after, buyable);
-  });
+  const metrics = cachedMetrics(
+    buyable,
+    structureKey,
+    String(options.populationTarget ?? ""),
+    () => {
+      const probe = makeProbeState(state, costs);
+      const after = applyBuyable(probe, buyable);
+      return after === probe
+        ? null
+        : buildMetrics(
+            probe,
+            after,
+            buyable,
+            options.populationTarget,
+            campaignTimeSavings(state, after, options, gatherClicksPerSecond),
+          );
+    },
+  );
   if (!metrics) return null;
+  const populationCampaignPurchase =
+    metrics.campaign > 0 &&
+    buyable.kind === "building" &&
+    (buyable.id === "people" ||
+      buyable.id === "house" ||
+      buyable.id === "townHall");
+  const campaignBenefit = populationCampaignPurchase
+    ? metrics.campaign * metricWeights.campaign
+    : 0;
   const benefit =
-    weightedBenefit(metrics) *
+    (weightedBenefit(metrics) -
+      (populationCampaignPurchase && waitSeconds !== 0 ? campaignBenefit : 0)) *
     (buyable.kind === "upgrade"
       ? optionNumber(options.upgradeMultiplier, defaultUpgradeMultiplier)
       : 1);
@@ -698,6 +895,10 @@ const allBuyables = (
     kind: "upgrade",
     id: key,
   }));
+  const ages: RoiBuyable[] = ageDefinitions.map(({ key }) => ({
+    kind: "age",
+    id: key,
+  }));
   const units: RoiBuyable[] = includeUnits
     ? unitDefinitions
         .filter((unit) => isBuyableUnit(unit))
@@ -712,9 +913,14 @@ const allBuyables = (
     !state.defeatedEncounters.includes(nextBattle.key)
       ? [{ kind: "battle", id: nextBattle.key }]
       : [];
-  return [...buildings, ...research, ...upgrades, ...units, ...battles].filter(
-    (buyable) => isLegal(state, buyable),
-  );
+  return [
+    ...ages,
+    ...buildings,
+    ...research,
+    ...upgrades,
+    ...units,
+    ...battles,
+  ].filter((buyable) => isLegal(state, buyable));
 };
 
 /** All legal ROI candidates, sorted by time-adjusted score. */

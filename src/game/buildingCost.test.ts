@@ -8,6 +8,7 @@ import { CivilizationState } from "./civilizationState";
 import { ExpNumber } from "./expNumber";
 import { emptyStatistics } from "./statistics";
 import { researchDefinitions } from "./research";
+import { findAgeDefinition } from "./ages";
 import { upgradeDefinitions } from "./upgrades";
 import { deserializeStatistics, serializeStatistics } from "./saveSystem";
 
@@ -207,7 +208,12 @@ describe("resources spent", () => {
     const target = researchDefinitions.find((r) => start.isResearchUnlocked(r.key))!;
     const next = start.buyResearch(target.key);
     expect(next.isResearchBought(target.key)).toBe(true);
-    expect(spent(next, "science")).toBeCloseTo(1000, 6);
+    // The first tech of the current age costs that age's research base; read it
+    // from ages.json so rebalancing the schedule does not stale the assertion.
+    expect(spent(next, "science")).toBeCloseTo(
+      findAgeDefinition(start.getCurrentAge()!.key)!.research.base.toNumber(),
+      6,
+    );
   });
 
   it("records an upgrade purchase", () => {

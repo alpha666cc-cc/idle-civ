@@ -262,14 +262,18 @@ describe("research buying", () => {
     it("uses the age's own base for the first tech", () => {
       const state = stateWith(1e30, ["age0"]);
       const firstCost = state.getResearchNextCost()[0].base.toNumber();
-      expect(firstCost).toBeCloseTo(1000, 9); // age0 research base
+      expect(firstCost).toBeCloseTo(age0Schedule.base.toNumber(), 9);
     });
 
     it("scales with purchase count using sqrt curve", () => {
       const state = stateWith(1e30, ["age0"]);
       const costs = state.getResearchCostForCount(3);
       expect(costs).toHaveLength(1);
-      expect(costs[0].base.toNumber()).toBeGreaterThan(1000); // Should grow
+      // Read the base from ages.json: a rebalance of the schedule must not stale
+      // the assertion that the curve grows.
+      expect(costs[0].base.toNumber()).toBeGreaterThan(
+        age0Schedule.base.toNumber(),
+      );
     });
 
     it("does not apply building discounts to research", () => {
@@ -414,11 +418,11 @@ describe("research buying", () => {
       const age1State = stateWith(1e30, ["age0"], {}, 2000).enterAge("age1");
 
       expect(age0State.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(
-        1000,
+        age0Schedule.base.toNumber(),
         9,
       );
       expect(age1State.getResearchNextCost()[0].base.toNumber()).toBeCloseTo(
-        1e9,
+        age1FirstPrice(),
         6,
       );
     });
@@ -492,8 +496,9 @@ describe("research buying", () => {
   });
 
   it("pays science and applies bonuses through the shared factor path", () => {
-    // Exactly the first tech's price for the age: age0's research base.
-    const entered = stateWith(1000, ["age0"]).enterAge("age0");
+    // Fund exactly the first tech's price for the age, read from ages.json so a
+    // rebalance of the schedule does not turn this into a partial-payment test.
+    const entered = stateWith(age0Schedule.base.toNumber(), ["age0"]).enterAge("age0");
     const multiplier = first.bonuses.find(
       (bonus) => bonus.type === "attributeMultiplier",
     );
@@ -509,7 +514,7 @@ describe("research buying", () => {
   });
 
   it("is idempotent and refuses an unaffordable purchase", () => {
-    const entered = stateWith(1000, ["age0"]).enterAge("age0");
+    const entered = stateWith(age0Schedule.base.toNumber(), ["age0"]).enterAge("age0");
     const bought = entered.buyResearch(first.key);
     expect(bought.buyResearch(first.key)).toBe(bought);
     expect(bought.canBuyResearch(first.key)).toBe(false);

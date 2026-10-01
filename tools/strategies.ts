@@ -32,6 +32,7 @@ import { upgradeDefinitions } from "../src/game/upgrades.js";
 import {
   producerResourceKeys,
   type ProductionResourceKey,
+  type ResourceKey,
 } from "../src/game/attributes.js";
 import {
   isBuyableUnit,
@@ -787,13 +788,25 @@ export const getRecommendedBattlePurchase = (
 const planBattleForRoi = (
   state: CivilizationState,
   battleId: string,
+  planOverride?: SimulatorResult | null,
 ): BattleRoiPlan | null => {
   if (state.getNextBattle()?.key !== battleId) return null;
-  const plan = getSimulatorBattlePlan(state);
-  if (!plan) return null;
+  const sourcePlan =
+    planOverride === undefined ? getSimulatorBattlePlan(state) : planOverride;
+  if (!sourcePlan) return null;
+  const plan = getRemainingSimulatorPlan(state, sourcePlan);
+  const costTotals = new Map<ResourceKey, ExpNumber>();
+  for (const [unitId, count] of plan.composition) {
+    for (const { resource, base } of state.getUnitCost(unitId, count)) {
+      costTotals.set(
+        resource,
+        (costTotals.get(resource) ?? ExpNumber.ZERO).add(base),
+      );
+    }
+  }
   return {
     composition: plan.composition,
-    costs: plan.totalCost.map(({ resource, base }) => ({ resource, base })),
+    costs: [...costTotals].map(([resource, base]) => ({ resource, base })),
     research: plan.research.ids,
   };
 };
@@ -1094,6 +1107,49 @@ const getCheapestHousingAction = (
 abstract class BaseStrategy implements SimulationStrategy {
   abstract name: string;
   abstract description: string;
+  private cachedSimulatorPlan:
+    | {
+        snapshots: SimulationContext["snapshots"];
+        battleId: string;
+        plannedAt: number;
+        plan: SimulatorResult | null;
+      }
+    | undefined;
+
+  protected computeSimulatorPlan(
+    state: CivilizationState,
+  ): SimulatorResult | null {
+    return getSimulatorBattlePlan(state);
+  }
+
+  protected getCachedSimulatorPlan(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulatorResult | null {
+    const battle = getRequiredBattle(state);
+    if (!battle) {
+      this.cachedSimulatorPlan = undefined;
+      return null;
+    }
+
+    const cached = this.cachedSimulatorPlan;
+    if (
+      !cached ||
+      cached.snapshots !== context.snapshots ||
+      cached.battleId !== battle.key ||
+      context.gameTime - cached.plannedAt >= 60
+    ) {
+      const plan = this.computeSimulatorPlan(state);
+      this.cachedSimulatorPlan = {
+        snapshots: context.snapshots,
+        battleId: battle.key,
+        plannedAt: context.gameTime,
+        plan,
+      };
+    }
+    const current = this.cachedSimulatorPlan ?? cached;
+    return current?.plan ?? null;
+  }
 
   protected getWorkerRatios(): WorkerRatios {
     return {
@@ -1605,48 +1661,6 @@ abstract class BaseStrategy implements SimulationStrategy {
 export class CheapestStrategy extends BaseStrategy {
   name = "cheapest";
   description = "Always buy the cheapest legal purchase";
-  private cachedSimulatorPlan:
-    | {
-        snapshots: SimulationContext["snapshots"];
-        battleId: string;
-        plannedAt: number;
-        plan: SimulatorResult | null;
-      }
-    | undefined;
-
-  protected computeSimulatorPlan(
-    state: CivilizationState,
-  ): SimulatorResult | null {
-    return getSimulatorBattlePlan(state);
-  }
-
-  private getCachedSimulatorPlan(
-    state: CivilizationState,
-    context: SimulationContext,
-  ): SimulatorResult | null {
-    const battle = getRequiredBattle(state);
-    if (!battle) {
-      this.cachedSimulatorPlan = undefined;
-      return null;
-    }
-
-    const cached = this.cachedSimulatorPlan;
-    if (
-      !cached ||
-      cached.snapshots !== context.snapshots ||
-      cached.battleId !== battle.key ||
-      context.gameTime - cached.plannedAt >= 60
-    ) {
-      const plan = this.computeSimulatorPlan(state);
-      this.cachedSimulatorPlan = {
-        snapshots: context.snapshots,
-        battleId: battle.key,
-        plannedAt: context.gameTime,
-        plan,
-      };
-    }
-    return this.cachedSimulatorPlan.plan;
-  }
 
   protected shouldLaunchBattle(_state: CivilizationState): boolean {
     return true;
@@ -1972,6 +1986,13 @@ export class TradeStrategy extends BaseStrategy {
 export class SpeedrunStrategy extends BaseStrategy {
   name = "speedrun";
   description = "Buy the best time-adjusted ROI purchase for fast progression";
+  private roiGatherFocus:
+    | {
+        readonly resource: ProductionResourceKey;
+        readonly until: number;
+        readonly snapshots: SimulationContext["snapshots"];
+      }
+    | undefined;
 
   protected getWorkerRatios(): WorkerRatios {
     return {
@@ -1990,79 +2011,54 @@ export class SpeedrunStrategy extends BaseStrategy {
     state: CivilizationState,
     context: SimulationContext,
   ): SimulationAction | null {
-    const requiredAgeAction = getRequiredAgeAction(state);
-    if (requiredAgeAction) return requiredAgeAction;
-
-    const requiredBattleAction = this.getBattleLaunchAction(state);
-    if (requiredBattleAction) return requiredBattleAction;
-
-    const requiredPreparationAction = getRequiredBattlePreparationAction(state);
-    if (requiredPreparationAction) {
-      return this.focusWorkersForGather(state, requiredPreparationAction);
+    const roiAction = getBestRoiAction(state, {
+      includeUnits: false,
+      populationTarget: getAgeRouteTargetPopulation(state),
+      planBattle: (battleState, battleId) =>
+        planBattleForRoi(
+          battleState,
+          battleId,
+          this.getCachedSimulatorPlan(battleState, context),
+        ),
+    });
+    if (roiAction && roiAction.type !== "gather") {
+      this.roiGatherFocus = undefined;
+      return roiAction;
     }
 
-    const simulatorActions = this.getSimulatorActions(state);
-    if (simulatorActions.length > 0) return simulatorActions[0];
+    const previousFocus = this.roiGatherFocus;
+    const focusIsCurrent =
+      previousFocus?.snapshots === context.snapshots &&
+      context.gameTime < previousFocus.until;
+    const resource = focusIsCurrent
+      ? previousFocus.resource
+      : roiAction?.type === "gather"
+        ? (roiAction.resource as ProductionResourceKey)
+        : null;
+    if (resource) {
+      this.roiGatherFocus = {
+        resource,
+        until: context.gameTime + 1,
+        snapshots: context.snapshots,
+      };
+      const focusedAction = this.focusWorkersForGather(state, {
+        type: "gather",
+        resource,
+      });
+      return focusedAction;
+    }
+    this.roiGatherFocus = undefined;
 
-    // Follow the mandatory age route before spending anything discretionary.
-    // Speedrun overrides decideAction, so without this it never reached the
-    // route at all and parked at the 90-population barracks threshold, the
-    // slowest settlement of the seven. The route self-limits: once the age0
-    // population targets are met it returns null and recruitment resumes, so
-    // this cannot starve the army the remaining battles need.
-    //
-    // The route also owns the food problem: it builds a citizen when one is
-    // affordable and gathers food when one is not.
-    const routeAction = getAgeRouteGrowthAction(state);
-    if (routeAction) return this.focusWorkersForGather(state, routeAction);
-
-    // Workers next. This used to sit above the route, where a settlement pinned
-    // at zero food never reached it; below the route it runs every tick the
-    // route is satisfied.
     const workerAction = this.assignWorkersByRatio(
       state,
       this.getWorkerRatios(),
     );
     if (workerAction) return workerAction;
 
-    // Food safety, deliberately *below* the age route rather than above it.
-    // This guard used to run first, and that was the single biggest reason
-    // speedrun was the slowest settlement: a citizen costs food to build and
-    // every citizen drains 1 food/second, so a settlement large enough to be
-    // worth speeding up sits at or below zero food almost continuously. Ten
-    // gathered clicks per action cannot outrun that drain, so the guard never
-    // cleared and it returned `gather food` forever — starving worker
-    // assignment, buildings and recruitment all at once. Below the route it
-    // only speaks when the route has nothing to offer, which is exactly when
-    // there is spare budget to spend on something other than food.
-    if (state.resources.food.lte(ExpNumber.ZERO)) {
-      return this.focusWorkersForGather(state, {
-        type: "gather",
-        resource: "food",
-      });
-    }
-
-    // The ROI sweep runs *before* the advisor's gather hint. Gathering is a
-    // per-tick trickle, and a recruit's military cost grows geometrically
-    // (150 -> 606 -> 1787 -> 3472 across the first four warriors), so a
-    // settlement that answers "I cannot afford the next recruit" by gathering
-    // can never outrun that curve: it spent 1127 actions gathering military and
-    // bought 24 units. Raising military *income* — more barracks, upgrades,
-    // research — is the only thing that scales, and the ROI sweep is what finds
-    // it. Gathering stays below as the last resort, not the first answer.
-    const roiAction = getBestRoiAction(state, {
-      includeUnits: false,
-      planBattle: planBattleForRoi,
-    });
-    if (roiAction) return this.focusWorkersForGather(state, roiAction);
-
-    // We must gather for the simulator's plan if we can't afford it, otherwise
-    // we stall waiting for workers to passively gather military/science.
-    const simulatorGather = this.getSimulatorGather(state);
-    if (simulatorGather)
-      return this.focusWorkersForGather(state, simulatorGather);
-
-    return super.decideAction(state, context);
+    const resourceToGather = this.getResourceToGather(state);
+    return resourceToGather
+      ? { type: "gather", resource: resourceToGather }
+      : null;
   }
 }
 

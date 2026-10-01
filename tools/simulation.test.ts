@@ -21,7 +21,22 @@ import { CivilizationState } from "../src/game/civilizationState";
 import { ExpNumber } from "../src/game/expNumber";
 import { emptyStatistics } from "../src/game/statistics";
 import { GameSimulation, createInitialState } from "./simulation";
-import type { SimulationStrategy } from "./simulation";
+import type { SimulationContext, SimulationStrategy } from "./simulation";
+
+/**
+ * A decision context for a fixture. `SimulationContext.timing` is the run's live
+ * counters, which no fixture cares about, so it is a zeroed stand-in rather than
+ * a field every call site has to invent.
+ */
+const zeroTiming: SimulationContext["timing"] = {
+  ticks: 0,
+  tickMeanMs: 0,
+  tickMaxMs: 0,
+  decisions: 0,
+  decisionMeanMs: 0,
+  decisionMaxMs: 0,
+};
+
 import {
   BalancedStrategy,
   CheapestStrategy,
@@ -558,6 +573,7 @@ describe("required progression strategy", () => {
     workers = {},
     unitCounts = {},
     defeatedEncounters = [],
+    boughtUpgrades = [],
   }: {
     people?: number;
     buildings?: Partial<Record<BuildingKey, number>>;
@@ -565,6 +581,7 @@ describe("required progression strategy", () => {
     workers?: Partial<Record<ProductionResourceKey, number>>;
     unitCounts?: Record<string, number>;
     defeatedEncounters?: string[];
+    boughtUpgrades?: string[];
   } = {}): CivilizationState => {
     const amounts = emptyResourceAmounts();
     for (const [key, value] of Object.entries(resources)) {
@@ -587,7 +604,7 @@ describe("required progression strategy", () => {
       emptyResourceFactors(),
       {},
       0,
-      [],
+      boughtUpgrades,
       defeatedEncounters,
       [],
       [],
@@ -692,7 +709,7 @@ describe("required progression strategy", () => {
       unitCounts: { warrior: 1_000_000 },
     });
     expect(
-      strategy.decideAction(beforeFirst, { gameTime: 0, snapshots: [] })?.type,
+      strategy.decideAction(beforeFirst, { gameTime: 0, snapshots: [], timing: zeroTiming })?.type,
     ).not.toBe("launchBattle");
 
     const atFirst = makeState({
@@ -702,7 +719,7 @@ describe("required progression strategy", () => {
       unitCounts: { warrior: 1_000_000 },
     });
     expect(
-      strategy.decideAction(atFirst, { gameTime: 0, snapshots: [] }),
+      strategy.decideAction(atFirst, { gameTime: 0, snapshots: [], timing: zeroTiming }),
     ).toEqual({ type: "launchBattle", encounterId: firstBattle.key });
 
     const beforeSecond = makeState({
@@ -713,7 +730,7 @@ describe("required progression strategy", () => {
       defeatedEncounters: [firstBattle.key],
     });
     expect(
-      strategy.decideAction(beforeSecond, { gameTime: 0, snapshots: [] })?.type,
+      strategy.decideAction(beforeSecond, { gameTime: 0, snapshots: [], timing: zeroTiming })?.type,
     ).not.toBe("launchBattle");
 
     const atSecond = makeState({
@@ -724,7 +741,7 @@ describe("required progression strategy", () => {
       defeatedEncounters: [firstBattle.key],
     });
     expect(
-      strategy.decideAction(atSecond, { gameTime: 0, snapshots: [] })?.type,
+      strategy.decideAction(atSecond, { gameTime: 0, snapshots: [], timing: zeroTiming })?.type,
     ).toBe("launchBattle");
   });
 
@@ -817,7 +834,7 @@ describe("required progression strategy", () => {
     });
 
     expect(
-      strategy.decideAction(state, { gameTime: 0, snapshots: [] }),
+      strategy.decideAction(state, { gameTime: 0, snapshots: [], timing: zeroTiming }),
     ).toEqual({ type: "buyResearch", researchId: "agriculture" });
     expect(strategy.simulatorPlanCalls).toBe(0);
   });
@@ -835,6 +852,7 @@ describe("required progression strategy", () => {
       getStrategy("balanced")?.decideAction(state, {
         gameTime: 0,
         snapshots: [],
+        timing: zeroTiming,
       }),
     ).not.toEqual({
       type: "gather",
@@ -902,6 +920,7 @@ describe("required progression strategy", () => {
       getStrategy("cheapest")?.decideAction(state, {
         gameTime: 0,
         snapshots: [],
+        timing: zeroTiming,
       }),
     ).toEqual({ type: "enterAge", ageId: "age0" });
   });
@@ -927,7 +946,7 @@ describe("required progression strategy", () => {
       4,
     );
     expect(
-      strategy?.decideAction(state, { gameTime: 0, snapshots: [] }),
+      strategy?.decideAction(state, { gameTime: 0, snapshots: [], timing: zeroTiming }),
     ).toEqual({
       type: "buyUnit",
       unitId: "warrior",
@@ -956,7 +975,7 @@ describe("required progression strategy", () => {
     expect(plan).not.toBeNull();
     expect(plan?.research.ids).toEqual([]);
     expect(
-      strategy?.decideAction(state, { gameTime: 0, snapshots: [] })?.type,
+      strategy?.decideAction(state, { gameTime: 0, snapshots: [], timing: zeroTiming })?.type,
     ).not.toBe("buyResearch");
   });
 
@@ -977,14 +996,16 @@ describe("required progression strategy", () => {
       resources: { wood: 10, food: 0, stone: 0, gold: 0 },
     });
 
-    expect(strategy.decideAction(state, { gameTime: 0, snapshots })).toEqual({
+    expect(
+      strategy.decideAction(state, { gameTime: 0, snapshots, timing: zeroTiming }),
+    ).toEqual({
       type: "build",
       building: "house",
       count: 1,
     });
-    strategy.decideAction(state, { gameTime: 30, snapshots });
+    strategy.decideAction(state, { gameTime: 30, snapshots, timing: zeroTiming });
     expect(strategy.simulatorPlanCalls).toBe(1);
-    strategy.decideAction(state, { gameTime: 60, snapshots });
+    strategy.decideAction(state, { gameTime: 60, snapshots, timing: zeroTiming });
     expect(strategy.simulatorPlanCalls).toBe(2);
   });
 
@@ -1034,6 +1055,84 @@ describe("required progression strategy", () => {
     expect(state.workers.gold.toNumber()).toBe(5);
   });
 
+  it("gathers instead of livelocking two worker regimes against each other", () => {
+    const strategy = getStrategy("balanced");
+    expect(strategy).toBeDefined();
+    if (!strategy) return;
+
+    // The exact fixed point a `balanced` run reaches and never leaves: population
+    // 90 sitting on its housing cap, `barracks` already built so the battle-prep
+    // step (priority 3) no longer speaks, and the workers already on the
+    // strategy's own ratio targets (food 36 + the 1-worker remainder = 37,
+    // wood 22, stone 18, gold 13).
+    //
+    // Priority 5 is satisfied, so the ladder fell through to a gather step
+    // (priority 8.5+) whose focus re-read those same workers against a
+    // *different* ratio set — focusing wood wants 0.5 of them, the strategy
+    // wants 0.25 — and pulled 4 wood workers out. Priority 5 runs first on the
+    // next decision and puts them straight back, so the two regimes never let
+    // each other finish and no gather or build ever runs in between.
+    const fixture = {
+      people: 90,
+      buildings: {
+        house: 10,
+        farm: 10,
+        lumberYard: 10,
+        quarry: 13,
+        goldMine: 3,
+        barracks: 1,
+      },
+      resources: {
+        food: 2975.5,
+        wood: 84.2,
+        stone: 868.42,
+        gold: 3531,
+        military: 32.55,
+        peopleCapacity: 90,
+        houseCapacity: 10,
+        farmCapacity: 10,
+        lumberYardCapacity: 10,
+        quarryCapacity: 100,
+        goldMineCapacity: 10,
+      },
+      workers: { food: 37, wood: 22, stone: 18, gold: 13 },
+    };
+    // A run that reached here had already bought every upgrade it could afford,
+    // so none is left to divert the ladder above the worker step.
+    const boughtUpgrades =
+      makeState(fixture).getAffordableUpgrades?.() ?? [];
+    let state = makeState({ ...fixture, boughtUpgrades });
+
+    const labels: string[] = [];
+    for (let step = 0; step < 40; step += 1) {
+      const action = strategy.decideAction(state, {
+        gameTime: step,
+        snapshots: [],
+        timing: zeroTiming,
+      });
+      if (!action) break;
+      if (action.type === "gather") {
+        labels.push(`gather ${action.resource}`);
+        break;
+      }
+      if (action.type === "assignWorker" || action.type === "unassignWorker") {
+        labels.push(
+          `${action.type === "assignWorker" ? "assign" : "unassign"} ${action.resource}`,
+        );
+        state =
+          action.type === "assignWorker"
+            ? state.assignWorker(action.resource, action.count)
+            : state.unassignWorker(action.resource, action.count);
+        continue;
+      }
+      break;
+    }
+
+    // Before the fix this never reached a gather: it alternated
+    // `unassign wood` / `assign wood` for all 40 steps.
+    expect(labels.at(-1)).toMatch(/^gather /);
+  });
+
   it("prepares a building once its existing unlock gate is met", () => {
     const beforeGate = makeState({ people: 89, resources: richResources });
     const atGate = makeState({
@@ -1061,7 +1160,7 @@ describe("required progression strategy", () => {
       resources: { ...richResources, peopleCapacity: 100 },
     });
     expect(
-      strategy.decideAction(atGate, { gameTime: 90, snapshots: [] }),
+      strategy.decideAction(atGate, { gameTime: 90, snapshots: [], timing: zeroTiming }),
     ).toEqual({
       type: "build",
       building: "barracks",
