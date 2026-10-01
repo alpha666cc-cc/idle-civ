@@ -179,16 +179,21 @@ export const researchIdsForUnitUnlocks = (
 
 /**
  * Research applied to an encounter's army: every completed research from an
- * earlier age, plus the shortest prerequisite path needed to unlock each unit
- * in the army. The result is deterministic and contains no duplicate ids.
+ * earlier age, the shortest prerequisite path needed to unlock each unit in the
+ * army, and every tech from the battle's own age when the enemy is the boss.
+ * The result is deterministic and contains no duplicate ids.
  */
 export const researchIdsForBattle = (
   battleAge: number,
   unitIds: readonly string[],
+  isBoss = false,
 ): string[] => {
   const ids = new Set(
     researchDefinitions
-      .filter((research) => research.age < battleAge)
+      .filter(
+        (research) =>
+          research.age < battleAge || (isBoss && research.age === battleAge),
+      )
       .map((research) => research.key),
   );
   for (const unitId of unitIds) {

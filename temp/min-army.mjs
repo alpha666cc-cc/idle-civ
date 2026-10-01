@@ -2,8 +2,9 @@
 // Run: .\tools\node\node.exe temp\min-army.mjs
 // 1. pick a battle, 2. uncheck units to exclude (battle age + previous age),
 // 3. prints the minimum-military-cost winning army + full resource cost.
-// Player units use BASE stats; enemy uses JSON enemyBoosts. Variance (0.8-1.0)
-// is replaced by its mean (0.9), so results are deterministic/conservative.
+// Player units use BASE stats; enemy research is derived from earlier ages,
+// unit unlock paths, and boss-age techs. Variance (0.8-1.0) is replaced by its
+// mean (0.9), so results are deterministic/conservative.
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { join, dirname } from "node:path";
@@ -31,7 +32,12 @@ const researchClosure = (researchId, seen = new Set()) => {
 
 const researchIdsForBattle = (battle, unitIds) => {
   const ids = new Set(
-    research.filter((tech) => tech.age < battle.age).map((tech) => tech.key),
+    research
+      .filter(
+        (tech) =>
+          tech.age < battle.age || (battle.isBoss && tech.age === battle.age),
+      )
+      .map((tech) => tech.key),
   );
   for (const unitId of unitIds) {
     const unlockers = research.filter((tech) =>
@@ -471,7 +477,7 @@ const main = async () => {
   const result = solve(
     allowed,
     battle.enemyArmy,
-    [...enemyResearchBoosts, ...(battle.enemyBoosts ?? [])],
+    enemyResearchBoosts,
     (l) => console.log(`  ${l}`),
     args[2] === "mixed",
     battle.isBoss ? latestCombatUnitId(battle) : undefined,

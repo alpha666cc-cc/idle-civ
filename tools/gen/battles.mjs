@@ -18,12 +18,8 @@
  *   4. Derives each victory's `unlocks` (an explicit unit id list, §13.4): the
  *      opening battle opens the rest of the Ancient roster, and every age-end
  *      boss opens the whole next age.
- *   5. Normalises enemy armies to their battle's age by writing `enemyBoosts` —
- *      the "fake research" that keeps an older enemy army relevant. The boost is
- *      `sqrt(referenceQuality / unitQuality)` on hp and attack, only ever
- *      upwards and capped, so an age-appropriate army needs no boost.
- *   6. Gives every victory a permanent bonus: regular battles raise military
- *      production; bosses also raise every unit's hp and attack.
+ *   5. Writes only the permanent encounter rewards; enemy scaling is derived from
+ *      the battle's research graph instead of any encounter-specific boost list.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 
@@ -31,8 +27,6 @@ const SOURCE = "temp/campaign_v2.json";
 const UNIT_DATA = "src/game/data/units.json";
 const OUTPUT = "src/game/data/encounters.json";
 const UNIT_FIXES = { artillery_ww2: "howitzer_ind" };
-const MAX_ENEMY_BOOST = 8;
-
 /** Original short descriptions; year and enemy list are rendered from data. */
 const text = {
   age0_1_first_fire: {
@@ -156,10 +150,6 @@ const units = JSON.parse(readFileSync(UNIT_DATA, "utf8"));
 const unitById = Object.fromEntries(units.map((unit) => [unit.id, unit]));
 const battles = JSON.parse(readFileSync(SOURCE, "utf8"));
 
-/** Combat quality: effective hit points times damage per round. */
-const quality = (unit) =>
-  (unit.hp / (1 - unit.armor)) * unit.attack * unit.accuracy;
-
 /** Cost magnitude of a unit, so a roster can be listed cheapest-first. */
 const costExponent = (unit) => {
   const raw = String(unit.costs[0].base);
@@ -206,42 +196,6 @@ const historicalLine = (historical) => {
   return Object.entries(historical)
     .map(([label, value]) => `${label.replaceAll("_", " ")} ${number(value)}`)
     .join(" · ");
-};
-
-/** Reference quality for a battle: median quality of its age's buyable roster. */
-const referenceQuality = (age) => {
-  const roster = (buyableByAge.get(age) ?? []).map(quality).sort((a, b) => a - b);
-  if (roster.length === 0) return undefined;
-  return roster[Math.floor(roster.length / 2)];
-};
-
-/**
- * Enemy "fake research": an enemy unit older than its battle catches up to the
- * reference quality of the battle's age, so a bronze line still matters in an
- * iron-age fight. Same-age (and newer) enemy units are left exactly as authored;
- * the cap is one age's worth of catch-up (8 per stat ≈ 64× quality).
- */
-const boostsFor = (enemyArmy, battle) => {
-  const reference = referenceQuality(battle.age);
-  const boosts = [];
-  if (reference === undefined) return boosts;
-  const seen = new Set();
-  for (const stack of enemyArmy) {
-    const unit = unitById[stack.unitId];
-    if (!unit || seen.has(unit.id)) continue;
-    seen.add(unit.id);
-    if (unit.age >= battle.age) continue;
-    const factor = Math.min(
-      MAX_ENEMY_BOOST,
-      Math.max(1, Math.sqrt(reference / quality(unit))),
-    );
-    if (factor <= 1.005) continue;
-    const value = Math.round(factor * 100) / 100;
-    for (const destination of [`${unit.id}.hp`, `${unit.id}.attack`]) {
-      boosts.push({ type: "attributeMultiplier", destination, value });
-    }
-  }
-  return boosts;
 };
 
 const FIRST_BATTLE = "age0_1_first_fire";
@@ -301,7 +255,6 @@ const output = battles.map((battle) => {
     isBoss: battle.isBoss === true,
     historical: historicalLine(battle.historical),
     enemyArmy,
-    enemyBoosts: boostsFor(enemyArmy, battle),
     bonuses,
     unlocks,
   };
@@ -318,7 +271,8 @@ for (const battle of output) {
 }
 const neverUnlocked = units
   .filter(
-    (unit) => unit.costs.length > 0 && !unit.available && !unlockedOnce.has(unit.id),
+    (unit) =>
+      unit.costs.length > 0 && !unit.available && !unlockedOnce.has(unit.id),
   )
   .map((unit) => unit.id);
 if (neverUnlocked.length > 0) {
@@ -329,11 +283,8 @@ for (const battle of output) {
   const armies = battle.enemyArmy
     .map((stack) => `${stack.unitId} x${stack.count}`)
     .join(", ");
-  const boosts = [
-    ...new Set(battle.enemyBoosts.map(({ destination }) => destination.split(".")[0])),
-  ].join(" ");
   console.log(
-    `${battle.isBoss ? "BOSS" : "    "} ${battle.key} (age ${battle.age}, ${battle.year}) | ${armies} | +${boosts || "-"} | unlocks ${battle.unlocks.length}`,
+    `${battle.isBoss ? "BOSS" : "    "} ${battle.key} (age ${battle.age}, ${battle.year}) | ${armies} | unlocks ${battle.unlocks.length}`,
   );
 }
 console.log(

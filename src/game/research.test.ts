@@ -115,6 +115,14 @@ describe("research data integrity", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("gives boss enemies every current-age technology in addition to earlier techs and unlocks", () => {
+    const ids = researchIdsForBattle(1, ["spearman_bronze"], true);
+    expect(ids).toContain("agriculture");
+    expect(ids).toContain("bronze_smelting");
+    expect(ids).toContain("iron_working");
+    expect(ids).toContain("iron_forging");
+  });
+
   it("orders every tech after its prerequisites", () => {
     const positions = new Map(
       researchDefinitions.map((research, index) => [research.key, index]),

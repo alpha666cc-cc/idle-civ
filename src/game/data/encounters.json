@@ -15,7 +15,6 @@
         "label": "8 wolves"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -56,7 +55,6 @@
         "label": "8 bears"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -102,7 +100,6 @@
         "label": "50 slingers"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -153,7 +150,6 @@
         "label": "5 bronze galleys"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -199,28 +195,6 @@
         "label": "2k bowmen"
       }
     ],
-    "enemyBoosts": [
-      {
-        "type": "attributeMultiplier",
-        "destination": "chariot_bronze.hp",
-        "value": 8
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "chariot_bronze.attack",
-        "value": 8
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "spearman_bronze.hp",
-        "value": 8
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "spearman_bronze.attack",
-        "value": 8
-      }
-    ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -261,7 +235,6 @@
         "label": "10k archers"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -307,7 +280,6 @@
         "label": "3k bowmen"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -348,18 +320,6 @@
         "label": "10k infantry"
       }
     ],
-    "enemyBoosts": [
-      {
-        "type": "attributeMultiplier",
-        "destination": "spearman_iron.hp",
-        "value": 8
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "spearman_iron.attack",
-        "value": 8
-      }
-    ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -388,18 +348,6 @@
         "unitId": "elephant_iron",
         "count": 2,
         "label": "40 elephants"
-      }
-    ],
-    "enemyBoosts": [
-      {
-        "type": "attributeMultiplier",
-        "destination": "elephant_iron.hp",
-        "value": 3.89
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "elephant_iron.attack",
-        "value": 3.89
       }
     ],
     "bonuses": [
@@ -437,38 +385,6 @@
         "label": "60k Persians"
       }
     ],
-    "enemyBoosts": [
-      {
-        "type": "attributeMultiplier",
-        "destination": "chariot_iron.hp",
-        "value": 5.88
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "chariot_iron.attack",
-        "value": 5.88
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "elephant_iron.hp",
-        "value": 3.89
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "elephant_iron.attack",
-        "value": 3.89
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "spearman_iron.hp",
-        "value": 8
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "spearman_iron.attack",
-        "value": 8
-      }
-    ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -504,7 +420,6 @@
         "label": "30k cavalry"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -530,7 +445,6 @@
         "label": "6k Saxons"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -561,7 +475,6 @@
         "label": "2k men-at-arms"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -602,28 +515,6 @@
         "label": "12k infantry"
       }
     ],
-    "enemyBoosts": [
-      {
-        "type": "attributeMultiplier",
-        "destination": "knight.hp",
-        "value": 6.95
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "knight.attack",
-        "value": 6.95
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "man_at_arms.hp",
-        "value": 8
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "man_at_arms.attack",
-        "value": 8
-      }
-    ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -652,18 +543,6 @@
         "unitId": "privateer",
         "count": 2,
         "label": "60 galliots"
-      }
-    ],
-    "enemyBoosts": [
-      {
-        "type": "attributeMultiplier",
-        "destination": "war_galley_iron.hp",
-        "value": 8
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "war_galley_iron.attack",
-        "value": 8
       }
     ],
     "bonuses": [
@@ -696,7 +575,6 @@
         "label": "200 guns"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -742,7 +620,6 @@
         "label": "150 guns"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -773,7 +650,6 @@
         "label": "10k cavalry"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -804,7 +680,6 @@
         "label": "machine guns"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -845,7 +720,6 @@
         "label": "2 battleships"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -876,7 +750,6 @@
         "label": "1M infantry"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -907,7 +780,6 @@
         "label": "300k infantry"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -938,7 +810,6 @@
         "label": "2000 artillery"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -974,7 +845,6 @@
         "label": "50k satellites"
       }
     ],
-    "enemyBoosts": [],
     "bonuses": [
       {
         "type": "attributeMultiplier",

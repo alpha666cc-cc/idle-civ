@@ -15,9 +15,8 @@ export type EnemyStack = {
 /**
  * A battle (AGENTS.md §13.4/§14, roadmap Milestone 8). Encounters are ordered:
  * the campaign is a sequence and the engine offers the first battle not yet won.
- * A battle owns its enemy army, its victory bonuses, and the enemy's "fake
- * research" boosts that keep an older enemy army relevant in its own age. Unit
- * access is research-driven.
+ * Enemy stat scaling is research-driven; encounter-specific `enemyBoosts` are kept
+ * only for compatibility with older data and are ignored in gameplay.
  */
 export class EncounterDefinition extends GameObject {
   readonly key: string;
@@ -27,7 +26,7 @@ export class EncounterDefinition extends GameObject {
   readonly isBoss: boolean;
   readonly historical?: string;
   readonly enemyArmy: EnemyStack[];
-  readonly enemyBoosts: Bonus[];
+  readonly enemyBoosts?: Bonus[];
   readonly bonuses: Bonus[];
   readonly unlocks: readonly string[];
 
@@ -39,7 +38,7 @@ export class EncounterDefinition extends GameObject {
     year: number,
     isBoss: boolean,
     enemyArmy: EnemyStack[],
-    enemyBoosts: Bonus[],
+    enemyBoosts: Bonus[] | undefined,
     bonuses: Bonus[],
     unlocks: readonly string[],
     historical?: string,
@@ -72,7 +71,7 @@ type EncounterData = {
   isBoss: boolean;
   historical?: string;
   enemyArmy: { unitId: string; count: number; label?: string }[];
-  enemyBoosts: { type: string; destination: string; value: number }[];
+  enemyBoosts?: { type: string; destination: string; value: number }[];
   bonuses: { type: string; destination: string; value: number }[];
   unlocks: string[];
 };
@@ -100,7 +99,7 @@ const toEncounterDefinition = (data: EncounterData): EncounterDefinition =>
       count,
       label,
     })),
-    data.enemyBoosts.map(toBonus),
+    (data.enemyBoosts ?? []).map(toBonus),
     data.bonuses.map(toBonus),
     data.unlocks,
     data.historical,

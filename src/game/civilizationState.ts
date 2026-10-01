@@ -2292,7 +2292,8 @@ export class CivilizationState {
     );
   }
 
-  /** Enemy armies receive historical research plus encounter-specific boosts. */
+  /** Enemy armies receive all prior-age research, the unlock path for their units,
+   * and every tech from the current age if the encounter is a boss. */
   getEnemyStacks(
     encounterId: string,
     additionalResearchIds: readonly string[] = [],
@@ -2303,13 +2304,11 @@ export class CivilizationState {
       ...researchIdsForBattle(
         encounter.age,
         encounter.enemyArmy.map(({ unitId }) => unitId),
+        encounter.isBoss,
       ),
       ...additionalResearchIds,
     ];
-    const boosts = [
-      ...researchBonusesForIds(researchIds),
-      ...encounter.enemyBoosts.map((bonus) => [encounter.key, bonus] as const),
-    ];
+    const boosts = [...researchBonusesForIds(researchIds)];
     const stacks: ArmyStack[] = [];
     for (const { unitId, count } of encounter.enemyArmy) {
       const unit = findUnitDefinition(unitId);
