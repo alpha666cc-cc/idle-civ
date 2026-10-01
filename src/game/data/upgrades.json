@@ -48,12 +48,12 @@
     "costs": [
       {
         "resource": "food",
-        "base": "1.70069315e10",
+        "base": "5e10",
         "factor": 1
       },
       {
         "resource": "wood",
-        "base": "4.535182000000000e9",
+        "base": "1.0e9",
         "factor": 1
       }
     ],
@@ -412,12 +412,12 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "4.535182000000000e9",
+        "base": "1.0e9",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "4.535182000000000e9",
+        "base": "1.0e9",
         "factor": 1
       }
     ],
@@ -771,7 +771,7 @@
     "costs": [
       {
         "resource": "stone",
-        "base": "4.535182000000000e9",
+        "base": "1.0e9",
         "factor": 1
       }
     ],
@@ -1100,12 +1100,12 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "4.535182000000000e9",
+        "base": "1.0e9",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "4.535182000000000e9",
+        "base": "1.0e9",
         "factor": 1
       }
     ],

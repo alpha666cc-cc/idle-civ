@@ -749,7 +749,7 @@
       {
         "type": "costReductionPercent",
         "destination": "tag.naval",
-        "value": "0.01"
+        "value": "0.75"
       },
       {
         "type": "attributeMultiplier",
@@ -1010,7 +1010,7 @@
       {
         "type": "costReductionPercent",
         "destination": "tag.cavalry",
-        "value": "0.01"
+        "value": "0.75"
       }
     ],
     "unlocks": [],
@@ -1558,7 +1558,7 @@
       {
         "type": "costReductionPercent",
         "destination": "tag.siege",
-        "value": "0.01"
+        "value": "0.75"
       },
       {
         "type": "attributeMultiplier",
