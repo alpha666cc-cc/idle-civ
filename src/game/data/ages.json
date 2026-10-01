@@ -6,7 +6,7 @@
     "description": "The first settlements rise from scattered families into a village. Fire, bronze, and the first walls.",
     "populationThreshold": 0,
     "unlocks": [],
-    "research": { "base": 1000, "factor": 10 },
+    "research": { "base": 1000, "factor": 12 },
     "bonuses": [
       {
         "type": "attributeMultiplier",

@@ -747,25 +747,34 @@ export class CivilizationState {
       ({ base: ExpNumber.fromNumber(100), factor: 10 } as const);
     const bought = this.getResearchCount();
 
-    // base × factor^(√n − 1) where n is the purchase ordinal within this age.
+    // Research is a buyable like buildings and units, so it takes the same four
+    // cost reductions — but only ones naming "research" (it is not a building, so
+    // `allBuildings` never reaches it). They fold per unit in the §13.1 order:
+    // base → factor → percent → flat, clamped at zero.
+    const { reductions } = this.getResearchCostModifiers();
+    const unitBase = ExpNumber.max(
+      ExpNumber.ZERO,
+      schedule.base.mul(reductions.base),
+    );
+    const unitFactor = ExpNumber.max(
+      ExpNumber.fromNumber(1.01),
+      ExpNumber.fromNumber(schedule.factor).pow(reductions.factor),
+    );
+
+    // Unit n costs base × factor^(√n − 1), where n is the purchase ordinal
+    // within this age — so the first tech of an age costs exactly its base.
     let total = ExpNumber.ZERO;
     for (let offset = 0; offset < purchases; offset += 1) {
       const purchaseNumber = bought + offset + 1;
+      const unitPrice = unitBase
+        .mul(unitFactor.pow(Math.sqrt(purchaseNumber) - 1))
+        .mul(reductions.percent);
       total = total.add(
-        schedule.base.mul(
-          ExpNumber.fromNumber(schedule.factor).pow(
-            Math.sqrt(purchaseNumber) - 1,
-          ),
-        ),
+        ExpNumber.max(ExpNumber.ZERO, unitPrice.sub(reductions.flat)),
       );
     }
 
-    // Apply cost reductions and multipliers from the bonus system
-    const { reductions } = this.getBuildingCostModifiers("research");
-    let scaledTotal = total.mul(reductions.percent);
-    scaledTotal = scaledTotal.mul(reductions.base);
-
-    return [{ resource: "science", base: scaledTotal, factor: 1 }];
+    return [{ resource: "science", base: total, factor: 1 }];
   }
 
   /**
@@ -1317,8 +1326,10 @@ export class CivilizationState {
     const unit = findUnitDefinition(buyableId);
     const targetMatches = (destination: string): boolean => {
       if (destination === buyableId) return true;
+      // Research is not a building, so the blanket `allBuildings` discounts do
+      // not reach it — only a bonus that names "research" explicitly does.
+      if (isResearch) return false;
       if (isBuilding) return destination === "allBuildings";
-      if (isResearch) return destination === "allBuildings"; // Research uses building cost pipeline
       if (!unit) return destination === "allUnits";
       if (destination === "allUnits") return true;
       return (
@@ -1351,6 +1362,17 @@ export class CivilizationState {
         base: reductions.base.mul(globalMultiplier),
       },
     };
+  }
+
+  /**
+   * Research cost reductions. Research is not a building and not a unit, so it
+   * takes **only** bonuses that name `"research"` explicitly: the blanket
+   * `allBuildings` discounts and the global `buildingCostMultiplier` stat do not
+   * apply to it. `globalMultiplier` is therefore always ×1 here.
+   */
+  getResearchCostModifiers() {
+    const { sources, reductions } = this.costReductionsFor("research");
+    return { sources, globalMultiplier: ExpNumber.ONE, reductions };
   }
 
   /** Units are buyables (§13.3), so they take the same four cost-reduction types. */
