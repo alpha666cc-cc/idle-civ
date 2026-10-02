@@ -11,7 +11,6 @@
  *   --battle <id>            Encounter ID for battleVictory objective
  *   --max-time <seconds>     Maximum simulation time (default: 3600)
  *   --actions-per-second <n> Strategy actions per simulated second (default: 5)
- *   --seed <number>          Random seed (default: 42)
  *   --output <file>          Output file for results (JSON)
  *   --generations <number>  Number of evolutionary generations (default: 1)
  *   --top <number>           Top N strategies to keep per generation (default: 2)
@@ -40,7 +39,6 @@ function parseArgs() {
     battle: null,
     maxTime: "3600",
     actionsPerSecond: "5",
-    seed: "42",
     output: null,
     generations: "1",
     top: "2",
@@ -73,9 +71,6 @@ function parseArgs() {
         break;
       case "--actions-per-second":
         options.actionsPerSecond = args[++i];
-        break;
-      case "--seed":
-        options.seed = args[++i];
         break;
       case "--output":
         options.output = args[++i];
@@ -121,7 +116,6 @@ Options:
   --battle <id>            Encounter ID for battleVictory objective
   --max-time <seconds>     Maximum simulation time (default: 3600)
   --actions-per-second <n> Strategy actions per simulated second (default: 5)
-  --seed <number>          Random seed (default: 42)
   --output <file>          Output file for results (JSON)
   --generations <number>   Number of evolutionary generations (default: 1)
   --top <number>           Top N strategies to keep per generation (default: 2)
@@ -221,7 +215,6 @@ async function main() {
     process.exit(1);
   }
   const config = {
-    seed: parseInt(options.seed, 10),
     objective,
     gatherClicksPerAction: 10,
     actionsPerSecond,

@@ -47,11 +47,9 @@ describe("battle simulator current army", () => {
         stats: wolf.stats,
       },
     ];
-    const full = simulateBattle(player, enemy, { seed: 42 });
+    const full = simulateBattle(player, enemy);
 
-    expect(simulateBattleOutcome(player, enemy, { seed: 42 })).toBe(
-      full.outcome,
-    );
+    expect(simulateBattleOutcome(player, enemy)).toBe(full.outcome);
     expect(full.rounds.length).toBeGreaterThan(0);
   });
 

@@ -8,10 +8,7 @@
  *   tsx tools/trace-strategy.ts <strategy> [--seconds=600] [--show=40]
  */
 import { GameSimulation, createInitialState } from "./simulation.js";
-import {
-  getAgeRouteGrowthAction,
-  getStrategy,
-} from "./strategies.js";
+import { getAgeRouteGrowthAction, getStrategy } from "./strategies.js";
 import { ExpNumber } from "../src/game/expNumber.js";
 
 const flag = (name: string, fallback: string): string => {
@@ -21,7 +18,9 @@ const flag = (name: string, fallback: string): string => {
 
 const name = process.argv.slice(2).find((arg) => !arg.startsWith("--"));
 if (!name) {
-  console.error("usage: tsx tools/trace-strategy.ts <strategy> [--seconds=600] [--show=40]");
+  console.error(
+    "usage: tsx tools/trace-strategy.ts <strategy> [--seconds=600] [--show=40]",
+  );
   process.exit(1);
 }
 const seconds = Number(flag("seconds", "600"));
@@ -94,8 +93,9 @@ const tracer = {
           .map((cost) => `${cost.resource}=${cost.base.toString()}`)
           .join("|");
       const stock = (key: string) =>
-        (state.resources as Record<string, ExpNumber | undefined>)[key]?.toString() ??
-        "0";
+        (state.resources as Record<string, ExpNumber | undefined>)[
+          key
+        ]?.toString() ?? "0";
       const outcome = nextBattle
         ? (state.simulateEncounter(nextBattle.key)?.outcome ?? "undef")
         : "-";
@@ -139,7 +139,6 @@ const tracer = {
 };
 
 const result = new GameSimulation(createInitialState(), tracer, {
-  seed: 42,
   objective: { type: "timeLimit", seconds },
   gatherClicksPerAction: 10,
   maxGameTime: seconds,
@@ -147,15 +146,21 @@ const result = new GameSimulation(createInitialState(), tracer, {
 }).run();
 
 const final = result.finalState;
-console.log(`--- ${name}: first ${show} distinct decisions over ${seconds}s ---`);
+console.log(
+  `--- ${name}: first ${show} distinct decisions over ${seconds}s ---`,
+);
 for (const line of shown) console.log(line);
 console.log(`\n--- action tally (${seconds}s) ---`);
 [...counts.entries()]
   .sort((left, right) => right[1] - left[1])
   .slice(0, 18)
-  .forEach(([text, count]) => console.log(`${String(count).padStart(7)}  ${text}`));
+  .forEach(([text, count]) =>
+    console.log(`${String(count).padStart(7)}  ${text}`),
+  );
 console.log(`\n--- state every 300s ---`);
 for (const line of samples) console.log(line);
 console.log(`\n--- mandatory steps consulted, every 300s ---`);
 for (const line of probes) console.log(line);
-console.log(`\nfinal: age=${final.getCurrentAge()?.key} pop=${final.population.toString()} battles=${final.defeatedEncounters.length} research=${final.boughtResearch.length} army=${final.getArmyPower().toString()}`);
+console.log(
+  `\nfinal: age=${final.getCurrentAge()?.key} pop=${final.population.toString()} battles=${final.defeatedEncounters.length} research=${final.boughtResearch.length} army=${final.getArmyPower().toString()}`,
+);

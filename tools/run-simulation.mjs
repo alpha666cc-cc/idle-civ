@@ -12,7 +12,6 @@
  *   --max-time <seconds>   Maximum simulation time (default: 3600)
  *   --snapshot-interval <s> Seconds between snapshots (default: 300)
  *   --actions-per-second <n> Strategy actions per simulated second (default: 5)
- *   --seed <number>        Random seed (default: 42)
  *   --output <file>        Output file for results (JSON)
  *   --no-snapshots         Disable snapshot recording
  *   --save <path>          Start from a save file instead of a new game (e.g. saves/age1.json)
@@ -25,7 +24,11 @@ import { ageDefinitions } from "../src/game/ages.js";
 import { formatExpoNumber } from "./simFormat.js";
 import { getStrategy, getStrategyNames } from "./strategies.js";
 import { GameSimulation, resolveAgeId } from "./simulation.js";
-import { describeSaveEntry, loadSaveEntry, writeSaveEntry } from "./saveEntry.js";
+import {
+  describeSaveEntry,
+  loadSaveEntry,
+  writeSaveEntry,
+} from "./saveEntry.js";
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -39,7 +42,6 @@ function parseArgs() {
     maxTime: "36000",
     snapshotInterval: "300",
     actionsPerSecond: "5",
-    seed: "42",
     output: null,
     snapshots: true,
     verbose: false,
@@ -76,9 +78,6 @@ function parseArgs() {
         break;
       case "--actions-per-second":
         options.actionsPerSecond = args[++i];
-        break;
-      case "--seed":
-        options.seed = args[++i];
         break;
       case "--output":
         options.output = args[++i];
@@ -128,7 +127,6 @@ Options:
   --max-time <seconds>   Maximum simulation time (default: 3600)
   --snapshot-interval <s> Seconds between snapshots (default: 300)
   --actions-per-second <n> Strategy actions per simulated second (default: 5)
-  --seed <number>        Random seed (default: 42)
   --output <file>        Output file for results (JSON)
   --no-snapshots         Disable snapshot recording
   --save <path>          Start from a save file instead of a new game (e.g. saves/age1.json)
@@ -247,7 +245,6 @@ async function main() {
 
   // Build config
   const config = {
-    seed: parseInt(options.seed, 10),
     objective,
     gatherClicksPerAction: 10,
     actionsPerSecond,

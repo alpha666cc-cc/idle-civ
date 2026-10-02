@@ -17,10 +17,9 @@ import {
  *
  * The simulation is pure and deterministic: damage has no random component, so
  * the same armies always produce the same battle, however many times it is
- * replayed. The seed still names a fight and keeps the battle id folded into it,
- * but it no longer changes the outcome. Results are reproducible, testable and
- * cheap to replay in the UI. Casualties are never written back to the save
- * (armies are restored after a fight).
+ * replayed. Results are reproducible, testable and cheap to replay in the UI.
+ * Casualties are never written back to the save (armies are restored after a
+ * fight).
  */
 
 /** One unit type in an army, with the stats it actually fights with. */
@@ -150,7 +149,8 @@ export const battleOrderHints: Record<BattleOrder, string> = {
   backline: "Stand off and screen yourself from the enemy line.",
   focus_weak: "Concentrate on the smallest remaining stack.",
   focus_strong: "Concentrate on the largest remaining stack.",
-  focus_counter: "Prefer the enemy your unit counters; fall back if it has none.",
+  focus_counter:
+    "Prefer the enemy your unit counters; fall back if it has none.",
   same_tag: "Pick a foe of your own kind, or the first you can reach.",
   protect_ranged: "Body-guard the ranged line, absorbing fire for it.",
 };
@@ -179,7 +179,6 @@ export type BattleRound = {
 export type BattleOutcome = "player" | "enemy" | "stalemate";
 
 export type BattleSimulation = {
-  readonly seed: number;
   readonly rounds: readonly BattleRound[];
   readonly outcome: BattleOutcome;
   readonly playerSurvivors: ExpNumber;
@@ -297,47 +296,6 @@ export const armyPower = (stacks: readonly ArmyStack[]): ExpNumber =>
     ExpNumber.ZERO,
   );
 
-/**
- * A side's army fingerprint. The entries are sorted so the fingerprint depends
- * on *which* units are fielded, not on the order they were recruited in: the
- * engine builds its stacks from the owned-unit map while tooling builds them
- * from a plan, and both must describe the same battle or an advisor would
- * verify an army against a different fight than the one actually resolved.
- */
-const armySignature = (
-  side: BattleSide,
-  stacks: readonly ArmyStack[],
-): string =>
-  stacks
-    .map(
-      (stack) =>
-        `${side}:${stack.unitId}:${stack.count.toString()}:${stack.stats.hp.toString()}:${stack.stats.attack.toString()}:${stack.order ?? standardOrder}`,
-    )
-    .sort()
-    .join("|");
-
-/**
- * Seed for a battle: a fingerprint of both armies. Buying different units is a
- * different battle; replaying the same armies is the same battle.
- */
-export const battleSeed = (
-  player: readonly ArmyStack[],
-  enemy: readonly ArmyStack[],
-  battleId = "",
-): number => {
-  const armies = `${armySignature("player", player)}||${armySignature(
-    "enemy",
-    enemy,
-  )}`;
-  const signature = battleId ? `${battleId}||${armies}` : armies;
-  let hash = 2166136261;
-  for (let index = 0; index < signature.length; index += 1) {
-    hash ^= signature.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-};
-
 const snapshot = (fighters: readonly Fighter[]): StackSnapshot[] =>
   fighters.map((fighter) => ({
     unitId: fighter.unitId,
@@ -372,7 +330,8 @@ const counterTargets = (
  * `focus_counter` is for, and folding it in here would silently retune every
  * battle in the game for players who never touch the control.
  */
-const pickStandardTarget = (foes: readonly Fighter[]): Fighter => weakestFirst(foes);
+const pickStandardTarget = (foes: readonly Fighter[]): Fighter =>
+  weakestFirst(foes);
 
 /**
  * Which foe a stack shoots, by its order. Every order falls back to a reachable
@@ -476,10 +435,7 @@ const hasLiving = (fighters: readonly Fighter[]): boolean =>
 const simulateBattleInternal = (
   playerStacks: readonly ArmyStack[],
   enemyStacks: readonly ArmyStack[],
-  {
-    seed = battleSeed(playerStacks, enemyStacks),
-    maxRounds = maximumRounds,
-  }: { seed?: number; maxRounds?: number } = {},
+  { maxRounds = maximumRounds }: { maxRounds?: number } = {},
   recordRounds: boolean,
 ): BattleSimulation => {
   const player = buildFighters(playerStacks, "player");
@@ -568,14 +524,14 @@ const simulateBattleInternal = (
         ? "player"
         : "stalemate";
 
-  return { seed, rounds, outcome, playerSurvivors, enemySurvivors };
+  return { rounds, outcome, playerSurvivors, enemySurvivors };
 };
 
 /** Full battle result for playback and survivor-dependent rewards. */
 export const simulateBattle = (
   playerStacks: readonly ArmyStack[],
   enemyStacks: readonly ArmyStack[],
-  options: { seed?: number; maxRounds?: number } = {},
+  options: { maxRounds?: number } = {},
 ): BattleSimulation =>
   simulateBattleInternal(playerStacks, enemyStacks, options, true);
 
@@ -583,6 +539,6 @@ export const simulateBattle = (
 export const simulateBattleOutcome = (
   playerStacks: readonly ArmyStack[],
   enemyStacks: readonly ArmyStack[],
-  options: { seed?: number; maxRounds?: number } = {},
+  options: { maxRounds?: number } = {},
 ): BattleOutcome =>
   simulateBattleInternal(playerStacks, enemyStacks, options, false).outcome;

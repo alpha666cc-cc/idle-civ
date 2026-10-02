@@ -36,9 +36,17 @@ import {
   createInitialState,
   type SnapshotTiming,
 } from "./simulation.js";
-import { describeSaveEntry, loadSaveEntry, type SaveEntry } from "./saveEntry.js";
+import {
+  describeSaveEntry,
+  loadSaveEntry,
+  type SaveEntry,
+} from "./saveEntry.js";
 import { getStrategy, getStrategyNames } from "./strategies.js";
-import { buildingDefinitions, type BuildingKey, type BuildingCost } from "../src/game/buildings.js";
+import {
+  buildingDefinitions,
+  type BuildingKey,
+  type BuildingCost,
+} from "../src/game/buildings.js";
 import {
   emptyWorkerAssignments,
   producerResourceKeys,
@@ -49,7 +57,11 @@ import {
   tradeIntensityStop,
   type TradeResourceKey,
 } from "../src/game/trade.js";
-import { unitDefinitions, isBuyableUnit, unitPower } from "../src/game/units.js";
+import {
+  unitDefinitions,
+  isBuyableUnit,
+  unitPower,
+} from "../src/game/units.js";
 import type { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
 
@@ -61,7 +73,6 @@ const DEFAULT_OUT_DIR = "sim-output";
 const horizon = Number(flag("horizon", "3600"));
 const interval = Number(flag("interval", "60"));
 const outDir = flag("out", DEFAULT_OUT_DIR);
-const seed = Number(flag("seed", "42"));
 const savePath = flag("save", "");
 const targetAge = flag("age", "");
 const named = process.argv.slice(2).filter((a) => !a.startsWith("--"));
@@ -282,7 +293,10 @@ const timingCells = (timing: SnapshotTiming): string[] => [
  * `sell@6` — the direction and the slider stop, or `off`. One stop is 1e-9 of the
  * reserve up to all of it, so the stop is the honest way to read an intensity.
  */
-const routeCell = (state: CivilizationState, resource: TradeResourceKey): string => {
+const routeCell = (
+  state: CivilizationState,
+  resource: TradeResourceKey,
+): string => {
   const route = state.getTradeRoute(resource);
   return route.enabled
     ? `${route.mode}@${tradeIntensityStop(route.intensity)}`
@@ -302,7 +316,10 @@ const row = (
     state.population.toString(),
     state.resources.peopleCapacity.toString(),
     String(
-      Object.values(state.builtBuildings).reduce((sum, count) => sum + (count ?? 0), 0),
+      Object.values(state.builtBuildings).reduce(
+        (sum, count) => sum + (count ?? 0),
+        0,
+      ),
     ),
     String(state.defeatedEncounters.length),
     state.resources.trade.toString(),
@@ -332,7 +349,9 @@ const row = (
     const count = state.getBuildingCount(key);
     const parameters = state.getBuildingCostParameters(key);
     cells.push(
-      state.isBuildingAvailable(key) ? costCell(state.getBuildingCost(key, count, 1)) : "",
+      state.isBuildingAvailable(key)
+        ? costCell(state.getBuildingCost(key, count, 1))
+        : "",
       bonusCell(state, key, count),
       factor(parameters[0]?.reductions.base ?? 0),
       factor(parameters[0]?.reductions.factor ?? 0),
@@ -381,7 +400,12 @@ type Sheet = { name: string; header: string; rows: string[] };
 /** Runs a strategy and returns one CSV line per `interval` simulated seconds. */
 const runStrategy = (
   name: string,
-): { sheet: Sheet; wall: number; gameTime: number; arrived: boolean } | null => {
+): {
+  sheet: Sheet;
+  wall: number;
+  gameTime: number;
+  arrived: boolean;
+} | null => {
   const strategy = getStrategy(name);
   if (!strategy) return null;
   const started = Date.now();
@@ -417,7 +441,6 @@ const runStrategy = (
     saveEntry ? loadSaveEntry(saveEntry.path).state : createInitialState(),
     capture,
     {
-      seed,
       // An age target ends the run at the transition; the horizon still caps it,
       // so "never got there" reports as a full-length run rather than vanishing.
       objective: targetAge
@@ -481,7 +504,9 @@ const crc32 = (buf: Buffer): number => {
 };
 
 /** Build a ZIP container from named string entries (deflate, or stored). */
-const zip = (entries: { name: string; data: Buffer; store?: boolean }[]): Buffer => {
+const zip = (
+  entries: { name: string; data: Buffer; store?: boolean }[],
+): Buffer => {
   const locals: Buffer[] = [];
   const centrals: Buffer[] = [];
   let offset = 0;
@@ -555,14 +580,23 @@ const writeWorkbook = (sheets: Sheet[], columns: number): void => {
   const ods = zip([
     {
       name: "mimetype",
-      data: Buffer.from("application/vnd.oasis.opendocument.spreadsheet", "utf8"),
+      data: Buffer.from(
+        "application/vnd.oasis.opendocument.spreadsheet",
+        "utf8",
+      ),
       store: true,
     },
-    { name: "META-INF/manifest.xml", data: Buffer.from(manifest(sheets), "utf8") },
+    {
+      name: "META-INF/manifest.xml",
+      data: Buffer.from(manifest(sheets), "utf8"),
+    },
     { name: "content.xml", data: Buffer.from(odsContent(sheets), "utf8") },
     ...sheets.map((sheet, i) => ({
       name: `sim-${i + 1}.csv`,
-      data: Buffer.from([sheet.header, ...sheet.rows].join("\n") + "\n", "utf8"),
+      data: Buffer.from(
+        [sheet.header, ...sheet.rows].join("\n") + "\n",
+        "utf8",
+      ),
     })),
   ]);
   const file = `${outDir}/simulations.ods`;
@@ -585,7 +619,9 @@ const odsContent = (sheets: Sheet[]): string => {
               .split(",")
               .map((cell) => {
                 // A quoted CSV cell is already escaped; keep the quotes literal.
-                const value = cell.startsWith('"') ? cell.slice(1, -1).replaceAll('""', '"') : cell;
+                const value = cell.startsWith('"')
+                  ? cell.slice(1, -1).replaceAll('""', '"')
+                  : cell;
                 return `<table:table-cell office:value-type="string"><text:p>${xml(value)}</text:p></table:table-cell>`;
               })
               .join("")}</table:table-row>`,
@@ -603,7 +639,9 @@ const odsContent = (sheets: Sheet[]): string => {
 </office:document-content>`;
 };
 
-const manifest = (sheets: Sheet[]): string => `<?xml version="1.0" encoding="UTF-8"?>
+const manifest = (
+  sheets: Sheet[],
+): string => `<?xml version="1.0" encoding="UTF-8"?>
 <manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.2">
 <manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.spreadsheet"/>
 <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>
@@ -628,7 +666,9 @@ if (process.argv.includes("--merge")) {
   const merged: Sheet[] = [];
   for (const file of readdirSync(dir).sort()) {
     if (!file.startsWith("sim-") || !file.endsWith(".csv")) continue;
-    const lines = readFileSync(`${dir}/${file}`, "utf8").split("\n").filter(Boolean);
+    const lines = readFileSync(`${dir}/${file}`, "utf8")
+      .split("\n")
+      .filter(Boolean);
     if (lines.length < 2) continue;
     merged.push({
       name: file.replace(/^sim-/, "").replace(/\.csv$/, ""),
@@ -665,6 +705,3 @@ for (const name of strategies) {
 }
 
 writeWorkbook(sheets, header.length);
-;
-
-

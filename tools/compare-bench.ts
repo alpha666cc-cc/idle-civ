@@ -3,7 +3,7 @@
  *
  * §7.2 of AGENTS.md requires a simulation change to be benchmarked before and
  * after, and the before/after numbers to be reported. This reads two runs that
- * were produced with identical `--horizon`, `--interval` and `--seed`, and prints
+ * were produced with identical `--horizon` and `--interval`, and prints
  * the columns that matter for pacing, one row per strategy per run, plus the
  * first time each strategy reached `age1`.
  *

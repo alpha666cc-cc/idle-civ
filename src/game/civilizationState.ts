@@ -32,7 +32,6 @@ import {
 } from "./attributes";
 import {
   armyPower,
-  battleSeed,
   ordersForAge,
   simulateBattle,
   simulateBattleOutcome,
@@ -1562,29 +1561,19 @@ export class CivilizationState {
     return this.costSeries(parameters, ExpNumber.ZERO, count);
   }
 
-  /**
-   * Simulates a battle for arbitrary stacks (dev-only simulator): the player
-   * side is the candidate composition, the enemy side its boosted stacks. The
-   * seed folds in the battle id like the campaign path, so results replay.
-   */
+  /** Simulates arbitrary stacks for the dev-only battle simulator. */
   simulateWithStacks(
-    battleId: string,
     player: readonly ArmyStack[],
     enemy: readonly ArmyStack[],
   ): BattleSimulation {
-    return simulateBattle(player, enemy, {
-      seed: battleSeed(player, enemy, battleId),
-    });
+    return simulateBattle(player, enemy);
   }
 
   simulateWithStacksOutcome(
-    battleId: string,
     player: readonly ArmyStack[],
     enemy: readonly ArmyStack[],
   ): BattleOutcome {
-    return simulateBattleOutcome(player, enemy, {
-      seed: battleSeed(player, enemy, battleId),
-    });
+    return simulateBattleOutcome(player, enemy);
   }
 
   /** Owned count of one unit (units have no capacity ceiling, §13.3). */
@@ -2454,11 +2443,7 @@ export class CivilizationState {
     );
   }
 
-  /**
-   * Runs the fight without touching any state, so the UI can play the round log
-   * back one round per second before the result is applied. The seed folds in
-   * the battle id, so the same armies fight the same battle every replay.
-   */
+  /** Runs the fight without touching state so the UI can play it back. */
   simulateEncounter(encounterId: string): BattleSimulation | undefined {
     const encounter = findEncounterDefinition(encounterId);
     if (!encounter) return undefined;
@@ -2472,9 +2457,7 @@ export class CivilizationState {
     const player = this.getArmyStacks();
     const enemy = this.getEnemyStacks(encounterId);
     if (player.length === 0 || enemy.length === 0) return undefined;
-    return simulateBattle(player, enemy, {
-      seed: battleSeed(player, enemy, encounter.key),
-    });
+    return simulateBattle(player, enemy);
   }
 
   simulateEncounterOutcome(encounterId: string): BattleOutcome | undefined {
@@ -2489,9 +2472,7 @@ export class CivilizationState {
     const player = this.getArmyStacks();
     const enemy = this.getEnemyStacks(encounterId);
     if (player.length === 0 || enemy.length === 0) return undefined;
-    return simulateBattleOutcome(player, enemy, {
-      seed: battleSeed(player, enemy, encounter.key),
-    });
+    return simulateBattleOutcome(player, enemy);
   }
 
   /**

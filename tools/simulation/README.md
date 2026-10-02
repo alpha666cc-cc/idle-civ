@@ -166,7 +166,6 @@ npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
 - `--battle <id>`: Encounter ID for battleVictory objective
 - `--max-time <seconds>`: Maximum simulation time (default: 3600)
 - `--actions-per-second <n>`: Strategy actions per simulated second (default: 5)
-- `--seed <number>`: Random seed (default: 42)
 - `--output <file>`: Output file for results (JSON)
 - `--no-snapshots`: Disable snapshot recording
 - `--verbose`: Enable verbose per-action logging (gathered amounts, builds, worker moves, battles)
@@ -181,7 +180,6 @@ npm run simulate:compare -- --generations 5 --top 2 --max-time 1800
 - `--battle <id>`: Encounter ID for battleVictory objective
 - `--max-time <seconds>`: Maximum simulation time (default: 3600)
 - `--actions-per-second <n>`: Strategy actions per simulated second (default: 5)
-- `--seed <number>`: Random seed (default: 42)
 - `--output <file>`: Output file for results (JSON)
 - `--generations <number>`: Number of evolutionary generations (default: 1)
 - `--top <number>`: Top N strategies to keep per generation (default: 2)
@@ -230,7 +228,6 @@ import { runSimulation } from "./tools/simulationRunner.js";
 
 const strategy = getStrategy("balanced");
 const result = runSimulation(strategy, {
-  seed: 42,
   objective: { type: "timeLimit", seconds: 3600 },
   gatherClicksPerAction: 10,
   actionsPerSecond: 5,
@@ -283,7 +280,7 @@ class MyCustomStrategy implements SimulationStrategy {
 ## Notes
 
 - The simulation system is React-free and runs entirely in the domain layer
-- All simulations are deterministic based on the seed
+- Simulations are deterministic for the same initial state and strategy
 - The engine respects all game rules (capacity limits, costs, unlocks)
 - Units are never lost in battles (armies are restored post-battle)
 - The system uses the same `CivilizationState` as the live game

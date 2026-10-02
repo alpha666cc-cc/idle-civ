@@ -111,11 +111,15 @@ const fullProfile = tradeProfile(TRADE_INTENSITY_STOPS);
 
 describe("simulation trade advisor", () => {
   it("does nothing for a strategy that does not trade", () => {
-    expect(getTradeRouteAction(balancedSettlement(), tradeProfile(0))).toBeNull();
+    expect(
+      getTradeRouteAction(balancedSettlement(), tradeProfile(0)),
+    ).toBeNull();
   });
 
   it("leaves an empty reserve alone", () => {
-    expect(getTradeDirective(balancedSettlement({ trade: 0 }), fullProfile)).toBeNull();
+    expect(
+      getTradeDirective(balancedSettlement({ trade: 0 }), fullProfile),
+    ).toBeNull();
   });
 
   it("releases a route the empty reserve cannot feed", () => {
@@ -143,9 +147,9 @@ describe("simulation trade advisor", () => {
     // Every other resource sits a billion deep with no production behind it. A
     // leftover is dead weight, not a surplus, so food is the only route on offer —
     // selling the dead stock would outbid it and drain the settlement to do it.
-    expect(
-      getTradeDirective(balancedSettlement(), fullProfile)?.resource,
-    ).toBe("food");
+    expect(getTradeDirective(balancedSettlement(), fullProfile)?.resource).toBe(
+      "food",
+    );
   });
 
   it("sells a surplus, sized to one second of inflow", () => {
@@ -216,7 +220,9 @@ describe("simulation trade advisor", () => {
     // The sale credits gold (10 for the sale, 10 for the gold worker), and it sells
     // exactly the inflow, so the shelves end up where they started rather than
     // drained by a route sized to the whole reserve.
-    expect(ticked.resources.gold.sub(routed.resources.gold).toNumber()).toBeCloseTo(20, 3);
+    expect(
+      ticked.resources.gold.sub(routed.resources.gold).toNumber(),
+    ).toBeCloseTo(20, 3);
     expect(ticked.resources.food.toNumber()).toBeCloseTo(
       routed.resources.food.toNumber(),
       3,
@@ -253,7 +259,11 @@ describe("simulation trade advisor", () => {
     // reaching around it. With no campaign battle left, the route is the
     // highest-priority discretionary action it has — it sits below the required
     // battle steps and the simulator's purchases, and above the growth ladder.
-    const quiet = balancedSettlement({}, {}, { defeatedEncounters: AGE_ZERO_WON });
+    const quiet = balancedSettlement(
+      {},
+      {},
+      { defeatedEncounters: AGE_ZERO_WON },
+    );
     const trader = getStrategy("trader");
     expect(trader?.name).toBe("trader");
     expect(trader?.decideAction(quiet, context)).toEqual({
@@ -287,7 +297,6 @@ describe("the simulation runner's trade action", () => {
     };
 
     const result = new GameSimulation(state, trader, {
-      seed: 1,
       objective: { type: "timeLimit", seconds: 10 },
       gatherClicksPerAction: 1,
       maxGameTime: 10,
@@ -327,7 +336,6 @@ describe("the simulation runner's trade action", () => {
         decideAction: (current) => getTradeRouteAction(current, fullProfile),
       },
       {
-        seed: 1,
         objective: { type: "timeLimit", seconds: 5 },
         gatherClicksPerAction: 1,
         maxGameTime: 5,

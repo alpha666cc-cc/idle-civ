@@ -11,7 +11,6 @@ console.log("Testing simulation system...\n");
 console.log("Test 1: Running balanced strategy for 60 seconds...");
 const strategy1 = getStrategy("balanced");
 const result1 = runSimulation(strategy1, {
-  seed: 42,
   objective: { type: "timeLimit", seconds: 60 },
   gatherClicksPerAction: 10,
   maxGameTime: 60,
@@ -28,7 +27,6 @@ console.log(`Final population: ${result1.finalState.population}`);
 console.log("\nTest 2: Running production strategy for 30 seconds...");
 const strategy2 = getStrategy("production");
 const result2 = runSimulation(strategy2, {
-  seed: 42,
   objective: { type: "timeLimit", seconds: 30 },
   gatherClicksPerAction: 10,
   maxGameTime: 30,

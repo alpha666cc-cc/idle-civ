@@ -14,7 +14,6 @@ import {
   battleOrderHints,
   battleOrderLabels,
   battleOrders,
-  battleSeed,
   ordersForAge,
   simulateBattle,
   simulateBattleOutcome,
@@ -41,8 +40,8 @@ const player = (list: Army) =>
     return { unitId, count: ExpNumber.fromNumber(count), stats };
   });
 
-const fight = (battleId: string, list: Army, seed = 1) =>
-  simulateBattleOutcome(player(list), state.getEnemyStacks(battleId), { seed });
+const fight = (battleId: string, list: Army) =>
+  simulateBattleOutcome(player(list), state.getEnemyStacks(battleId));
 
 /** Military-only spend, the metric `battleSimulator` ranks candidate armies by. */
 const military = (list: Army): number =>
@@ -58,15 +57,10 @@ const military = (list: Army): number =>
   );
 
 describe("battle determinism", () => {
-  it("resolves the same fight whatever the seed says", () => {
+  it("resolves repeated identical inputs identically", () => {
     const army = player([["warrior", 8]]);
     const wolves = state.getEnemyStacks(firstFire);
-    const first = simulateBattle(army, wolves, { seed: 1 });
-    const second = simulateBattle(army, wolves, { seed: 987654321 });
-
-    expect(second.outcome).toBe(first.outcome);
-    expect(second.rounds.length).toBe(first.rounds.length);
-    expect(second.rounds.at(-1)).toEqual(first.rounds.at(-1));
+    expect(simulateBattle(army, wolves)).toEqual(simulateBattle(army, wolves));
   });
 });
 
@@ -129,7 +123,10 @@ describe("Wolf Pack: a mixed army is the cheapest answer", () => {
 });
 
 describe("battle orders", () => {
-  const army = (list: Army, orders: Partial<Record<string, BattleOrder>> = {}) =>
+  const army = (
+    list: Army,
+    orders: Partial<Record<string, BattleOrder>> = {},
+  ) =>
     player(list).map((stack) => ({
       ...stack,
       order: orders[stack.unitId],
@@ -138,47 +135,42 @@ describe("battle orders", () => {
   /** A two-stack fight where the order can visibly change who is shot at. */
   const focusedBattle = (orders: Partial<Record<string, BattleOrder>>) =>
     simulateBattle(
-      army([["warrior", 4], ["slinger", 4]], orders),
+      army(
+        [
+          ["warrior", 4],
+          ["slinger", 4],
+        ],
+        orders,
+      ),
       state.getEnemyStacks(wolfPack),
-      { seed: 7 },
     );
 
   it("leaves a battle unchanged when no order is set", () => {
     const plain = simulateBattle(
       player([["warrior", 8]]),
       state.getEnemyStacks(firstFire),
-      { seed: 1 },
     );
     const explicit = simulateBattle(
       army([["warrior", 8]], { warrior: "standard" }),
       state.getEnemyStacks(firstFire),
-      { seed: 1 },
     );
     expect(explicit.rounds).toEqual(plain.rounds);
     expect(explicit.outcome).toBe(plain.outcome);
   });
 
-  it("is deterministic under an order, whatever the seed says", () => {
+  it("is deterministic under an order", () => {
     const first = focusedBattle({ slinger: "focus_strong" });
-    const reseeded = simulateBattle(
-      army([["warrior", 4], ["slinger", 4]], { slinger: "focus_strong" }),
+    const replayed = simulateBattle(
+      army(
+        [
+          ["warrior", 4],
+          ["slinger", 4],
+        ],
+        { slinger: "focus_strong" },
+      ),
       state.getEnemyStacks(wolfPack),
-      { seed: 987654321 },
     );
-    expect(reseeded.outcome).toBe(first.outcome);
-    expect(reseeded.rounds.length).toBe(first.rounds.length);
-    expect(reseeded.rounds.at(-1)).toEqual(first.rounds.at(-1));
-  });
-
-  it("folds the order into the battle fingerprint", () => {
-    const wolves = state.getEnemyStacks(firstFire);
-    const plain = battleSeed(player([["warrior", 8]]), wolves, firstFire);
-    const ordered = battleSeed(
-      army([["warrior", 8]], { warrior: "focus_strong" }),
-      wolves,
-      firstFire,
-    );
-    expect(ordered).not.toBe(plain);
+    expect(replayed).toEqual(first);
   });
 
   it("changes who a stack shoots at, so an order is not decoration", () => {
@@ -264,11 +256,13 @@ describe("Bronze Raid and Troy: slingers reach a hull", () => {
   it("lets a ground unit with reach damage a naval stack", () => {
     const trireme = state.getUnitStats("trireme_bronze");
     if (!trireme) throw new Error("The trireme definition is missing.");
-    const battle = simulateBattle(
-      player([["slinger", 50]]),
-      [{ unitId: "trireme_bronze", count: ExpNumber.fromNumber(10), stats: trireme }],
-      { seed: 1 },
-    );
+    const battle = simulateBattle(player([["slinger", 50]]), [
+      {
+        unitId: "trireme_bronze",
+        count: ExpNumber.fromNumber(10),
+        stats: trireme,
+      },
+    ]);
     const opening = battle.rounds[0].enemy[0]?.hpPool;
     const closing = battle.rounds.at(-1)?.enemy[0]?.hpPool;
     expect(opening?.gt(ExpNumber.ZERO)).toBe(true);

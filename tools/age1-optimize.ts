@@ -77,7 +77,6 @@ const outDir = flag("out", "sim-output/age1-optimize");
 
 /** The configuration every evaluation shares: identical engine knobs, one objective. */
 const evaluationConfig = (maxGameTime: number): SimulationConfig => ({
-  seed,
   objective: { type: "ageReach", ageId: "age1" },
   gatherClicksPerAction: 10,
   actionsPerSecond: 5,
@@ -236,7 +235,11 @@ const refit = (
   // it partway back toward where the search started rather than committing to it.
   const drift = mean.map((value, index) => {
     const start = previousMean[index];
-    return clamp((value + start) / 2, Math.min(value, start), Math.max(value, start));
+    return clamp(
+      (value + start) / 2,
+      Math.min(value, start),
+      Math.max(value, start),
+    );
   });
   return { mean: drift, sigma };
 };
@@ -338,7 +341,9 @@ const runSearch = () => {
     const generationBest = candidates[0];
     if (!best || generationBest.score < best.score) best = generationBest;
 
-    const reachedCount = candidates.filter((candidate) => candidate.reached).length;
+    const reachedCount = candidates.filter(
+      (candidate) => candidate.reached,
+    ).length;
     history.push({
       iteration,
       best: generationBest.score,
@@ -377,7 +382,9 @@ const runSearch = () => {
 const runBaselineStrategies = () =>
   ["cheapest", "balanced", "production", "fast-age", "speedrun"]
     .map((name) => getStrategy(name))
-    .filter((strategy): strategy is SimulationStrategy => strategy !== undefined)
+    .filter(
+      (strategy): strategy is SimulationStrategy => strategy !== undefined,
+    )
     .map((strategy) => {
       const result = evaluate(strategy, horizon);
       return {
@@ -393,7 +400,9 @@ const runBaselineStrategies = () =>
 
 const floor = campaignFloor();
 console.log("=== age-1 time-minimization search ===");
-console.log(`horizon ${clock(horizon)}   seed ${seed}   population ${population}   elite ${eliteCount}`);
+console.log(
+  `horizon ${clock(horizon)}   seed ${seed}   population ${population}   elite ${eliteCount}`,
+);
 console.log(`campaign gate: ${floor.battleChain.join(" -> ")}`);
 console.log(`building target: ${floor.minimumBuildings}\n`);
 
@@ -409,7 +418,9 @@ if (hasFlag("baseline")) {
   console.log("");
 }
 
-console.log(`--- search: ${iterations} iterations x ${population} policies ---`);
+console.log(
+  `--- search: ${iterations} iterations x ${population} policies ---`,
+);
 const { best: bestCandidate, history } = runSearch();
 if (!bestCandidate) {
   console.error("search produced no candidates");
@@ -418,7 +429,9 @@ if (!bestCandidate) {
 
 const best = bestCandidate;
 console.log("\n=== result ===");
-console.log(`best age-1 arrival: ${clock(best.score)} (game time ${best.score}s)`);
+console.log(
+  `best age-1 arrival: ${clock(best.score)} (game time ${best.score}s)`,
+);
 if (baseline.length > 0) {
   const baselineBest = baseline
     .filter((row) => row.reached)
@@ -451,7 +464,11 @@ try {
         population,
         eliteCount,
         iterations,
-        best: { reached: best.reached, gameTime: best.score, params: best.params },
+        best: {
+          reached: best.reached,
+          gameTime: best.score,
+          params: best.params,
+        },
         baseline,
         history,
       },

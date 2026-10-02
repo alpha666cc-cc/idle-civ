@@ -87,7 +87,6 @@ export type SimulationObjective =
  * Simulation configuration.
  */
 export interface SimulationConfig {
-  seed: number;
   objective: SimulationObjective;
   gatherClicksPerAction: number; // clicks each gather action models (default 10)
   actionsPerSecond?: number; // strategy actions per simulated second (default 5)
@@ -637,10 +636,7 @@ export class GameSimulation {
         break;
       }
       case "setTradeRoute": {
-        this.state = this.state.setTradeRoute(
-          action.resource,
-          action.route,
-        );
+        this.state = this.state.setTradeRoute(action.resource, action.route);
         const route = this.state.getTradeRoute(action.resource);
         this.log(
           `trade route ${action.resource}`,
@@ -845,7 +841,11 @@ export class GameSimulation {
    * instead of mutating as later ticks land.
    */
   private currentTiming(): SnapshotTiming {
-    const tick = summarizeTiming(this.tickCount, this.tickTotalMs, this.tickMaxMs);
+    const tick = summarizeTiming(
+      this.tickCount,
+      this.tickTotalMs,
+      this.tickMaxMs,
+    );
     const decision = summarizeTiming(
       this.decisionCount,
       this.decisionTotalMs,

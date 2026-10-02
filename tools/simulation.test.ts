@@ -100,7 +100,6 @@ describe("simulation event snapshots", () => {
     };
     const run = (snapshotIntervalSeconds: number) =>
       new GameSimulation(state(), noop, {
-        seed: 42,
         objective: { type: "timeLimit", seconds: 300 },
         gatherClicksPerAction: 1,
         maxGameTime: 300,
@@ -122,7 +121,6 @@ describe("simulation event snapshots", () => {
       decideAction: () => null,
     };
     const result = new GameSimulation(makeActionRateState(), noop, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 10 },
       gatherClicksPerAction: 1,
       maxGameTime: 10,
@@ -161,7 +159,6 @@ describe("simulation event snapshots", () => {
     // maxGameTime 0 means the main loop never runs, so neither a tick nor a
     // decision is ever measured.
     const result = new GameSimulation(makeActionRateState(), noop, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 0 },
       gatherClicksPerAction: 1,
       maxGameTime: 0,
@@ -196,7 +193,6 @@ describe("simulation event snapshots", () => {
       decideAction: () => null,
     };
     const result = new GameSimulation(state(), noop, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 300 },
       gatherClicksPerAction: 1,
       maxGameTime: 300,
@@ -275,7 +271,6 @@ describe("simulation event snapshots", () => {
       ...resumed.boughtResearch.map((id) => `research:${id}`),
     ]);
     const result = new GameSimulation(resumed, noop, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 10 },
       gatherClicksPerAction: 1,
       maxGameTime: 10,
@@ -323,7 +318,6 @@ describe("simulation event snapshots", () => {
       emptyStatistics(),
     );
     new GameSimulation(state, strategy, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 10 },
       gatherClicksPerAction: 1,
       maxGameTime: 10,
@@ -363,7 +357,6 @@ describe("simulation event snapshots", () => {
       );
     const run = (fromScratch: boolean) =>
       new GameSimulation(midGame(), noop, {
-        seed: 42,
         objective: { type: "timeLimit", seconds: 5 },
         gatherClicksPerAction: 1,
         maxGameTime: 5,
@@ -381,7 +374,6 @@ describe("simulation event snapshots", () => {
 
     // Default (undefined) must keep the old behaviour.
     const legacy = new GameSimulation(midGame(), noop, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 5 },
       gatherClicksPerAction: 1,
       maxGameTime: 5,
@@ -414,7 +406,6 @@ describe("simulation event snapshots", () => {
     // lands at 180s, so only a final snapshot can report the closing state.
     const run = (recordSnapshots: boolean) =>
       new GameSimulation(state(), noop, {
-        seed: 42,
         objective: { type: "timeLimit", seconds: 250 },
         gatherClicksPerAction: 1,
         maxGameTime: 250,
@@ -438,7 +429,6 @@ describe("simulation event snapshots", () => {
     // not fire twice when the run already ended on an interval tick.
     expect(run(false).snapshots).toHaveLength(0);
     const onTick = new GameSimulation(state(), noop, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 300 },
       gatherClicksPerAction: 1,
       maxGameTime: 300,
@@ -462,7 +452,6 @@ describe("simulation event snapshots", () => {
       },
     };
     const result = new GameSimulation(makeActionRateState(), strategy, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 1 },
       gatherClicksPerAction: 1,
       maxGameTime: 1,
@@ -484,7 +473,6 @@ describe("simulation event snapshots", () => {
       },
     };
     const result = new GameSimulation(makeActionRateState(), strategy, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 1 },
       gatherClicksPerAction: 1,
       actionsPerSecond: 2,
@@ -507,7 +495,6 @@ describe("simulation event snapshots", () => {
       },
     };
     const result = new GameSimulation(makeActionRateState(), strategy, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 1 },
       gatherClicksPerAction: 1,
       maxGameTime: 1,
@@ -538,7 +525,6 @@ describe("simulation event snapshots", () => {
       }),
     };
     const result = new GameSimulation(state, strategy, {
-      seed: 42,
       objective: { type: "timeLimit", seconds: 1 },
       gatherClicksPerAction: 1,
       maxGameTime: 1,
@@ -1422,7 +1408,6 @@ describe("required progression strategy", () => {
       decideAction: (state) => getRequiredAgeAction(state),
     };
     const result = new GameSimulation(ready, strategy, {
-      seed: 42,
       objective: { type: "ageReach", ageId: "age1" },
       gatherClicksPerAction: 1,
       maxGameTime: 2,
@@ -1450,7 +1435,6 @@ describe("required progression strategy", () => {
       decideAction: (state) => getRequiredAgeAction(state),
     };
     const result = new GameSimulation(ready, strategy, {
-      seed: 42,
       objective: { type: "ageReach", ageId: "age-1" },
       gatherClicksPerAction: 1,
       maxGameTime: 2,
@@ -1599,7 +1583,6 @@ describe("required progression strategy", () => {
             decideAction: () => null,
           },
           {
-            seed: 42,
             objective: { type: "timeLimit", seconds: 10 },
             gatherClicksPerAction: 1,
             maxGameTime: 10,

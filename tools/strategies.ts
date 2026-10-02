@@ -262,27 +262,30 @@ const playerResearchOrder = [
   "agriculture",
   "pottery",
   "writing",
-  "tribal_organization",
   "sling_throwing",
-  "archery_mechanics",
-  "flint_knapping",
+  "tribal_organization",
+  "woodcraft_hulls",
+  "forestry",
   "mining",
   "stone_working",
   "city_planning",
-  "forestry",
   "domestication",
   "trapping",
+  "animal_husbandry",
+  "weaving",
+  "calendar",
+  "archery_mechanics",
+  "flint_knapping",
   "bronze_smelting",
   "bronze_casting",
-  "composite_bowcraft",
-  "woodcraft_hulls",
-  "galley_design",
-  "animal_husbandry",
-  "calendar",
-  "weaving",
   "wheel_axle",
+  "galley_design",
+  "composite_bowcraft",
   "torsion_physics",
 ] as const;
+
+const hasCompletedPlayerResearch = (state: CivilizationState): boolean =>
+  playerResearchOrder.every((researchId) => state.isResearchBought(researchId));
 
 const hasCompletedCurrentAgeResearch = (state: CivilizationState): boolean => {
   const age = state.getCurrentAge();
@@ -691,7 +694,7 @@ const simulatorContext = (state: CivilizationState): BattleSimulatorContext => {
       const wins =
         player.length > 0 &&
         enemy.length > 0 &&
-        state.simulateWithStacksOutcome(battleId, player, enemy) === "player";
+        state.simulateWithStacksOutcome(player, enemy) === "player";
       if (simulatorWinCache.size >= simulatorWinCacheLimit) {
         const oldest = simulatorWinCache.keys().next().value;
         if (oldest !== undefined) simulatorWinCache.delete(oldest);
@@ -2047,6 +2050,36 @@ class PlayerOpeningStrategy extends BalancedStrategy {
   }
 }
 
+class PlayerOpeningWoodStrategy extends PlayerOpeningStrategy {
+  protected getWorkerRatios(): WorkerRatios {
+    return {
+      food: 0.3,
+      wood: 0.4,
+      stone: 0.2,
+      gold: 0.1,
+      military: 0,
+      science: 0,
+      metalwork: 0,
+      trade: 0,
+    };
+  }
+
+  protected getBuildingPriority(): BuildingPriority {
+    return [
+      { building: "people", weight: 10 },
+      { building: "house", weight: 9 },
+      { building: "lumberYard", weight: 8 },
+      { building: "quarry", weight: 7 },
+      { building: "farm", weight: 6 },
+      { building: "goldMine", weight: 5 },
+      { building: "barracks", weight: 4, targetCount: 3 },
+      { building: "university", weight: 3, targetCount: 3 },
+      { building: "smithy", weight: 3, targetCount: 2 },
+      { building: "townHall", weight: 2 },
+    ];
+  }
+}
+
 /**
  * Production-focused strategy: maximize resource generation.
  */
@@ -2320,12 +2353,15 @@ export class ResearchStrategy extends BaseStrategy {
   }
 }
 
-/** Replays the research order and late-game investment from the 40-minute save. */
+/** Uses the faster research order from the historical v4 Age-1 save. */
 export class PlayerStrategy extends ResearchStrategy {
   name = "player";
-  description =
-    "Follow the research and economy choices from the 40-minute save";
-  private playerOpeningStrategy = new PlayerOpeningStrategy();
+  description = "Follow the fastest save-derived Age-1 research and opening";
+  protected playerOpeningStrategy = new PlayerOpeningWoodStrategy();
+
+  protected getOpeningBarracksTarget(): number {
+    return 1;
+  }
 
   protected getResearchAction(
     state: CivilizationState,
@@ -2337,11 +2373,15 @@ export class PlayerStrategy extends ResearchStrategy {
     ) {
       return null;
     }
-    const nextResearch = playerResearchOrder.find(
+    const nextResearch = this.getPlayerResearchOrder().find(
       (researchId) => !state.isResearchBought(researchId),
     );
     if (!nextResearch || !state.canBuyResearch(nextResearch)) return null;
     return { type: "buyResearch", researchId: nextResearch };
+  }
+
+  protected getPlayerResearchOrder(): readonly string[] {
+    return playerResearchOrder;
   }
 
   private isResearchPaused(state: CivilizationState): boolean {
@@ -2368,13 +2408,14 @@ export class PlayerStrategy extends ResearchStrategy {
 
   protected getResearchWorkerRatios(state: CivilizationState): WorkerRatios {
     const hasSmithy = state.isBuildingAvailable("smithy");
+    const researchComplete = hasCompletedPlayerResearch(state);
     return {
       food: 0.15,
       wood: 0.14,
       stone: 0.105,
       gold: 0.025,
       military: 0.025,
-      science: 0.387,
+      science: researchComplete ? 0 : 0.5,
       metalwork: hasSmithy ? 0.174 : 0,
       trade: 0,
     };
@@ -2518,16 +2559,28 @@ export class PlayerStrategy extends ResearchStrategy {
     context: SimulationContext,
   ): SimulationAction | null {
     if (!state.defeatedEncounters.includes("age0_1_first_fire")) {
-      if (state.population.gte(ExpNumber.fromNumber(90))) {
+      const openingBarracksTarget = this.getOpeningBarracksTarget();
+      if (
+        openingBarracksTarget > 0 &&
+        state.population.gte(ExpNumber.fromNumber(90))
+      ) {
         const barracksAction = this.getBuildingTargetAction(
           state,
           "barracks",
-          2,
+          openingBarracksTarget,
           context,
         );
         if (barracksAction) return barracksAction;
       }
       return this.playerOpeningStrategy.decideAction(state, context);
+    }
+
+    if (hasCompletedPlayerResearch(state)) {
+      const workerAction = this.assignWorkersByRatio(
+        state,
+        this.getResearchWorkerRatios(state),
+      );
+      if (workerAction) return workerAction;
     }
 
     const ageAction = this.getAgeTransitionAction(state);
@@ -2540,6 +2593,9 @@ export class PlayerStrategy extends ResearchStrategy {
     if (preparationAction) {
       return this.focusWorkersForGather(state, preparationAction, context);
     }
+
+    const simulatorAction = this.getSimulatorActions(state)[0];
+    if (simulatorAction) return simulatorAction;
 
     const infrastructureAction = this.getBattleTwoInfrastructureAction(
       state,

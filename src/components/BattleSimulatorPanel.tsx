@@ -39,9 +39,7 @@ const winsWithStats = (
     );
   const enemy = gameState.getEnemyStacks(battleId);
   if (stacks.length === 0 || enemy.length === 0) return false;
-  return (
-    gameState.simulateWithStacksOutcome(battleId, stacks, enemy) === "player"
-  );
+  return gameState.simulateWithStacksOutcome(stacks, enemy) === "player";
 };
 
 export default function BattleSimulatorPanel({
