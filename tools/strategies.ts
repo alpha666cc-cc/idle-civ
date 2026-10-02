@@ -18,7 +18,6 @@ import {
   simulatorCandidates,
   solveMinimumArmy,
   type BattleSimulatorContext,
-  type SimulatorOwnedArmy,
   type SimulatorResult,
 } from "../src/game/battleSimulator.js";
 import {
@@ -417,10 +416,14 @@ export const getAgeRouteGrowthAction = (
     );
     if (cappedByHousing) {
       if (state.canBuild("house")) {
-        return { type: "build", building: "house", count: 1 };
+        const count = state.getMaxAffordableBuildings("house");
+        return count > 0 ? { type: "build", building: "house", count } : null;
       }
       if (state.canBuild("townHall")) {
-        return { type: "build", building: "townHall", count: 1 };
+        const count = state.getMaxAffordableBuildings("townHall");
+        return count > 0
+          ? { type: "build", building: "townHall", count }
+          : null;
       }
     }
   }
@@ -431,7 +434,8 @@ export const getAgeRouteGrowthAction = (
 
   if (state.isBuildingAvailable("people")) {
     if (state.canBuild("people")) {
-      return { type: "build", building: "people", count: 1 };
+      const count = state.getMaxAffordableBuildings("people");
+      return count > 0 ? { type: "build", building: "people", count } : null;
     }
     // Still capped and neither house nor town hall is affordable: gather for
     // whichever one is the next real step up.
@@ -470,7 +474,8 @@ export const getAgeRouteGrowthAction = (
       !state.isBuildingAtCapacity("farm") &&
       state.canBuild("farm")
     ) {
-      return { type: "build", building: "farm", count: 1 };
+      const count = state.getMaxAffordableBuildings("farm");
+      return count > 0 ? { type: "build", building: "farm", count } : null;
     }
     return { type: "gather", resource: "food" };
   }
@@ -540,10 +545,6 @@ export const getRequiredAgeAction = (
     : null;
 };
 
-/** Current owned army, keyed by unit id, for the shared battle simulator. */
-const simulatorOwnedArmy = (state: CivilizationState): SimulatorOwnedArmy =>
-  new Map(state.getArmyStacks().map(({ unitId, count }) => [unitId, count]));
-
 const simulatorWinCache = new Map<string, boolean>();
 const simulatorWinCacheLimit = 16_384;
 
@@ -560,7 +561,8 @@ const simulatorContext = (state: CivilizationState): BattleSimulatorContext => {
   const enemyStacks = new Map<string, ArmyStack[]>();
 
   return {
-    getCost: (unitId, count) => state.getUnitCost(unitId, count),
+    getCost: (unitId, count) =>
+      state.costSeriesFrom(state.getUnitCostParameters(unitId), count),
     getResearch: (unitIds) => state.getResearchForUnitTypes(unitIds),
     wins: (composition, battleId) => {
       const armyKey = [...composition]
@@ -615,16 +617,45 @@ const simulatorBattleCandidates = (
     : [];
 };
 
-const simulatorPlanKey = (state: CivilizationState): string =>
-  [
+const simulatorPlanKey = (
+  state: CivilizationState,
+  candidates: readonly UnitDefinition[],
+): string => {
+  const unitSignatures = candidates.map((unit) => {
+    const stats = state.getUnitStatsWithResearch(
+      unit.key,
+      state.boughtResearch,
+    );
+    const costs = state.getUnitCostParameters(unit.key);
+    return [
+      unit.key,
+      stats
+        ? [
+            stats.hp.toString(),
+            stats.attack.toString(),
+            stats.armor,
+            stats.range,
+            stats.speed,
+            stats.accuracy,
+          ].join(":")
+        : "missing-stats",
+      costs
+        .map(
+          ({ cost, unitBase, unitFactor }) =>
+            `${cost.resource}:${unitBase.toString()}:${unitFactor.toString()}`,
+        )
+        .join(","),
+    ].join("/");
+  });
+  const unlockResearch = state
+    .getResearchForUnitTypes(candidates.map(({ key }) => key))
+    .ids.join(",");
+  return [
     getRequiredBattle(state)?.key ?? "",
-    unitCountSignature(state),
-    state.boughtResearch.join(","),
-    state.boughtUpgrades.join(","),
-    state.earnedAchievements.join(","),
-    state.enteredAges.join(","),
-    state.defeatedEncounters.join(","),
+    unlockResearch,
+    ...unitSignatures,
   ].join("|");
+};
 
 /** The simulator's advisory plan for the current battle, or null if unavailable. */
 const simulatorPlanCache = new Map<string, SimulatorResult | null>();
@@ -632,12 +663,14 @@ const simulatorPlanCache = new Map<string, SimulatorResult | null>();
 export const getSimulatorBattlePlan = (
   state: CivilizationState,
 ): SimulatorResult | null => {
-  const key = simulatorPlanKey(state);
+  const candidates = simulatorBattleCandidates(state);
+  const key = simulatorPlanKey(state, candidates);
   const cached = simulatorPlanCache.get(key);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    return cached ? getRemainingSimulatorPlan(state, cached) : null;
+  }
 
   const battle = getRequiredBattle(state);
-  const candidates = simulatorBattleCandidates(state);
   const result =
     !battle || candidates.length === 0
       ? null
@@ -646,14 +679,13 @@ export const getSimulatorBattlePlan = (
           candidates,
           simulatorContext(state),
           candidates.length > 1,
-          simulatorOwnedArmy(state),
         );
   if (simulatorPlanCache.size >= 64) {
     const oldest = simulatorPlanCache.keys().next().value;
     if (oldest !== undefined) simulatorPlanCache.delete(oldest);
   }
   simulatorPlanCache.set(key, result);
-  return result;
+  return result ? getRemainingSimulatorPlan(state, result) : null;
 };
 
 /** First recommended recruit type that the player can legally buy right now. */
@@ -708,6 +740,7 @@ const getRemainingSimulatorPlan = (
   plan: SimulatorResult,
 ): SimulatorResult => {
   const composition = new Map<string, number>();
+  let unchanged = true;
   for (const [unitId, targetCount] of plan.totalComposition) {
     const missing = targetCount
       .sub(state.getUnitCount(unitId))
@@ -716,8 +749,9 @@ const getRemainingSimulatorPlan = (
     if (Number.isFinite(missing) && missing > 0) {
       composition.set(unitId, missing);
     }
+    if (missing !== targetCount.toNumber()) unchanged = false;
   }
-  return { ...plan, composition };
+  return unchanged ? plan : { ...plan, composition };
 };
 
 /** Unlock research required for the new unit types in the simulator plan. */
@@ -1285,11 +1319,26 @@ abstract class BaseStrategy implements SimulationStrategy {
       return action;
     }
     const resource = action.resource as ProductionResourceKey;
-    this.gatherFocus = resource;
-    return (
-      this.assignWorkersByRatio(state, this.getWorkerRatios(), resource) ??
-      action
+    const ratios = this.getWorkerRatios();
+    const totalRatio = Object.values(ratios).reduce(
+      (sum, ratio) => sum + ratio,
+      0,
     );
+    const totalWorkers = state.assignedWorkers + state.availableWorkers;
+    const hasSurplusDonor = (
+      producerResourceKeys as ProductionResourceKey[]
+    ).some((candidate) => {
+      if (candidate === resource) return false;
+      const target = Math.floor(
+        (ratios[candidate] / totalRatio) * totalWorkers,
+      );
+      const current = Math.round(state.workers[candidate]?.toNumber() || 0);
+      return current - target >= 4;
+    });
+
+    if (state.availableWorkers === 0 && !hasSurplusDonor) return action;
+    this.gatherFocus = resource;
+    return this.assignWorkersByRatio(state, ratios, resource) ?? action;
   }
 
   protected getUnitAction(state: CivilizationState): SimulationAction | null {
@@ -1350,7 +1399,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     if (total === 0) return null;
 
     const totalWorkers = assigned + available;
-
+    const rebalanceThreshold = priorityResource ? 1 : 4;
     // Calculate target assignments for all production resources (integer floors)
     const targets: Record<ProductionResourceKey, number> = {
       food: Math.floor((focusedRatios.food / total) * totalWorkers),
@@ -1370,12 +1419,34 @@ abstract class BaseStrategy implements SimulationStrategy {
     );
     targets.food += totalWorkers - targetAssigned;
 
+    if (priorityResource && available > 0) {
+      const current = Math.round(
+        state.workers[priorityResource]?.toNumber() || 0,
+      );
+      const target = targets[priorityResource] || 0;
+      const diff = target - current;
+      if (diff >= rebalanceThreshold) {
+        return {
+          type: "assignWorker",
+          resource: priorityResource,
+          count: diff,
+        };
+      }
+      if (diff <= -rebalanceThreshold) {
+        return {
+          type: "unassignWorker",
+          resource: priorityResource,
+          count: Math.abs(diff),
+        };
+      }
+    }
+
     let surplusResource: ProductionResourceKey | null = null;
     let surplus = 0;
     for (const resource of producerResourceKeys as ProductionResourceKey[]) {
       const current = Math.round(state.workers[resource]?.toNumber() || 0);
       const excess = current - (targets[resource] || 0);
-      if (excess > surplus) {
+      if (excess >= rebalanceThreshold && excess > surplus) {
         surplus = excess;
         surplusResource = resource;
       }
@@ -1397,13 +1468,13 @@ abstract class BaseStrategy implements SimulationStrategy {
       const target = targets[resource] || 0;
       const diff = target - current;
 
-      if (diff > 0 && diff > bestDiff) {
+      if (diff >= rebalanceThreshold && diff > bestDiff) {
         bestDiff = diff;
         bestResource = resource;
       }
     }
 
-    if (available <= 0 || bestDiff <= 0) {
+    if (available <= 0 || bestDiff < rebalanceThreshold) {
       return null;
     }
 
@@ -1543,8 +1614,8 @@ abstract class BaseStrategy implements SimulationStrategy {
     if (building) {
       // Check how many we can afford
       const maxAffordable = state.getMaxAffordableBuildings(building);
-      const count = Math.min(maxAffordable, 5); // Build up to 5 at a time
-      if (count > 0) {
+      if (maxAffordable > 0) {
+        const count = maxAffordable;
         return { type: "build", building, count };
       }
     }

@@ -890,6 +890,23 @@ describe("required progression strategy", () => {
     expect(getSimulatorBattlePlan(afterFarm)).toBe(plan);
   });
 
+  it("invalidates the battle plan when research changes unit combat stats", () => {
+    const state = makeState({
+      people: 100,
+      buildings: { house: 10, barracks: 1, university: 1, smithy: 1 },
+      resources: { ...simulatorResources, peopleCapacity: 110 },
+    });
+    const plan = getSimulatorBattlePlan(state);
+    const researched = state
+      .buyResearch("agriculture")
+      .buyResearch("tribal_organization");
+
+    expect(researched.isResearchBought("tribal_organization")).toBe(true);
+    expect(getSimulatorBattlePlan(researched)?.totalComposition).not.toBe(
+      plan?.totalComposition,
+    );
+  });
+
   it("gathers for the cheapest purchase while no worker produces anything", () => {
     // Every production rate ties at zero without workers, so a lowest-rate
     // heuristic would lock onto one arbitrary resource and never bootstrap.
@@ -978,7 +995,9 @@ describe("required progression strategy", () => {
 
     const recommended = plan?.composition.get("warrior") ?? 0;
     const afterPurchase = state.buyUnit("warrior", recommended);
-    expect(getSimulatorBattlePlan(afterPurchase)?.composition.size).toBe(0);
+    const remainingPlan = getSimulatorBattlePlan(afterPurchase);
+    expect(remainingPlan?.totalComposition).toBe(plan?.totalComposition);
+    expect(remainingPlan?.composition.size).toBe(0);
     expect(getRequiredBattleAction(afterPurchase)).toEqual({
       type: "launchBattle",
       encounterId: "age0_1_first_fire",
@@ -1169,6 +1188,72 @@ describe("required progression strategy", () => {
     // Before the fix this never reached a gather: it alternated
     // `unassign wood` / `assign wood` for all 40 steps.
     expect(labels.at(-1)).toMatch(/^gather /);
+  });
+
+  it("buys people in bulk when the age route is affordable", () => {
+    const state = makeState({
+      people: 40,
+      buildings: { house: 10 },
+      resources: {
+        ...richResources,
+        food: 20000,
+        wood: 4000,
+        stone: 2000,
+        gold: 1000,
+        peopleCapacity: 90,
+        houseCapacity: 10,
+        farmCapacity: 10,
+        lumberYardCapacity: 10,
+        quarryCapacity: 10,
+        goldMineCapacity: 10,
+      },
+    });
+
+    const action = getAgeRouteGrowthAction(state);
+    expect(action).toEqual({
+      type: "build",
+      building: "people",
+      count: expect.any(Number),
+    });
+    expect(action?.type).toBe("build");
+    if (action?.type !== "build") return;
+    expect(action.count).toBeGreaterThan(1);
+  });
+
+  it("does not oscillate worker assignments by one slot at a time", () => {
+    const strategy = new BalancedStrategy();
+    const state = makeState({
+      people: 90,
+      buildings: {
+        house: 10,
+        farm: 10,
+        lumberYard: 10,
+        quarry: 10,
+        goldMine: 3,
+      },
+      workers: { food: 35, wood: 21, stone: 18, gold: 16 },
+      resources: {
+        food: 5000,
+        wood: 5000,
+        stone: 5000,
+        gold: 5000,
+        peopleCapacity: 90,
+        houseCapacity: 10,
+        farmCapacity: 10,
+        lumberYardCapacity: 10,
+        quarryCapacity: 10,
+        goldMineCapacity: 10,
+      },
+    });
+
+    const first = strategy.decideAction(state, {
+      gameTime: 0,
+      snapshots: [],
+      timing: zeroTiming,
+    });
+    expect(first).not.toBeNull();
+    expect(first?.type).not.toBe("assignWorker");
+    expect(first?.type).not.toBe("unassignWorker");
   });
 
   it("prepares a building once its existing unlock gate is met", () => {
