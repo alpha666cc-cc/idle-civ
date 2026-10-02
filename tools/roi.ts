@@ -141,7 +141,7 @@ const effectiveIncome = (
   if (!isProductionResource(resource)) return ExpNumber.ZERO;
   const passive = state.computeResourceRate(resource);
   const rate = passive.gt(ExpNumber.ZERO) ? passive : ExpNumber.ZERO;
-  if (!isResourceGatherable(state, resource)) return rate;
+  if (!isResourceGatherable(state, resource as ResourceKey)) return rate;
   return rate.add(
     state
       .computeClickGain(resource)
@@ -192,7 +192,7 @@ const gatherResourceForCosts = (
     .filter(
       (entry): entry is { resource: ProductionResourceKey; seconds: number } =>
         isProductionResource(entry.resource) &&
-        isResourceGatherable(state, entry.resource) &&
+        isResourceGatherable(state, entry.resource as ResourceKey) &&
         Number.isFinite(entry.seconds),
     );
   return timed.sort(

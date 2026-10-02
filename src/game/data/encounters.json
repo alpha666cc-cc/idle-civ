@@ -233,6 +233,11 @@
         "unitId": "bowman_bronze",
         "count": 10000,
         "label": "10k archers"
+      },
+      {
+        "unitId": "war_galley_iron",
+        "count": 1000,
+        "label": "1k galley"
       }
     ],
     "bonuses": [
@@ -278,6 +283,11 @@
         "unitId": "bowman_bronze",
         "count": 50000,
         "label": "3k bowmen"
+      },
+      {
+        "unitId": "quinquereme",
+        "count": 3000,
+        "label": "3k quinquereme"
       }
     ],
     "bonuses": [

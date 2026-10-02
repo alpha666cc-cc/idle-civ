@@ -14,8 +14,15 @@ import { encounterDefinitions } from "../src/game/encounters.js";
 import {
   producerResourceKeys,
   type ProductionResourceKey,
+  type ResourceKey,
 } from "../src/game/attributes.js";
 import type { TradeResourceKey, TradeRoute } from "../src/game/trade.js";
+
+/** Use the engine's isResourceGatherable method. */
+export const isResourceGatherable = (
+  state: CivilizationState,
+  key: ResourceKey,
+): boolean => state.isResourceGatherable(key);
 
 export const normalizeAgeId = (ageId: string): string => {
   const legacyAgeId = /^age-(\d+)$/.exec(ageId);
@@ -956,27 +963,4 @@ export class GameSimulation {
  */
 export function createInitialState(): CivilizationState {
   return new CivilizationState();
-}
-
-/**
- * Returns true only if the given production resource is currently unlocked
- * (i.e. the player has built at least one of the required building).
- * Mirrors the filter in App.tsx's gather-grid.
- */
-export function isResourceGatherable(
-  state: CivilizationState,
-  key: string,
-): boolean {
-  switch (key) {
-    case "military":
-      return state.getBuildingCount("barracks") > 0;
-    case "science":
-      return state.getBuildingCount("university") > 0;
-    case "metalwork":
-      return state.getBuildingCount("smithy") > 0;
-    case "trade":
-      return state.getBuildingCount("market") > 0;
-    default:
-      return true; // food, wood, stone, gold always available
-  }
 }

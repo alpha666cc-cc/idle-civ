@@ -475,6 +475,25 @@ export class CivilizationState {
     );
   }
 
+  /**
+   * Returns whether a resource can be gathered/assigned workers to.
+   * Building-generated resources require their source building to exist.
+   */
+  isResourceGatherable(resourceKey: ResourceKey): boolean {
+    switch (resourceKey) {
+      case "military":
+        return this.buildingCount("barracks") > 0;
+      case "science":
+        return this.buildingCount("university") > 0;
+      case "metalwork":
+        return this.buildingCount("smithy") > 0;
+      case "trade":
+        return this.buildingCount("market") > 0;
+      default:
+        return true; // food, wood, stone, gold always available
+    }
+  }
+
   gather(resourceKey: ResourceKey): CivilizationState {
     if (!(resourceKey in this.resources) || !(resourceKey in this.workers))
       return this;
@@ -505,6 +524,7 @@ export class CivilizationState {
   ): CivilizationState {
     if (!(resourceKey in this.workers) || this.availableWorkers <= 0)
       return this;
+    if (!this.isResourceGatherable(resourceKey)) return this;
     const actualCount = Math.min(Math.floor(count), this.availableWorkers);
     if (actualCount <= 0) return this;
     return this.withWorkers({
@@ -541,17 +561,18 @@ export class CivilizationState {
    * Assign all idle workers (or up to `count` when given).
    * Food workers are maintained at roughly 10 times each other resource,
    * starting with food, while equalizing the other resources among themselves.
+   * Only assigns to gatherable resources (those with required buildings).
    */
   autoAssignWorkers(count = Infinity): CivilizationState {
-    const others = (
-      Object.keys(this.workers) as ProductionResourceKey[]
-    ).filter((key) => key !== "food");
+    const others = (Object.keys(this.workers) as ProductionResourceKey[])
+      .filter((key) => key !== "food")
+      .filter((key) => this.isResourceGatherable(key));
     let workers = { ...this.workers };
     let available = this.availableWorkers; // already an integer (Math.max(0, Math.floor(...)))
     let remaining = Math.floor(count === Infinity ? available : count);
 
     while (available > 0 && remaining > 0) {
-      if (others.length === 0) {
+      if (others.length === 0 || !this.isResourceGatherable("food")) {
         workers.food = workers.food.add(ExpNumber.ONE);
         available -= 1;
         remaining -= 1;
@@ -1047,7 +1068,10 @@ export class CivilizationState {
     const workerAdditional: ResourceFactor[] = [
       [workerProduction, workerProduction.workerProduction],
     ];
-    if (workerProduction.autoClickProduction.gt(ExpNumber.ZERO)) {
+    if (
+      workerProduction.autoClickProduction.gt(ExpNumber.ZERO) &&
+      this.isResourceGatherable(resourceKey)
+    ) {
       workerAdditional.push([
         "dev auto clicker",
         workerProduction.autoClickProduction,

@@ -354,7 +354,9 @@ const getRequiredBattleResourceToGather = (
   if (!unit) return null;
   const missing = state
     .getUnitCost(unit.key, 1)
-    .filter(({ resource }) => isResourceGatherable(state, resource))
+    .filter(({ resource }) =>
+      isResourceGatherable(state, resource as ResourceKey),
+    )
     .filter(({ resource, base }) => state.resources[resource].lt(base))
     .sort((left, right) => {
       const leftDeficit = left.base.sub(state.resources[left.resource]);
@@ -554,7 +556,10 @@ export const getAgeRouteGrowthAction = (
       const missing = cost.find(({ resource, base }) =>
         state.resources[resource as ProductionResourceKey]?.lt(base),
       );
-      if (missing && isResourceGatherable(state, missing.resource)) {
+      if (
+        missing &&
+        isResourceGatherable(state, missing.resource as ResourceKey)
+      ) {
         return { type: "gather", resource: missing.resource };
       }
     }
@@ -606,7 +611,9 @@ export const getRequiredBattlePreparationAction = (
       const costs = state.getBuildingCost(building, 0, 1);
       const missing = costs
         .filter(({ resource, base }) => state.resources[resource]?.lt(base))
-        .filter(({ resource }) => isResourceGatherable(state, resource))
+        .filter(({ resource }) =>
+          isResourceGatherable(state, resource as ResourceKey),
+        )
         .sort((left, right) => {
           const leftDeficit = left.base.sub(
             state.resources[left.resource] ?? ExpNumber.ZERO,
@@ -897,7 +904,7 @@ const isCostResourceReachable = (
   state: CivilizationState,
   resource: string,
 ): boolean =>
-  isResourceGatherable(state, resource) ||
+  isResourceGatherable(state, resource as ResourceKey) ||
   (producerResourceKeys.includes(resource as ProductionResourceKey) &&
     state
       .computeResourceRate(resource as ProductionResourceKey)
@@ -967,7 +974,9 @@ const getSimulatorGatherAction = (
       costs.every(({ resource }) => isCostResourceReachable(state, resource))
     ) {
       const missing = costs
-        .filter(({ resource }) => isResourceGatherable(state, resource))
+        .filter(({ resource }) =>
+          isResourceGatherable(state, resource as ResourceKey),
+        )
         .filter(({ resource, base }) => state.resources[resource].lt(base))
         .sort((left, right) => {
           const leftDeficit = left.base.sub(state.resources[left.resource]);
@@ -991,7 +1000,7 @@ const getSimulatorGatherAction = (
     const cost = state.getResearchNextCost()[0];
     if (
       cost &&
-      isResourceGatherable(state, cost.resource) &&
+      isResourceGatherable(state, cost.resource as ResourceKey) &&
       state.resources[cost.resource].lt(cost.base)
     ) {
       return { type: "gather", resource: cost.resource };
@@ -1039,7 +1048,7 @@ const canGatherResource = (
   resource: string,
 ): boolean =>
   producerResourceKeys.includes(resource as ProductionResourceKey) &&
-  isResourceGatherable(state, resource);
+  isResourceGatherable(state, resource as ResourceKey);
 
 const canProgressPurchase = (
   state: CivilizationState,
@@ -1225,7 +1234,7 @@ const getCheapestHousingAction = (
     .filter(
       ({ resource, base }) =>
         state.resources[resource].lt(base) &&
-        isResourceGatherable(state, resource),
+        isResourceGatherable(state, resource as ResourceKey),
     )
     .sort((left, right) => {
       const leftDeficit = left.base.sub(state.resources[left.resource]);
@@ -1548,24 +1557,29 @@ abstract class BaseStrategy implements SimulationStrategy {
     targets.food += totalWorkers - targetAssigned;
 
     if (priorityResource && available > 0) {
-      const current = Math.round(
-        state.workers[priorityResource]?.toNumber() || 0,
-      );
-      const target = targets[priorityResource] || 0;
-      const diff = target - current;
-      if (diff >= rebalanceThreshold) {
-        return {
-          type: "assignWorker",
-          resource: priorityResource,
-          count: diff,
-        };
-      }
-      if (diff <= -rebalanceThreshold) {
-        return {
-          type: "unassignWorker",
-          resource: priorityResource,
-          count: Math.abs(diff),
-        };
+      if (!isResourceGatherable(state, priorityResource as ResourceKey)) {
+        // Priority resource is not available, skip it
+        priorityResource = undefined;
+      } else {
+        const current = Math.round(
+          state.workers[priorityResource]?.toNumber() || 0,
+        );
+        const target = targets[priorityResource] || 0;
+        const diff = target - current;
+        if (diff >= rebalanceThreshold) {
+          return {
+            type: "assignWorker",
+            resource: priorityResource,
+            count: diff,
+          };
+        }
+        if (diff <= -rebalanceThreshold) {
+          return {
+            type: "unassignWorker",
+            resource: priorityResource,
+            count: Math.abs(diff),
+          };
+        }
       }
     }
 
@@ -1592,6 +1606,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     let bestDiff = 0;
 
     for (const resource of producerResourceKeys as ProductionResourceKey[]) {
+      if (!isResourceGatherable(state, resource as ResourceKey)) continue;
       const current = Math.round(state.workers[resource]?.toNumber() || 0);
       const target = targets[resource] || 0;
       const diff = target - current;
@@ -1831,7 +1846,7 @@ abstract class BaseStrategy implements SimulationStrategy {
 
     // Only consider resources that are currently unlocked
     const available = (producerResourceKeys as ProductionResourceKey[]).filter(
-      (key) => isResourceGatherable(state, key),
+      (key) => isResourceGatherable(state, key as ResourceKey),
     );
 
     if (available.length === 0) return "food";
@@ -2481,7 +2496,9 @@ export class PlayerStrategy extends ResearchStrategy {
     );
     const missing = costs
       .filter(({ resource, base }) => state.resources[resource].lt(base))
-      .filter(({ resource }) => isResourceGatherable(state, resource))
+      .filter(({ resource }) =>
+        isResourceGatherable(state, resource as ResourceKey),
+      )
       .sort((left, right) => {
         const leftDeficit = left.base.sub(state.resources[left.resource]);
         const rightDeficit = right.base.sub(state.resources[right.resource]);
@@ -2536,7 +2553,9 @@ export class PlayerStrategy extends ResearchStrategy {
     const missing = state
       .getBuildingCost(building, currentCount, 1)
       .filter(({ resource, base }) => state.resources[resource].lt(base))
-      .filter(({ resource }) => isResourceGatherable(state, resource))
+      .filter(({ resource }) =>
+        isResourceGatherable(state, resource as ResourceKey),
+      )
       .sort((left, right) => {
         const leftDeficit = left.base.sub(state.resources[left.resource]);
         const rightDeficit = right.base.sub(state.resources[right.resource]);
@@ -2678,6 +2697,47 @@ export class TradeStrategy extends BaseStrategy {
     return "gold";
   }
 }
+/**
+ * `player` with the research pause removed.
+ *
+ * ## Why this exists
+ *
+ * `PlayerStrategy` withholds research until First Fire is won *and* pottery is
+ * bought with population at 200. Measured on the current engine (the one where
+ * `assignWorker` is gated by `isResourceGatherable`, so science workers do
+ * nothing until a university exists), the science share is a large lever and it
+ * peaks at 0.5:
+ *
+ *   science share | no pause
+ *   ------------- | --------
+ *   0             | 2988 s
+ *   0.25          | 2352 s
+ *   0.5           | 2169 s
+ *   0.7           | 2308 s
+ *
+ * The pause was measured on the *previous* engine, before `assignWorker` was
+ * gated, and it was a small net negative there: "no pause" and "pause until
+ * First Fire" came out identical in every science row, because First Fire lands
+ * early enough that the gate rarely binds, while the extra `pop200` condition
+ * cost time. That comparison has **not** been re-run on the current engine, so
+ * treat the size of the gain as unverified; the direction is what motivated this
+ * subclass, and the "no pause" column above is current-engine data.
+ *
+ * This subclass removed only the pause and inherited everything else — the
+ * research order, the science-heavy worker ratios, the opening, the building
+ * plan — so a `player` vs `unpaused` comparison would have isolated exactly one
+ * variable. **It was built, measured, and then deleted.** On the current engine
+ * it arrives at 2147 s, bit-identical to `player`: the pause is inert. Fixing
+ * `assignWorker` to respect `isResourceGatherable` gated science workers behind
+ * the university, which unlocks on First Fire — so the engine now enforces the
+ * ordering the pause was hand-enforcing. The finding that *was* real on the
+ * previous engine does not survive the fix, and a strategy that duplicates
+ * `player` is worse than no strategy.
+ *
+ * The measurement worth keeping from all of this is the science share itself,
+ * which is a large lever and is already at its optimum here: 0 -> 2988 s,
+ * 0.25 -> 2352 s, 0.5 -> 2169 s, 0.7 -> 2308 s (peak at 0.5, current engine).
+ */
 
 /**
  * ROI-first speedrun strategy. Required campaign actions remain authoritative;

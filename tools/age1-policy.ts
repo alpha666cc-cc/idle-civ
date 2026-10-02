@@ -219,7 +219,9 @@ const missingGatherableCosts = (
 ): PendingCost[] =>
   costs
     .filter(({ resource, base }) => state.resources[resource].lt(base))
-    .filter(({ resource }) => isResourceGatherable(state, resource));
+    .filter(({ resource }) =>
+      isResourceGatherable(state, resource as ResourceKey),
+    );
 
 /** The gatherable resource with the largest absolute deficit, or null. */
 const largestDeficitResource = (
@@ -250,7 +252,7 @@ const planCosts = (plan: SimulatorResult): PendingCost[] =>
 /** The gatherable resource currently producing the least per second. */
 const lowestRateResource = (state: CivilizationState): string => {
   const available = (producerResourceKeys as ProductionResourceKey[]).filter(
-    (key) => isResourceGatherable(state, key),
+    (key) => isResourceGatherable(state, key as ResourceKey),
   );
   if (available.length === 0) return "food";
   let lowest = available[0];
@@ -268,7 +270,9 @@ const lowestRateResource = (state: CivilizationState): string => {
 /** How many age-0 encounters the settlement has won (the campaign's own counter). */
 export const ageZeroBattlesWon = (state: CivilizationState): number =>
   state.defeatedEncounters.filter((id) =>
-    encounterDefinitions.some((battle) => battle.key === id && battle.age === 0),
+    encounterDefinitions.some(
+      (battle) => battle.key === id && battle.age === 0,
+    ),
   ).length;
 export class AgeOnePolicy implements SimulationStrategy {
   readonly name: string;
@@ -293,7 +297,9 @@ export class AgeOnePolicy implements SimulationStrategy {
    */
   private routeTargetPopulation(state: CivilizationState): number {
     if (state.enteredAges.includes("age0")) {
-      return state.population.gt(ExpNumber.fromNumber(this.params.popTargetLate))
+      return state.population.gt(
+        ExpNumber.fromNumber(this.params.popTargetLate),
+      )
         ? 0
         : this.params.popTargetLate;
     }
@@ -309,7 +315,7 @@ export class AgeOnePolicy implements SimulationStrategy {
     const target = this.routeTargetPopulation(state);
     return target <= 0 || state.population.gte(ExpNumber.fromNumber(target));
   }
-/**
+  /**
    * The age route's growth step, with searched population targets.
    *
    * Housing is checked first and unconditionally: a settlement at its
@@ -386,7 +392,7 @@ export class AgeOnePolicy implements SimulationStrategy {
     }
     return null;
   }
-/**
+  /**
    * Research score: how much a tech is worth to this run, as the searched
    * weights applied to the destination families its bonuses name. Deliberately
    * data-driven — it reads the same bonus list the engine applies, so a tech
@@ -482,7 +488,7 @@ export class AgeOnePolicy implements SimulationStrategy {
     }
     return null;
   }
-/**
+  /**
    * Army steps for the battle the simulator says is next. Research that unlocks
    * the plan's units comes first (a recruit the engine will not sell is not a
    * recruit), then the recruits themselves, one action per unit type.
@@ -572,8 +578,10 @@ export class AgeOnePolicy implements SimulationStrategy {
     }
     return best;
   }
-/** First affordable purchase the settlement may legally make, cheapest first. */
-  private cheapestLegalAction(state: CivilizationState): SimulationAction | null {
+  /** First affordable purchase the settlement may legally make, cheapest first. */
+  private cheapestLegalAction(
+    state: CivilizationState,
+  ): SimulationAction | null {
     const candidates: { action: SimulationAction; cost: ExpNumber }[] = [];
     for (const building of buildingDefinitions) {
       if (
@@ -685,7 +693,7 @@ export class AgeOnePolicy implements SimulationStrategy {
     if (bootstrap) return { type: "gather", resource: bootstrap };
     return { type: "gather", resource: lowestRateResource(state) };
   }
-/**
+  /**
    * The ladder. Same ordering the shipped base strategy uses — campaign gates
    * first (they are the only steps that are actually *required*), then research,
    * then growth, then the army, then the economy, then gathering — with every

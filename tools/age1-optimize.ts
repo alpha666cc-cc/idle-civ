@@ -43,7 +43,7 @@ import {
   type SimulationConfig,
   type SimulationResult,
 } from "./simulation.js";
-import { getStrategy } from "./strategies.js";
+import { getStrategy, getStrategyNames } from "./strategies.js";
 import { ageDefinitions } from "../src/game/ages.js";
 import { encounterDefinitions } from "../src/game/encounters.js";
 import {
@@ -378,9 +378,16 @@ const runSearch = () => {
   return { best, history };
 };
 
-/** The shipped strategies, run to the same objective, for the report. */
+/**
+ * The shipped strategies, run to the same objective, for the report.
+ *
+ * Uses the registry rather than a hand-written list. That list was wrong twice
+ * over: it omitted `economy` (the second-fastest strategy overall) and `player`
+ * (the fastest by a factor of two), so two separate reports claimed `fast-age`
+ * was the baseline to beat.
+ */
 const runBaselineStrategies = () =>
-  ["cheapest", "balanced", "production", "fast-age", "speedrun"]
+  getStrategyNames()
     .map((name) => getStrategy(name))
     .filter(
       (strategy): strategy is SimulationStrategy => strategy !== undefined,
