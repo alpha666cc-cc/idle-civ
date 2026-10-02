@@ -146,6 +146,34 @@ describe("simulation ROI evaluation", () => {
     });
   });
 
+  it("values research that accelerates future research purchases", () => {
+    const state = makeState({
+      people: 100,
+      buildings: { university: 1 },
+      workers: { food: 5 },
+    })
+      .buyResearch("agriculture")
+      .buyResearch("pottery");
+    const writing = getBuyableRoi(state, {
+      kind: "research",
+      id: "writing",
+    });
+    const mining = getBuyableRoi(state, {
+      kind: "research",
+      id: "mining",
+    });
+
+    expect(writing?.metrics.researchTime).toBeGreaterThan(0);
+    expect(writing?.score).toBeGreaterThan(mining?.score ?? 0);
+    const researchCandidates = getRoiCandidates(state, {
+      includeUnits: false,
+    }).filter(({ buyable }) => buyable.kind === "research");
+    expect(researchCandidates[0]?.buyable).toEqual({
+      kind: "research",
+      id: "writing",
+    });
+  });
+
   it("reports acquisition time and a gatherable blocker", () => {
     const state = makeState({
       people: 100,

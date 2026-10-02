@@ -75,6 +75,7 @@ export type RoiMetrics = {
   military: number;
   unlocks: number;
   costSavings: number;
+  researchTime: number;
   campaign: number;
   campaignTime: number;
 };
@@ -478,6 +479,47 @@ const compareCosts = (
     );
   }, 0);
 
+const relativeTimeSavings = (beforeWait: number, afterWait: number): number => {
+  if (!Number.isFinite(beforeWait)) {
+    return Number.isFinite(afterWait) ? 1 : 0;
+  }
+  if (!Number.isFinite(afterWait)) return 0;
+  return Math.max(0, Math.min(1, (beforeWait - afterWait) / (1 + beforeWait)));
+};
+
+const futureResearchTimeSavings = (
+  before: CivilizationState,
+  after: CivilizationState,
+  buyable: RoiBuyable,
+): number => {
+  if (buyable.kind !== "research") return 0;
+  const age = before.getCurrentAge();
+  if (!age) return 0;
+  const ageIndex = ageDefinitions.findIndex(({ key }) => key === age.key);
+  const remaining = researchDefinitions.filter(
+    (research) =>
+      research.age === ageIndex && !before.isResearchBought(research.key),
+  ).length;
+  const horizon = Math.min(5, Math.max(0, remaining - 1));
+  if (horizon === 0) return 0;
+
+  const beforeWait = waitForCosts(
+    before,
+    before.getResearchCostForCount(horizon),
+    defaultGatherClicksPerSecond,
+    before,
+    false,
+  );
+  const afterWait = waitForCosts(
+    after,
+    after.getResearchCostForCount(horizon),
+    defaultGatherClicksPerSecond,
+    after,
+    false,
+  );
+  return relativeTimeSavings(beforeWait, afterWait);
+};
+
 const buildMetrics = (
   before: CivilizationState,
   after: CivilizationState,
@@ -517,6 +559,7 @@ const buildMetrics = (
           )
         : 0,
     costSavings: compareCosts(before, after),
+    researchTime: futureResearchTimeSavings(before, after, buyable),
     campaignTime,
     campaign:
       buyable.kind === "battle"
@@ -615,6 +658,7 @@ const metricWeights = {
   military: 0.9,
   unlocks: 0.6,
   costSavings: 0.25,
+  researchTime: 100,
   campaign: 20,
   campaignTime: 50,
 } as const;
@@ -626,6 +670,7 @@ const weightedBenefit = (metrics: RoiMetrics): number =>
   metrics.military * metricWeights.military +
   metrics.unlocks * metricWeights.unlocks +
   metrics.costSavings * metricWeights.costSavings +
+  metrics.researchTime * metricWeights.researchTime +
   metrics.campaign * metricWeights.campaign +
   metrics.campaignTime * metricWeights.campaignTime;
 
@@ -653,17 +698,6 @@ const campaignTimeSavings = (
   options: RoiOptions,
   gatherClicksPerSecond: number,
 ): number => {
-  const savings = (beforeWait: number, afterWait: number): number => {
-    if (!Number.isFinite(beforeWait)) {
-      return Number.isFinite(afterWait) ? 1 : 0;
-    }
-    if (!Number.isFinite(afterWait)) return 0;
-    return Math.max(
-      0,
-      Math.min(1, (beforeWait - afterWait) / (1 + beforeWait)),
-    );
-  };
-
   let bestSavings = 0;
   const battle = state.getNextBattle();
   if (battle && options.planBattle) {
@@ -692,7 +726,7 @@ const campaignTimeSavings = (
         state,
         false,
       );
-      bestSavings = savings(beforeWait, afterWait);
+      bestSavings = relativeTimeSavings(beforeWait, afterWait);
     }
   }
 
@@ -745,7 +779,10 @@ const campaignTimeSavings = (
       state,
       false,
     );
-    bestSavings = Math.max(bestSavings, savings(beforeWait, afterWait));
+    bestSavings = Math.max(
+      bestSavings,
+      relativeTimeSavings(beforeWait, afterWait),
+    );
   }
   return bestSavings;
 };

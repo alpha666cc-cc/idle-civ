@@ -21,7 +21,11 @@ import { CivilizationState } from "../src/game/civilizationState";
 import { ExpNumber } from "../src/game/expNumber";
 import { emptyStatistics } from "../src/game/statistics";
 import { GameSimulation, createInitialState } from "./simulation";
-import type { SimulationContext, SimulationStrategy } from "./simulation";
+import type {
+  SimulationAction,
+  SimulationContext,
+  SimulationStrategy,
+} from "./simulation";
 
 /**
  * A decision context for a fixture. `SimulationContext.timing` is the run's live
@@ -666,6 +670,20 @@ describe("required progression strategy", () => {
     expect(getRequiredBattleUnitTargets(state)[0]?.key).toBe("slinger");
   });
 
+  it("stops generic beast research after unlocking its first counter unit", () => {
+    const state = makeState({
+      people: 100,
+      resources: richResources,
+      defeatedEncounters: ["age0_1_first_fire"],
+    })
+      .buyResearch("agriculture")
+      .buyResearch("pottery")
+      .buyResearch("sling_throwing");
+
+    expect(state.isUnitAvailable("slinger")).toBe(true);
+    expect(getRequiredBattleUnitTargets(state)).toEqual([]);
+  });
+
   it("keeps the 1000-population target through all four age-zero battles", () => {
     const ageZeroBattles = encounterDefinitions
       .filter(({ age }) => age === 0)
@@ -813,13 +831,22 @@ describe("required progression strategy", () => {
     expect(targets).toHaveLength(named.length);
   });
 
-  it("queues Bronze Raid's research hint before the next battle", () => {
+  it("prioritizes writing, slinger resources, then the unit unlock for battle two", () => {
     let state = makeState({
       people: 100,
       resources: richResources,
       defeatedEncounters: ["age0_1_first_fire"],
     });
-    const order = ["agriculture", "pottery", "sling_throwing", "writing"];
+    const order = [
+      "agriculture",
+      "pottery",
+      "writing",
+      "tribal_organization",
+      "domestication",
+      "mining",
+      "stone_working",
+      "sling_throwing",
+    ];
 
     for (const researchId of order) {
       expect(getRequiredResearchAction(state)).toEqual({
@@ -829,6 +856,34 @@ describe("required progression strategy", () => {
       state = state.buyResearch(researchId);
     }
     expect(getRequiredResearchAction(state)).toBeNull();
+  });
+
+  it("continues the direct unit unlock chain for the Bronze Raid", () => {
+    let state = makeState({
+      people: 200,
+      resources: richResources,
+      defeatedEncounters: ["age0_1_first_fire", "age0_2_wolf_pack"],
+    });
+    for (const researchId of [
+      "agriculture",
+      "pottery",
+      "writing",
+      "mining",
+      "stone_working",
+      "tribal_organization",
+      "sling_throwing",
+      "domestication",
+    ]) {
+      state = state.buyResearch(researchId);
+    }
+
+    expect(getRequiredBattleUnitTargets(state).map(({ key }) => key)).toEqual([
+      "axeman_bronze",
+    ]);
+    expect(getRequiredResearchAction(state)).toEqual({
+      type: "buyResearch",
+      researchId: "bronze_smelting",
+    });
   });
 
   it("prioritizes required research without invoking the battle planner", () => {
@@ -857,6 +912,24 @@ describe("required progression strategy", () => {
       }),
     ).toEqual({ type: "buyResearch", researchId: "agriculture" });
     expect(strategy.simulatorPlanCalls).toBe(0);
+  });
+
+  it("buys campaign research before extending post-battle population growth", () => {
+    const state = makeState({
+      people: 100,
+      buildings: { house: 10, barracks: 1, university: 1, smithy: 1 },
+      resources: { ...simulatorResources, peopleCapacity: 110 },
+      defeatedEncounters: ["age0_1_first_fire"],
+    });
+
+    expect(getAgeRouteGrowthAction(state)).not.toBeNull();
+    expect(
+      getStrategy("balanced")?.decideAction(state, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      }),
+    ).toEqual({ type: "buyResearch", researchId: "agriculture" });
   });
 
   it("does not gather toward a battle plan blocked on unproducible resources", () => {
@@ -973,7 +1046,10 @@ describe("required progression strategy", () => {
       buildings: { house: 10, barracks: 1, university: 1, smithy: 1 },
       resources: { ...simulatorResources, peopleCapacity: 110 },
       unitCounts: { warrior: 4 },
-    });
+    })
+      .buyResearch("agriculture")
+      .buyResearch("pottery")
+      .buyResearch("writing");
     const plan = getSimulatorBattlePlan(state);
     const strategy = getStrategy("balanced");
 
@@ -1004,7 +1080,7 @@ describe("required progression strategy", () => {
     });
   });
 
-  it("does not buy research absent from the battle plan", () => {
+  it("advises science research independently of battle-plan unlocks", () => {
     const state = makeState({
       people: 100,
       buildings: { house: 10, barracks: 1, university: 1, smithy: 1 },
@@ -1021,8 +1097,8 @@ describe("required progression strategy", () => {
         gameTime: 0,
         snapshots: [],
         timing: zeroTiming,
-      })?.type,
-    ).not.toBe("buyResearch");
+      }),
+    ).toEqual({ type: "buyResearch", researchId: "agriculture" });
   });
 
   it("buys the cheapest affordable purchase instead of a priority purchase", () => {
@@ -1124,12 +1200,8 @@ describe("required progression strategy", () => {
     // strategy's own ratio targets (food 36 + the 1-worker remainder = 37,
     // wood 22, stone 18, gold 13).
     //
-    // Priority 5 is satisfied, so the ladder fell through to a gather step
-    // (priority 8.5+) whose focus re-read those same workers against a
-    // *different* ratio set — focusing wood wants 0.5 of them, the strategy
-    // wants 0.25 — and pulled 4 wood workers out. Priority 5 runs first on the
-    // next decision and puts them straight back, so the two regimes never let
-    // each other finish and no gather or build ever runs in between.
+    // Gathering for wood may shift workers toward wood, but the focus lease
+    // keeps the normal strategy rebalance from immediately shifting them back.
     const fixture = {
       people: 90,
       buildings: {
@@ -1160,11 +1232,12 @@ describe("required progression strategy", () => {
     const boughtUpgrades = makeState(fixture).getAffordableUpgrades?.() ?? [];
     let state = makeState({ ...fixture, boughtUpgrades });
 
+    const snapshots: [] = [];
     const labels: string[] = [];
     for (let step = 0; step < 40; step += 1) {
       const action = strategy.decideAction(state, {
-        gameTime: step,
-        snapshots: [],
+        gameTime: 0,
+        snapshots,
         timing: zeroTiming,
       });
       if (!action) break;
@@ -1185,8 +1258,19 @@ describe("required progression strategy", () => {
       break;
     }
 
-    // Before the fix this never reached a gather: it alternated
-    // `unassign wood` / `assign wood` for all 40 steps.
+    const workerActions = labels.filter(
+      (label) => !label.startsWith("gather "),
+    );
+    expect(workerActions.length).toBeLessThan(10);
+    for (let index = 1; index < workerActions.length; index += 1) {
+      const previous = workerActions[index - 1];
+      const current = workerActions[index];
+      if (current.startsWith("assign ")) {
+        expect(previous).not.toBe(
+          `unassign ${current.slice("assign ".length)}`,
+        );
+      }
+    }
     expect(labels.at(-1)).toMatch(/^gather /);
   });
 
@@ -1220,40 +1304,67 @@ describe("required progression strategy", () => {
     expect(action.count).toBeGreaterThan(1);
   });
 
-  it("does not oscillate worker assignments by one slot at a time", () => {
-    const strategy = new BalancedStrategy();
-    const state = makeState({
-      people: 90,
-      buildings: {
-        house: 10,
-        farm: 10,
-        lumberYard: 10,
-        quarry: 10,
-        goldMine: 3,
-      },
-      workers: { food: 35, wood: 21, stone: 18, gold: 16 },
-      resources: {
-        food: 5000,
-        wood: 5000,
-        stone: 5000,
-        gold: 5000,
-        peopleCapacity: 90,
-        houseCapacity: 10,
-        farmCapacity: 10,
-        lumberYardCapacity: 10,
-        quarryCapacity: 10,
-        goldMineCapacity: 10,
-      },
-    });
+  it("keeps a focused allocation when another gather hint appears", () => {
+    class FocusStrategy extends BalancedStrategy {
+      focus(
+        state: CivilizationState,
+        resource: ProductionResourceKey,
+        context: SimulationContext,
+      ) {
+        return this.focusWorkersForGather(
+          state,
+          { type: "gather", resource },
+          context,
+        );
+      }
 
-    const first = strategy.decideAction(state, {
+      rebalance(state: CivilizationState, context: SimulationContext) {
+        return this.assignWorkersByRatio(
+          state,
+          this.getWorkerRatios(),
+          this.getGatherWorkerFocus(context),
+        );
+      }
+    }
+
+    const strategy = new FocusStrategy();
+    const snapshots: [] = [];
+    const context: SimulationContext = {
       gameTime: 0,
-      snapshots: [],
+      snapshots,
       timing: zeroTiming,
+    };
+    let state = makeState({
+      people: 90,
+      workers: { food: 37, wood: 22, stone: 18, gold: 13 },
     });
-    expect(first).not.toBeNull();
-    expect(first?.type).not.toBe("assignWorker");
-    expect(first?.type).not.toBe("unassignWorker");
+    const initialWood = state.workers.wood.toNumber();
+
+    let action: SimulationAction | null = strategy.focus(
+      state,
+      "wood",
+      context,
+    );
+    for (let step = 0; step < 20 && action; step += 1) {
+      if (action.type === "assignWorker") {
+        state = state.assignWorker(action.resource, action.count);
+      } else if (action.type === "unassignWorker") {
+        state = state.unassignWorker(action.resource, action.count);
+      } else {
+        break;
+      }
+      action = strategy.rebalance(state, context);
+    }
+
+    expect(state.workers.wood.toNumber()).toBeGreaterThan(initialWood);
+    expect(strategy.rebalance(state, context)).toBeNull();
+
+    const competingHint = strategy.focus(state, "gold", {
+      ...context,
+      gameTime: 1,
+    });
+    expect(competingHint).toEqual({ type: "gather", resource: "gold" });
+    expect(strategy.rebalance(state, { ...context, gameTime: 1 })).toBeNull();
   });
 
   it("prepares a building once its existing unlock gate is met", () => {

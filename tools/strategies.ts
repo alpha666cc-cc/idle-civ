@@ -6,6 +6,7 @@
 
 import { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
+import { ageDefinitions } from "../src/game/ages.js";
 import {
   buildingDefinitions,
   type BuildingCost,
@@ -69,11 +70,6 @@ type BuildingPriority = {
   targetCount?: number;
 }[];
 
-/** Simulation-only research routes; the live engine has no recommendation field. */
-const simulationResearchHints: Readonly<Record<string, readonly string[]>> = {
-  age0_3_bronze_raid: ["sling_throwing", "writing"],
-};
-
 /**
  * The first unwon encounter in the current age. Encounter order is the
  * progression data; this helper only exposes it to simulation strategies.
@@ -114,33 +110,19 @@ export const getRequiredBattleUnitTargets = (
         (domain): domain is UnitDefinition["domain"] => domain !== undefined,
       ),
   );
-  return unitDefinitions
+  const fallbackTargets = unitDefinitions
     .filter(
       (unit) =>
         isBuyableUnit(unit) &&
         unit.age === battle.age &&
-        !state.isUnitAvailable(unit.key) &&
         enemyDomains.has(unit.domain),
     )
     .sort((left, right) => left.tier - right.tier)
-    .slice(0, 1);
-};
-
-const researchLeadsToUnit = (
-  researchId: string,
-  unitId: string,
-  visited = new Set<string>(),
-): boolean => {
-  if (visited.has(researchId)) return false;
-  visited.add(researchId);
-  const research = researchDefinitions.find(({ key }) => key === researchId);
-  if (!research) return false;
-  if (research.unlocks.includes(unitId)) return true;
-  return researchDefinitions.some(
-    (candidate) =>
-      candidate.prerequisites.includes(researchId) &&
-      researchLeadsToUnit(candidate.key, unitId, new Set(visited)),
-  );
+    .filter((unit) => !unit.available);
+  const firstResearchTarget = fallbackTargets[0];
+  return firstResearchTarget && !state.isUnitAvailable(firstResearchTarget.key)
+    ? [firstResearchTarget]
+    : [];
 };
 
 const prerequisiteOrder = (
@@ -159,51 +141,168 @@ const prerequisiteOrder = (
   ];
 };
 
-const getRecommendedResearchOrder = (
+const hasReachedResearchAge = (
   state: CivilizationState,
-): readonly string[] => {
-  const currentBattle = getRequiredBattle(state);
-  if (!currentBattle) return [];
-  const hintedBattle = encounterDefinitions.find(
-    (battle) =>
-      battle.age === currentBattle.age &&
-      !state.defeatedEncounters.includes(battle.key) &&
-      (simulationResearchHints[battle.key]?.length ?? 0) > 0,
+  researchAge: number,
+): boolean => {
+  const currentAge = state.getCurrentAge();
+  if (!currentAge) return false;
+  const currentAgeIndex = ageDefinitions.findIndex(
+    ({ key }) => key === currentAge.key,
   );
-  const recommended = hintedBattle
-    ? simulationResearchHints[hintedBattle.key]
-    : [];
-  return [
-    ...new Set(
-      recommended.flatMap((researchId) => prerequisiteOrder(researchId)),
-    ),
-  ];
+  return researchAge <= currentAgeIndex;
 };
 
-/** The next purchase on the current battle's authored research hint. */
+const hasResearchBonus = (researchId: string, destination: string): boolean =>
+  researchDefinitions
+    .find(({ key }) => key === researchId)
+    ?.bonuses.some(
+      (bonus) =>
+        bonus.type === "attributeMultiplier" &&
+        bonus.destination === destination,
+    ) ?? false;
+
+const getBestResourceResearch = (
+  state: CivilizationState,
+  resource: ResourceKey,
+): string | undefined => {
+  let best: { key: string; value: ExpNumber } | undefined;
+  for (const research of researchDefinitions) {
+    if (!hasReachedResearchAge(state, research.age)) continue;
+    const bonus = research.bonuses.find(
+      ({ type, destination }) =>
+        type === "attributeMultiplier" && destination === resource,
+    );
+    if (!bonus || (best && !bonus.value.gt(best.value))) continue;
+    best = { key: research.key, value: bonus.value };
+  }
+  return best?.key;
+};
+
+/** Research priorities from science throughput, the next army's costs, and unlocks. */
+const getResearchAdvisorOrder = (
+  state: CivilizationState,
+): readonly string[] => {
+  const order: string[] = [];
+  const addPath = (researchId: string) => {
+    order.push(...prerequisiteOrder(researchId));
+  };
+
+  const scienceBoosts = researchDefinitions
+    .filter(
+      ({ age, key }) =>
+        hasReachedResearchAge(state, age) && hasResearchBonus(key, "science"),
+    )
+    .sort((left, right) => left.age - right.age);
+  for (const research of scienceBoosts) addPath(research.key);
+
+  const populationTarget = getAgeRouteTargetPopulation(state);
+  if (
+    populationTarget > 0 &&
+    state.population.lt(ExpNumber.fromNumber(populationTarget))
+  ) {
+    const foodResearch = getBestResourceResearch(state, "food");
+    if (foodResearch) addPath(foodResearch);
+  }
+
+  const battle = getRequiredBattle(state);
+  const battlesWon = battle
+    ? encounterDefinitions.filter(
+        ({ age, key }) =>
+          age === battle.age && state.defeatedEncounters.includes(key),
+      ).length
+    : 0;
+  const shouldPrepareArmy = Boolean(
+    battle && (battle.age > 0 || battlesWon > 0),
+  );
+  const targetUnits = shouldPrepareArmy
+    ? getRequiredBattleUnitTargets(state)
+    : [];
+
+  for (const unit of targetUnits) {
+    const costResources = [...unit.costs].sort((left, right) =>
+      right.base.gt(left.base) ? 1 : left.base.gt(right.base) ? -1 : 0,
+    );
+    for (const { resource } of costResources) {
+      const booster = getBestResourceResearch(state, resource);
+      if (booster) addPath(booster);
+    }
+
+    const unlockResearch = researchDefinitions
+      .filter(
+        ({ age, unlocks }) =>
+          hasReachedResearchAge(state, age) && unlocks.includes(unit.key),
+      )
+      .sort(
+        (left, right) =>
+          prerequisiteOrder(left.key).length -
+          prerequisiteOrder(right.key).length,
+      )[0];
+    if (unlockResearch) addPath(unlockResearch.key);
+  }
+
+  return [...new Set(order)].filter(
+    (researchId) => !state.isResearchBought(researchId),
+  );
+};
+
+const researchFocusedOrder = [
+  "agriculture",
+  "pottery",
+  "writing",
+  "tribal_organization",
+  "sling_throwing",
+  "archery_mechanics",
+  "flint_knapping",
+  "mining",
+  "stone_working",
+] as const;
+
+const playerResearchOrder = [
+  "agriculture",
+  "pottery",
+  "writing",
+  "tribal_organization",
+  "sling_throwing",
+  "archery_mechanics",
+  "flint_knapping",
+  "mining",
+  "stone_working",
+  "city_planning",
+  "forestry",
+  "domestication",
+  "trapping",
+  "bronze_smelting",
+  "bronze_casting",
+  "composite_bowcraft",
+  "woodcraft_hulls",
+  "galley_design",
+  "animal_husbandry",
+  "calendar",
+  "weaving",
+  "wheel_axle",
+  "torsion_physics",
+] as const;
+
+const hasCompletedCurrentAgeResearch = (state: CivilizationState): boolean => {
+  const age = state.getCurrentAge();
+  if (!age) return true;
+  const ageIndex = ageDefinitions.findIndex(({ key }) => key === age.key);
+  return researchDefinitions
+    .filter((research) => research.age === ageIndex)
+    .every(({ key }) => state.isResearchBought(key));
+};
+
+/** The next purchase on the advisor's current science/battle research plan. */
 export const getRequiredResearchAction = (
   state: CivilizationState,
 ): SimulationAction | null => {
-  const recommended = getRecommendedResearchOrder(state);
-  if (recommended.length > 0) {
-    const next = recommended.find(
-      (researchId) => !state.isResearchBought(researchId),
-    );
-    if (!next) return null;
-    return state.canBuyResearch(next)
-      ? { type: "buyResearch", researchId: next }
-      : null;
-  }
-
-  const targetUnits = getRequiredBattleUnitTargets(state);
-  if (targetUnits.length === 0) return null;
-  const research = researchDefinitions.find(
-    ({ key }) =>
-      !state.isResearchBought(key) &&
-      state.canBuyResearch(key) &&
-      targetUnits.some((unit) => researchLeadsToUnit(key, unit.key)),
+  const next = getResearchAdvisorOrder(state).find((researchId) =>
+    state.isResearchUnlocked(researchId),
   );
-  return research ? { type: "buyResearch", researchId: research.key } : null;
+  return next && state.canBuyResearch(next)
+    ? { type: "buyResearch", researchId: next }
+    : null;
 };
 
 /** How well a buyable unit matches the next encounter's enemy force. */
@@ -1141,7 +1240,13 @@ const getCheapestHousingAction = (
 abstract class BaseStrategy implements SimulationStrategy {
   abstract name: string;
   abstract description: string;
-  private gatherFocus: ProductionResourceKey | undefined;
+  private gatherWorkerFocus:
+    | {
+        readonly resource: ProductionResourceKey;
+        readonly until: number;
+        readonly snapshots: SimulationContext["snapshots"];
+      }
+    | undefined;
   private cachedSimulatorPlan:
     | {
         snapshots: SimulationContext["snapshots"];
@@ -1255,6 +1360,12 @@ abstract class BaseStrategy implements SimulationStrategy {
     return target <= 0 || state.population.gte(ExpNumber.fromNumber(target));
   }
 
+  protected getAgeTransitionAction(
+    state: CivilizationState,
+  ): SimulationAction | null {
+    return getRequiredAgeAction(state);
+  }
+
   /**
    * The battle to launch this turn, or null. The single entry point every
    * `decideAction` uses for combat, so `shouldLaunchBattle` is genuinely wired
@@ -1308,9 +1419,25 @@ abstract class BaseStrategy implements SimulationStrategy {
     return getSimulatorGatherAction(state, getSimulatorBattlePlan(state));
   }
 
+  protected getGatherWorkerFocus(
+    context: SimulationContext,
+  ): ProductionResourceKey | undefined {
+    const focus = this.gatherWorkerFocus;
+    if (
+      !focus ||
+      focus.snapshots !== context.snapshots ||
+      context.gameTime >= focus.until
+    ) {
+      this.gatherWorkerFocus = undefined;
+      return undefined;
+    }
+    return focus.resource;
+  }
+
   protected focusWorkersForGather(
     state: CivilizationState,
     action: SimulationAction,
+    context: SimulationContext,
   ): SimulationAction {
     if (
       action.type !== "gather" ||
@@ -1318,27 +1445,25 @@ abstract class BaseStrategy implements SimulationStrategy {
     ) {
       return action;
     }
-    const resource = action.resource as ProductionResourceKey;
-    const ratios = this.getWorkerRatios();
-    const totalRatio = Object.values(ratios).reduce(
-      (sum, ratio) => sum + ratio,
-      0,
-    );
-    const totalWorkers = state.assignedWorkers + state.availableWorkers;
-    const hasSurplusDonor = (
-      producerResourceKeys as ProductionResourceKey[]
-    ).some((candidate) => {
-      if (candidate === resource) return false;
-      const target = Math.floor(
-        (ratios[candidate] / totalRatio) * totalWorkers,
-      );
-      const current = Math.round(state.workers[candidate]?.toNumber() || 0);
-      return current - target >= 4;
-    });
 
-    if (state.availableWorkers === 0 && !hasSurplusDonor) return action;
-    this.gatherFocus = resource;
-    return this.assignWorkersByRatio(state, ratios, resource) ?? action;
+    const resource = action.resource as ProductionResourceKey;
+    const currentFocus = this.getGatherWorkerFocus(context);
+    const focusResource =
+      resource === "food" ? "food" : (currentFocus ?? resource);
+    if (!currentFocus || currentFocus === resource || resource === "food") {
+      this.gatherWorkerFocus = {
+        resource: focusResource,
+        until: context.gameTime + 10,
+        snapshots: context.snapshots,
+      };
+    }
+    return (
+      this.assignWorkersByRatio(
+        state,
+        this.getWorkerRatios(),
+        this.getGatherWorkerFocus(context),
+      ) ?? action
+    );
   }
 
   protected getUnitAction(state: CivilizationState): SimulationAction | null {
@@ -1546,9 +1671,9 @@ abstract class BaseStrategy implements SimulationStrategy {
    */
   decideAction(
     state: CivilizationState,
-    _context: SimulationContext,
+    context: SimulationContext,
   ): SimulationAction | null {
-    const requiredAgeAction = getRequiredAgeAction(state);
+    const requiredAgeAction = this.getAgeTransitionAction(state);
     if (requiredAgeAction) return requiredAgeAction;
 
     const requiredBattleAction = this.getBattleLaunchAction(state);
@@ -1556,8 +1681,15 @@ abstract class BaseStrategy implements SimulationStrategy {
 
     const requiredPreparationAction = getRequiredBattlePreparationAction(state);
     if (requiredPreparationAction) {
-      return this.focusWorkersForGather(state, requiredPreparationAction);
+      return this.focusWorkersForGather(
+        state,
+        requiredPreparationAction,
+        context,
+      );
     }
+
+    const researchAction = this.getResearchAction(state);
+    if (researchAction) return researchAction;
 
     // The battle simulator is advisory: it guides the next purchase, but the
     // real `simulateEncounter` check above is the only launch gate. Only its
@@ -1574,11 +1706,9 @@ abstract class BaseStrategy implements SimulationStrategy {
     if (tradeAction) return tradeAction;
 
     const routeAction = getAgeRouteGrowthAction(state);
-    if (routeAction) return this.focusWorkersForGather(state, routeAction);
-
-    // Priority 2: Buy the next combat-path research before spending on units.
-    const researchAction = this.getResearchAction(state);
-    if (researchAction) return researchAction;
+    if (routeAction) {
+      return this.focusWorkersForGather(state, routeAction, context);
+    }
 
     // Priority 2: Grow the army before attempting the next battle.
     const unitAction = this.getUnitAction(state);
@@ -1589,25 +1719,12 @@ abstract class BaseStrategy implements SimulationStrategy {
     if (upgradeAction) return upgradeAction;
 
     // Priority 5: Assign workers
-    const gatherFocus = this.gatherFocus;
-    if (gatherFocus) {
-      this.gatherFocus = undefined;
-      const focusedWorkerAction = this.assignWorkersByRatio(
-        state,
-        this.getWorkerRatios(),
-        gatherFocus,
-      );
-      if (focusedWorkerAction) {
-        this.gatherFocus = gatherFocus;
-        return focusedWorkerAction;
-      }
-    } else {
-      const workerAction = this.assignWorkersByRatio(
-        state,
-        this.getWorkerRatios(),
-      );
-      if (workerAction) return workerAction;
-    }
+    const workerAction = this.assignWorkersByRatio(
+      state,
+      this.getWorkerRatios(),
+      this.getGatherWorkerFocus(context),
+    );
+    if (workerAction) return workerAction;
 
     // Priority 6: Build buildings (try to build multiple if affordable)
     const building = this.findBestBuilding(state, this.getBuildingPriority());
@@ -1646,10 +1763,11 @@ abstract class BaseStrategy implements SimulationStrategy {
       citizenCost &&
       state.resources.food.lt(citizenCost.base)
     ) {
-      return this.focusWorkersForGather(state, {
-        type: "gather",
-        resource: "food",
-      });
+      return this.focusWorkersForGather(
+        state,
+        { type: "gather", resource: "food" },
+        context,
+      );
     }
     // Priority 8.5: Gather for the highest-priority unaffordable building.
     // If we want a building but can't afford it, actively gather its missing resources.
@@ -1658,26 +1776,29 @@ abstract class BaseStrategy implements SimulationStrategy {
       this.getBuildingPriority(),
     );
     if (priorityGather) {
-      return this.focusWorkersForGather(state, {
-        type: "gather",
-        resource: priorityGather,
-      });
+      return this.focusWorkersForGather(
+        state,
+        { type: "gather", resource: priorityGather },
+        context,
+      );
     }
 
     // Priority 9: Gather toward the advisor's next purchase, if it is reachable.
     // This sits below workers and buildings on purpose: gathering for a plan
     // blocked on infrastructure must never prevent building that infrastructure.
     const simulatorGather = this.getSimulatorGather(state);
-    if (simulatorGather)
-      return this.focusWorkersForGather(state, simulatorGather);
+    if (simulatorGather) {
+      return this.focusWorkersForGather(state, simulatorGather, context);
+    }
 
     // Priority 10: Gather resources
     const resourceToGather = this.getResourceToGather(state);
     if (resourceToGather) {
-      return this.focusWorkersForGather(state, {
-        type: "gather",
-        resource: resourceToGather,
-      });
+      return this.focusWorkersForGather(
+        state,
+        { type: "gather", resource: resourceToGather },
+        context,
+      );
     }
 
     // Nothing to do - wait
@@ -1776,7 +1897,11 @@ export class CheapestStrategy extends BaseStrategy {
 
     const requiredPreparationAction = getRequiredBattlePreparationAction(state);
     if (requiredPreparationAction) {
-      return this.focusWorkersForGather(state, requiredPreparationAction);
+      return this.focusWorkersForGather(
+        state,
+        requiredPreparationAction,
+        context,
+      );
     }
 
     const requiredResearchAction = this.getResearchAction(state);
@@ -1793,7 +1918,9 @@ export class CheapestStrategy extends BaseStrategy {
     }
 
     const housingAction = getCheapestHousingAction(state);
-    if (housingAction) return this.focusWorkersForGather(state, housingAction);
+    if (housingAction) {
+      return this.focusWorkersForGather(state, housingAction, context);
+    }
 
     const candidate = getCheapestPurchaseCandidate(state);
     if (candidate && isPurchaseAffordable(state, candidate)) {
@@ -1803,24 +1930,38 @@ export class CheapestStrategy extends BaseStrategy {
     const workerAction = this.assignWorkersByRatio(
       state,
       this.getWorkerRatios(),
+      this.getGatherWorkerFocus(context),
     );
     if (workerAction) return workerAction;
 
     if (remainingPlan) {
       const simulatorGather = getSimulatorGatherAction(state, remainingPlan);
       if (simulatorGather) {
-        return this.focusWorkersForGather(state, simulatorGather);
+        return this.focusWorkersForGather(state, simulatorGather, context);
       }
     }
 
     if (candidate) {
       const resource = gatherForPurchase(state, candidate);
-      if (resource) return { type: "gather", resource };
+      if (resource) {
+        return this.focusWorkersForGather(
+          state,
+          { type: "gather", resource: resource as ProductionResourceKey },
+          context,
+        );
+      }
     }
 
     const resourceToGather = this.getResourceToGather(state);
     return resourceToGather
-      ? { type: "gather", resource: resourceToGather }
+      ? this.focusWorkersForGather(
+          state,
+          {
+            type: "gather",
+            resource: resourceToGather as ProductionResourceKey,
+          },
+          context,
+        )
       : null;
   }
 }
@@ -1859,6 +2000,50 @@ export class BalancedStrategy extends BaseStrategy {
       { building: "market", weight: 2 },
       { building: "townHall", weight: 1 },
     ];
+  }
+}
+
+class PlayerOpeningStrategy extends BalancedStrategy {
+  decideAction(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulationAction | null {
+    const action = super.decideAction(state, context);
+    if (
+      action?.type !== "buyResearch" ||
+      state.defeatedEncounters.includes("age0_1_first_fire")
+    ) {
+      return action;
+    }
+    const resource =
+      getRequiredBattleResourceToGather(state) ??
+      this.getResourceToGather(state);
+    return resource &&
+      producerResourceKeys.includes(resource as ProductionResourceKey)
+      ? this.focusWorkersForGather(state, { type: "gather", resource }, context)
+      : null;
+  }
+
+  protected getResearchAction(
+    state: CivilizationState,
+  ): SimulationAction | null {
+    return state.defeatedEncounters.includes("age0_1_first_fire")
+      ? super.getResearchAction(state)
+      : null;
+  }
+
+  protected getSimulatorActions(state: CivilizationState): SimulationAction[] {
+    return state.defeatedEncounters.includes("age0_1_first_fire")
+      ? super.getSimulatorActions(state)
+      : getSimulatorUnitActions(state, getSimulatorBattlePlan(state));
+  }
+
+  protected getSimulatorGather(
+    state: CivilizationState,
+  ): SimulationAction | null {
+    return state.defeatedEncounters.includes("age0_1_first_fire")
+      ? super.getSimulatorGather(state)
+      : null;
   }
 }
 
@@ -2010,6 +2195,380 @@ export class EconomyStrategy extends BaseStrategy {
   }
 }
 
+/** Invest in the broad early research path before pushing the next battle. */
+export class ResearchStrategy extends BaseStrategy {
+  name = "research";
+  description = "Prioritize early research and science infrastructure";
+  private openingStrategy: SpeedrunStrategy | undefined;
+
+  protected getAgeTransitionAction(
+    state: CivilizationState,
+  ): SimulationAction | null {
+    return hasCompletedCurrentAgeResearch(state)
+      ? super.getAgeTransitionAction(state)
+      : null;
+  }
+
+  protected getResearchAction(
+    state: CivilizationState,
+  ): SimulationAction | null {
+    if (hasCompletedCurrentAgeResearch(state)) return null;
+    if (!state.defeatedEncounters.includes("age0_1_first_fire")) return null;
+    const nextResearch = researchFocusedOrder.find(
+      (researchId) => !state.isResearchBought(researchId),
+    );
+    if (!nextResearch || !state.canBuyResearch(nextResearch)) return null;
+    return { type: "buyResearch", researchId: nextResearch };
+  }
+
+  protected assignWorkersByRatio(
+    state: CivilizationState,
+    _ratios: WorkerRatios,
+    priorityResource?: ProductionResourceKey,
+  ): SimulationAction | null {
+    return super.assignWorkersByRatio(
+      state,
+      this.getResearchWorkerRatios(state),
+      priorityResource,
+    );
+  }
+
+  protected getResearchWorkerRatios(state: CivilizationState): WorkerRatios {
+    return hasCompletedCurrentAgeResearch(state)
+      ? {
+          food: 0.6,
+          wood: 0.2,
+          stone: 0.1,
+          gold: 0.1,
+          military: 0,
+          science: 0,
+          metalwork: 0,
+          trade: 0,
+        }
+      : {
+          food: 0.3,
+          wood: 0.15,
+          stone: 0.15,
+          gold: 0.05,
+          military: 0.05,
+          science: 0.3,
+          metalwork: 0,
+          trade: 0,
+        };
+  }
+
+  protected getSimulatorActions(state: CivilizationState): SimulationAction[] {
+    if (!hasCompletedCurrentAgeResearch(state)) {
+      return super.getSimulatorActions(state);
+    }
+    return getSimulatorUnitActions(state, getSimulatorBattlePlan(state));
+  }
+
+  protected getSimulatorGather(
+    state: CivilizationState,
+  ): SimulationAction | null {
+    return hasCompletedCurrentAgeResearch(state)
+      ? null
+      : super.getSimulatorGather(state);
+  }
+
+  decideAction(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulationAction | null {
+    if (!state.defeatedEncounters.includes("age0_1_first_fire")) {
+      this.openingStrategy ??= new SpeedrunStrategy();
+      return this.openingStrategy.decideAction(state, context);
+    }
+
+    const requiredAgeAction = this.getAgeTransitionAction(state);
+    if (requiredAgeAction) return requiredAgeAction;
+
+    const requiredBattleAction = this.getBattleLaunchAction(state);
+    if (requiredBattleAction) return requiredBattleAction;
+
+    const requiredPreparationAction = getRequiredBattlePreparationAction(state);
+    if (requiredPreparationAction) {
+      return this.focusWorkersForGather(
+        state,
+        requiredPreparationAction,
+        context,
+      );
+    }
+
+    const researchAction = this.getResearchAction(state);
+    if (researchAction) return researchAction;
+
+    if (
+      !hasCompletedCurrentAgeResearch(state) &&
+      state.defeatedEncounters.includes("age0_1_first_fire") &&
+      state.getBuildingCount("university") < 5 &&
+      state.canBuild("university")
+    ) {
+      const affordable = state.getMaxAffordableBuildings("university");
+      const remaining = 5 - state.getBuildingCount("university");
+      if (affordable > 0) {
+        return {
+          type: "build",
+          building: "university",
+          count: Math.min(affordable, remaining),
+        };
+      }
+    }
+
+    return super.decideAction(state, context);
+  }
+}
+
+/** Replays the research order and late-game investment from the 40-minute save. */
+export class PlayerStrategy extends ResearchStrategy {
+  name = "player";
+  description =
+    "Follow the research and economy choices from the 40-minute save";
+  private playerOpeningStrategy = new PlayerOpeningStrategy();
+
+  protected getResearchAction(
+    state: CivilizationState,
+  ): SimulationAction | null {
+    if (!state.defeatedEncounters.includes("age0_1_first_fire")) return null;
+    if (
+      state.isResearchBought("pottery") &&
+      state.population.lt(ExpNumber.fromNumber(200))
+    ) {
+      return null;
+    }
+    const nextResearch = playerResearchOrder.find(
+      (researchId) => !state.isResearchBought(researchId),
+    );
+    if (!nextResearch || !state.canBuyResearch(nextResearch)) return null;
+    return { type: "buyResearch", researchId: nextResearch };
+  }
+
+  private isResearchPaused(state: CivilizationState): boolean {
+    return (
+      !state.defeatedEncounters.includes("age0_1_first_fire") ||
+      (state.isResearchBought("pottery") &&
+        state.population.lt(ExpNumber.fromNumber(200)))
+    );
+  }
+
+  protected getSimulatorActions(state: CivilizationState): SimulationAction[] {
+    return this.isResearchPaused(state)
+      ? getSimulatorUnitActions(state, getSimulatorBattlePlan(state))
+      : super.getSimulatorActions(state);
+  }
+
+  protected getSimulatorGather(
+    state: CivilizationState,
+  ): SimulationAction | null {
+    return this.isResearchPaused(state)
+      ? null
+      : super.getSimulatorGather(state);
+  }
+
+  protected getResearchWorkerRatios(state: CivilizationState): WorkerRatios {
+    const hasSmithy = state.isBuildingAvailable("smithy");
+    return {
+      food: 0.15,
+      wood: 0.14,
+      stone: 0.105,
+      gold: 0.025,
+      military: 0.025,
+      science: 0.387,
+      metalwork: hasSmithy ? 0.174 : 0,
+      trade: 0,
+    };
+  }
+
+  protected focusWorkersForGather(
+    state: CivilizationState,
+    action: SimulationAction,
+    _context: SimulationContext,
+  ): SimulationAction {
+    return action.type === "gather"
+      ? (this.assignWorkersByRatio(
+          state,
+          this.getResearchWorkerRatios(state),
+        ) ?? action)
+      : action;
+  }
+
+  protected getBuildingPriority(): BuildingPriority {
+    return [
+      { building: "people", weight: 10 },
+      { building: "house", weight: 9, targetCount: 100 },
+      { building: "farm", weight: 8, targetCount: 100 },
+      { building: "lumberYard", weight: 7, targetCount: 100 },
+      { building: "quarry", weight: 6, targetCount: 100 },
+      { building: "goldMine", weight: 5, targetCount: 100 },
+      { building: "barracks", weight: 4, targetCount: 40 },
+      { building: "university", weight: 4, targetCount: 40 },
+      { building: "smithy", weight: 4, targetCount: 40 },
+      { building: "townHall", weight: 3, targetCount: 10 },
+    ];
+  }
+
+  private getHousingAction(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulationAction | null {
+    const targetPopulation = getAgeRouteTargetPopulation(state);
+    if (
+      targetPopulation <= 0 ||
+      state.population.gte(ExpNumber.fromNumber(targetPopulation)) ||
+      state.population.lt(state.maximumPopulation.floor())
+    ) {
+      return null;
+    }
+
+    const housingBuilding =
+      state.getBuildFailureReason("house") === "capacity"
+        ? "townHall"
+        : "house";
+    if (state.canBuild(housingBuilding)) {
+      return {
+        type: "build",
+        building: housingBuilding,
+        count: Math.max(1, state.getMaxAffordableBuildings(housingBuilding)),
+      };
+    }
+
+    const costs = state.getBuildingCost(
+      housingBuilding,
+      state.getBuildingCount(housingBuilding),
+      1,
+    );
+    const missing = costs
+      .filter(({ resource, base }) => state.resources[resource].lt(base))
+      .filter(({ resource }) => isResourceGatherable(state, resource))
+      .sort((left, right) => {
+        const leftDeficit = left.base.sub(state.resources[left.resource]);
+        const rightDeficit = right.base.sub(state.resources[right.resource]);
+        return rightDeficit.compareTo(leftDeficit);
+      })[0];
+    if (!missing) return null;
+    return this.focusWorkersForGather(
+      state,
+      { type: "gather", resource: missing.resource as ProductionResourceKey },
+      context,
+    );
+  }
+
+  private getBattleTwoInfrastructureAction(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulationAction | null {
+    if (state.defeatedEncounters.includes("age0_2_wolf_pack")) return null;
+
+    const barracksAction = this.getBuildingTargetAction(
+      state,
+      "barracks",
+      3,
+      context,
+    );
+    if (barracksAction) return barracksAction;
+
+    return this.getBuildingTargetAction(state, "university", 2, context);
+  }
+
+  private getBuildingTargetAction(
+    state: CivilizationState,
+    building: BuildingKey,
+    targetCount: number,
+    context: SimulationContext,
+  ): SimulationAction | null {
+    const currentCount = state.getBuildingCount(building);
+    if (currentCount >= targetCount) return null;
+
+    if (state.canBuild(building)) {
+      const affordable = state.getMaxAffordableBuildings(building);
+      if (affordable > 0) {
+        return {
+          type: "build",
+          building,
+          count: Math.min(affordable, targetCount - currentCount),
+        };
+      }
+    }
+    if (state.getBuildFailureReason(building) !== "resources") return null;
+
+    const missing = state
+      .getBuildingCost(building, currentCount, 1)
+      .filter(({ resource, base }) => state.resources[resource].lt(base))
+      .filter(({ resource }) => isResourceGatherable(state, resource))
+      .sort((left, right) => {
+        const leftDeficit = left.base.sub(state.resources[left.resource]);
+        const rightDeficit = right.base.sub(state.resources[right.resource]);
+        return rightDeficit.compareTo(leftDeficit);
+      })[0];
+    return missing
+      ? this.focusWorkersForGather(
+          state,
+          {
+            type: "gather",
+            resource: missing.resource as ProductionResourceKey,
+          },
+          context,
+        )
+      : null;
+  }
+
+  decideAction(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulationAction | null {
+    if (!state.defeatedEncounters.includes("age0_1_first_fire")) {
+      if (state.population.gte(ExpNumber.fromNumber(90))) {
+        const barracksAction = this.getBuildingTargetAction(
+          state,
+          "barracks",
+          2,
+          context,
+        );
+        if (barracksAction) return barracksAction;
+      }
+      return this.playerOpeningStrategy.decideAction(state, context);
+    }
+
+    const ageAction = this.getAgeTransitionAction(state);
+    if (ageAction) return ageAction;
+
+    const battleAction = this.getBattleLaunchAction(state);
+    if (battleAction) return battleAction;
+
+    const preparationAction = getRequiredBattlePreparationAction(state);
+    if (preparationAction) {
+      return this.focusWorkersForGather(state, preparationAction, context);
+    }
+
+    const infrastructureAction = this.getBattleTwoInfrastructureAction(
+      state,
+      context,
+    );
+    if (infrastructureAction) return infrastructureAction;
+
+    const researchAction = this.getResearchAction(state);
+    if (researchAction) return researchAction;
+
+    const housingAction = this.getHousingAction(state, context);
+    if (housingAction) return housingAction;
+
+    const universityCount = state.getBuildingCount("university");
+    if (universityCount < 40 && state.canBuild("university")) {
+      const affordable = state.getMaxAffordableBuildings("university");
+      if (affordable > 0) {
+        return {
+          type: "build",
+          building: "university",
+          count: Math.min(affordable, 40 - universityCount),
+        };
+      }
+    }
+
+    return super.decideAction(state, context);
+  }
+}
+
 /**
  * Trade-focused strategy: bank trade power at the market and route it at whatever
  * the settlement is most out of balance on.
@@ -2126,10 +2685,14 @@ export class SpeedrunStrategy extends BaseStrategy {
         until: context.gameTime + 1,
         snapshots: context.snapshots,
       };
-      const focusedAction = this.focusWorkersForGather(state, {
-        type: "gather",
-        resource,
-      });
+      const focusedAction = this.focusWorkersForGather(
+        state,
+        {
+          type: "gather",
+          resource,
+        },
+        context,
+      );
       return focusedAction;
     }
     this.roiGatherFocus = undefined;
@@ -2157,6 +2720,8 @@ export const strategyRegistry: Record<string, SimulationStrategy> = {
   military: new MilitaryStrategy(),
   "fast-age": new FastAgeStrategy(),
   economy: new EconomyStrategy(),
+  research: new ResearchStrategy(),
+  player: new PlayerStrategy(),
   speedrun: new SpeedrunStrategy(),
   trader: new TradeStrategy(),
 };
