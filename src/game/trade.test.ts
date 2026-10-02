@@ -107,8 +107,10 @@ const drains = (state: CivilizationState, key: ResourceKey): ResourceFactor[] =>
   state.getProductionFactors(key).drain;
 
 /** Every extra production a resource currently carries. */
-const additions = (state: CivilizationState, key: ResourceKey): ResourceFactor[] =>
-  state.getProductionFactors(key).additional;
+const additions = (
+  state: CivilizationState,
+  key: ResourceKey,
+): ResourceFactor[] => state.getProductionFactors(key).additional;
 
 /** The rows a trade route contributed, by direction: debits positive, credits negative. */
 const routeRows = (rows: ResourceFactor[], pattern: string): ResourceFactor[] =>
@@ -163,9 +165,8 @@ describe("trade prices", () => {
     expect(dead.resourcePerGold.toNumber()).toBe(5);
 
     // Food produced but no gold: still a fallback, never a division by zero.
-    const foodOnly = getTradePrice(
-      "food",
-      (key) => (key === "food" ? ExpNumber.TEN : ExpNumber.ZERO),
+    const foodOnly = getTradePrice("food", (key) =>
+      key === "food" ? ExpNumber.TEN : ExpNumber.ZERO,
     );
     expect(foodOnly.source).toBe("fallback");
   });
@@ -201,7 +202,10 @@ describe("trade prices", () => {
     expect(tradeIntensityForStop(TRADE_INTENSITY_STOPS)).toBe(1);
     // Every step is the same factor, so one thumb turn feels identical everywhere.
     const step = tradeIntensityForStop(3) / tradeIntensityForStop(1);
-    expect(step).toBeCloseTo(tradeIntensityForStop(5) / tradeIntensityForStop(3), 10);
+    expect(step).toBeCloseTo(
+      tradeIntensityForStop(5) / tradeIntensityForStop(3),
+      10,
+    );
   });
 
   it("clamps slider stops and maps a share back onto the scale", () => {
@@ -234,17 +238,26 @@ describe("trade prices", () => {
 });
 
 describe("trade routes", () => {
-  it("sells the banked trade power at the mid price", () => {
+  it("sells the banked trade power at the mid price from buildings, not workers", () => {
     const state = marketState(
       0,
       { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
       foodAndGoldWorkers(),
       { food: enabledRoute("sell") },
-    );
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
 
     // A hundred banked trade power is a hundred gold, and the mid price is four
-    // food to the gold, so the route drains 400 food and credits 100 gold. Both
-    // legs are drains: the sale is a negative one, so it carries no multiplier.
+    // food to the gold (from buildings, not workers), so the route drains 400 food
+    // and credits 100 gold. Both legs are drains: the sale is a negative one, so it
+    // carries no multiplier.
     expect(rowValue(drains(state, "food"), "food route")).toBeCloseTo(400, 6);
     expect(rowValue(drains(state, "gold"), "food route sale")).toBeCloseTo(
       -100,
@@ -259,7 +272,10 @@ describe("trade routes", () => {
       traded.resources.food,
       1_000 + state.computeResourceRate("food").toNumber(),
     );
-    expectClose(traded.resources.gold, state.computeResourceRate("gold").toNumber());
+    expectClose(
+      traded.resources.gold,
+      state.computeResourceRate("gold").toNumber(),
+    );
     // The reserve is untouched.
     expect(traded.resources.trade.toNumber()).toBe(100);
   });
@@ -270,7 +286,15 @@ describe("trade routes", () => {
       { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
       foodAndGoldWorkers(),
       { food: enabledRoute("sell", 0.5) },
-    );
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
 
     expect(rowValue(drains(state, "food"), "food route")).toBeCloseTo(200, 6);
     expect(rowValue(drains(state, "gold"), "food route sale")).toBeCloseTo(
@@ -321,7 +345,15 @@ describe("trade routes", () => {
       { trade: ExpNumber.fromNumber(100), gold: ExpNumber.fromNumber(1_000) },
       foodAndGoldWorkers(),
       { food: enabledRoute("buy") },
-    );
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
 
     // The same hundred gold, but a tenth of the goods: 400 / 10 = 40 food, and
     // the purchase lands as a negative drain rather than an addition.
@@ -340,7 +372,15 @@ describe("trade routes", () => {
       { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(10) },
       foodAndGoldWorkers(),
       { food: enabledRoute("sell") },
-    );
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
 
     // Ten food is capped in, and the gold credit follows the capped amount:
     // 10 / 4 = 2.5 gold, not the 100 the route asked for.
@@ -366,7 +406,15 @@ describe("trade routes", () => {
       { trade: ExpNumber.fromNumber(100), gold: ExpNumber.fromNumber(30) },
       foodAndGoldWorkers(),
       { food: enabledRoute("buy") },
-    );
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
 
     expect(rowValue(drains(state, "gold"), "food route")).toBeCloseTo(30, 6);
     // 30 gold buys a tenth of 30 × 4 = 12 food.
@@ -385,7 +433,15 @@ describe("trade routes", () => {
         food: ExpNumber.fromNumber(1e6),
       },
       foodAndGoldWorkers(),
-    );
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
     const routed = idle.setTradeRoute("food", { enabled: true, intensity: 1 });
 
     // The sale is a negative drain, so gold is the plain rate plus the exact sale
@@ -411,8 +467,14 @@ describe("trade routes", () => {
 
     // Only the plain production remains, with no route row in either direction.
     const traded = state.tick();
-    expectClose(traded.resources.food, state.computeResourceRate("food").toNumber());
-    expectClose(traded.resources.gold, state.computeResourceRate("gold").toNumber());
+    expectClose(
+      traded.resources.food,
+      state.computeResourceRate("food").toNumber(),
+    );
+    expectClose(
+      traded.resources.gold,
+      state.computeResourceRate("gold").toNumber(),
+    );
   });
 
   it("previews the flow even while the route is off", () => {
@@ -425,7 +487,15 @@ describe("trade routes", () => {
       },
       foodAndGoldWorkers(),
       { food: { enabled: false, mode: "sell", intensity: 1 } },
-    );
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
     expect(state.getTradeRoute("food").enabled).toBe(false);
 
     // The card shows what the settings are worth before the route is switched on:
@@ -481,20 +551,43 @@ describe("trade routes", () => {
   });
 
   it("scales the route legs with a time skip", () => {
-    const stock = { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1e6) };
+    const stock = {
+      trade: ExpNumber.fromNumber(100),
+      food: ExpNumber.fromNumber(1e6),
+    };
     const state = marketState(0, stock, foodAndGoldWorkers(), {
       food: enabledRoute("sell"),
-    });
+    })
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
     // The skip switches the route off for the window, so the sixty seconds of
     // production land first, and the route is then applied once for the window.
     const skipped = state.advanceTime(60);
-    const untouched = marketState(0, stock, foodAndGoldWorkers()).advanceTime(60);
+    const untouched = marketState(0, stock, foodAndGoldWorkers())
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ])
+      .advanceTime(60);
 
     expectClose(
       skipped.resources.food,
       untouched.resources.food.toNumber() - 400 * 60,
     );
-    expectClose(skipped.resources.gold, untouched.resources.gold.toNumber() + 100 * 60);
+    expectClose(
+      skipped.resources.gold,
+      untouched.resources.gold.toNumber() + 100 * 60,
+    );
   });
 
   it("caps a time skip against the balance the window ended with", () => {
@@ -502,32 +595,79 @@ describe("trade routes", () => {
     // far more than that — and the cap is the balance the window produced, not the
     // ten it started with. Everything it ended holding is sold (four food to the
     // gold), and nothing goes negative.
-    const stock = { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(10) };
+    const stock = {
+      trade: ExpNumber.fromNumber(100),
+      food: ExpNumber.fromNumber(10),
+    };
     const state = marketState(0, stock, foodAndGoldWorkers(), {
       food: enabledRoute("sell"),
-    });
+    })
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
     const skipped = state.advanceTime(60);
-    const untouched = marketState(0, stock, foodAndGoldWorkers()).advanceTime(60);
+    const untouched = marketState(0, stock, foodAndGoldWorkers())
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ])
+      .advanceTime(60);
 
     expectClose(skipped.resources.food, 0);
     expectClose(
       skipped.resources.gold,
-      untouched.resources.gold.toNumber() + untouched.resources.food.toNumber() / 4,
+      untouched.resources.gold.toNumber() +
+        untouched.resources.food.toNumber() / 4,
     );
   });
 
   it("caps a skipped purchase at the purse", () => {
     // One percent of a hundred banked is one gold a second, so sixty seconds of it
     // asks for sixty gold and buys a sixtieth of that in food.
-    const stock = { trade: ExpNumber.fromNumber(100), gold: ExpNumber.fromNumber(1e6) };
+    const stock = {
+      trade: ExpNumber.fromNumber(100),
+      gold: ExpNumber.fromNumber(1e6),
+    };
     const state = marketState(0, stock, foodAndGoldWorkers(), {
       food: enabledRoute("buy", 0.01),
-    });
+    })
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
     const bought = state.advanceTime(60);
-    const untouched = marketState(0, stock, foodAndGoldWorkers()).advanceTime(60);
+    const untouched = marketState(0, stock, foodAndGoldWorkers())
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ])
+      .advanceTime(60);
 
-    expectClose(bought.resources.gold, untouched.resources.gold.toNumber() - 60);
-    expectClose(bought.resources.food, untouched.resources.food.toNumber() + 24);
+    expectClose(
+      bought.resources.gold,
+      untouched.resources.gold.toNumber() - 60,
+    );
+    expectClose(
+      bought.resources.food,
+      untouched.resources.food.toNumber() + 24,
+    );
     expect(bought.resources.gold.toNumber()).toBeGreaterThanOrEqual(0);
   });
 
@@ -558,12 +698,78 @@ describe("trade routes", () => {
       [],
       {},
       { food: enabledRoute("sell") },
-    );
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
     const upkeep = state.getProductionFactors("food").drain;
     const skipped = state.advanceTime(60);
 
     // The upkeep is still a row on the rate the skip used, and food fell by it.
     expect(upkeep.map(([source]) => String(source))).toContain("people");
     expect(skipped.resources.food.toNumber()).toBeLessThan(1e6);
+  });
+
+  it("trade prices are independent of worker assignments", () => {
+    // Create a state with buildings but no workers
+    const noWorkers = marketState(
+      0,
+      { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
+      emptyWorkerAssignments(),
+      { food: enabledRoute("sell") },
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
+
+    // Create a state with many workers assigned to food
+    const manyFoodWorkers = marketState(
+      0,
+      { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
+      {
+        ...emptyWorkerAssignments(),
+        food: ExpNumber.fromNumber(100),
+        gold: ExpNumber.fromNumber(1),
+      },
+      { food: enabledRoute("sell") },
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
+
+    // Both should have the same trade price since it's based on buildings, not workers
+    const priceNoWorkers = noWorkers.getTradePrice("food");
+    const priceManyWorkers = manyFoodWorkers.getTradePrice("food");
+
+    expect(priceNoWorkers.resourcePerGold.toNumber()).toBeCloseTo(4, 6);
+    expect(priceManyWorkers.resourcePerGold.toNumber()).toBeCloseTo(4, 6);
+    expect(priceNoWorkers.resourcePerGold.toNumber()).toEqual(
+      priceManyWorkers.resourcePerGold.toNumber(),
+    );
+
+    // The route should drain the same amount in both cases
+    expect(rowValue(drains(noWorkers, "food"), "food route")).toBeCloseTo(
+      400,
+      6,
+    );
+    expect(rowValue(drains(manyFoodWorkers, "food"), "food route")).toBeCloseTo(
+      400,
+      6,
+    );
   });
 });

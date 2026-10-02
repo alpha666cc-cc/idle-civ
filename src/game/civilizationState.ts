@@ -1083,10 +1083,8 @@ export class CivilizationState {
   /**
    * The live rate of a resource with everything in it **except the trade route's
    * own rows**: workers, buildings, bonuses, the dev multiplier, the trade
-   * multiplier, and every other drain — the citizen food upkeep among them. Trade
-   * routes are priced against these rates, so their legs can never feed back into
-   * their own price, and a time skip applies production at exactly this rate
-   * before the route itself runs for the window.
+   * multiplier, and every other drain — the citizen food upkeep among them.
+   * Used for time skips, which apply production at this rate before routes run.
    */
   private baseProductionFactors(resourceKey: ResourceKey): ResourceFactors {
     const base = this.getFactors(resourceKey);
@@ -1115,6 +1113,116 @@ export class CivilizationState {
     return {
       ...base,
       multiplicative,
+    };
+  }
+
+  /**
+   * Production factors for trade pricing: buildings, bonuses, multipliers, and drains,
+   * but **excluding worker production** so players cannot sway the market by reassigning
+   * workers. Trade routes are priced against these rates to prevent market manipulation.
+   */
+  private getTradePriceFactors(resourceKey: ResourceKey): ResourceFactors {
+    const factors = this.resourceFactors[resourceKey];
+    const isProductionKey = resourceKey in this.workers;
+    const buildingFactors: ResourceFactors = {
+      additional: [],
+      multiplicative: [],
+      additiveMultiplier: [],
+      drain: [],
+    };
+    let drainScale: ExpNumber | undefined;
+
+    for (const building of buildingDefinitions) {
+      const count = this.buildingCount(building.key);
+      if (count === 0) continue;
+      const effects = this.getBuildingEffects(building.key, count);
+      for (const additiveMultiplier of effects.additiveMultiplier ?? []) {
+        if (additiveMultiplier.resource === resourceKey) {
+          buildingFactors.additiveMultiplier.push([
+            building.key,
+            additiveMultiplier.perBuilding,
+          ]);
+        }
+      }
+      for (const resourceDrain of effects.resourceDrain ?? []) {
+        if (resourceDrain.resource === resourceKey) {
+          drainScale ??= this.remainingDrainShare(resourceKey);
+          const amount = resourceDrain.amount.mul(drainScale);
+          if (amount.gt(ExpNumber.ZERO)) {
+            buildingFactors.drain.push([building.key, amount]);
+          }
+        }
+      }
+      for (const resourceProduction of effects.resourceProduction ?? []) {
+        if (resourceProduction.resource === resourceKey) {
+          buildingFactors.additional.push([
+            building.key,
+            resourceProduction.amount,
+          ]);
+        }
+      }
+    }
+
+    const bonusFactors: ResourceFactors = {
+      additional: [],
+      multiplicative: [],
+      additiveMultiplier: [],
+      drain: [],
+    };
+    for (const [sourceId, bonus] of this.activeBonuses()) {
+      const targetsResource = String(bonus.destination) === resourceKey;
+      const targetsAllProduction =
+        bonus.destination === "allProduction" && isProductionKey;
+      if (!targetsResource && !targetsAllProduction) continue;
+      if (bonus.type === "attributeMultiplier") {
+        bonusFactors.multiplicative.push([sourceId, bonus.value]);
+      } else if (bonus.type === "attributeFlat") {
+        bonusFactors.additional.push([sourceId, bonus.value]);
+      }
+    }
+
+    const multiplicative = [
+      ...factors.multiplicative,
+      ...buildingFactors.multiplicative,
+      ...bonusFactors.multiplicative,
+    ];
+
+    // Add dev production multiplier
+    if (!this.devProductionMultiplier.eq(ExpNumber.ONE)) {
+      multiplicative.push([
+        "dev production multiplier",
+        this.devProductionMultiplier,
+      ] as ResourceFactor);
+    }
+
+    // Add trade production multiplier for production resources
+    if (isProductionKey && this.resources.trade.gt(ExpNumber.ZERO)) {
+      const tradeMultiplier = calculateTradeMultiplier(this.resources.trade);
+      if (!tradeMultiplier.eq(ExpNumber.ONE)) {
+        multiplicative.push([
+          "trade production multiplier",
+          tradeMultiplier,
+        ] as ResourceFactor);
+      }
+    }
+
+    return {
+      additional: [
+        ...factors.additional,
+        ...buildingFactors.additional,
+        ...bonusFactors.additional,
+      ],
+      multiplicative,
+      additiveMultiplier: [
+        ...factors.additiveMultiplier,
+        ...buildingFactors.additiveMultiplier,
+        ...bonusFactors.additiveMultiplier,
+      ],
+      drain: [
+        ...factors.drain,
+        ...buildingFactors.drain,
+        ...bonusFactors.drain,
+      ],
     };
   }
 
@@ -3112,10 +3220,10 @@ export class CivilizationState {
     return this.computeResourceRate("trade");
   }
 
-  /** The live mid price of one tradable resource, from the base rates. */
+  /** The live mid price of one tradable resource, from rates excluding worker production. */
   getTradePrice(resource: TradeResourceKey): TradePrice {
     return getTradePrice(resource, (key) =>
-      computeResourceRate(this.baseProductionFactors(key)),
+      computeResourceRate(this.getTradePriceFactors(key)),
     );
   }
 

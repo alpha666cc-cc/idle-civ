@@ -8,9 +8,11 @@ import type { ProductionResourceKey } from "./attributes";
  * second each enabled route forwards `intensity ×` the trade power income, and
  * one trade power of income is worth `GOLD_PER_TRADE_POWER` gold of goods. The
  * trade power reserve is never spent by a route: routing drains goods and gold,
- * nothing else. The price of a resource is the production ratio against gold, so
- * whatever the settlement produces fastest is what one gold buys most of, and the
- * slowest to sell for gold.
+ * nothing else. The price of a resource is the production ratio against gold
+ * (excluding worker production), so whatever the settlement produces fastest
+ * through buildings and bonuses is what one gold buys most of, and the slowest
+ * to sell for gold. This prevents players from swaying the market by reassigning
+ * workers.
  */
 
 /** Resources with a route: gold is the numeraire, trade power is the fuel. */
