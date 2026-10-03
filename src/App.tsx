@@ -813,23 +813,29 @@ function App() {
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Settings / Dev Tools: save now. Always writes internally first. */
-  const handleSaveNow = async (): Promise<void> => {
-    const identity = ensureSaveIdentity();
-    const data = writeInternalSave(gameState, identity);
+  /**
+   * Hand one already-built document to the player: the clipboard for Base64, the
+   * file API otherwise. Shared by Save and Fork so both land the file the same
+   * way. Returns the file name it aimed at, or `null` if the dialog was
+   * cancelled; the caller sets the final notice, since the two callers word it
+   * differently.
+   */
+  const exportSaveDocument = async (
+    data: SaveData,
+  ): Promise<string | null> => {
     const fileName = saveFileName(data, saveFormat);
 
     if (saveFormat === "base64") {
       const text = serializeSave(data, "base64");
       if (await copyTextToClipboard(text)) {
         setNotice("Save written and copied to the clipboard as Base64.");
-        return;
+        return fileName;
       }
       downloadTextFile(fileName.replace(/\.json$/, ".txt"), text, "text/plain");
       setNotice(
         "Save written; the clipboard was unavailable, so it downloaded instead.",
       );
-      return;
+      return fileName;
     }
 
     const result = await saveTextToFile(
@@ -840,12 +846,20 @@ function App() {
     );
     if (result === "cancelled") {
       setNotice("Save written internally; the file dialog was cancelled.");
-      return;
+      return null;
     }
     setNotice(
       result === "saved"
         ? `Save written to ${fileName}.`
         : `Save downloaded as ${fileName}.`,
+    );
+    return fileName;
+  };
+
+  /** Settings / Dev Tools: save now. Always writes internally first. */
+  const handleSaveNow = async (): Promise<void> => {
+    await exportSaveDocument(
+      writeInternalSave(gameState, ensureSaveIdentity()),
     );
   };
 
@@ -872,6 +886,59 @@ function App() {
       return;
     }
     setNotice("Matching JSON and XML saves written with the same timestamp.");
+  };
+
+  /**
+   * Dev Tools: fork the run.
+   *
+   * Keeps the settlement exactly as it stands — resources, buildings, unlocks,
+   * statistics — but gives it a new save identity and a new run log, so this
+   * branch writes to its own files and the ones already on disk are left alone.
+   * That is the "try another line without losing the run I already did" move:
+   * the current state is the branch point.
+   */
+  const forkRun = async (): Promise<void> => {
+    const parent = devLog?.runId ?? saveGuid;
+    // A fresh guid is what gives the fork its own save file name; every other
+    // field of the document is carried over untouched.
+    const identity = { guid: generateSaveGuid(), createdAtMs: Date.now() };
+    saveIdentityRef.current = identity;
+    setSaveGuid(identity.guid);
+
+    // The log only exists while dev mode is on, so only fork it then — minting
+    // one here would put a dev section into a save made outside dev mode.
+    if (devMode) {
+      const runId = generateSaveGuid();
+      devRunIdRef.current = runId;
+      const forked = appendDevLogEvent(
+        createDevLog(runId),
+        buildDevLogEvent(
+          gameState,
+          "load",
+          "forked",
+          devLogGameSeconds(gameState),
+          parent
+            ? `forked from run ${parent.slice(0, 8)}`
+            : "forked with no parent run",
+        ),
+      );
+      devLogRef.current = forked;
+      setDevLog(forked);
+      // Diff the next tick against this state, or the fork point itself would be
+      // logged as a burst of events that happened the moment of forking.
+      previousLoggedStateRef.current = gameState;
+      flushDevLogToDisk(forked);
+    }
+
+    const fileName = await exportSaveDocument(
+      writeInternalSave(gameState, identity),
+    );
+    const fork = identity.guid.slice(0, 8);
+    setNotice(
+      fileName
+        ? `Forked into run ${fork} and written to ${fileName}; the previous save and log files are untouched.`
+        : `Forked into run ${fork}; the previous save and log files are untouched.`,
+    );
   };
 
   /** Parse imported text and adopt it, reporting anything unreadable. */
@@ -1600,9 +1667,11 @@ function App() {
                   <p className="eyebrow">Save system</p>
                   <h3>Save state</h3>
                   <p className="dev-tools-copy">
-                    Reset discards the run and clears the stored save. Import
-                    loads a save file directly and ignores the offline-gain pass
-                    that a normal import would show.
+                    Reset discards the run and clears the stored save. Fork
+                    keeps the settlement exactly as it is but starts a new save
+                    and run log, so you can try another line without touching the
+                    files you already have. Import loads a save file directly and
+                    ignores the offline-gain pass that a normal import would show.
                   </p>
                 </div>
                 <div className="dev-tools-controls">
@@ -1685,6 +1754,14 @@ function App() {
                   >
                     <span>Download log</span>
                     <strong>DOWNLOAD</strong>
+                  </button>
+                  <button
+                    type="button"
+                    className="dev-tools-toggle"
+                    onClick={() => void forkRun()}
+                  >
+                    <span>Fork run (new save + log file)</span>
+                    <strong>FORK</strong>
                   </button>
                 </div>
               </section>

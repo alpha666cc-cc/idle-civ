@@ -726,6 +726,19 @@ dependency without explaining why.
 > must be benchmarked against the recorded baseline both before and after. A
 > simulation change is only correct if no strategy regresses.**
 
+**Scope — which changes actually need the sweep.** The sweep is mandatory when the
+edit touches **`tools/strategies.ts` (or the other `tools/` strategy layers), the
+main engine** (the rate/cost/bonus paths listed above), or **`age0`** — the
+opening age and the foundation every later age is measured against. A regression
+there compounds through the whole campaign, so it has to be caught by measurement
+rather than by argument.
+
+**The other ages (`age1` and beyond) are explicitly out of scope.** They are still
+being balanced, so their numbers move for reasons unrelated to your edit: a
+before/after diff across them measures baseline drift, not your change, and the
+result is uninterpretable either way. Rebalance them freely without the sweep, and
+say so in the summary. When `age1` settles, this carve-out should be revisited.
+
 Passing the unit tests is **not** sufficient evidence. The strategies are the
 game's balance feedback loop, and the failure mode is silent: a cost or rate
 change can make every strategy strictly worse (or strictly better) while every
@@ -904,13 +917,22 @@ with a roadmap entry already assigned.
   carefully and remove dead rules when superseding them.
 - **Dev Tools are player-visible** in the shipped UI (auto-clicker, dev production
   multiplier, auto-buy, auto-assign, `+1m/+1h/+1d` skips, free-buildings/free-units,
-  win-next-battle). If they should be gated for release, that is a product decision — flag
+  win-next-battle, fork-run). If they should be gated for release, that is a product decision — flag
   it rather than silently hiding them. Notes on the dev-only paths: `advanceTime()` applies
   `rate × seconds` in one step (valid because no rate depends on a resource amount),
   `freeBuildings`/`freeUnits`/`freeUpgrades` skip affordability and deduction but keep capacity/unlock gates and
   keep the state-aware cost display intact, and the numeric fields
   (`components/DevNumberField.tsx`) commit on Enter/blur via `parseFlexibleNumber`
-  (plain, scientific and `K/M/B`-style suffixed input). **Hazard, reproduced in headless
+  (plain, scientific and `K/M/B`-style suffixed input). **`forkRun()`** (`App.tsx`)
+  branches the run without touching it: it mints a fresh save `guid` and a fresh
+  dev-log `runId`, so the fork gets its own save file name and its own
+  `saves/auto/` log file while the parent's files stay exactly as they were —
+  the "try another strategy from here" move. Every settlement field is carried
+  over untouched. Two details it depends on: it only re-mints the log while dev
+  mode is on (a log minted outside dev mode would put a dev section in a save
+  that should not have one), and it resets `previousLoggedStateRef` to the
+  current state so the next tick diffs from the fork point instead of logging the
+  whole run as a burst of events. **Hazard, reproduced in headless
   Chrome:** never read `event.target.checked` from a control in the shell — `countUiClick`
   on `<main>` runs in the **capture** phase, so its `setGameState()` commit re-renders the
   tree and React writes the controlled `checked` value back onto the node _before_ the
@@ -979,10 +1001,12 @@ A change is done when:
 4. New content is data-driven with stable IDs, uses `ExpNumber` for anything that can
    grow, and needs no per-content branching in the engine.
 5. Numbers reach the player only through `formatNumber`.
-6. **A simulation change is benchmarked before and after against the recorded
-   baseline, and no strategy regresses** unless the regression is intentional and
-   stated in the summary — see §7.2. A green test suite is not sufficient
-   evidence for a tuning change.
+6. **A simulation change to `tools/strategies.ts`, the main engine, or `age0` is
+   benchmarked before and after against the recorded baseline, and no strategy
+   regresses** unless the regression is intentional and stated in the summary — see
+   §7.2, which scopes the sweep to those paths (`age1` and beyond are exempt while
+   they are still being balanced). A green test suite is not sufficient evidence
+   for a tuning change.
 7. The summary states what changed, which files, the validation output, and any remaining
    risk or follow-up (with a roadmap milestone reference when relevant).
 8. Any ambiguity or product decision you had to assume is called out explicitly rather
