@@ -21,7 +21,7 @@
       {
         "type": "costReductionFactor",
         "destination": "townHall",
-        "value": "1.6"
+        "value": "1.9128"
       }
     ]
   },
@@ -32,7 +32,7 @@
     "description": "Iron replaces bronze. Empires rise on chariots and disciplined spearmen.",
     "buildingThreshold": 1500,
     "unlocks": [],
-    "research": { "base": "1e9", "factor": 200 },
+    "research": { "base": "1e9", "factor": 230 },
     "bonuses": [
       {
         "type": "attributeMultiplier",
