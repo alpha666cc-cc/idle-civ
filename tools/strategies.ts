@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Pre-built simulation strategies for balance testing.
  * Each strategy implements decision-making logic for worker assignment,
  * building priorities, and battle timing.
@@ -444,7 +444,7 @@ const requiredBattleBuildings: readonly BuildingKey[] = [
  * The mandatory route through the first age, in the order the campaign requires.
  *
  * Each battle's victory bonus raises the population cap, so the order is not a
- * preference — it is the only path that works:
+ * preference â€” it is the only path that works:
  *
  *   1. ramp to 90 people, which unlocks the barracks
  *   2. win the first battle, which raises the cap
@@ -494,7 +494,7 @@ export const getAgeRouteTargetPopulation = (
  *
  * Housing is deliberately exempt from the target check below. The route's
  * population target is about *citizens*, but a settlement can hit that target
- * and still be unable to grow because `peopleCapacity` is full — and the house
+ * and still be unable to grow because `peopleCapacity` is full â€” and the house
  * that lifts it is exactly the purchase the route exists to make. Returning
  * null the moment `population >= target` therefore locked the settlement at
  * whichever capacity it happened to reach: it had `canBuild("house") === true`
@@ -573,7 +573,7 @@ export const getAgeRouteGrowthAction = (
     // 1 food/second, so past roughly the first few dozen citizens the drain
     // outruns what a handful of clicks per action adds, and the route gathers
     // forever without ever affording the next citizen. A farm raises the
-    // *passive* rate, which is the only thing that scales — so when food is the
+    // *passive* rate, which is the only thing that scales â€” so when food is the
     // binding constraint, buy the farm that multiplies food production instead
     // of clicking for more of it.
     if (
@@ -607,7 +607,7 @@ export const getRequiredBattlePreparationAction = (
       if (state.canBuild(building)) {
         return { type: "build", building, count: 1 };
       }
-      // Not affordable yet — gather toward the most-missing gatherable resource.
+      // Not affordable yet â€” gather toward the most-missing gatherable resource.
       const costs = state.getBuildingCost(building, 0, 1);
       const missing = costs
         .filter(({ resource, base }) => state.resources[resource]?.lt(base))
@@ -626,7 +626,7 @@ export const getRequiredBattlePreparationAction = (
           return left.resource.localeCompare(right.resource);
         });
       if (missing[0]) return { type: "gather", resource: missing[0].resource };
-      // All costs are either met or not gatherable — do not block on this building.
+      // All costs are either met or not gatherable â€” do not block on this building.
     }
   }
   return null;
@@ -636,7 +636,7 @@ export const getRequiredBattlePreparationAction = (
  * Returns the age transition action once the current age's data-defined
  * requirements are satisfied.
  *
- * `canEnterAge` is the whole game rule — the live era card gates on exactly that
+ * `canEnterAge` is the whole game rule â€” the live era card gates on exactly that
  * and nothing else (every battle in the age won, plus the age's building
  * target). This helper deliberately adds no population requirement of its own:
  * population is capped by housing capacity, so a settlement can legitimately
@@ -713,8 +713,8 @@ const simulatorContext = (state: CivilizationState): BattleSimulatorContext => {
 };
 
 /** Candidate units the simulator may consider for the current campaign battle.
- *  Only includes units the player has actually unlocked — no speculative research
- *  unlocks — so the solver works with the actual army that can be fielded today. */
+ *  Only includes units the player has actually unlocked â€” no speculative research
+ *  unlocks â€” so the solver works with the actual army that can be fielded today. */
 const simulatorBattleCandidates = (
   state: CivilizationState,
 ): UnitDefinition[] => {
@@ -820,7 +820,7 @@ const getFirstSimulatorUnit = (
  * of its types leaves the army short and the battle unwinnable. Because the
  * runner spends one action per tick, returning a single type also capped
  * recruitment throughput at one recruit per tick, which the geometric unit cost
- * curve outruns — the settlement bought one warrior at a time while the price of
+ * curve outruns â€” the settlement bought one warrior at a time while the price of
  * the next climbed faster than the army grew, and it could never win the second
  * battle. One action per recommended type keeps the plan intact and buys the
  * whole shortfall in a single tick.
@@ -966,7 +966,7 @@ const getSimulatorGatherAction = (
   if (!plan) return null;
   const unit = getFirstSimulatorUnit(state, plan);
   if (unit) {
-    // Always price the *next single unit* — pricing the whole remaining
+    // Always price the *next single unit* â€” pricing the whole remaining
     // batch inflates food's raw deficit above military's, crowding out the
     // real bottleneck. One-at-a-time pricing keeps the sort honest.
     const costs = state.getUnitCost(unit.unitId, 1);
@@ -1156,7 +1156,7 @@ const getCheapestPurchaseCandidate = (
  * The MAX probes are capacity-aware, so this cannot overbuild: a building stops
  * at its cap (and `people` additionally at the housing limit) and units stop at
  * what is payable. The result is still re-clamped to at least 1 because the
- * caller has already proven one copy is affordable — this only ever widens a
+ * caller has already proven one copy is affordable â€” this only ever widens a
  * purchase that was going to happen anyway, never introduces a new one.
  */
 const withMaxAffordableCount = (
@@ -1364,7 +1364,7 @@ abstract class BaseStrategy implements SimulationStrategy {
    * army actually wins. Re-implementing that test as a boolean here made this
    * method an exact restatement of `getRequiredBattleAction(state) !== null`,
    * so the wrapper was an identity function that ran the same un-memoized
-   * battle simulation twice per decision — and the runner runs it a third time
+   * battle simulation twice per decision â€” and the runner runs it a third time
    * in `launchBattle`. One authority for "can we win", here.
    */
   protected shouldLaunchBattle(state: CivilizationState): boolean {
@@ -1381,7 +1381,7 @@ abstract class BaseStrategy implements SimulationStrategy {
   /**
    * The battle to launch this turn, or null. The single entry point every
    * `decideAction` uses for combat, so `shouldLaunchBattle` is genuinely wired
-   * in rather than a dead override — and because the win check lives in
+   * in rather than a dead override â€” and because the win check lives in
    * `getRequiredBattleAction`, overriding this can only ever make a strategy
    * fight *less*, never launch a battle it would lose.
    */
@@ -1719,7 +1719,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     // imbalance. Configuring a route spends no resources and builds nothing, so it
     // never competes with growth. It sits here rather than lower because the
     // ladder's last resort is `gather`, and a gather consumes the whole simulated
-    // second — a route waiting below it would almost never get a turn at all.
+    // second â€” a route waiting below it would almost never get a turn at all.
     const tradeAction = this.getTradeAction(state);
     if (tradeAction) return tradeAction;
 
@@ -1758,7 +1758,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     // Priority 7: Buy the cheapest legal purchase when nothing above is
     // affordable. Without this the ladder can stall on a hand-ordered priority
     // list: the priority building stays unaffordable while cheap buildings and
-    // units — which is what actually grows the settlement — go unpurchased.
+    // units â€” which is what actually grows the settlement â€” go unpurchased.
     // This is the same fallback the `cheapest` strategy always takes, so every
     // strategy inherits at least its progress, then adds its own priorities.
     const cheapest = getCheapestPurchaseCandidate(state);
@@ -1769,7 +1769,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     // Priority 8: Food safety. A citizen eats 1 food/second and the next citizen
     // costs more than the first (the cost curve is per-copy), so a settlement
     // with one citizen can sit at a small non-zero food balance it can never
-    // spend — one worker cannot out-produce the citizen's own drain. Waiting for
+    // spend â€” one worker cannot out-produce the citizen's own drain. Waiting for
     // food to hit exactly zero is too late: the buffer never gets there. This is
     // the general form of the age route's own food step, kept as a backstop for
     // once the route stops watching population.
@@ -1827,7 +1827,7 @@ abstract class BaseStrategy implements SimulationStrategy {
    * Find the cheapest affordable unlocked upgrade.
    */
   protected getBestUpgrade(state: CivilizationState): SimulationAction | null {
-    // upgradeDefinitions is not directly accessible here — we use state methods
+    // upgradeDefinitions is not directly accessible here â€” we use state methods
     // Try to buy the cheapest affordable upgrade by scanning known upgrade ids
     // We rely on state.getUpgradeFailureReason being null for buyable ones
     const candidates = state.getAffordableUpgrades?.() ?? [];
@@ -2262,7 +2262,7 @@ export class ResearchStrategy extends BaseStrategy {
   ): SimulationAction | null {
     if (hasCompletedCurrentAgeResearch(state)) return null;
     if (!state.defeatedEncounters.includes("age0_1_first_fire")) return null;
-    const nextResearch = researchFocusedOrder.find(
+    const nextResearch = playerResearchOrder.find(
       (researchId) => !state.isResearchBought(researchId),
     );
     if (!nextResearch || !state.canBuyResearch(nextResearch)) return null;
@@ -2350,11 +2350,11 @@ export class ResearchStrategy extends BaseStrategy {
     if (
       !hasCompletedCurrentAgeResearch(state) &&
       state.defeatedEncounters.includes("age0_1_first_fire") &&
-      state.getBuildingCount("university") < 5 &&
+      state.getBuildingCount("university") < 2 &&
       state.canBuild("university")
     ) {
       const affordable = state.getMaxAffordableBuildings("university");
-      const remaining = 5 - state.getBuildingCount("university");
+      const remaining = 2 - state.getBuildingCount("university");
       if (affordable > 0) {
         return {
           type: "build",
@@ -2648,8 +2648,8 @@ export class PlayerStrategy extends ResearchStrategy {
  * Trade-focused strategy: bank trade power at the market and route it at whatever
  * the settlement is most out of balance on.
  *
- * The market unlocks in the Iron Age, so this strategy's route — like every other
- * strategy's — is dormant until then and starts from an empty reserve. Until the
+ * The market unlocks in the Iron Age, so this strategy's route â€” like every other
+ * strategy's â€” is dormant until then and starts from an empty reserve. Until the
  * reserve can move something, the advisor refuses to open a route at all rather
  * than holding the single slot on a dead one.
  */
@@ -2723,13 +2723,13 @@ export class TradeStrategy extends BaseStrategy {
  * treat the size of the gain as unverified; the direction is what motivated this
  * subclass, and the "no pause" column above is current-engine data.
  *
- * This subclass removed only the pause and inherited everything else — the
+ * This subclass removed only the pause and inherited everything else â€” the
  * research order, the science-heavy worker ratios, the opening, the building
- * plan — so a `player` vs `unpaused` comparison would have isolated exactly one
+ * plan â€” so a `player` vs `unpaused` comparison would have isolated exactly one
  * variable. **It was built, measured, and then deleted.** On the current engine
  * it arrives at 2147 s, bit-identical to `player`: the pause is inert. Fixing
  * `assignWorker` to respect `isResourceGatherable` gated science workers behind
- * the university, which unlocks on First Fire — so the engine now enforces the
+ * the university, which unlocks on First Fire â€” so the engine now enforces the
  * ordering the pause was hand-enforcing. The finding that *was* real on the
  * previous engine does not survive the fix, and a strategy that duplicates
  * `player` is worse than no strategy.
@@ -2760,13 +2760,13 @@ export class SpeedrunStrategy extends BaseStrategy {
    *
    * This is the whole point of the strategy. The previous version hardcoded
    * `science: 0.05` alongside a hand-picked food/wood/stone/gold mix, and
-   * measured 8243 s — eighth of ten. The science share is the single largest
+   * measured 8243 s â€” eighth of ten. The science share is the single largest
    * lever in the economy (0 -> 2988 s, 0.25 -> 2352 s, 0.5 -> 2169 s,
    * 0.7 -> 2308 s), and hardcoding it meant the strategy was pinned to whatever
    * the balance happened to be on the day it was written. It also could not
    * survive a rebalance, which is the failure mode that matters most.
    *
-   * The principle instead — *longest pole gets the workers*:
+   * The principle instead â€” *longest pole gets the workers*:
    *
    *   1. collect the resources the next few purchases need (the remaining army
    *      for the next battle, the next tech, the next building);
@@ -2830,9 +2830,13 @@ export class SpeedrunStrategy extends BaseStrategy {
     let totalBlocking = 0;
     for (const [resource, need] of deficit) {
       const rate = state.computeResourceRate(resource).toNumber();
-      const shortfall = Math.max(0, need - state.resources[resource].toNumber());
+      const shortfall = Math.max(
+        0,
+        need - state.resources[resource].toNumber(),
+      );
       // A resource already in surplus blocks for zero seconds.
-      const seconds = rate > 0 ? shortfall / rate : shortfall > 0 ? Infinity : 0;
+      const seconds =
+        rate > 0 ? shortfall / rate : shortfall > 0 ? Infinity : 0;
       const weight = Number.isFinite(seconds) ? seconds : 1e12;
       blocking.set(resource, weight);
       totalBlocking += weight;
@@ -2923,6 +2927,18 @@ export class SpeedrunStrategy extends BaseStrategy {
     }
     this.roiGatherFocus = undefined;
 
+    // NOTE: an "army reserve" (recruit toward N x the minimum winning army) was
+    // tried here and removed. It is the obvious fix for the army freezing at 46
+    // warriors for fifty minutes, and it does not work at this layer:
+    //   - run BEFORE the ROI evaluator, it never yields â€” the settlement spends
+    //     everything on recruits, never researches, never unlocks the bronze
+    //     units, and stalls at the second battle (measured: never reaches the
+    //     Iron Age, at both a 2x and a 1.5x reserve);
+    //   - run HERE, it never fires â€” the evaluator always has some cheaper
+    //     purchase queued, so the fallback is unreachable (7751 s either way).
+    // The stall is not a "buy more soldiers" problem; the minimum-army plan is
+    // simply empty once satisfied, so army growth has to be *valued inside* the
+    // evaluator's own benefit metric, not appended to its output.
     const workerAction = this.assignWorkersByRatio(
       state,
       this.deriveWorkerRatios(state),
