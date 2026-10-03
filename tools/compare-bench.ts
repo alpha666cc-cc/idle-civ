@@ -161,15 +161,25 @@ for (const name of names) {
       : `${Math.round(s.firstAgeSeconds / 60)}m`;
   console.log(
     `  ${targetAge.padEnd(9)} ${time(b).padStart(6)} -> ${time(a).padStart(6)}  ${
+      // `arrow(before, after)` returns "-" when the time went DOWN, which for
+      // an arrival clock means FASTER. This used to label "-" as "SLOWER",
+      // inverting the sign: a genuine 8-minute improvement was reported as a
+      // regression. Since AGENTS.md §7.2 gates merges on this output, the
+      // inversion could reject real improvements and wave through real ones.
       arrow(
         String(b.firstAgeSeconds ?? Infinity),
         String(a.firstAgeSeconds ?? Infinity),
       ) === "-"
-        ? "SLOWER"
+        ? "FASTER"
         : arrow(
             String(b.firstAgeSeconds ?? Infinity),
             String(a.firstAgeSeconds ?? Infinity),
-          )
+          ) === "+"
+          ? "SLOWER"
+          : arrow(
+              String(b.firstAgeSeconds ?? Infinity),
+              String(a.firstAgeSeconds ?? Infinity),
+            )
     }`,
   );
   for (const column of HEADLINE) {

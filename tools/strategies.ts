@@ -2754,17 +2754,123 @@ export class SpeedrunStrategy extends BaseStrategy {
       }
     | undefined;
 
-  protected getWorkerRatios(): WorkerRatios {
-    return {
-      food: 0.5,
-      wood: 0.2,
-      stone: 0.15,
-      gold: 0.05,
-      military: 0.05,
-      science: 0.05,
+  /**
+   * Worker split derived from whatever is currently blocking progress, instead
+   * of a hardcoded table.
+   *
+   * This is the whole point of the strategy. The previous version hardcoded
+   * `science: 0.05` alongside a hand-picked food/wood/stone/gold mix, and
+   * measured 8243 s — eighth of ten. The science share is the single largest
+   * lever in the economy (0 -> 2988 s, 0.25 -> 2352 s, 0.5 -> 2169 s,
+   * 0.7 -> 2308 s), and hardcoding it meant the strategy was pinned to whatever
+   * the balance happened to be on the day it was written. It also could not
+   * survive a rebalance, which is the failure mode that matters most.
+   *
+   * The principle instead — *longest pole gets the workers*:
+   *
+   *   1. collect the resources the next few purchases need (the remaining army
+   *      for the next battle, the next tech, the next building);
+   *   2. for each resource compute how long it would take to afford, i.e.
+   *      `deficit / rate`, using the engine's own `computeResourceRate`;
+   *   3. give each resource a share proportional to that time.
+   *
+   * The resource that blocks longest therefore attracts labour automatically.
+   * There are no content ids in this method: every number comes from live
+   * state, so it holds at age 1 and after any cost or multiplier change.
+   */
+  private deriveWorkerRatios(state: CivilizationState): WorkerRatios {
+    const deficit = new Map<ProductionResourceKey, number>();
+
+    /** Add a cost entry to the running demand for its resource. */
+    const demand = (resource: string, base: ExpNumber): void => {
+      const key = resource as ProductionResourceKey;
+      if (!producerResourceKeys.includes(key)) return;
+      const value = base.toNumber();
+      if (!Number.isFinite(value)) return;
+      deficit.set(key, (deficit.get(key) ?? 0) + value);
+    };
+
+    // The army the battle plan still needs.
+    const plan = getSimulatorBattlePlan(state);
+    if (plan) {
+      for (const [unitId, count] of plan.composition) {
+        if (count <= 0 || !state.isUnitAvailable(unitId)) continue;
+        for (const { resource, base } of state.getUnitCost(unitId, count)) {
+          demand(resource, base);
+        }
+      }
+      for (const { resource, base } of plan.research.costs) {
+        demand(resource, base);
+      }
+    }
+
+    // The next tech, and the next building the route is waiting on.
+    for (const { resource, base } of state.getResearchNextCost()) {
+      demand(resource, base);
+    }
+    const populationTarget = getAgeRouteTargetPopulation(state);
+    if (populationTarget > 0) {
+      for (const { resource, base } of state.getBuildingCost(
+        "people",
+        state.getBuildingCount("people"),
+        1,
+      )) {
+        demand(resource, base);
+      }
+    }
+
+    // Time-to-afford per resource: the longer a resource blocks, the more of
+    // the workforce it earns. Resources with nothing pending fall to a floor so
+    // they are not abandoned entirely (they still drain upkeep and fund the
+    // next purchase once demand shifts).
+    const blocking = new Map<ProductionResourceKey, number>();
+    // `producerResourceKeys` is typed as ResourceKey[]; the worker map and the
+    // demand map are keyed by the narrower ProductionResourceKey, so narrow once.
+    const gatherableKeys = producerResourceKeys as ProductionResourceKey[];
+    let totalBlocking = 0;
+    for (const [resource, need] of deficit) {
+      const rate = state.computeResourceRate(resource).toNumber();
+      const shortfall = Math.max(0, need - state.resources[resource].toNumber());
+      // A resource already in surplus blocks for zero seconds.
+      const seconds = rate > 0 ? shortfall / rate : shortfall > 0 ? Infinity : 0;
+      const weight = Number.isFinite(seconds) ? seconds : 1e12;
+      blocking.set(resource, weight);
+      totalBlocking += weight;
+    }
+
+    const ratios: WorkerRatios = {
+      food: 0,
+      wood: 0,
+      stone: 0,
+      gold: 0,
+      military: 0,
+      science: 0,
       metalwork: 0,
       trade: 0,
     };
+    if (totalBlocking <= 0) {
+      // Nothing is pending (e.g. research complete and no battle due): fall back
+      // to food, which is the resource every citizen drains.
+      ratios.food = 1;
+      return ratios;
+    }
+    for (const key of gatherableKeys) {
+      if (!state.isResourceGatherable(key)) continue;
+      ratios[key] = (blocking.get(key) ?? 0) / totalBlocking;
+    }
+    // Normalise over the resources that can actually take a worker.
+    let assigned = 0;
+    for (const key of gatherableKeys) {
+      if (state.isResourceGatherable(key)) assigned += ratios[key];
+    }
+    if (assigned > 0) {
+      for (const key of gatherableKeys) {
+        ratios[key] /= assigned;
+      }
+    } else {
+      ratios.food = 1;
+    }
+    return ratios;
   }
 
   decideAction(
@@ -2772,7 +2878,11 @@ export class SpeedrunStrategy extends BaseStrategy {
     context: SimulationContext,
   ): SimulationAction | null {
     const roiAction = getBestRoiAction(state, {
-      includeUnits: false,
+      // Units are evaluated as standalone purchases too. With `includeUnits`
+      // off the evaluator can see the army a battle needs but never issues the
+      // recruit itself, so the run reaches the 1500-building target and then
+      // spends the remainder of the age fighting battles it never armed for.
+      includeUnits: true,
       populationTarget: getAgeRouteTargetPopulation(state),
       planBattle: (battleState, battleId) =>
         planBattleForRoi(
@@ -2815,7 +2925,7 @@ export class SpeedrunStrategy extends BaseStrategy {
 
     const workerAction = this.assignWorkersByRatio(
       state,
-      this.getWorkerRatios(),
+      this.deriveWorkerRatios(state),
     );
     if (workerAction) return workerAction;
 
