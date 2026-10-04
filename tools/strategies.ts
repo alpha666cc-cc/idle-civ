@@ -2015,10 +2015,10 @@ export class CheapestStrategy extends BaseStrategy {
 
   protected getWorkerRatios(): WorkerRatios {
     return {
-      food: 1,
-      wood: 0,
-      stone: 0,
-      gold: 0,
+      food: 0.504,
+      wood: 0.126,
+      stone: 0.27,
+      gold: 0.1,
       military: 0,
       science: 0,
       metalwork: 0,
@@ -2116,12 +2116,12 @@ export class BalancedStrategy extends BaseStrategy {
 
   protected getWorkerRatios(): WorkerRatios {
     return {
-      food: 0.4,
-      wood: 0.25,
-      stone: 0.2,
-      gold: 0.15,
+      food: 0.248,
+      wood: 0.31,
+      stone: 0.162,
+      gold: 0.08,
       military: 0,
-      science: 0,
+      science: 0.2,
       metalwork: 0,
       trade: 0,
     };
@@ -2227,12 +2227,12 @@ export class ProductionStrategy extends BaseStrategy {
 
   protected getWorkerRatios(): WorkerRatios {
     return {
-      food: 0.5,
-      wood: 0.25,
-      stone: 0.15,
-      gold: 0.1,
+      food: 0.347,
+      wood: 0.223,
+      stone: 0.16,
+      gold: 0.07,
       military: 0,
-      science: 0,
+      science: 0.2,
       metalwork: 0,
       trade: 0,
     };
@@ -2303,12 +2303,12 @@ export class FastAgeStrategy extends BaseStrategy {
 
   protected getWorkerRatios(): WorkerRatios {
     return {
-      food: 0.6,
-      wood: 0.2,
-      stone: 0.1,
-      gold: 0.1,
+      food: 0.263,
+      wood: 0.198,
+      stone: 0.24,
+      gold: 0.099,
       military: 0,
-      science: 0,
+      science: 0.2,
       metalwork: 0,
       trade: 0,
     };
@@ -2337,12 +2337,12 @@ export class EconomyStrategy extends BaseStrategy {
 
   protected getWorkerRatios(): WorkerRatios {
     return {
-      food: 0.3,
-      wood: 0.2,
-      stone: 0.15,
-      gold: 0.35,
+      food: 0.2,
+      wood: 0.276,
+      stone: 0.064,
+      gold: 0.06,
       military: 0,
-      science: 0,
+      science: 0.4,
       metalwork: 0,
       trade: 0,
     };
@@ -2794,10 +2794,10 @@ export class TradeStrategy extends BaseStrategy {
 
   protected getWorkerRatios(): WorkerRatios {
     return {
-      food: 0.35,
-      wood: 0.25,
-      stone: 0.15,
-      gold: 0.25,
+      food: 0.225,
+      wood: 0.322,
+      stone: 0.303,
+      gold: 0.15,
       military: 0,
       science: 0,
       metalwork: 0,
