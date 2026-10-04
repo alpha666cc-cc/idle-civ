@@ -116,8 +116,10 @@ export class TunedPlayer extends PlayerStrategy {
     state: CivilizationState,
   ): SimulationAction | null {
     if (!this.gateOpen(state)) return null;
-    const next = this.getPlayerResearchOrder().find(
-      (id) => !state.isResearchBought(id),
+    const next = this.getPlayerResearchOrder(state).find(
+      (researchId) =>
+        state.isResearchUnlocked(researchId) &&
+        !state.isResearchBought(researchId),
     );
     if (!next || !state.canBuyResearch(next)) return null;
     return { type: "buyResearch", researchId: next };
@@ -152,8 +154,8 @@ export class TunedPlayer extends PlayerStrategy {
 
   protected getResearchWorkerRatios(state: CivilizationState) {
     const hasSmithy = state.isBuildingAvailable("smithy");
-    const researchComplete = this.getPlayerResearchOrder().every((id) =>
-      state.isResearchBought(id),
+    const researchComplete = this.getPlayerResearchOrder(state).every(
+      (researchId) => state.isResearchBought(researchId),
     );
     const science = researchComplete ? 0 : this.params.scienceShare;
     const metalwork = hasSmithy ? this.params.metalworkShare : 0;
@@ -220,14 +222,8 @@ const runGrid = (horizon: number) => {
   const scienceValues = flag("science", "0,0.25,0.5,0.7")
     .split(",")
     .map(Number);
-  const foodValues = flag("food", "")
-    .split(",")
-    .filter(Boolean)
-    .map(Number);
-  const metalValues = flag("metal", "")
-    .split(",")
-    .filter(Boolean)
-    .map(Number);
+  const foodValues = flag("food", "").split(",").filter(Boolean).map(Number);
+  const metalValues = flag("metal", "").split(",").filter(Boolean).map(Number);
   const foods = foodValues.length > 0 ? foodValues : [base.foodShare];
   const metals = metalValues.length > 0 ? metalValues : [base.metalworkShare];
   const gates = flag("gate", "always,fire,pop200")
@@ -235,7 +231,9 @@ const runGrid = (horizon: number) => {
     .filter(Boolean) as ResearchGate[];
 
   console.log("=== grid: science share x research gate ===");
-  console.log(`horizon ${horizon}s   food=${foods.join("/")}  metal=${metals.join("/")}\n`);
+  console.log(
+    `horizon ${horizon}s   food=${foods.join("/")}  metal=${metals.join("/")}\n`,
+  );
 
   const table = new Map<string, number | null>();
   for (const food of foods) {
@@ -285,7 +283,9 @@ if (hasFlag("grid")) {
 } else if (hasFlag("best")) {
   console.log(JSON.stringify(playerParams(), null, 2));
   const time = timeOf(playerParams(), horizon);
-  console.log(`\nhand-authored parameters: ${time === null ? "not reached" : `${time}s (${clock(time)})`}`);
+  console.log(
+    `\nhand-authored parameters: ${time === null ? "not reached" : `${time}s (${clock(time)})`}`,
+  );
 } else {
   console.log("usage:");
   console.log("  tsx tools/age1-tuned.ts --grid");

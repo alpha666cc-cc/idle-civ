@@ -940,6 +940,20 @@ export const woodWorkerFloor = 18;
  * own rate rather than solving for it, because the multiplier is an exponent of
  * the count and has no closed form.
  */
+/**
+ * Smallest farm count that leaves the settlement genuinely solvent at
+ * `population`.
+ *
+ * The threshold matters and used to be wrong. `ExpNumber` arithmetic on a
+ * settlement with no food worker left returns a denormal residue rather than a
+ * clean zero — at 18 people and 2 farms the food rate reads 4.4e-15. Testing
+ * `rate > 0` accepted that dust as "viable", handed the escalation loop a
+ * budget of ~1e-11, and the estimate then sat frozen at its seed for every
+ * `elapsed` (2 farms, 18 citizens, no growth at 1h, 2h or 4h). The floor has to
+ * mean "actually produces food", not "is not bit-exactly zero".
+ */
+const viableFoodRateFloor = 1e-6;
+
 const viableFarmFloor = (population: number): number => {
   for (let farms = 1; farms < 64; farms += 1) {
     const rate = toNumber(
@@ -948,7 +962,7 @@ const viableFarmFloor = (population: number): number => {
         defaultContext,
       ).computeResourceRate("food"),
     );
-    if (rate > 0) return farms;
+    if (rate > viableFoodRateFloor) return farms;
   }
   return 64;
 };

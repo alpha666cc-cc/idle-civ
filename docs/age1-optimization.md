@@ -155,37 +155,62 @@ surrogate's approximation of them.
 
 ## 8. Current bounds
 
-> **Provenance.** These numbers were measured at commit `060b4e3` ("add player
-> strategies") with seed 42, from scratch. The engine has since been edited
-> uncommitted (`src/game/battle.ts`, `civilizationState.ts`, `tools/simulation.ts`,
-> `tools/strategies.ts`), so **re-run the tool before trusting any of them.** They
-> are recorded because the *ratios* are the finding, not the absolute digits.
-
-Measured at this objective (`{ type: "ageReach", ageId: "age1" }`,
-`gatherClicksPerAction: 10`, `actionsPerSecond: 5`, seed 42, from scratch).
+> **Provenance.** Re-measured on the engine *after* the `isResourceGatherable`
+> fix landed (assigning workers to `science` / `military` / `metalwork` / `trade`
+> now requires their source building). That fix is a genuine economy change —
+> before it, science workers produced science from turn zero with no university —
+> and it moved the numbers below by 5–10 %. Anything measured earlier on the
+> pre-fix engine is marked as such. Objective `{ type: "ageReach", ageId: "age1" }`,
+> `gatherClicksPerAction: 10`, `actionsPerSecond: 5`, from scratch. The sim is
+> seedless and deterministic, but **re-run before trusting absolute digits** — the
+> tree is under active edit.
 
 | Policy                                   | Age-1 arrival |
 | ---------------------------------------- | ------------- |
-| **`player` (hand-authored)**             | **2020 s**    |
+| **`player` (hand-authored)**             | **2147 s**    |
+| `economy`                                | 3371 s        |
 | `fast-age`                               | 4074 s        |
-| `production`                             | 4088 s        |
-| `balanced`                               | 4221 s        |
-| best CEM policy found (4 iterations × 8) | 4134 s        |
-| `cheapest`                               | 5531 s        |
-| `speedrun`                               | 7866 s        |
+| `production`                             | 4107 s        |
+| `military`                               | 4177 s        |
+| `balanced`                               | 4233 s        |
+| `trader`                                 | 4776 s        |
+| `cheapest`                               | 5544 s        |
+| `speedrun`                               | 8243 s        |
+| `research`                               | never arrives |
+| best CEM policy (pre-fix engine only)    | 4134 s        |
 
-**The hand-authored `player` strategy is 2× faster than the best machine-found
-policy**, and the search never beat even the shipped `fast-age` baseline. Two
-structural reasons, both now known:
+**The hand-authored `player` is ~1.6× faster than the best machine-found policy.**
+`AgeOnePolicy` assigns workers only to the four gatherable resources; `player`
+sends half its workers to science and 17.4 % to metalwork
+(`getResearchWorkerRatios`). That axis was absent from the search space — a hole
+in the policy family, not a tuning miss.
 
-- `AgeOnePolicy` assigns workers only to the four gatherable resources. `player`
-  assigns **38.7 % of workers to science and 17.4 % to metalwork**
-  (`getResearchWorkerRatios`). That axis was simply absent from the search space —
-  a hole in the family, not a tuning miss.
-- `AgeOnePolicy` is plan-first on research, so it never buys the cheap `food`
-  techs ahead of the army plan, and it never completes all 23.
+### 8.0 What the worker-gating fix invalidated
+
+The same measurement run on both engines:
+
+| science worker share | pre-fix | post-fix (current) |
+| ------------------- | ------- | ------------------ |
+| 0                   | 2988 s  | 2988 s             |
+| 0.25                | 2178 s  | 2352 s             |
+| **0.5**             | **1895 s** | **2169 s**      |
+| 0.7                 | 2074 s  | 2308 s             |
+
+The lever is real and still peaks at 0.5, but a third of the apparent effect
+(−36.6 % → −27.4 %) was the bug — workers earning science with no university.
+`player` already sits at the optimum, so this axis has nothing left to give.
+
+The fix also made `PlayerStrategy`'s **research pause inert**. The pause withheld
+research until First Fire was won; gating science workers behind the university
+(which unlocks on First Fire) now enforces the same ordering in the engine. A
+subclass with the pause removed arrives at **2147 s — bit-identical to
+`player`** — so it was deleted rather than shipped as a duplicate.
 
 ### 8.1 Feasibility is free; speed is not
+
+> Measured on the **pre-fix** engine. The feasibility frontier depends on unit
+> unlocks and the battle sim, neither of which the worker-gating fix touches, so
+> it should still hold — but it has not been re-run. Treat as indicative.
 
 The minimum research count that can *win* each battle, with a probe that has
 unlimited resources and free recruits (so cost is ignored entirely):
@@ -213,6 +238,10 @@ floor is 3.
 
 ### 8.2 The research *count* is nearly the wrong axis
 
+> Measured on the **pre-fix** engine and not re-run since. The conclusion is
+> about research, which the worker fix does not touch, but treat the thresholds
+> as indicative rather than current.
+
 Capping the research budget at N (intercepting every `buyResearch` out of
 `decideAction`, which is the only interception point that binds — overriding
 `getResearchAction` still leaves the simulator advisor free to buy) and running
@@ -223,7 +252,7 @@ the `player` ladder under the cap:
 | 0 – 17                  | never reaches age1, stalls at 2 battles |
 | 18 – 20                 | 3 battles                       |
 | 21 – 22                 | all 4 battles, still no age1 (never assembles 1500 buildings) |
-| 23                      | 2020 s — the only budget that works |
+| 23                      | 2147 s — the only budget that works |
 
 Only N = 23 arrives. So the count is *not* a tunable budget: below the full set
 the ladder stalls outright, and at 21–22 it wins every battle yet still cannot
@@ -238,6 +267,12 @@ order** — a much better-conditioned space, reachable by local search over
 "swap two adjacent techs" / "move one tech earlier", one simulation per neighbour.
 
 ### 8.3 The cost curve is a red herring — cost reduction is 280×
+
+> Measured on the **pre-fix** engine. The 280× figure is a ratio between the
+> unreduced curve and what a run actually paid, and the reduction stack
+> (four `allBuildings` 50 % cuts compounding to 1/16, plus `hallOfHalls` and the
+> enhancer tiers) has not changed — but the run that produced it has not been
+> re-measured.
 
 An attempted lower bound (total citizen bill ÷ peak food rate) **failed, and the
 way it failed is the useful result.** It returned a "floor" *larger* than the time
@@ -285,7 +320,8 @@ at the same objective and horizon:
 
 Group A spans **4107 s – 4776 s (16 %)** and group B spans **3371 s – 4074 s
 (21 %)** — with *identical research decisions*. Everything that separates them is
-worker split and building order.
+worker split and building order. (Those arrival times are post-fix; the research
+sets themselves are order-of-purchase data that the worker fix does not touch.)
 
 Two consequences:
 
@@ -299,15 +335,42 @@ Two consequences:
    Every balance number derived from these strategies is conditioned on one
    research assumption that is demonstrably poor: group A never buys
    `galley_design` or `torsion_physics` (it stalls at 21 techs), and `player` —
-   buying 23 in a different order — finishes in **1963 s**, roughly **half** of
+   buying 23 in a different order — finishes in **2147 s**, roughly **half** of
    `fast-age`.
 
-Order matters enormously in its own right: `player` (1963 s) and `speedrun`
-(7906 s) both buy all 23 techs and differ only in sequence — a **4× spread**.
+Order is a *minor* lever, and the earlier reading of this section was wrong.
+`player` (2147 s) and `speedrun` (8243 s) both buy all 23 techs and differ only in
+sequence — a ~4x spread. But they do not differ *only* in sequence: they also
+carry different worker splits, building priorities and research-timing rules.
+That ~4x was wrongly attributed to order.
 
-Since price depends only on the purchase ordinal, a 23-tech path always costs the
-same 10 131 950 science, so the research decision reduces cleanly to **which
-topological order** — a search space that local search can attack directly.
+`tools/age1-tech-search.ts --factorial` separates the two by running each base
+strategy under both known orders. **Post-fix engine:**
+
+| base strategy | advisor order | `player` order | order effect |
+| ------------- | ------------- | ------------- | ------------ |
+| `economy`     | 3371 s        | 3196 s        | **+175 s (5.2 %)** |
+| `player`      | 2237 s        | 2147 s        | **+90 s (4.0 %)** |
+| `fast-age`    | 4074 s        | 4246 s        | **−172 s (−4.2 %)** |
+
+The `player` order is *worse* than the shipped advisor order on `fast-age`. Holding
+the order fixed instead, the spread **across base strategies** is:
+
+| order held fixed | spread across bases |
+| ---------------- | ------------------- |
+| advisor          | 1837 s (**82.1 %**) |
+| `player`         | 2099 s (**97.8 %**) |
+
+So the honest attribution is roughly **20 : 1 in favour of the base strategy over
+the research order** — and note that `player` + advisor order is still 2237 s
+against `fast-age` + advisor at 4074 s, so `player`'s advantage is *entirely* in
+its base strategy, not its tech order.
+
+That base strategy is the worker split: `player` sends half its workers to science
+and 17.4 % to metalwork, on top of a research *pause* — which, since the
+worker-gating fix, has turned out to be inert (§8.0). The worker split is exactly
+the axis `AgeOnePolicy` never searched (§8), and it is already at its measured
+optimum in `player`, so there is nothing left on this axis for a search to find.
 
 **Everything in this table is best-known feasible, not proven optimal.** The gap
 to $T_{LB}$ is not closed and the event-driven NLP of §6 is documented but not
@@ -332,15 +395,40 @@ green typecheck does not catch:
 
 ## 9. Running the search
 
+Three tools, all deterministic (the simulation is seedless; only the CEM sampler
+is seeded, via `--seed`).
+
 ```powershell
-.\tools\node\npx.cmd tsx tools\age1-optimize.ts --iterations=8 --population=12 --elite=3 --horizon=20000 --baseline
+# 1. every strategy at the age-1 objective, plus a CEM search over AgeOnePolicy
+.\tools\node\npx.cmd tsx tools\age1-optimize.ts --iterations=8 --population=12 --elite=3 --horizon=12000 --baseline
+
+# 2. attribute a strategy's speed to research order vs. base strategy (2x2)
+.\tools\node\npx.cmd tsx tools\age1-tech-search.ts --factorial --horizon=12000
+
+# 3. sweep the science-worker share x research gate on a player descendant
+.\tools\node\npx.cmd tsx tools\age1-tuned.ts --grid --science=0,0.25,0.5,0.7 --gate=always
 ```
 
-Flags: `--iterations`, `--population`, `--elite`, `--horizon`, `--seed`,
-`--baseline` (re-run the shipped strategies to the same objective for a
-like-for-like comparison), `--out`. Reports land in `sim-output/age1-optimize/`
-(gitignored). Runtime scales roughly linearly in `iterations × population`; a
-20 000 s run is a few seconds, so 6 × 10 takes a few minutes.
+`--baseline` uses `getStrategyNames()`, not a hand-written list — an earlier
+hardcoded list silently omitted both `economy` and `player`, which is how two
+successive reports managed to name `fast-age` as the thing to beat.
+
+Reports go to `sim-output/` (gitignored). `age1-tuned.ts` also exports
+`TunedPlayer` and `playerParams()` for import. **Caveat:** each evaluation is a
+full simulation (~5–90 s depending on how long the run goes), and all three tools
+evaluate more than one policy per process — fine, since within a process repeats
+are bit-identical, but do not compare numbers across different trees.
+
+### Which of these are still worth running
+
+- `age1-optimize.ts` — **superseded.** Its policy family has no science/metalwork
+  worker axis and its 4134 s result is beaten by hand-set parameters. Keep it only
+  as a contrast for §8.
+- `age1-tech-search.ts --factorial` — **yes.** The 20 : 1 attribution is the
+  durable result, and the order search is a well-posed space (ordinal pricing means
+  any 23-tech path costs the same).
+- `age1-tuned.ts --grid` — **yes.** It is what found the science-share optimum and
+  what proved the research pause inert.
 
 ## 10. Caveats
 
@@ -358,4 +446,105 @@ like-for-like comparison), `--out`. Reports land in `sim-output/age1-optimize/`
 - **The search optimizes a policy family, not the game.** A better $T$ found here
   means _the ladder can be ordered differently_, not that the engine has more
   headroom. It is a pacing tool and a balance signal (AGENTS.md §7.2), not a
+## 11. Why `speedrun` stays 8th: the ROI weights are a zero-sum dial
+
+`speedrun` reaches age 1 in **6540 s** against `player`'s 2147 s. The obvious
+target is `tools/roi.ts`, and the stall is genuinely there — but fixing it does
+not compose with the other strategies. This section records the measurements so
+the next attempt does not repeat them.
+
+### The defect, stated exactly
+
+`speedrun`'s army freezes for 3000 s of the age:
+
+```
+t=2632  batt=2  army=3812   warrior:46
+                                  ← unchanged
+t=5632  batt=2  army=3812   warrior:46
+t=6232  batt=2  army=98309  spearman_bronze:62, chariot_bronze:8
+```
+
+Two things in `roi.ts` cause it together:
+
+1. **`military` is a `logGain` on raw army power.** Growing 3812 → 5000 is a 31%
+   gain but only 0.12 of a decade, so an incremental recruit scores ~0.1. A
+   logarithm is the wrong shape for a stockpile being filled toward a fixed
+   enemy.
+2. **The weights are not on a common scale.** `researchTime` and `campaignTime`
+   are both ratios capped at 1, yet are weighted **100** and **50**. Any research
+   therefore outscores every building and unit by two orders of magnitude.
+
+Together: units can never win a comparison, however badly the age needs them.
+
+### What was measured (all vs. the same 7200/60 baseline, "age1" column)
+
+| Change | speedrun | Other strategies |
+| --- | --- | --- |
+| `military` → threat-closure ratio, weight 12 | 109 → **105** | player `=`, balanced −1, military −4; cheapest +3, economy +3, fast-age +3, research +7, trader +5 |
+| … same, residual credit removed | 109 → 111 | research +5, trader +5, cheapest +3, economy +3, fast-age +3 |
+| … same, weight 3 | 109 → 109 `=` | cheapest +3, economy +3, fast-age +3, research +5, trader +5 |
+| `military` → closure **and** `researchTime` 100→8, `campaignTime` 50→8 | 109 → **82** | balanced −1, military −4, production −1; cheapest +3, economy +3, fast-age +3, research +7, player +5, trader +5 |
+
+Two things fall out of this table:
+
+- **Only the combined rescale buys a large speedrun win** (−27 min), and it costs
+  six strategies. Under AGENTS.md §7.2 that is a failed change, so it was reverted.
+- **The regressions survive at weight 3, where `speedrun` is unchanged.** They are
+  caused by the metric's *shape*, not its weight. Any evaluator that pays for
+  army differently re-ranks the other nine strategies, because they all call the
+  same `getBestRoiAction`.
+
+### The real blocker — and the fix that works
+
+`metricWeights` is not a per-strategy preference — it is a **shared objective
+function** for every strategy that uses the ROI. Making `speedrun` good at
+`roi.ts` means spending other strategies' time, so "speedrun faster, everyone
+else unchanged" is not a tuning problem, it is unreachable by editing the dial.
+
+It *is* reachable by making the dial **per call**:
+
+- `RoiOptions.metricWeights` — a partial overlay on the shared defaults.
+- `RoiOptions.militaryMetric` — `"logGain"` (the historical metric, still the
+  default) or `"threatClosure"`.
+
+`SpeedrunStrategy` opts into `{ military: 12, researchTime: 8, campaignTime: 8 }`
+plus `threatClosure`, and nothing else passes either option.
+
+### Result
+
+Measured in **one process against the same balance**, so the two arms cannot
+drift apart (the tree had just gained two commits, which invalidated every
+earlier recorded baseline):
+
+| | age 1 reached |
+| --- | --- |
+| `speedrun`, shared defaults | 6531 s |
+| `speedrun`, own profile | **4877 s** (−25%) |
+
+Every other strategy, measured in the same process: `player` 2180, `research`
+3206, `economy` 3544, `military` 4017, `production` 4124, `balanced` 4168,
+`fast-age` 4348, `trader` 5129, `cheapest` 5901 — **all unchanged**, since none
+of them passes the new options. `speedrun` moves from 8th to 7th, and the
+4877 s matches what the *global* rescale achieved (4920 s) while costing nobody
+else anything.
+
+Two things the measurements settled, both now recorded in the code:
+
+- **The metric shape matters, not the weight.** `military: 100` on its own gave
+  7448 s — *worse* than baseline. Scaling a signal that is already the wrong
+  shape only amplifies the mistake.
+- **`researchTime` is load-bearing for `speedrun`.** Cutting it to 8 alongside
+  `military: 100` made the strategy stop completing the age at all: it built an
+  army and never researched the units that army needed. The tech line is what
+  unlocks the recruits, so it cannot be starved.
+
+### Caveat on the surrounding test suite
+
+The suite is **not** green on this branch, independently of this work. At clean
+`HEAD` (`800cc89`) five files already fail (16 tests); with the working tree it
+is six files (18 tests). The extra two are in `tools/simulation.test.ts` and
+come from the **uncommitted dynamic research-order work** already present in
+`tools/strategies.ts` — not from the ROI profile. Verified directly: disabling
+`speedrun`'s profile entirely (`metricWeights = {}`, `militaryMetric =
+"logGain"`) leaves both failures in place.
   proof of a lower bound.

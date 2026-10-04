@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Pre-built simulation strategies for balance testing.
  * Each strategy implements decision-making logic for worker assignment,
  * building priorities, and battle timing.
@@ -39,7 +39,12 @@ import {
   unitDefinitions,
   type UnitDefinition,
 } from "../src/game/units.js";
-import { getBestRoiAction, type BattleRoiPlan } from "./roi.js";
+import {
+  getBestRoiAction,
+  type BattleRoiPlan,
+  type RoiMetricWeights,
+  type RoiMilitaryMetric,
+} from "./roi.js";
 import {
   getTradeRouteAction,
   tradeProfile,
@@ -153,6 +158,32 @@ const hasReachedResearchAge = (
   return researchAge <= currentAgeIndex;
 };
 
+const playerResearchOrder = [
+  "agriculture",
+  "pottery",
+  "writing",
+  "sling_throwing",
+  "tribal_organization",
+  "woodcraft_hulls",
+  "forestry",
+  "mining",
+  "stone_working",
+  "city_planning",
+  "domestication",
+  "trapping",
+  "animal_husbandry",
+  "weaving",
+  "calendar",
+  "archery_mechanics",
+  "flint_knapping",
+  "bronze_smelting",
+  "bronze_casting",
+  "wheel_axle",
+  "galley_design",
+  "composite_bowcraft",
+  "torsion_physics",
+] as const;
+
 const hasResearchBonus = (researchId: string, destination: string): boolean =>
   researchDefinitions
     .find(({ key }) => key === researchId)
@@ -182,6 +213,7 @@ const getBestResourceResearch = (
 /** Research priorities from science throughput, the next army's costs, and unlocks. */
 const getResearchAdvisorOrder = (
   state: CivilizationState,
+  deferPopulationResearch = false,
 ): readonly string[] => {
   const order: string[] = [];
   const addPath = (researchId: string) => {
@@ -197,13 +229,12 @@ const getResearchAdvisorOrder = (
   for (const research of scienceBoosts) addPath(research.key);
 
   const populationTarget = getAgeRouteTargetPopulation(state);
-  if (
+  const foodResearch =
     populationTarget > 0 &&
     state.population.lt(ExpNumber.fromNumber(populationTarget))
-  ) {
-    const foodResearch = getBestResourceResearch(state, "food");
-    if (foodResearch) addPath(foodResearch);
-  }
+      ? getBestResourceResearch(state, "food")
+      : undefined;
+  if (!deferPopulationResearch && foodResearch) addPath(foodResearch);
 
   const battle = getRequiredBattle(state);
   const battlesWon = battle
@@ -215,10 +246,10 @@ const getResearchAdvisorOrder = (
   const shouldPrepareArmy = Boolean(
     battle && (battle.age > 0 || battlesWon > 0),
   );
+
   const targetUnits = shouldPrepareArmy
     ? getRequiredBattleUnitTargets(state)
     : [];
-
   for (const unit of targetUnits) {
     const costResources = [...unit.costs].sort((left, right) =>
       right.base.gt(left.base) ? 1 : left.base.gt(right.base) ? -1 : 0,
@@ -241,51 +272,139 @@ const getResearchAdvisorOrder = (
     if (unlockResearch) addPath(unlockResearch.key);
   }
 
+  if (deferPopulationResearch && foodResearch) addPath(foodResearch);
+
   return [...new Set(order)].filter(
     (researchId) => !state.isResearchBought(researchId),
   );
 };
 
-const researchFocusedOrder = [
-  "agriculture",
-  "pottery",
-  "writing",
-  "tribal_organization",
-  "sling_throwing",
-  "archery_mechanics",
-  "flint_knapping",
-  "mining",
-  "stone_working",
-] as const;
+const getResearchPriority = (
+  state: CivilizationState,
+  research: (typeof researchDefinitions)[number],
+): number => {
+  const battle = getRequiredBattle(state);
+  const targetUnits = battle ? getRequiredBattleUnitTargets(state) : [];
+  const targetUnitKeys = new Set(targetUnits.map(({ key }) => key));
+  const targetResourceKeys = new Set<ResourceKey>();
 
-const playerResearchOrder = [
-  "agriculture",
-  "pottery",
-  "writing",
-  "sling_throwing",
-  "tribal_organization",
-  "woodcraft_hulls",
-  "forestry",
-  "mining",
-  "stone_working",
-  "city_planning",
-  "domestication",
-  "trapping",
-  "animal_husbandry",
-  "weaving",
-  "calendar",
-  "archery_mechanics",
-  "flint_knapping",
-  "bronze_smelting",
-  "bronze_casting",
-  "wheel_axle",
-  "galley_design",
-  "composite_bowcraft",
-  "torsion_physics",
-] as const;
+  for (const unit of targetUnits) {
+    for (const { resource } of state.getUnitCost(unit.key, 1)) {
+      targetResourceKeys.add(resource as ResourceKey);
+    }
+  }
 
-const hasCompletedPlayerResearch = (state: CivilizationState): boolean =>
-  playerResearchOrder.every((researchId) => state.isResearchBought(researchId));
+  const nextBattleEligible =
+    battle &&
+    (research.unlocks.includes(battle.key) ||
+      research.unlocks.some((unlock) => targetUnitKeys.has(unlock)));
+
+  let score = 0;
+
+  if (nextBattleEligible) score += 2000;
+  if (research.unlocks.some((unlock) => targetUnitKeys.has(unlock))) {
+    score += 1000;
+  }
+
+  for (const bonus of research.bonuses) {
+    const value = bonus.value.toNumber();
+    if (!Number.isFinite(value)) continue;
+
+    if (bonus.type === "attributeMultiplier") {
+      score += (value - 1) * 200;
+      if (bonus.destination === "science") score += value * 250;
+      if (targetResourceKeys.has(bonus.destination as ResourceKey)) {
+        score += value * 350;
+      }
+    }
+
+    if (bonus.type === "attributeFlat") {
+      if (bonus.destination === "science") score += value * 120;
+      if (targetResourceKeys.has(bonus.destination as ResourceKey)) {
+        score += value * 150;
+      }
+    }
+
+    if (
+      bonus.type === "costReductionPercent" ||
+      bonus.type === "costReductionFactor" ||
+      bonus.type === "costReductionBase"
+    ) {
+      score += value * 150;
+    }
+  }
+
+  const currentAge = state.getCurrentAge();
+  if (currentAge) {
+    const currentAgeIndex = ageDefinitions.findIndex(
+      ({ key }) => key === currentAge.key,
+    );
+    if (research.age === currentAgeIndex) score += 180;
+    if (research.age < currentAgeIndex) score += 25;
+  }
+
+  const isGateForCurrentGoal =
+    research.prerequisites.some(
+      (prerequisite) =>
+        targetUnitKeys.has(prerequisite) ||
+        (battle && research.unlocks.includes(prerequisite)),
+    ) || research.unlocks.some((unlock) => targetUnitKeys.has(unlock));
+  if (isGateForCurrentGoal) score += 400;
+
+  return score;
+};
+
+const getDynamicResearchOrder = (
+  state: CivilizationState,
+  deferPopulationResearch = false,
+): string[] => {
+  const advisorOrder = new Map(
+    getResearchAdvisorOrder(state, deferPopulationResearch).map(
+      (researchId, index) => [researchId, index],
+    ),
+  );
+
+  return researchDefinitions
+    .filter(
+      (research) =>
+        state.isResearchUnlocked(research.key) &&
+        !state.isResearchBought(research.key),
+    )
+    .sort((left, right) => {
+      const advisorDelta =
+        (advisorOrder.get(left.key) ?? Number.MAX_SAFE_INTEGER) -
+        (advisorOrder.get(right.key) ?? Number.MAX_SAFE_INTEGER);
+      if (advisorDelta !== 0) return advisorDelta;
+
+      const priorityDelta =
+        getResearchPriority(state, right) - getResearchPriority(state, left);
+      if (priorityDelta !== 0) return priorityDelta;
+
+      return left.age - right.age || left.key.localeCompare(right.key);
+    })
+    .map(({ key }) => key);
+};
+
+const hasCompletedPlayerResearch = (state: CivilizationState): boolean => {
+  const currentAge = state.getCurrentAge();
+  const currentAgeIndex = currentAge
+    ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
+    : 0;
+
+  if (currentAgeIndex === 0) {
+    return playerResearchOrder.every((researchId) =>
+      state.isResearchBought(researchId),
+    );
+  }
+
+  return researchDefinitions
+    .filter((research) => research.age <= currentAgeIndex)
+    .every(
+      (research) =>
+        !state.isResearchUnlocked(research.key) ||
+        state.isResearchBought(research.key),
+    );
+};
 
 const hasCompletedCurrentAgeResearch = (state: CivilizationState): boolean => {
   const age = state.getCurrentAge();
@@ -293,14 +412,18 @@ const hasCompletedCurrentAgeResearch = (state: CivilizationState): boolean => {
   const ageIndex = ageDefinitions.findIndex(({ key }) => key === age.key);
   return researchDefinitions
     .filter((research) => research.age === ageIndex)
-    .every(({ key }) => state.isResearchBought(key));
+    .every(
+      (research) =>
+        !state.isResearchUnlocked(research.key) ||
+        state.isResearchBought(research.key),
+    );
 };
 
 /** The next purchase on the advisor's current science/battle research plan. */
 export const getRequiredResearchAction = (
   state: CivilizationState,
 ): SimulationAction | null => {
-  const next = getResearchAdvisorOrder(state).find((researchId) =>
+  const next = getDynamicResearchOrder(state).find((researchId) =>
     state.isResearchUnlocked(researchId),
   );
   return next && state.canBuyResearch(next)
@@ -444,7 +567,7 @@ const requiredBattleBuildings: readonly BuildingKey[] = [
  * The mandatory route through the first age, in the order the campaign requires.
  *
  * Each battle's victory bonus raises the population cap, so the order is not a
- * preference â€” it is the only path that works:
+ * preference — it is the only path that works:
  *
  *   1. ramp to 90 people, which unlocks the barracks
  *   2. win the first battle, which raises the cap
@@ -494,7 +617,7 @@ export const getAgeRouteTargetPopulation = (
  *
  * Housing is deliberately exempt from the target check below. The route's
  * population target is about *citizens*, but a settlement can hit that target
- * and still be unable to grow because `peopleCapacity` is full â€” and the house
+ * and still be unable to grow because `peopleCapacity` is full — and the house
  * that lifts it is exactly the purchase the route exists to make. Returning
  * null the moment `population >= target` therefore locked the settlement at
  * whichever capacity it happened to reach: it had `canBuild("house") === true`
@@ -573,7 +696,7 @@ export const getAgeRouteGrowthAction = (
     // 1 food/second, so past roughly the first few dozen citizens the drain
     // outruns what a handful of clicks per action adds, and the route gathers
     // forever without ever affording the next citizen. A farm raises the
-    // *passive* rate, which is the only thing that scales â€” so when food is the
+    // *passive* rate, which is the only thing that scales — so when food is the
     // binding constraint, buy the farm that multiplies food production instead
     // of clicking for more of it.
     if (
@@ -607,7 +730,7 @@ export const getRequiredBattlePreparationAction = (
       if (state.canBuild(building)) {
         return { type: "build", building, count: 1 };
       }
-      // Not affordable yet â€” gather toward the most-missing gatherable resource.
+      // Not affordable yet — gather toward the most-missing gatherable resource.
       const costs = state.getBuildingCost(building, 0, 1);
       const missing = costs
         .filter(({ resource, base }) => state.resources[resource]?.lt(base))
@@ -626,7 +749,7 @@ export const getRequiredBattlePreparationAction = (
           return left.resource.localeCompare(right.resource);
         });
       if (missing[0]) return { type: "gather", resource: missing[0].resource };
-      // All costs are either met or not gatherable â€” do not block on this building.
+      // All costs are either met or not gatherable — do not block on this building.
     }
   }
   return null;
@@ -636,7 +759,7 @@ export const getRequiredBattlePreparationAction = (
  * Returns the age transition action once the current age's data-defined
  * requirements are satisfied.
  *
- * `canEnterAge` is the whole game rule â€” the live era card gates on exactly that
+ * `canEnterAge` is the whole game rule — the live era card gates on exactly that
  * and nothing else (every battle in the age won, plus the age's building
  * target). This helper deliberately adds no population requirement of its own:
  * population is capped by housing capacity, so a settlement can legitimately
@@ -713,8 +836,8 @@ const simulatorContext = (state: CivilizationState): BattleSimulatorContext => {
 };
 
 /** Candidate units the simulator may consider for the current campaign battle.
- *  Only includes units the player has actually unlocked â€” no speculative research
- *  unlocks â€” so the solver works with the actual army that can be fielded today. */
+ *  Only includes units the player has actually unlocked — no speculative research
+ *  unlocks — so the solver works with the actual army that can be fielded today. */
 const simulatorBattleCandidates = (
   state: CivilizationState,
 ): UnitDefinition[] => {
@@ -820,7 +943,7 @@ const getFirstSimulatorUnit = (
  * of its types leaves the army short and the battle unwinnable. Because the
  * runner spends one action per tick, returning a single type also capped
  * recruitment throughput at one recruit per tick, which the geometric unit cost
- * curve outruns â€” the settlement bought one warrior at a time while the price of
+ * curve outruns — the settlement bought one warrior at a time while the price of
  * the next climbed faster than the army grew, and it could never win the second
  * battle. One action per recommended type keeps the plan intact and buys the
  * whole shortfall in a single tick.
@@ -966,7 +1089,7 @@ const getSimulatorGatherAction = (
   if (!plan) return null;
   const unit = getFirstSimulatorUnit(state, plan);
   if (unit) {
-    // Always price the *next single unit* â€” pricing the whole remaining
+    // Always price the *next single unit* — pricing the whole remaining
     // batch inflates food's raw deficit above military's, crowding out the
     // real bottleneck. One-at-a-time pricing keeps the sort honest.
     const costs = state.getUnitCost(unit.unitId, 1);
@@ -1156,7 +1279,7 @@ const getCheapestPurchaseCandidate = (
  * The MAX probes are capacity-aware, so this cannot overbuild: a building stops
  * at its cap (and `people` additionally at the housing limit) and units stop at
  * what is payable. The result is still re-clamped to at least 1 because the
- * caller has already proven one copy is affordable â€” this only ever widens a
+ * caller has already proven one copy is affordable — this only ever widens a
  * purchase that was going to happen anyway, never introduces a new one.
  */
 const withMaxAffordableCount = (
@@ -1364,7 +1487,7 @@ abstract class BaseStrategy implements SimulationStrategy {
    * army actually wins. Re-implementing that test as a boolean here made this
    * method an exact restatement of `getRequiredBattleAction(state) !== null`,
    * so the wrapper was an identity function that ran the same un-memoized
-   * battle simulation twice per decision â€” and the runner runs it a third time
+   * battle simulation twice per decision — and the runner runs it a third time
    * in `launchBattle`. One authority for "can we win", here.
    */
   protected shouldLaunchBattle(state: CivilizationState): boolean {
@@ -1381,7 +1504,7 @@ abstract class BaseStrategy implements SimulationStrategy {
   /**
    * The battle to launch this turn, or null. The single entry point every
    * `decideAction` uses for combat, so `shouldLaunchBattle` is genuinely wired
-   * in rather than a dead override â€” and because the win check lives in
+   * in rather than a dead override — and because the win check lives in
    * `getRequiredBattleAction`, overriding this can only ever make a strategy
    * fight *less*, never launch a battle it would lose.
    */
@@ -1719,7 +1842,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     // imbalance. Configuring a route spends no resources and builds nothing, so it
     // never competes with growth. It sits here rather than lower because the
     // ladder's last resort is `gather`, and a gather consumes the whole simulated
-    // second â€” a route waiting below it would almost never get a turn at all.
+    // second — a route waiting below it would almost never get a turn at all.
     const tradeAction = this.getTradeAction(state);
     if (tradeAction) return tradeAction;
 
@@ -1758,7 +1881,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     // Priority 7: Buy the cheapest legal purchase when nothing above is
     // affordable. Without this the ladder can stall on a hand-ordered priority
     // list: the priority building stays unaffordable while cheap buildings and
-    // units â€” which is what actually grows the settlement â€” go unpurchased.
+    // units — which is what actually grows the settlement — go unpurchased.
     // This is the same fallback the `cheapest` strategy always takes, so every
     // strategy inherits at least its progress, then adds its own priorities.
     const cheapest = getCheapestPurchaseCandidate(state);
@@ -1769,7 +1892,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     // Priority 8: Food safety. A citizen eats 1 food/second and the next citizen
     // costs more than the first (the cost curve is per-copy), so a settlement
     // with one citizen can sit at a small non-zero food balance it can never
-    // spend â€” one worker cannot out-produce the citizen's own drain. Waiting for
+    // spend — one worker cannot out-produce the citizen's own drain. Waiting for
     // food to hit exactly zero is too late: the buffer never gets there. This is
     // the general form of the age route's own food step, kept as a backstop for
     // once the route stops watching population.
@@ -1827,7 +1950,7 @@ abstract class BaseStrategy implements SimulationStrategy {
    * Find the cheapest affordable unlocked upgrade.
    */
   protected getBestUpgrade(state: CivilizationState): SimulationAction | null {
-    // upgradeDefinitions is not directly accessible here â€” we use state methods
+    // upgradeDefinitions is not directly accessible here — we use state methods
     // Try to buy the cheapest affordable upgrade by scanning known upgrade ids
     // We rely on state.getUpgradeFailureReason being null for buyable ones
     const candidates = state.getAffordableUpgrades?.() ?? [];
@@ -2262,8 +2385,8 @@ export class ResearchStrategy extends BaseStrategy {
   ): SimulationAction | null {
     if (hasCompletedCurrentAgeResearch(state)) return null;
     if (!state.defeatedEncounters.includes("age0_1_first_fire")) return null;
-    const nextResearch = playerResearchOrder.find(
-      (researchId) => !state.isResearchBought(researchId),
+    const nextResearch = getDynamicResearchOrder(state, true).find(
+      (researchId) => state.isResearchUnlocked(researchId),
     );
     if (!nextResearch || !state.canBuyResearch(nextResearch)) return null;
     return { type: "buyResearch", researchId: nextResearch };
@@ -2388,15 +2511,23 @@ export class PlayerStrategy extends ResearchStrategy {
     ) {
       return null;
     }
-    const nextResearch = this.getPlayerResearchOrder().find(
-      (researchId) => !state.isResearchBought(researchId),
+    const nextResearch = this.getPlayerResearchOrder(state).find(
+      (researchId) =>
+        state.isResearchUnlocked(researchId) &&
+        !state.isResearchBought(researchId),
     );
     if (!nextResearch || !state.canBuyResearch(nextResearch)) return null;
     return { type: "buyResearch", researchId: nextResearch };
   }
 
-  protected getPlayerResearchOrder(): readonly string[] {
-    return playerResearchOrder;
+  protected getPlayerResearchOrder(
+    state?: CivilizationState,
+  ): readonly string[] {
+    if (!state) return playerResearchOrder;
+    const currentAge = state.getCurrentAge();
+    return currentAge && currentAge.key !== ageDefinitions[0]?.key
+      ? getDynamicResearchOrder(state, true)
+      : playerResearchOrder;
   }
 
   private isResearchPaused(state: CivilizationState): boolean {
@@ -2408,9 +2539,7 @@ export class PlayerStrategy extends ResearchStrategy {
   }
 
   protected getSimulatorActions(state: CivilizationState): SimulationAction[] {
-    return this.isResearchPaused(state)
-      ? getSimulatorUnitActions(state, getSimulatorBattlePlan(state))
-      : super.getSimulatorActions(state);
+    return getSimulatorUnitActions(state, getSimulatorBattlePlan(state));
   }
 
   protected getSimulatorGather(
@@ -2648,8 +2777,8 @@ export class PlayerStrategy extends ResearchStrategy {
  * Trade-focused strategy: bank trade power at the market and route it at whatever
  * the settlement is most out of balance on.
  *
- * The market unlocks in the Iron Age, so this strategy's route â€” like every other
- * strategy's â€” is dormant until then and starts from an empty reserve. Until the
+ * The market unlocks in the Iron Age, so this strategy's route — like every other
+ * strategy's — is dormant until then and starts from an empty reserve. Until the
  * reserve can move something, the advisor refuses to open a route at all rather
  * than holding the single slot on a dead one.
  */
@@ -2723,13 +2852,13 @@ export class TradeStrategy extends BaseStrategy {
  * treat the size of the gain as unverified; the direction is what motivated this
  * subclass, and the "no pause" column above is current-engine data.
  *
- * This subclass removed only the pause and inherited everything else â€” the
+ * This subclass removed only the pause and inherited everything else — the
  * research order, the science-heavy worker ratios, the opening, the building
- * plan â€” so a `player` vs `unpaused` comparison would have isolated exactly one
+ * plan — so a `player` vs `unpaused` comparison would have isolated exactly one
  * variable. **It was built, measured, and then deleted.** On the current engine
  * it arrives at 2147 s, bit-identical to `player`: the pause is inert. Fixing
  * `assignWorker` to respect `isResourceGatherable` gated science workers behind
- * the university, which unlocks on First Fire â€” so the engine now enforces the
+ * the university, which unlocks on First Fire — so the engine now enforces the
  * ordering the pause was hand-enforcing. The finding that *was* real on the
  * previous engine does not survive the fix, and a strategy that duplicates
  * `player` is worse than no strategy.
@@ -2746,6 +2875,44 @@ export class TradeStrategy extends BaseStrategy {
 export class SpeedrunStrategy extends BaseStrategy {
   name = "speedrun";
   description = "Buy the best time-adjusted ROI purchase for fast progression";
+  /**
+   * This strategy's valuation profile, applied only to its own ROI calls.
+   *
+   * The evaluator's weights are a shared objective function, so tuning them in
+   * place re-ranks every strategy at once — measured in
+   * `docs/age1-optimization.md` §11, where raising the shared `military` weight
+   * cost six other strategies 3–7 minutes each. Overriding the profile here keeps
+   * the dial local: `military` is raised so a recruit competes with research on
+   * equal terms, instead of losing to it by two orders of magnitude. Unspecified
+   * keys inherit the shared defaults.
+   *
+   * Only `military` is raised. Pulling `researchTime` down as well was measured
+   * too, and it is a trap: `military: 100, researchTime: 8` left all nine other
+   * strategies bit-identical (confirming the override really is local) but made
+   * `speedrun` stop completing the age at all — it builds an army and never
+   * researches the units that army needs. The tech line is load-bearing.
+   */
+  protected readonly metricWeights: Partial<RoiMetricWeights> = {
+    military: 12,
+    researchTime: 8,
+    campaignTime: 8,
+  };
+
+  /**
+   * How this strategy measures a purchase's military value.
+   *
+   * `"threatClosure"` scores a recruit by the fraction of the shortfall to the
+   * pending enemy it closes, rather than by the change in `log10` of army power.
+   * The default is the wrong shape for a stockpile being filled toward a fixed
+   * enemy: 3812 → 5000 is a 31% gain but 0.12 of a decade, so each incremental
+   * recruit scored ~0.1 and this strategy stopped recruiting altogether — the
+   * army froze at 46 warriors for 3000 seconds of the age.
+   *
+   * `metricWeights.military` alone does *not* fix it (measured: 7448 s, worse
+   * than the 6531 s baseline). The metric shape is what matters; the weight only
+   * scales a signal that was already wrong.
+   */
+  protected readonly militaryMetric: RoiMilitaryMetric = "threatClosure";
   private roiGatherFocus:
     | {
         readonly resource: ProductionResourceKey;
@@ -2760,13 +2927,13 @@ export class SpeedrunStrategy extends BaseStrategy {
    *
    * This is the whole point of the strategy. The previous version hardcoded
    * `science: 0.05` alongside a hand-picked food/wood/stone/gold mix, and
-   * measured 8243 s â€” eighth of ten. The science share is the single largest
+   * measured 8243 s — eighth of ten. The science share is the single largest
    * lever in the economy (0 -> 2988 s, 0.25 -> 2352 s, 0.5 -> 2169 s,
    * 0.7 -> 2308 s), and hardcoding it meant the strategy was pinned to whatever
    * the balance happened to be on the day it was written. It also could not
    * survive a rebalance, which is the failure mode that matters most.
    *
-   * The principle instead â€” *longest pole gets the workers*:
+   * The principle instead — *longest pole gets the workers*:
    *
    *   1. collect the resources the next few purchases need (the remaining army
    *      for the next battle, the next tech, the next building);
@@ -2888,6 +3055,8 @@ export class SpeedrunStrategy extends BaseStrategy {
       // spends the remainder of the age fighting battles it never armed for.
       includeUnits: true,
       populationTarget: getAgeRouteTargetPopulation(state),
+      metricWeights: this.metricWeights,
+      militaryMetric: this.militaryMetric,
       planBattle: (battleState, battleId) =>
         planBattleForRoi(
           battleState,
@@ -2930,11 +3099,11 @@ export class SpeedrunStrategy extends BaseStrategy {
     // NOTE: an "army reserve" (recruit toward N x the minimum winning army) was
     // tried here and removed. It is the obvious fix for the army freezing at 46
     // warriors for fifty minutes, and it does not work at this layer:
-    //   - run BEFORE the ROI evaluator, it never yields â€” the settlement spends
+    //   - run BEFORE the ROI evaluator, it never yields — the settlement spends
     //     everything on recruits, never researches, never unlocks the bronze
     //     units, and stalls at the second battle (measured: never reaches the
     //     Iron Age, at both a 2x and a 1.5x reserve);
-    //   - run HERE, it never fires â€” the evaluator always has some cheaper
+    //   - run HERE, it never fires — the evaluator always has some cheaper
     //     purchase queued, so the fallback is unreachable (7751 s either way).
     // The stall is not a "buy more soldiers" problem; the minimum-army plan is
     // simply empty once satisfied, so army growth has to be *valued inside* the

@@ -21,6 +21,7 @@ import {
   type ResourceKey,
 } from "../src/game/attributes.js";
 import { isBuyableUnit, unitDefinitions } from "../src/game/units.js";
+import { armyPower } from "../src/game/battle.js";
 import { isResourceGatherable, type SimulationAction } from "./simulation.js";
 
 export type RoiBuyableKind =
@@ -51,6 +52,26 @@ export type BattleRoiPlan = {
   readonly research: readonly string[];
 };
 
+/**
+ * How a purchase's military value is measured.
+ *
+ * - `"logGain"` (default) — the historical metric: the change in `log10` of raw
+ *   army power. Preserved exactly so existing callers are unaffected.
+ * - `"threatClosure"` — the fraction of the shortfall to the pending enemy that
+ *   a purchase closes, bounded to [0, 1].
+ *
+ * A logarithm is the wrong shape for a stockpile being filled toward a *fixed*
+ * enemy: growing 3812 → 5000 is a 31% gain but only 0.12 of a decade, so every
+ * incremental recruit scored ~0.1 and a speed-running strategy simply stopped
+ * recruiting (measured as an army frozen at 46 warriors for 3000 seconds).
+ * Closure asks the right question — "how much nearer the next fight is this" —
+ * and is scale-free, so it holds across ages and rebalances.
+ *
+ * It is opt-in per call because changing it for every strategy at once re-ranked
+ * all of them (see `docs/age1-optimization.md` §11).
+ */
+export type RoiMilitaryMetric = "logGain" | "threatClosure";
+
 export type RoiOptions = {
   /** Clicks modeled by one gather action in the headless runner. */
   gatherClicksPerSecond?: number;
@@ -66,6 +87,25 @@ export type RoiOptions = {
     state: CivilizationState,
     battleId: string,
   ) => BattleRoiPlan | null;
+  /**
+   * Per-call valuation profile, overlaid on the shared defaults.
+   *
+   * The weights describe what "progress" means to the caller, and different
+   * strategies genuinely disagree: a speed-running policy should pay more for
+   * closing the next battle's shortfall, while an economy policy should not.
+   * Because these numbers are shared, changing them in place silently re-ranks
+   * every strategy (see `docs/age1-optimization.md` §11); overriding them here
+   * keeps the dial opt-in. Only the keys supplied are changed.
+   */
+  metricWeights?: Partial<RoiMetricWeights>;
+  /**
+   * Per-call military metric, defaulting to the historical `logGain`.
+   *
+   * See `RoiMilitaryMetric`. Left unset, army value is measured exactly as it
+   * always was; a caller opts in explicitly, because changing this for every
+   * strategy at once re-ranks all of them.
+   */
+  militaryMetric?: RoiMilitaryMetric;
 };
 
 export type RoiMetrics = {
@@ -434,6 +474,56 @@ const availableBuyableUnitCount = (state: CivilizationState): number =>
     (unit) => isBuyableUnit(unit) && state.isUnitAvailable(unit.key),
   ).length;
 
+const compareMilitary = (
+  before: CivilizationState,
+  after: CivilizationState,
+  mode: RoiMilitaryMetric,
+): number => {
+  const armyBefore = before.getArmyPower();
+  const armyAfter = after.getArmyPower();
+  if (mode === "threatClosure") {
+    const beforePower = beforePowerOf(armyBefore);
+    const afterPower = beforePowerOf(armyAfter);
+    if (afterPower === null || beforePower === null) return 0;
+    const gained = afterPower - beforePower;
+    if (gained <= 0) return 0;
+    const threat = pendingThreatPower(before);
+    if (threat <= 0) {
+      // No enemy pending: fall back to proportional growth so army keeps a
+      // bounded value between campaigns.
+      return Math.min(1, gained / Math.max(1, beforePower));
+    }
+    const gap = threat - beforePower;
+    // Already able to answer the pending enemy: credit only the part of the gain
+    // small relative to the enemy, so a modest buffer for the *next* encounter
+    // is still worth something while mass over-building stops paying.
+    return gap <= 0
+      ? Math.min(1, gained / threat)
+      : Math.min(1, gained / gap);
+  }
+  return logGain(armyBefore, armyAfter);
+};
+
+/** Finite JS reading of an `ExpNumber`, or null when it is not representable. */
+const beforePowerOf = (value: ExpNumber): number | null => {
+  const result = value.toNumber();
+  return Number.isFinite(result) ? result : null;
+};
+
+/**
+ * Army power of the enemy the campaign is currently offering, or 0 when no
+ * battle is pending. Read through the engine so enemy research boosts apply and
+ * no content ids are needed here.
+ */
+const pendingThreatPower = (state: CivilizationState): number => {
+  const battle = state.getNextBattle();
+  if (!battle) return 0;
+  const stacks = state.getEnemyStacks(battle.key);
+  if (stacks.length === 0) return 0;
+  const power = armyPower(stacks).toNumber();
+  return Number.isFinite(power) ? Math.max(0, power) : 0;
+};
+
 const compareProduction = (
   before: CivilizationState,
   after: CivilizationState,
@@ -526,9 +616,8 @@ const buildMetrics = (
   buyable: RoiBuyable,
   populationTarget?: number,
   campaignTime = 0,
+  militaryMetric: RoiMilitaryMetric = "logGain",
 ): RoiMetrics => {
-  const armyBefore = before.getArmyPower();
-  const armyAfter = after.getArmyPower();
   const capacity = compareCapacity(before, after);
   const ageIndex = ageDefinitions.findIndex(({ key }) => key === buyable.id);
   const ageResearchComplete =
@@ -549,7 +638,7 @@ const buildMetrics = (
     production: compareProduction(before, after),
     capacity,
     population: logGain(before.population, after.population),
-    military: logGain(armyBefore, armyAfter),
+    military: compareMilitary(before, after, militaryMetric),
     unlocks:
       buyable.kind === "research"
         ? Math.max(
@@ -646,12 +735,28 @@ const cachedMetrics = (
 };
 
 /**
+ * The shared default weights. See `metricWeights` in `RoiOptions` for why this
+ * is overridable per call rather than tuned in place.
+ */
+export type RoiMetricWeights = {
+  production: number;
+  capacity: number;
+  population: number;
+  military: number;
+  unlocks: number;
+  costSavings: number;
+  researchTime: number;
+  campaign: number;
+  campaignTime: number;
+};
+
+/**
  * Metric weights. Capacity is weighted heavily on purpose: a battle that doubles
  * `townHallCapacity` or `barracksCapacity` unlocks more houses, more barracks
  * and therefore more population, which is worth far more than its log gain
  * alone suggests. Tuned by feel, so they live in one place.
  */
-const metricWeights = {
+const defaultMetricWeights: RoiMetricWeights = {
   production: 1,
   capacity: 2.5,
   population: 0.7,
@@ -661,18 +766,39 @@ const metricWeights = {
   researchTime: 100,
   campaign: 20,
   campaignTime: 50,
-} as const;
+};
 
-const weightedBenefit = (metrics: RoiMetrics): number =>
-  metrics.production * metricWeights.production +
-  metrics.capacity * metricWeights.capacity +
-  metrics.population * metricWeights.population +
-  metrics.military * metricWeights.military +
-  metrics.unlocks * metricWeights.unlocks +
-  metrics.costSavings * metricWeights.costSavings +
-  metrics.researchTime * metricWeights.researchTime +
-  metrics.campaign * metricWeights.campaign +
-  metrics.campaignTime * metricWeights.campaignTime;
+/**
+ * Resolve the weights for one evaluation, overlaying a caller's profile on the
+ * shared default.
+ *
+ * This exists because the weights are a **shared objective function**, not a
+ * global constant. Every strategy that calls `getBestRoiAction` ranks its
+ * purchases with these same numbers, so moving one weight re-ranks all of them
+ * at once — measured in `docs/age1-optimization.md` §11, where raising the
+ * weight on `military` sped `speedrun` up by 27 minutes and cost six other
+ * strategies 3 to 7 minutes each. A strategy that genuinely wants a different
+ * valuation must therefore ask for one explicitly rather than editing the dial
+ * out from under everyone else.
+ */
+const resolveMetricWeights = (
+  override?: Partial<RoiMetricWeights>,
+): RoiMetricWeights =>
+  override ? { ...defaultMetricWeights, ...override } : defaultMetricWeights;
+
+const weightedBenefit = (
+  metrics: RoiMetrics,
+  weights: RoiMetricWeights,
+): number =>
+  metrics.production * weights.production +
+  metrics.capacity * weights.capacity +
+  metrics.population * weights.population +
+  metrics.military * weights.military +
+  metrics.unlocks * weights.unlocks +
+  metrics.costSavings * weights.costSavings +
+  metrics.researchTime * weights.researchTime +
+  metrics.campaign * weights.campaign +
+  metrics.campaignTime * weights.campaignTime;
 
 /**
  * The cost of one more recruit toward a plan: what a single buy action actually
@@ -800,6 +926,11 @@ export const getBuyableRoi = (
     options.gatherClicksPerSecond,
     defaultGatherClicksPerSecond,
   );
+  // Resolved once per candidate. It is deliberately *not* part of the metrics
+  // cache key: `RoiMetrics` are raw, weight-independent readings, so callers
+  // with different profiles still share one cache entry.
+  const weights = resolveMetricWeights(options.metricWeights);
+  const militaryMetric = options.militaryMetric ?? "logGain";
 
   // A battle is not a purchase: its cost is the army the simulator says it
   // takes, and its gain is whatever winning actually does to the state.
@@ -823,7 +954,7 @@ export const getBuyableRoi = (
     const metrics = cachedMetrics(
       buyable,
       structureKey,
-      String(options.populationTarget ?? ""),
+      `${options.populationTarget ?? ""}:${militaryMetric}`,
       () => {
         const resolved = evaluateBattle(state, buyable.id, plan);
         return resolved
@@ -832,6 +963,8 @@ export const getBuyableRoi = (
               resolved.won,
               buyable,
               options.populationTarget,
+              0,
+              militaryMetric,
             )
           : null;
       },
@@ -842,7 +975,7 @@ export const getBuyableRoi = (
       costs,
       gatherClicksPerSecond,
     );
-    const benefit = weightedBenefit(metrics);
+    const benefit = weightedBenefit(metrics, weights);
     return {
       buyable,
       action: battleAction(state, buyable.id, plan, gatherResource),
@@ -866,7 +999,7 @@ export const getBuyableRoi = (
   const metrics = cachedMetrics(
     buyable,
     structureKey,
-    String(options.populationTarget ?? ""),
+    `${options.populationTarget ?? ""}:${militaryMetric}`,
     () => {
       const probe = makeProbeState(state, costs);
       const after = applyBuyable(probe, buyable);
@@ -878,6 +1011,7 @@ export const getBuyableRoi = (
             buyable,
             options.populationTarget,
             campaignTimeSavings(state, after, options, gatherClicksPerSecond),
+            militaryMetric,
           );
     },
   );
@@ -889,10 +1023,10 @@ export const getBuyableRoi = (
       buyable.id === "house" ||
       buyable.id === "townHall");
   const campaignBenefit = populationCampaignPurchase
-    ? metrics.campaign * metricWeights.campaign
+    ? metrics.campaign * weights.campaign
     : 0;
   const benefit =
-    (weightedBenefit(metrics) -
+    (weightedBenefit(metrics, weights) -
       (populationCampaignPurchase && waitSeconds !== 0 ? campaignBenefit : 0)) *
     (buyable.kind === "upgrade"
       ? optionNumber(options.upgradeMultiplier, defaultUpgradeMultiplier)

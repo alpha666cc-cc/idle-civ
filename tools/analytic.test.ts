@@ -229,8 +229,19 @@ describe("the realistic bonus stack", () => {
     const shape = { farm: 500, people: 1000 };
     const bare = describeEconomy(shape, undefined, "bare").production;
     const real = describeEconomy(shape).production;
-    for (const key of Object.keys(real)) {
-      expect(real[key] ?? 0).toBeGreaterThan(bare[key] ?? 0);
+    // Only producers that actually produce at this shape can be *raised*; the
+    // military/science/metalwork/trade lines sit at exactly zero because the shape
+    // has no barracks, university, smithy or market, and the bonus stack grants
+    // production multipliers rather than creating the building that would spend
+    // them. Asserting `>` on those compared 0 against 0.
+    const produced = Object.keys(real).filter((key) => (bare[key] ?? 0) > 0);
+    expect(produced.length).toBeGreaterThan(0);
+    for (const key of produced) {
+      expect(real[key] ?? 0, key).toBeGreaterThan(bare[key] ?? 0);
+    }
+    // And nothing may regress under the realistic stack.
+    for (const key of Object.keys(bare)) {
+      expect(real[key] ?? 0, key).toBeGreaterThanOrEqual(bare[key] ?? 0);
     }
   });
 
@@ -366,10 +377,33 @@ describe("the forward estimate", () => {
 
   it("holds at its seed rather than collapsing before the cold start", () => {
     // The first hour is click-driven and outside the model (see the accuracy
-    // table on `estimateAtTime`), so the estimate is flat there rather than wrong
-    // in a way that could be mistaken for a real reading.
-    expect(estimateAtTime(60).shape.farm).toBe(estimateAtTime(2400).shape.farm);
-    expect(estimateAtTime(60).population).toBe(estimateAtTime(2400).population);
+    // table on `estimateAtTime`), so early readings are a seed rather than a
+    // prediction. What must hold is that the estimate never *collapses*: it starts
+    // at the smallest viable shape and never shrinks as elapsed time grows.
+    //
+    // This previously asserted that 60s and 2400s returned an identical shape.
+    // That passed only because the model was frozen at its seed for every
+    // elapsed time — `viableFarmFloor` accepted a 4.4e-15 denormal residue as a
+    // food rate, so the budget was ~1e-11 and the escalation loop never moved.
+    // Asserting equality therefore pinned the bug in place. The property worth
+    // keeping is monotonicity plus a non-collapsed seed.
+    const seed = estimateAtTime(60);
+    expect(seed.population).toBeGreaterThan(0);
+    expect(seed.shape.farm ?? 0).toBeGreaterThan(0);
+
+    let previousPopulation = -1;
+    let previousFarms = -1;
+    for (const seconds of [60, 600, 1200, 2400, 3600]) {
+      const estimate = estimateAtTime(seconds);
+      expect(estimate.population, `population at ${seconds}s`).toBeGreaterThanOrEqual(
+        previousPopulation,
+      );
+      expect(estimate.shape.farm ?? 0, `farms at ${seconds}s`).toBeGreaterThanOrEqual(
+        previousFarms,
+      );
+      previousPopulation = estimate.population;
+      previousFarms = estimate.shape.farm ?? 0;
+    }
   });
 
   it("escapes the zero-wood dead zone", () => {

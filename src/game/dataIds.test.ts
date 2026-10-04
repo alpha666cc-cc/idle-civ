@@ -112,15 +112,22 @@ describe("static content guids", () => {
     );
 
     expect(buildingFactors).toEqual(new Set([2.5, 8, 10, 12, 15]));
-    expect(ageZeroUnitFactors.get("warrior")).toEqual(new Set([4]));
-    expect(ageZeroUnitFactors.get("spearman_bronze")).toEqual(new Set([3]));
-    expect(ageZeroUnitFactors.get("axeman_bronze")).toEqual(new Set([3]));
+    expect(ageZeroUnitFactors.get("warrior")).toEqual(new Set([3.5]));
+    expect(ageZeroUnitFactors.get("spearman_bronze")).toEqual(new Set([2.5]));
+    expect(ageZeroUnitFactors.get("axeman_bronze")).toEqual(new Set([2.5]));
+    // Later ages no longer share one blanket factor. The age-1 rebalance shifted
+    // unit growth factors per unit (`tools/gen/units.mjs` plus the
+    // `temp/shift-unit-factors.ts` pass in 755ac13), so the guard is now that
+    // every later-age cost factor is a positive, sane growth curve rather than a
+    // hardcoded 5. Pinning the exact set here would just re-break on the next
+    // balance pass without catching a real defect.
     for (const unit of unitDefinitions.filter(
       ({ age, costs }) => age > 0 && costs.length > 0,
     )) {
-      expect(unit.costs.map(({ factor }) => factor), unit.key).toEqual(
-        unit.costs.map(() => 5),
-      );
+      for (const { factor } of unit.costs) {
+        expect(factor, unit.key).toBeGreaterThan(1);
+        expect(factor, unit.key).toBeLessThanOrEqual(5);
+      }
     }
   });
 
@@ -135,53 +142,53 @@ describe("static content guids", () => {
     expect(
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "warrior")!),
     ).toEqual([
-      [150, 4],
-      [5_000, 4],
+      [150, 3.5],
+      [5_000, 3.5],
     ]);
     expect(
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "canoe")!),
     ).toEqual([
-      [25_000, 5],
-      [400_000, 5],
+      [25_000, 4.5],
+      [400_000, 4.5],
     ]);
     expect(
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "spearman_bronze")!),
     ).toEqual([
-      [100_000, 3],
-      [5_000, 3],
+      [100_000, 2.5],
+      [5_000, 2.5],
     ]);
     expect(
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "axeman_bronze")!),
     ).toEqual([
-      [300_000, 3],
-      [10_000, 3],
+      [300_000, 2.5],
+      [10_000, 2.5],
     ]);
-    // The same metalwork rebalance reached every later age0 metalwork unit.
+    // The same rebalance reached every later age0 unit.
     expect(
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "chariot_bronze")!),
     ).toEqual([
-      [2_000_000, 5],
-      [20_000, 5],
+      [2_000_000, 4.5],
+      [20_000, 4.5],
     ]);
     expect(
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "bowman_bronze")!),
     ).toEqual([
-      [200_000, 5],
-      [10_000, 5],
-      [2_000_000, 5],
+      [200_000, 4.5],
+      [10_000, 4.5],
+      [2_000_000, 4.5],
     ]);
     expect(
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "trireme_bronze")!),
     ).toEqual([
-      [10_000_000, 5],
-      [100_000, 5],
-      [300_000_000, 5],
+      [10_000_000, 4.5],
+      [100_000, 4.5],
+      [300_000_000, 4.5],
     ]);
     expect(
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "catapult_ancient")!),
     ).toEqual([
-      [20_000_000, 5],
-      [100_000, 5],
+      [20_000_000, 4.5],
+      [100_000, 4.5],
     ]);
 
     const costsFor = (key: string) =>
