@@ -1847,10 +1847,40 @@ export class CivilizationState {
     return false;
   }
 
-  hasResourcesForBuilding(buildingKey: string, count: number = 1): boolean {
+  /**
+ * A purchase count as a whole number of things purchased.
+ *
+ * A building and a unit are each a whole thing, so every path that prices or
+ * applies a count goes through this rather than trusting the caller's number.
+ * `build()` has always floored its own count; the unit side did not, which let a
+ * fractional recruit reach `unitCounts`, persist, and permanently offset every
+ * later army comparison (`getUnitCount` reporting 4.7 warriors, with a shortfall
+ * that can never be recruited away).
+ *
+ * Deliberately a plain floor, matching `build()` rather than the round-up
+ * `capacitySlotCount` uses. That round-up is right for a *capacity* — a capacity
+ * of 4.4e2 re-reads a few ULP high and must not lose a slot — but wrong for a
+ * purchase: the residue between a full count and a full capacity is 5.68e-14 of
+ * headroom, and rounding that up would buy a building or a recruit out of float
+ * dust. Flooring also means `0.9999999999999999` reads as zero, which is what
+ * `build()` has always done.
+ */
+private wholeCount(count: number): number {
+  return Number.isFinite(count) ? Math.floor(count) : 0;
+}
+
+hasResourcesForBuilding(
+    buildingKey: string,
+    count: number = 1,
+  ): boolean {
     if (this.freeBuildings) return true;
+    const whole = this.wholeCount(count);
+    // Zero is a legitimate no-op query: it prices an empty cost list, which every
+    // resource trivially affords. Only a negative or non-finite count is nonsense.
+    // (A fractional request floors here, so "half a farm" reads as none.)
+    if (whole < 0) return false;
     const currentCount = this.buildingCount(buildingKey);
-    return this.getBuildingCost(buildingKey, currentCount, count).every(
+    return this.getBuildingCost(buildingKey, currentCount, whole).every(
       ({ resource, base }) => this.resources[resource].gte(base),
     );
   }
@@ -2232,7 +2262,11 @@ export class CivilizationState {
 
   hasResourcesForUnit(unitId: string, count: number = 1): boolean {
     if (this.freeUnits) return true;
-    return this.getUnitCost(unitId, count).every(({ resource, base }) =>
+    const whole = this.wholeCount(count);
+    // Zero is a legitimate no-op query — it prices an empty cost list. Only a
+    // negative or non-finite count is nonsense.
+    if (whole < 0) return false;
+    return this.getUnitCost(unitId, whole).every(({ resource, base }) =>
       this.resources[resource].gte(base),
     );
   }
@@ -2260,15 +2294,16 @@ export class CivilizationState {
   }
 
   buyUnit(unitId: string, count: number = 1): CivilizationState {
-    if (count <= 0 || !this.canBuyUnit(unitId, count)) return this;
-    const cost = this.freeUnits ? [] : this.getUnitCost(unitId, count);
+    const whole = this.wholeCount(count);
+    if (whole <= 0 || !this.canBuyUnit(unitId, whole)) return this;
+    const cost = this.freeUnits ? [] : this.getUnitCost(unitId, whole);
     const resources = { ...this.resources };
     for (const { resource, base } of cost) {
       resources[resource] = resources[resource].sub(base);
     }
     return this.withResources(resources).withUnitCount(
       unitId,
-      this.getUnitCount(unitId).add(ExpNumber.fromNumber(count)),
+      this.getUnitCount(unitId).add(ExpNumber.fromNumber(whole)),
       this.recordSpending(this.statistics, cost),
     );
   }
