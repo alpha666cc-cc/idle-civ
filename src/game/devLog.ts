@@ -13,10 +13,17 @@ import { ExpNumber } from "./expNumber";
 import type { CivilizationState } from "./civilizationState";
 
 /** Bump when the log document's shape changes. */
-export const DEV_LOG_VERSION = 1;
+export const DEV_LOG_VERSION = 2;
 
-/** Snapshots land on this cadence, matching the simulator's default. */
-export const DEFAULT_DEV_LOG_SNAPSHOT_SECONDS = 300;
+/**
+ * Snapshots land on this cadence: one per game minute.
+ *
+ * It was 300 (every five game-minutes), which is too coarse to line a live run
+ * up against a simulation — the interesting stretches (a battle resolving, the
+ * tech that unlocks the unit it needed) happen inside a single minute. Note the
+ * clock is *game* seconds, so this is one snapshot per in-game minute.
+ */
+export const DEFAULT_DEV_LOG_SNAPSHOT_SECONDS = 60;
 
 export type DevLogEventType =
   | "age"
@@ -27,31 +34,48 @@ export type DevLogEventType =
   | "load"
   | "reset";
 
+/**
+ * Everything the log records about the settlement at one instant.
+ *
+ * Events and snapshots deliberately share this shape rather than each declaring
+ * its own: an event is only useful read *in context*, so an event that logged a
+ * population and a resource bag but not the army, the research or the worker
+ * split forced every reader to cross-reference the nearest snapshot to
+ * reconstruct what the settlement looked like when it happened. One type, both
+ * payloads, no drift.
+ */
+export type DevLogReading = {
+  readonly age: string;
+  readonly population: string;
+  readonly resources: Record<string, string>;
+  readonly productionRates: Record<string, string>;
+  /** Workers assigned per producing resource. */
+  readonly workers: readonly { readonly resource: string; readonly count: string }[];
+  /** Workers held idle rather than assigned. */
+  readonly workersIdle: string;
+  readonly buildings: readonly {
+    readonly building: string;
+    readonly count: string;
+  }[];
+  readonly units: readonly { readonly unit: string; readonly count: string }[];
+  readonly researches: readonly string[];
+  readonly battlesWon: number;
+  readonly totalBuildings: string;
+  readonly militaryPower: string;
+};
+
 /** One remarkable thing that happened, at the game-second it happened. */
-export type DevLogEvent = {
+export type DevLogEvent = DevLogReading & {
   readonly time: number;
   readonly type: DevLogEventType;
   readonly id: string;
   /** Free text: where a save came from, how much offline time it credited. */
   readonly detail?: string;
-  readonly population: string;
-  readonly resources: Record<string, string>;
-  readonly productionRates: Record<string, string>;
 };
 
 /** A full state reading, on the same cadence the simulator uses. */
-export type DevLogSnapshot = {
+export type DevLogSnapshot = DevLogReading & {
   readonly time: number;
-  readonly age: string;
-  readonly population: string;
-  readonly resources: Record<string, string>;
-  readonly productionRates: Record<string, string>;
-  readonly buildings: { readonly building: string; readonly count: string }[];
-  readonly units: { readonly unit: string; readonly count: string }[];
-  readonly researches: string[];
-  readonly battlesWon: number;
-  readonly totalBuildings: string;
-  readonly militaryPower: string;
 };
 
 export type DevLogDocument = {
@@ -102,11 +126,50 @@ export const createDevLog = (
   snapshots: [],
 });
 
-/** The resource/rate reading every event and snapshot carries. */
-const reading = (state: CivilizationState) => ({
-  population: state.population.toString(),
+/**
+ * The full settlement reading every event and snapshot carries.
+ *
+ * One builder, so the two payloads can never drift apart — and so the worker
+ * split, the army and the research list are present on an event too, not only on
+ * the nearest snapshot. Workers are included because the resource *rates* alone
+ * cannot explain a curve: a rate only makes sense next to how many hands are on
+ * it, and an idle-worker count is what distinguishes "cannot grow" from "chose
+ * not to".
+ */
+const reading = (state: CivilizationState): DevLogReading => ({
+  age: state.getCurrentAge()?.key ?? "none",
+  // A count, written as a plain integer. `ExpNumber.toString()` would render five
+  // citizens as "5e0" and four hundred as "4e2"; the simulator prints these as
+  // bare numbers, and a log is only useful if it lines up with the run it is
+  // meant to explain.
+  population: String(state.population.toNumber()),
   resources: toStrings(state.resources),
   productionRates: toStrings(state.getProductionRates()),
+  // Filtered on the value, not on the string: `ExpNumber.ZERO.toString()` is "0"
+  // but a stored zero from `fromNumber` renders "0e0", so a string compare would
+  // happily log eight idle resources. Worker counts are bounded by population, so
+  // they are written as plain integers rather than ExpNumber strings — "3", not
+  // "3e0" — to keep the log readable.
+  workers: Object.entries(state.workers)
+    .filter(([, count]) => count.gt(ExpNumber.ZERO))
+    .map(([resource, count]) => ({
+      resource,
+      count: String(count.toNumber()),
+    })),
+  workersIdle: state.availableWorkers.toString(),
+  buildings: buildingDefinitions
+    .map((building) => ({
+      building: building.key,
+      count: state.getBuildingCount(building.key).toString(),
+    }))
+    .filter(({ count }) => count !== "0"),
+  units: Object.entries(state.unitCounts)
+    .filter(([, count]) => count.gt(ExpNumber.ZERO))
+    .map(([unit, count]) => ({ unit, count: count.toString() })),
+  researches: [...state.boughtResearch],
+  battlesWon: state.defeatedEncounters.length,
+  totalBuildings: String(state.statistics.buildingsBuilt.toNumber()),
+  militaryPower: state.getArmyPower().toString(),
 });
 
 export const buildDevLogEvent = (
@@ -126,24 +189,7 @@ export const buildDevLogEvent = (
 export const buildDevLogSnapshot = (
   state: CivilizationState,
   time: number,
-): DevLogSnapshot => ({
-  time,
-  age: state.getCurrentAge()?.key ?? "none",
-  ...reading(state),
-  buildings: buildingDefinitions
-    .map((building) => ({
-      building: building.key,
-      count: state.getBuildingCount(building.key).toString(),
-    }))
-    .filter(({ count }) => count !== "0"),
-  units: Object.entries(state.unitCounts)
-    .filter(([, count]) => count.gt(ExpNumber.ZERO))
-    .map(([unit, count]) => ({ unit, count: count.toString() })),
-  researches: [...state.boughtResearch],
-  battlesWon: state.defeatedEncounters.length,
-  totalBuildings: state.statistics.buildingsBuilt.toString(),
-  militaryPower: state.getArmyPower().toString(),
-});
+): DevLogSnapshot => ({ time, ...reading(state) });
 
 /**
  * New ids in an append-only progression list. The length check is a fast path:

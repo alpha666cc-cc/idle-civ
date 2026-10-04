@@ -19,8 +19,35 @@ import {
   saveFromJson,
   saveToJson,
 } from "./saveSystem";
+import {
+  emptyResourceAmounts,
+  emptyResourceFactors,
+  emptyWorkerAssignments,
+} from "./attributes";
+import { emptyStatistics } from "./statistics";
 
 const runId = "abcdef12-3456-7890-abcd-ef1234567890";
+
+/**
+ * A settlement that already has five citizens, built directly rather than via
+ * `build("people", …)`: a bare state carries no `peopleCapacity`, so the citizen
+ * building is capacity-gated to zero and the build silently no-ops.
+ */
+const settledState = (people: number): CivilizationState =>
+  new CivilizationState(
+    emptyResourceAmounts(),
+    emptyWorkerAssignments(),
+    { townHall: 1, people },
+    emptyResourceFactors(),
+    {},
+    0,
+    [],
+    [],
+    [],
+    [],
+    emptyStatistics(),
+    {},
+  );
 
 describe("dev run log", () => {
   it("records remarkable events between two states", () => {
@@ -36,6 +63,51 @@ describe("dev run log", () => {
     expect(events[0].time).toBe(42);
     expect(events[0].population).toBeTypeOf("string");
     expect(events[0].resources).toHaveProperty("food");
+  });
+
+  it("gives an event the same full reading a snapshot gets", () => {
+    // An event is only useful read in context: an event that logged a population
+    // and a bag of resources but not the army, the research or the worker split
+    // forced every reader back to the nearest snapshot. Events and snapshots now
+    // share one payload type, so the field sets must match exactly.
+    const state = new CivilizationState()
+      .build("farm", 3)
+      .assignWorker("food", 2)
+      .assignWorker("wood", 1)
+      .buyResearch("agriculture");
+
+    const event = buildDevLogEvent(state, "research", "agriculture", 12);
+    const snapshot = buildDevLogSnapshot(state, 12);
+
+    const keysOf = (value: object): string[] =>
+      Object.keys(value)
+        .filter((key) => !["time", "type", "id", "detail"].includes(key))
+        .sort();
+    expect(keysOf(event)).toEqual(keysOf(snapshot));
+    // And the values agree, not just the shape.
+    for (const key of keysOf(snapshot)) {
+      expect((event as Record<string, unknown>)[key], key).toEqual(
+        (snapshot as Record<string, unknown>)[key],
+      );
+    }
+  });
+
+  it("records the worker split and the idle pool", () => {
+    // The rates alone cannot explain a curve: a rate only reads next to how many
+    // hands are on it, and the idle count separates "cannot grow" from "chose
+    // not to".
+    const state = settledState(5)
+      .assignWorker("food", 3)
+      .assignWorker("wood", 2);
+    const snapshot = buildDevLogSnapshot(state, 30);
+
+    expect(snapshot.workers).toEqual([
+      { resource: "food", count: "3" },
+      { resource: "wood", count: "2" },
+    ]);
+    // Five citizens, five assigned: nothing idle.
+    expect(snapshot.workersIdle).toBe("0");
+    expect(snapshot.population).toBe("5");
   });
 
   it("reports nothing when the progression lists are unchanged", () => {
@@ -55,16 +127,16 @@ describe("dev run log", () => {
     expect(twice).toBe(once);
   });
 
-  it("snapshots on the 300 second cadence", () => {
-    expect(DEFAULT_DEV_LOG_SNAPSHOT_SECONDS).toBe(300);
+  it("snapshots on the 60 second cadence", () => {
+    expect(DEFAULT_DEV_LOG_SNAPSHOT_SECONDS).toBe(60);
     const log = createDevLog(runId, 1000);
     const state = new CivilizationState();
 
     // The first snapshot is always due.
     expect(isDevLogSnapshotDue(log, 0)).toBe(true);
     const first = appendDevLogSnapshot(log, buildDevLogSnapshot(state, 0));
-    expect(isDevLogSnapshotDue(first, 299)).toBe(false);
-    expect(isDevLogSnapshotDue(first, 300)).toBe(true);
+    expect(isDevLogSnapshotDue(first, 59)).toBe(false);
+    expect(isDevLogSnapshotDue(first, 60)).toBe(true);
   });
 
   it("names one file per run, so a reset changes the file", () => {

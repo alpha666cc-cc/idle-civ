@@ -106,7 +106,14 @@ export interface SimulationConfig {
    * house and spend the save's food on citizens the player already has.
    */
   fromScratch?: boolean;
-  /** Seconds between periodic snapshots (default 300). Battle wins always snapshot. */
+  /**
+   * Seconds between periodic snapshots (default 60). Battle wins always snapshot.
+   *
+   * 60 matches `DEFAULT_DEV_LOG_SNAPSHOT_SECONDS`, so a live run and a simulation
+   * line up row for row on the same game-minute cadence. It was 300, which left
+   * the interesting part of a battle — and the tech that unlocks the unit it
+   * needed — inside a single unobserved interval.
+   */
   snapshotIntervalSeconds?: number;
   verbose?: boolean; // enable debug output
   onEvent?: (event: SimulationEvent) => void;
@@ -790,7 +797,7 @@ export class GameSimulation {
 
     // Periodic snapshots, every `snapshotIntervalSeconds` (default 300).
     if (this.config.recordSnapshots && this.gameTime > 0) {
-      const interval = this.config.snapshotIntervalSeconds ?? 300;
+      const interval = this.config.snapshotIntervalSeconds ?? 60;
       const lastSnapshotTime =
         this.snapshots[this.snapshots.length - 1]?.timestamp || 0;
       if (this.gameTime - lastSnapshotTime >= interval) {

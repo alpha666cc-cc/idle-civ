@@ -144,6 +144,45 @@ const wholeSlots = (capacity: ExpNumber): number => {
   return Number.isFinite(slots) ? Math.max(0, Math.floor(slots)) : slots;
 };
 
+/**
+ * A stored count snapped back onto the integer lattice.
+ *
+ * `ExpNumber.add` accumulates error by construction. Adding one recruit to 1219
+ * is evaluated as `1.219 + 1/1000`, and in binary floating point that is
+ * `1.2199999999999998`, not `1.22` — so recruiting one soldier at a time drifts
+ * the stored count *downwards*, every single time. Measured on a real run: a
+ * settlement that owned exactly 1219 slingers reported `1218.999999999962`, and
+ * every other stack in the army was off by a similar few ULP (889 canoes read
+ * `888.999999999987`).
+ *
+ * At that magnitude the error is invisible — it cannot move a displayed number
+ * or meaningfully shift an army-power total — but a unit count is a whole number
+ * by definition, and leaving it fractional makes `getUnitCount()` non-integral
+ * for something that is never actually fractional. Any exact comparison against
+ * a plan's composition (`owned === 4`) silently fails, and the residue persists
+ * into a save.
+ *
+ * Snapping is safe here because nothing can legitimately store a fraction: every
+ * write path already floors (`build`, `buyUnit`), so a non-integral value here is
+ * *always* accumulated drift. The tolerance is relative so it keeps covering
+ * large magnitudes, where a fixed absolute epsilon would be meaningless — at
+ * 1e9 recruits an absolute 1e-9 is far below the noise floor.
+ *
+ * Note this is the opposite rule to `capacitySlotCount` above, and deliberately
+ * so. A capacity rounds *up* on a residue because losing a slot from rounding is
+ * player-visible; a count rounds to *nearest* because the value was integral and
+ * drifted, and nearest is the value it was meant to hold.
+ */
+const snapToWholeCount = (count: ExpNumber): ExpNumber => {
+  const value = count.toNumber();
+  if (!Number.isFinite(value)) return count;
+  const nearest = Math.round(value);
+  const tolerance = Math.max(1e-9, Math.abs(value) * 1e-9);
+  return Math.abs(value - nearest) <= tolerance
+    ? ExpNumber.fromNumber(nearest)
+    : count;
+};
+
 /** How many leading units the flat cost reduction may zero out directly. */
 const flatClampWindow = 256;
 
@@ -409,9 +448,12 @@ export class CivilizationState {
     this.freeUnits = freeUnits;
     this.freeUpgrades = freeUpgrades;
 
-    // Set population based on people buildings (derived from buildings, not stored)
-    this.resources.population = ExpNumber.fromNumber(
-      this.buildingCount("people"),
+    // Set population based on people buildings (derived from buildings, not stored).
+    // `builtBuildings` holds plain numbers that `build()` already floors, so this is
+    // normally integral; the snap keeps it that way for a save written before that
+    // floor existed, and for anyone who later adds a fractional write path.
+    this.resources.population = snapToWholeCount(
+      ExpNumber.fromNumber(this.buildingCount("people")),
     );
 
     // Capacity grants are stored in the capacity resources. Establish the
@@ -2867,8 +2909,12 @@ hasResourcesForBuilding(
     statistics = this.statistics,
   ): CivilizationState {
     const unitCounts = { ...this.unitCounts };
-    if (count.lte(ExpNumber.ZERO)) delete unitCounts[unitId];
-    else unitCounts[unitId] = count;
+    // Snap on write, not on read: `ExpNumber.add` drifts, so an accumulated
+    // count arrives here as 1218.999999999962. Correcting at the boundary keeps
+    // `getUnitCount` integral and stops the residue reaching a save.
+    const whole = snapToWholeCount(count);
+    if (whole.lte(ExpNumber.ZERO)) delete unitCounts[unitId];
+    else unitCounts[unitId] = whole;
     return this.withState(
       this.resources,
       this.buildingCostOverrides,

@@ -189,4 +189,52 @@ describe("unit counts stay whole numbers", () => {
       );
     }
   });
+
+  /** Same settlement, but recruiting is free — lets a test reach a large count. */
+  const freeRecruitState = (): CivilizationState =>
+    new CivilizationState(
+      {
+        ...emptyResourceAmounts(),
+        food: ExpNumber.fromNumber(1e12),
+        military: ExpNumber.fromNumber(1e12),
+      },
+      emptyWorkerAssignments(),
+      { townHall: 1 },
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      [],
+      emptyStatistics(),
+      {},
+      ExpNumber.ONE,
+      false,
+      true,
+      false,
+      [],
+    );
+
+  it("snaps the accumulated count back onto the integer lattice", () => {
+    // `ExpNumber.add` drifts: adding one recruit to 1219 is evaluated as
+    // `1.219 + 1/1000`, which is 1.2199999999999998 rather than 1.22, so a count
+    // built up one recruit at a time arrives just under its true value. Real
+    // measured example: 1219 slingers stored as 1218.999999999962.
+    let state = freeRecruitState();
+    for (let i = 0; i < 1300; i += 1) state = state.buyUnit("warrior", 1);
+    const stored = state.getUnitCount("warrior").toNumber();
+    expect(Number.isInteger(stored)).toBe(true);
+    expect(stored).toBe(1300);
+  });
+
+  it("keeps a large accumulated count integral too", () => {
+    // The tolerance is relative, so drift at a large magnitude is still caught —
+    // a fixed absolute epsilon would be meaningless at 1e9.
+    let state = freeRecruitState();
+    for (let i = 0; i < 200; i += 1) state = state.buyUnit("warrior", 5000);
+    const stored = state.getUnitCount("warrior").toNumber();
+    expect(Number.isInteger(stored)).toBe(true);
+    expect(stored).toBe(1_000_000);
+  });
 });
