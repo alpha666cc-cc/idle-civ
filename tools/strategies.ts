@@ -185,21 +185,39 @@ const playerResearchOrder = [
 ] as const;
 
 /**
- * Age-1 buy order, taken verbatim from the purchase order recorded in
+ * Age-1 buy order. It started from the purchase order recorded in
  * `saves/age2-start.json` (the fastest run that reached Age 2), filtered to the
- * entries whose research `age` is 1. `berserker_warbands` is appended because it
- * is newer than that save: its prerequisites (`howdah_mounting`, `coastal_forts`)
- * are the last two entries here, so it can only be bought once they are in.
+ * entries whose research `age` is 1, and has since been hand-tuned: `currency`
+ * and `mathematics` now sit ahead of `irrigation` and `ram_hulls`, so the cheap
+ * already-unlocked techs are bought before the expensive one rather than behind
+ * it.
+ *
+ * Measured on the AGENTS §7.2 sweep (7200 s / 60 s), this order gives `player`
+ * 5.318e3 population, 10794 buildings and 2.0155e10 army power against 5.313e3,
+ * 10787 and 1.9987e10 for the dynamic order it replaced; the other nine
+ * strategies came back byte-identical.
+ *
+ * The *mechanism* is deliberately not asserted here. Price is ordinal
+ * (`getResearchCostForCount` prices the n-th tech of the age, not the tech), so
+ * any order that buys the whole set costs the same, and
+ * `docs/age1-optimization.md` §8.4 puts research order at roughly a fifth of the
+ * weight of the base strategy. What is measured is the sign, not the reason —
+ * re-verify with `temp/age1-tune.ts` (same config as `snapshot-csv.ts`) before
+ * moving entries around again.
+ *
+ * `berserker_warbands` is appended because it is newer than that save: its
+ * prerequisites (`howdah_mounting`, `coastal_forts`) are later entries here, so
+ * it can only be bought once they are in.
  */
 const playerAge1ResearchOrder = [
   "alphabet",
   "philosophy_fundamentals",
+  "currency",
+  "mathematics",
   "irrigation",
   "horsemanship",
-  "currency",
   "trade_routes",
   "ram_hulls",
-  "mathematics",
   "iron_mining",
   "iron_working",
   "howdah_mounting",
