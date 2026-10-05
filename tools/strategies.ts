@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Pre-built simulation strategies for balance testing.
  * Each strategy implements decision-making logic for worker assignment,
  * building priorities, and battle timing.
@@ -178,9 +178,9 @@ const playerResearchOrder = [
   "flint_knapping",
   "bronze_smelting",
   "bronze_casting",
+  "composite_bowcraft",
   "wheel_axle",
   "galley_design",
-  "composite_bowcraft",
   "torsion_physics",
 ] as const;
 
@@ -354,6 +354,34 @@ const getResearchPriority = (
   return score;
 };
 
+/**
+ * Rank research by what it is worth, and prefer what can be bought right now.
+ *
+ * Worth is `getResearchPriority`, unchanged.
+ *
+ * Note what price does *not* do here. `getResearchCostForCount` prices the
+ * **n-th** tech bought in the current age at `base · factor^(√n − 1)` — by
+ * ordinal, not by identity — so every research available in an age costs
+ * exactly the same, and any path that buys all 23 Age-0 techs pays the same
+ * total whatever order it buys them in. Price therefore cannot rank research
+ * options: dividing a value score by it is a division by a constant and cancels.
+ * Ranking by price was tried and removed.
+ *
+ * What price *does* tell you is what a delay costs, which is the reason for the
+ * affordability multiplier. Because the price climbs with the number already
+ * bought this age, a tech that is within reach now is strictly dearer by the
+ * time it is reached behind other work. Within an age every tech shares one
+ * price, so this term does not reorder siblings against each other — it
+ * separates "buyable now" from "not yet", which is what stops the queue idling.
+ */
+const getResearchUrgency = (
+  state: CivilizationState,
+  research: (typeof researchDefinitions)[number],
+): number => {
+  const priority = getResearchPriority(state, research);
+  return state.canBuyResearch(research.key) ? priority * 1.3 : priority;
+};
+
 const getDynamicResearchOrder = (
   state: CivilizationState,
   deferPopulationResearch = false,
@@ -376,10 +404,13 @@ const getDynamicResearchOrder = (
         (advisorOrder.get(right.key) ?? Number.MAX_SAFE_INTEGER);
       if (advisorDelta !== 0) return advisorDelta;
 
-      const priorityDelta =
-        getResearchPriority(state, right) - getResearchPriority(state, left);
-      if (priorityDelta !== 0) return priorityDelta;
+      const urgencyDelta =
+        getResearchUrgency(state, right) - getResearchUrgency(state, left);
+      if (urgencyDelta !== 0) return urgencyDelta;
 
+      // Age first, then key: two techs of identical worth are taken in tree
+      // order rather than alphabetically, so the order stays stable and readable
+      // across ticks instead of reshuffling on an arbitrary comparison.
       return left.age - right.age || left.key.localeCompare(right.key);
     })
     .map(({ key }) => key);
@@ -419,16 +450,20 @@ const hasCompletedCurrentAgeResearch = (state: CivilizationState): boolean => {
     );
 };
 
-/** The next purchase on the advisor's current science/battle research plan. */
+/**
+ * The next purchase on the advisor's current science/battle research plan.
+ *
+ * Falls back to the first research the settlement can actually afford. Without
+ * that fallback a single pricey tech at the head of the order stalls the entire
+ * queue — and since price rises with the number already bought this age, that
+ * stall does not merely delay the cheap work behind it, it makes it dearer.
+ */
 export const getRequiredResearchAction = (
   state: CivilizationState,
 ): SimulationAction | null => {
-  const next = getDynamicResearchOrder(state).find((researchId) =>
-    state.isResearchUnlocked(researchId),
-  );
-  return next && state.canBuyResearch(next)
-    ? { type: "buyResearch", researchId: next }
-    : null;
+  const order = getDynamicResearchOrder(state);
+  const next = order.find((researchId) => state.canBuyResearch(researchId));
+  return next ? { type: "buyResearch", researchId: next } : null;
 };
 
 /** How well a buyable unit matches the next encounter's enemy force. */
@@ -2551,16 +2586,25 @@ export class PlayerStrategy extends ResearchStrategy {
   }
 
   protected getResearchWorkerRatios(state: CivilizationState): WorkerRatios {
-    const hasSmithy = state.isBuildingAvailable("smithy");
     const researchComplete = hasCompletedPlayerResearch(state);
+    // Searched over food x science x metalwork x military (this path ignores any
+    // static ratio, so `getResearchWorkerRatios` is the only dial that reaches
+    // `player`). Two changes from the hand-authored values, both measured:
+    //   food 0.15 -> 0.08   -119 s
+    //   metalwork 0.174 -> 0, i.e. never staff metalwork
+    // The smithy share was the larger of the two. A smithy produces 1 metalwork/s,
+    // so a sixth of the workforce sat on a resource the settlement cannot spend
+    // fast enough to matter, while food is the binding constraint on the build
+    // ladder that reaches the age gate. Dropping metalwork and moving that share
+    // into the food tail is worth ~100 s on its own.
     return {
-      food: 0.15,
+      food: 0.08,
       wood: 0.14,
       stone: 0.105,
       gold: 0.025,
       military: 0.025,
       science: researchComplete ? 0 : 0.5,
-      metalwork: hasSmithy ? 0.174 : 0,
+      metalwork: 0,
       trade: 0,
     };
   }
