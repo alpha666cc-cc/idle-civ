@@ -86,17 +86,17 @@
     "costs": [
       {
         "resource": "food",
-        "base": "2.0409733160306044e+43",
+        "base": "1.0e+24",
         "factor": 1
       },
       {
         "resource": "wood",
-        "base": "5.442595509414944e42",
+        "base": "500e18",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e18",
         "factor": 1
       }
     ],
@@ -450,17 +450,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "5.442595509414944e42",
+        "base": "1e21",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "5.442595509414944e42",
+        "base": "1e21",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e18",
         "factor": 1
       }
     ],
@@ -804,12 +804,12 @@
     "costs": [
       {
         "resource": "stone",
-        "base": "5.442595509414944e42",
+        "base": "1e21",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e18",
         "factor": 1
       }
     ],
@@ -1138,17 +1138,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "5.442595509414944e42",
+        "base": "1e22",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "5.442595509414944e42",
+        "base": "1e22",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e18",
         "factor": 1
       }
     ],
@@ -1464,17 +1464,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "4.535182000000000e6",
+        "base": "4e14",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "4.535182000000000e6",
+        "base": "1e14",
         "factor": 1
       },
       {
         "resource": "food",
-        "base": "4.535182000000000e6",
+        "base": "4.535182000000000e15",
         "factor": 1
       }
     ],
@@ -1828,17 +1828,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "4.535182000000000e6",
+        "base": "1e15",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "4.535182000000000e6",
+        "base": "4e14",
         "factor": 1
       },
       {
         "resource": "gold",
-        "base": "4.535182000000000e6",
+        "base": "1e14",
         "factor": 1
       }
     ],
@@ -2187,12 +2187,12 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "4.535182000000000e6",
+        "base": "2.535182000000000e16",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "4.535182000000000e6",
+        "base": "2.535182000000000e16",
         "factor": 1
       }
     ],
@@ -2511,12 +2511,12 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "4.535182000000000e6",
+        "base": "4.535182000000000e16",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "4.535182000000000e6",
+        "base": "4.535182000000000e16",
         "factor": 1
       }
     ],

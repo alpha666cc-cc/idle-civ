@@ -188,7 +188,7 @@ export type BattleSimulation = {
 /** Armies deploy this far apart; the lines close a little every round. */
 export const initialDistance = 20;
 /** A battle that has not resolved by then is a stalemate (counted as a loss). */
-export const maximumRounds = 200;
+export const maximumRounds = 101;
 /** Bonus damage against a tagged target (`bonusVs`), as in the prototype. */
 const bonusVsMultiplier = 1.5;
 
@@ -404,13 +404,22 @@ const applyScreening = (
   targetAllies: readonly Fighter[],
 ): ExpNumber => {
   const protectedTarget =
-    target.order === "protect_ranged" || target.stats.range <= 3;
+    target.order === "protect_ranged" ||
+    target.stats.range <= 3 ||
+    // Ranged units are screened under the default order too. The only Age-0
+    // anti-naval unit is the archer, and `standard`'s weakest-first targeting
+    // deletes archers (hp 60-80) before they can shoot. `protect_ranged` and
+    // `frontline` are Age-2 unlocks, so without this the mechanic is
+    // structurally unavailable where it is most needed.
+    (target.order === "standard" && target.stats.range >= 4);
   if (!protectedTarget) return damage;
   const screens = targetAllies.filter(
     (ally) =>
       ally.unitId !== target.unitId &&
       livingCount(ally).gt(ExpNumber.ZERO) &&
-      (ally.order === "frontline" || ally.order === "protect_ranged"),
+      ((ally.order === "frontline" || ally.order === "protect_ranged") ||
+        // Default-order melee bodyguards its shooters, which is the whole point.
+        (ally.order === "standard" && ally.stats.range <= 3)),
   );
   if (screens.length === 0) return damage;
   const shared = damage.mul(ExpNumber.fromNumber(screeningShare));

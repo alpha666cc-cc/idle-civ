@@ -136,3 +136,22 @@ add a vs target to launch simulator
 
 
  
+
+
+
+
+
+
+encoutner, remove ennemy specific bonus
+verify, on a battle ( and battle simulation), ennemy should have 
+- all bonus from all previous ages technologies
+-  bonus from technology to reach the unit it has access to
+- if it is the boss, all bonus of currant age technologies
+
+
+
+
+
+
+
+

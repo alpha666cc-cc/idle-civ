@@ -187,8 +187,8 @@ describe("static content guids", () => {
     expect(
       baseAndFactor(ageZeroUnits.find(({ key }) => key === "catapult_ancient")!),
     ).toEqual([
-      [20_000_000, 4.5],
-      [100_000, 4.5],
+      [10_000_000, 4],
+      [100_000, 4],
     ]);
 
     const costsFor = (key: string) =>

@@ -51,11 +51,6 @@ age 6 - 1B p- 100M pb - pe 627
 age 7 - 10B p- 1B pb - pe 988
 
 
-
-simulation cheapest startegy reach end of age -0 but does not 'click' on age-1 ... is there an action missing ( age transition should be the most priority action usually) 
-
-simulation : speedrun strategy is stuck on battle 1, it should run the battle simulator and evaluate the cost of battle vs the gain ( the capacity improvemnt are very important)
-
 age 1- balance : multiply science costs by 1000 when entering age-1 ( iron), the science production gets a too big boost 
 
 add an achievement "famine" , description "hidden", triggers when you got to 0 food ( and food prod <0 ) with 1001 citizen or more, remove drain from citizen on food
@@ -72,3 +67,35 @@ enter next age
 
 
 
+Lumber yard and quarry need a little boost (agreed)
+Add more incentives for worker diversification (e.g., small bonuses for having balanced assignments)
+
+
+
+
+
+04/09/2026
+Rank	strategy	age-1 reached
+1	player	36m20s
+2	research	53m26s
+3	economy	59m04s
+4	military	66m57s
+5	production	68m44s
+6	balanced	69m28s
+7	fast-age	72m28s
+8	trader	85m29s
+9	cheapest	98m21s
+—	speedrun (baseline)	108m51s
+—	speedrun (profiled)	81m17s
+
+
+strategy	before	after	Δ
+cheapest	99m	52m	−47%
+trader	86m	68m	−21%
+fast-age	73m	61m	−16%
+production	69m	58m	−16%
+balanced	70m	60m	−14%
+economy	60m	53m	−12%
+
+
+player 2094s ->34m54s

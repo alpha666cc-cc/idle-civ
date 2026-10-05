@@ -1,7 +1,9 @@
-techtree conversion report — 2026-09-21T20:04:28.555Z
+techtree conversion report — 2026-10-01T15:03:47.477Z
 source: tech tree-v3-effects.json → src\game\data\research.json
-techs: 172, bonuses: 1500, ignored: 27
+techs: 172, bonuses: 1476, ignored: 29
 
+masonry: IGNORED building_capacity -> town_hall (x2) — unmappable capacity target
+masonry: IGNORED building_cost_reduction -> town_hall (small) — unmappable building target
 aqueducts: IGNORED production_multiplier -> house (small) — capacity-adjacent — user review
 civil_service: IGNORED worker_efficiency -> all (small) — no per-worker efficiency attribute
 banking_concepts: IGNORED resource_capacity -> gold (large) — no resource storage cap

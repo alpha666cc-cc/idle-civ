@@ -64,6 +64,11 @@ import {
 } from "../src/game/units.js";
 import type { CivilizationState } from "../src/game/civilizationState.js";
 import { ExpNumber } from "../src/game/expNumber.js";
+import { ageDefinitions } from "../src/game/ages.js";
+import { researchDefinitions } from "../src/game/research.js";
+
+/** One thing that happened at a known simulated second. */
+type Milestone = { label: string; at: number };
 
 const flag = (name: string, fallback: string): string => {
   const hit = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -405,10 +410,27 @@ const runStrategy = (
   wall: number;
   gameTime: number;
   arrived: boolean;
+  milestones: Milestone[];
 } | null => {
   const strategy = getStrategy(name);
   if (!strategy) return null;
   const started = Date.now();
+
+  /**
+   * Milestones are recorded off the strategy hook rather than the CSV rows, so
+   * they resolve to the exact second an event happened rather than being snapped
+   * to the next `interval` boundary. A single arrival time hides where a run
+   * actually spends its budget — a strategy can be behind on barracks and still
+   * finish first, or win early and then stall on buildings.
+   */
+  const milestones: Milestone[] = [];
+  const mark = (label: string, at: number) => {
+    if (!milestones.some((m) => m.label === label)) {
+      milestones.push({ label, at });
+    }
+  };
+  const notedBattles = new Set<string>();
+  const notedResearch = new Set<number>();
 
   // The capture rides on the strategy hook, so it sees exactly the state the
   // runner would have snapshotted at that second. `rowIndex` is a local counter
@@ -424,13 +446,51 @@ const runStrategy = (
       state: CivilizationState,
       context: { gameTime: number; snapshots: never[]; timing: SnapshotTiming },
     ) => {
-      if (context.gameTime >= nextAt) {
-        rows.push(row(state, context.gameTime, context.timing, rowIndex));
+      const at = context.gameTime;
+      // Population gates, in the order the game presents them.
+      for (const gate of [90, 200, 500, 1000, 5000, 10000]) {
+        if (state.population.gte(ExpNumber.fromNumber(gate))) {
+          mark(gate === 90 ? "90 pop (barracks)" : `${gate} pop`, at);
+        }
+      }
+      // Every battle won, in encounter order rather than the order they happen.
+      for (const id of state.defeatedEncounters) {
+        if (!notedBattles.has(id)) {
+          notedBattles.add(id);
+          mark(`won ${id.replace(/^age\d_/, "")}`, at);
+        }
+      }
+      // Research completion is per age and only exists while a tech is buyable;
+      // a run that never finishes an age simply records nothing for it.
+      const age = state.getCurrentAge();
+      const ageIndex = age
+        ? ageDefinitions.findIndex((a) => a.key === age.key)
+        : -1;
+      if (ageIndex >= 0) {
+        const ageTechs = researchDefinitions.filter(
+          (r) => r.age === ageIndex,
+        );
+        const finished =
+          ageTechs.length > 0 &&
+          ageTechs.every(
+            (r) => !state.isResearchUnlocked(r.key) || state.isResearchBought(r.key),
+          );
+        if (finished && !notedResearch.has(ageIndex)) {
+          notedResearch.add(ageIndex);
+          mark(`${age?.name ?? ageIndex} research done`, at);
+        }
+      }
+      // Age entry, so "reached age1" and "how the run went getting there" sit
+      // on the same report.
+      if (age) mark(`entered ${age.key}`, at);
+
+      if (at >= nextAt) {
+        rows.push(row(state, at, context.timing, rowIndex));
         rowIndex += 1;
-        nextAt = context.gameTime + interval;
+        nextAt = at + interval;
       }
       return strategy.decideAction(state, {
-        gameTime: context.gameTime,
+        gameTime: at,
         snapshots: context.snapshots,
         timing: context.timing,
       });
@@ -482,6 +542,7 @@ const runStrategy = (
     // "Objective reached" is a real arrival; anything else under an age target
     // means the run hit the horizon first, which the reader must be able to see.
     arrived: !targetAge || result.terminationReason === "Objective reached",
+    milestones,
   };
 };
 
@@ -702,6 +763,16 @@ for (const name of strategies) {
   console.log(
     `${name.padEnd(10)} ${String(result.sheet.rows.length).padStart(4)} rows x ${header.length} cols  ${stop.padEnd(26)} ->  ${file}  (${result.wall}s)`,
   );
+  // Milestones on their own lines, indented under the strategy. A single arrival
+  // number hides where the run spent its budget: a strategy can be far behind on
+  // barracks yet still finish first, or win early and then stall on buildings.
+  // Unreached milestones are simply absent from the list.
+  for (const m of result.milestones) {
+    console.log(
+      `             ${m.label.padEnd(22)} ${clock(m.at).padStart(9)}` +
+        `  (${Math.round((m.at / Math.max(1, result.gameTime)) * 100)}% of run)`,
+    );
+  }
 }
 
 writeWorkbook(sheets, header.length);

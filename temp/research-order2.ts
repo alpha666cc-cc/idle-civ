@@ -17,10 +17,25 @@ import {
 import { EconomyStrategy } from "../tools/strategies.js";
 
 const LADDER = [
-  "agriculture", "pottery", "writing", "sling_throwing", "tribal_organization",
-  "woodcraft_hulls", "forestry", "mining", "stone_working", "city_planning",
-  "domestication", "trapping", "animal_husbandry", "weaving", "calendar",
-  "archery_mechanics", "flint_knapping", "bronze_smelting", "bronze_casting",
+  "agriculture",
+  "pottery",
+  "writing",
+  "sling_throwing",
+  "tribal_organization",
+  "woodcraft_hulls",
+  "forestry",
+  "mining",
+  "stone_working",
+  "city_planning",
+  "domestication",
+  "trapping",
+  "animal_husbandry",
+  "weaving",
+  "calendar",
+  "archery_mechanics",
+  "flint_knapping",
+  "bronze_smelting",
+  "bronze_casting",
   "composite_bowcraft",
 ];
 
@@ -72,7 +87,7 @@ const BONUS = new Map<string, number>();
   for (const id of LADDER) {
     const def = defs.find((d: { key: string }) => d.key === id);
     PRE[id] = def?.prerequisites ?? [];
-    COST.set(id, probe.getResearchNextCost(id).reduce((n, c) => n + Number(c.base), 0));
+    COST.set(id, probe.getResearchCost(id, 0).toNumber());
     BONUS.set(
       id,
       def?.bonuses.reduce(
@@ -85,7 +100,9 @@ const BONUS = new Map<string, number>();
 
 const run = (order: string[], skipUnaffordable: boolean): number => {
   class Tuned extends EconomyStrategy {
-    protected getResearchAction(state: CivilizationState): SimulationAction | null {
+    protected getResearchAction(
+      state: CivilizationState,
+    ): SimulationAction | null {
       if (!gateOpen(state)) return null;
       const candidates = order.filter(
         (id) => state.isResearchUnlocked(id) && !state.isResearchBought(id),
@@ -119,10 +136,26 @@ const VARIANTS: { name: string; order: string[]; skip: boolean }[] = [
   { name: "trim to 13 + skip", order: LADDER.slice(0, 13), skip: true },
   { name: "trim to 10", order: LADDER.slice(0, 10), skip: false },
   { name: "trim to 10 + skip", order: LADDER.slice(0, 10), skip: true },
-  { name: "cost ascending", order: prereqSort(LADDER, (id) => COST.get(id)!), skip: false },
-  { name: "cost ascending + skip", order: prereqSort(LADDER, (id) => COST.get(id)!), skip: true },
-  { name: "bonus descending", order: prereqSort(LADDER, (id) => -BONUS.get(id)!), skip: false },
-  { name: "bonus descending + skip", order: prereqSort(LADDER, (id) => -BONUS.get(id)!), skip: true },
+  {
+    name: "cost ascending",
+    order: prereqSort(LADDER, (id) => COST.get(id)!),
+    skip: false,
+  },
+  {
+    name: "cost ascending + skip",
+    order: prereqSort(LADDER, (id) => COST.get(id)!),
+    skip: true,
+  },
+  {
+    name: "bonus descending",
+    order: prereqSort(LADDER, (id) => -BONUS.get(id)!),
+    skip: false,
+  },
+  {
+    name: "bonus descending + skip",
+    order: prereqSort(LADDER, (id) => -BONUS.get(id)!),
+    skip: true,
+  },
 ];
 
 const rows: { name: string; t: number; order: string[]; skip: boolean }[] = [];

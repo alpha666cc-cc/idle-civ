@@ -795,7 +795,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "unitAll.attack",
-        "value": "1.25"
+        "value": "1.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "allUnits",
+        "value": "0.5"
       }
     ],
     "unlocks": ["catapult_ancient"],

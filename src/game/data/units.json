@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "guid": "49bc95e9-7aae-5c62-8c29-6302ea8ad01a",
     "id": "warrior",
@@ -102,7 +102,7 @@
     "tags": ["beast"],
     "canHit": ["ground"],
     "bonusVs": [],
-    "hp": 50,
+    "hp": 45,
     "attack": 12,
     "armor": 0.05,
     "range": 1,
@@ -141,7 +141,7 @@
     "canHit": ["ground", "naval"],
     "bonusVs": [],
     "hp": 80,
-    "attack": 12,
+    "attack": 15,
     "armor": 0.1,
     "range": 2,
     "speed": 6,
@@ -334,26 +334,26 @@
     "age": 0,
     "domain": "ground",
     "tags": ["antiArmor", "siege"],
-    "canHit": ["ground"],
+    "canHit": ["ground", "naval"],
     "bonusVs": ["armored"],
-    "hp": 150,
-    "attack": 100,
+    "hp": 450,
+    "attack": 250,
     "armor": 0.1,
-    "range": 8,
+    "range": 10,
     "speed": 2,
-    "accuracy": 0.45,
+    "accuracy": 0.55,
     "available": false,
     "tier": 10,
     "costs": [
       {
         "resource": "military",
-        "base": 20000000,
-        "factor": 4.5
+        "base": 10000000,
+        "factor": 4
       },
       {
         "resource": "metalwork",
         "base": 100000,
-        "factor": 4.5
+        "factor": 4
       }
     ]
   },
@@ -566,9 +566,9 @@
     "hp": 880,
     "attack": 440,
     "armor": 0.15,
-    "range": 9,
+    "range": 11,
     "speed": 2,
-    "accuracy": 0.6,
+    "accuracy": 0.7,
     "available": false,
     "tier": 17,
     "costs": [
@@ -757,9 +757,9 @@
     "hp": 7680,
     "attack": 3840,
     "armor": 0.15,
-    "range": 8,
+    "range": 10,
     "speed": 2,
-    "accuracy": 0.5,
+    "accuracy": 0.6,
     "available": false,
     "tier": 23,
     "costs": [
@@ -1015,9 +1015,9 @@
     "hp": 66560,
     "attack": 40960,
     "armor": 0.1,
-    "range": 11,
+    "range": 13,
     "speed": 1,
-    "accuracy": 0.5,
+    "accuracy": 0.6,
     "available": false,
     "tier": 31,
     "costs": [
@@ -1118,9 +1118,9 @@
     "hp": 71680,
     "attack": 35840,
     "armor": 0.15,
-    "range": 9,
+    "range": 11,
     "speed": 2,
-    "accuracy": 0.45,
+    "accuracy": 0.55,
     "available": false,
     "tier": 34,
     "costs": [
@@ -1309,9 +1309,9 @@
     "hp": 614400,
     "attack": 348160,
     "armor": 0.15,
-    "range": 10,
+    "range": 12,
     "speed": 2,
-    "accuracy": 0.5,
+    "accuracy": 0.6,
     "available": false,
     "tier": 40,
     "costs": [
@@ -1741,9 +1741,9 @@
     "hp": 5242880,
     "attack": 3112960,
     "armor": 0.15,
-    "range": 12,
+    "range": 14,
     "speed": 2,
-    "accuracy": 0.55,
+    "accuracy": 0.65,
     "available": false,
     "tier": 52,
     "costs": [
@@ -2388,9 +2388,9 @@
     "hp": 65536000,
     "attack": 49807360,
     "armor": 0.25,
-    "range": 16,
+    "range": 18,
     "speed": 3,
-    "accuracy": 0.75,
+    "accuracy": 0.85,
     "available": false,
     "tier": 69,
     "costs": [
@@ -2629,9 +2629,9 @@
     "hp": 131072000,
     "attack": 78643200,
     "armor": 0.4,
-    "range": 30,
+    "range": 32,
     "speed": 0,
-    "accuracy": 0.95,
+    "accuracy": 0.99,
     "available": false,
     "tier": 75,
     "costs": [
