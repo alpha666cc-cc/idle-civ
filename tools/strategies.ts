@@ -220,6 +220,12 @@ const getResearchAdvisorOrder = (
     order.push(...prerequisiteOrder(researchId));
   };
 
+  // NOTE: sorting these by the size of their science multiplier instead of by
+  // age was tried and changed nothing at Age 1 — `writing` (x10 science, -50% on
+  // every building) is the *only* age-0 research that boosts science, so the list
+  // has one element and both orderings are identical. It would only matter from
+  // Age 2 on, where several age-N techs compete. Left as-is until it can be
+  // measured.
   const scienceBoosts = researchDefinitions
     .filter(
       ({ age, key }) =>
@@ -3182,15 +3188,37 @@ export const strategyRegistry: Record<string, SimulationStrategy> = {
 };
 
 /**
- * Get a strategy by name.
+ * A strategy instance carries mutable state across a run — `ResearchStrategy`
+ * lazily caches its opening strategy, `PlayerStrategy` holds one as a field.
+ * Handing out the registry's singleton therefore makes a second run of the same
+ * strategy in the same process start from wherever the first one left off, which
+ * two identical `balanced` runs proved did not produce the same final state.
+ *
+ * Every caller wants an independent strategy, so construct a fresh one per call.
+ * The registry is kept only to map a name to its class.
  */
+const strategyRegistryNames: Record<string, new () => SimulationStrategy> = {
+  cheapest: CheapestStrategy,
+  balanced: BalancedStrategy,
+  production: ProductionStrategy,
+  military: MilitaryStrategy,
+  "fast-age": FastAgeStrategy,
+  economy: EconomyStrategy,
+  research: ResearchStrategy,
+  player: PlayerStrategy,
+  speedrun: SpeedrunStrategy,
+  trader: TradeStrategy,
+};
+
+/** Get a strategy by name. Always a fresh instance — see the note above. */
 export function getStrategy(name: string): SimulationStrategy | undefined {
-  return strategyRegistry[name];
+  const Ctor = strategyRegistryNames[name];
+  return Ctor ? new Ctor() : undefined;
 }
 
 /**
  * Get all available strategy names.
  */
 export function getStrategyNames(): string[] {
-  return Object.keys(strategyRegistry);
+  return Object.keys(strategyRegistryNames);
 }
