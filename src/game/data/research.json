@@ -1055,6 +1055,24 @@
     "ignored": []
   },
   {
+    "guid": "f3c48ea0-8bea-51f0-be95-d0c7194fb5e6",
+    "key": "berserker_warbands",
+    "name": "Berserker Warbands",
+    "description": "unit_stat_boost ground_attack (large); unlocks berserker",
+    "age": 1,
+    "category": "military",
+    "prerequisites": ["howdah_mounting", "coastal_forts"],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "unitAll.attack",
+        "value": "2"
+      }
+    ],
+    "unlocks": ["berserker"],
+    "ignored": []
+  },
+  {
     "guid": "cacbd18b-fc0a-5329-b594-0e2096a64845",
     "key": "aqueducts",
     "name": "Aqueducts",

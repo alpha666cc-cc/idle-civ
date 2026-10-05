@@ -184,6 +184,40 @@ const playerResearchOrder = [
   "torsion_physics",
 ] as const;
 
+/**
+ * Age-1 buy order, taken verbatim from the purchase order recorded in
+ * `saves/age2-start.json` (the fastest run that reached Age 2), filtered to the
+ * entries whose research `age` is 1. `berserker_warbands` is appended because it
+ * is newer than that save: its prerequisites (`howdah_mounting`, `coastal_forts`)
+ * are the last two entries here, so it can only be bought once they are in.
+ */
+const playerAge1ResearchOrder = [
+  "alphabet",
+  "philosophy_fundamentals",
+  "irrigation",
+  "horsemanship",
+  "currency",
+  "trade_routes",
+  "ram_hulls",
+  "mathematics",
+  "iron_mining",
+  "iron_working",
+  "howdah_mounting",
+  "iron_forging",
+  "iron_chariotry",
+  "heavy_oar_arrays",
+  "iron_shielding",
+  "cavalry_formations",
+  "code_of_laws",
+  "masonry",
+  "road_networks",
+  "metallurgy_prep",
+  "shipbuilding_principles",
+  "engineered_siegecraft",
+  "coastal_forts",
+  "berserker_warbands",
+] as const;
+
 const hasResearchBonus = (researchId: string, destination: string): boolean =>
   researchDefinitions
     .find(({ key }) => key === researchId)
@@ -2566,9 +2600,17 @@ export class PlayerStrategy extends ResearchStrategy {
   ): readonly string[] {
     if (!state) return playerResearchOrder;
     const currentAge = state.getCurrentAge();
-    return currentAge && currentAge.key !== ageDefinitions[0]?.key
-      ? getDynamicResearchOrder(state, true)
-      : playerResearchOrder;
+    if (!currentAge || currentAge.key === ageDefinitions[0]?.key) {
+      return playerResearchOrder;
+    }
+    const currentAgeIndex = ageDefinitions.findIndex(
+      ({ key }) => key === currentAge.key,
+    );
+    // Age 1 follows the recorded buy order of the fastest run to clear it
+    // instead of the dynamic heuristic, so the opening stays reproducible.
+    return currentAgeIndex === 1
+      ? playerAge1ResearchOrder
+      : getDynamicResearchOrder(state, true);
   }
 
   private isResearchPaused(state: CivilizationState): boolean {

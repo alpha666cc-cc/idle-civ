@@ -1,4 +1,4 @@
-﻿[
+[
   {
     "guid": "49bc95e9-7aae-5c62-8c29-6302ea8ad01a",
     "id": "warrior",
@@ -621,6 +621,37 @@
     ]
   },
   {
+    "guid": "7f655ea0-99c0-5db1-8ce2-c4dcf587bdbb",
+    "id": "berserker",
+    "name": "Berserker",
+    "description": "Barefoot and unarmoured, they trade protection for reach: a wall of blades that answers infantry and shooters alike.",
+    "age": 1,
+    "domain": "ground",
+    "tags": ["infantry", "barbarian"],
+    "canHit": ["ground"],
+    "bonusVs": ["infantry", "ranged"],
+    "hp": 5000,
+    "attack": 1200,
+    "armor": 0,
+    "range": 1,
+    "speed": 6,
+    "accuracy": 0.8,
+    "available": false,
+    "tier": 19,
+    "costs": [
+      {
+        "resource": "military",
+        "base": 14500000000,
+        "factor": 1.65
+      },
+      {
+        "resource": "metalwork",
+        "base": 1450000000,
+        "factor": 1.65
+      }
+    ]
+  },
+  {
     "guid": "700da8f2-7d9c-5551-a7ba-390e91cfe66f",
     "id": "legionary",
     "name": "Legionary",
@@ -637,7 +668,7 @@
     "speed": 5,
     "accuracy": 0.9,
     "available": false,
-    "tier": 19,
+    "tier": 20,
     "costs": [
       {
         "resource": "military",
@@ -668,17 +699,17 @@
     "speed": 4,
     "accuracy": 0.85,
     "available": false,
-    "tier": 20,
+    "tier": 21,
     "costs": [
       {
         "resource": "military",
         "base": 2306200000000,
-        "factor": 4.5
+        "factor": 1.5
       },
       {
         "resource": "metalwork",
         "base": 230620000000,
-        "factor": 4.5
+        "factor": 1.5
       }
     ]
   },
@@ -699,7 +730,7 @@
     "speed": 8,
     "accuracy": 0.8,
     "available": false,
-    "tier": 21,
+    "tier": 22,
     "costs": [
       {
         "resource": "military",
@@ -730,7 +761,7 @@
     "speed": 6,
     "accuracy": 0.75,
     "available": false,
-    "tier": 22,
+    "tier": 23,
     "costs": [
       {
         "resource": "military",
@@ -761,7 +792,7 @@
     "speed": 2,
     "accuracy": 0.6,
     "available": false,
-    "tier": 23,
+    "tier": 24,
     "costs": [
       {
         "resource": "military",
@@ -792,7 +823,7 @@
     "speed": 7,
     "accuracy": 0.6,
     "available": false,
-    "tier": 24,
+    "tier": 25,
     "costs": [
       {
         "resource": "military",
@@ -828,7 +859,7 @@
     "speed": 9,
     "accuracy": 0.9,
     "available": false,
-    "tier": 25,
+    "tier": 26,
     "costs": [
       {
         "resource": "military",
@@ -859,7 +890,7 @@
     "speed": 6,
     "accuracy": 0.5,
     "available": false,
-    "tier": 26,
+    "tier": 27,
     "costs": [
       {
         "resource": "military",
@@ -895,7 +926,7 @@
     "speed": 7,
     "accuracy": 0.85,
     "available": false,
-    "tier": 27,
+    "tier": 28,
     "costs": [
       {
         "resource": "military",
@@ -926,7 +957,7 @@
     "speed": 6,
     "accuracy": 0.78,
     "available": false,
-    "tier": 28,
+    "tier": 29,
     "costs": [
       {
         "resource": "military",
@@ -957,7 +988,7 @@
     "speed": 4,
     "accuracy": 0.75,
     "available": false,
-    "tier": 29,
+    "tier": 30,
     "costs": [
       {
         "resource": "military",
@@ -988,7 +1019,7 @@
     "speed": 5,
     "accuracy": 0.85,
     "available": false,
-    "tier": 30,
+    "tier": 31,
     "costs": [
       {
         "resource": "military",
@@ -1019,7 +1050,7 @@
     "speed": 1,
     "accuracy": 0.6,
     "available": false,
-    "tier": 31,
+    "tier": 32,
     "costs": [
       {
         "resource": "military",
@@ -1050,7 +1081,7 @@
     "speed": 5,
     "accuracy": 0.6,
     "available": false,
-    "tier": 32,
+    "tier": 33,
     "costs": [
       {
         "resource": "military",
@@ -1086,7 +1117,7 @@
     "speed": 7,
     "accuracy": 0.65,
     "available": false,
-    "tier": 33,
+    "tier": 34,
     "costs": [
       {
         "resource": "military",
@@ -1122,7 +1153,7 @@
     "speed": 2,
     "accuracy": 0.55,
     "available": false,
-    "tier": 34,
+    "tier": 35,
     "costs": [
       {
         "resource": "military",
@@ -1153,7 +1184,7 @@
     "speed": 6,
     "accuracy": 0.6,
     "available": false,
-    "tier": 35,
+    "tier": 36,
     "costs": [
       {
         "resource": "military",
@@ -1189,7 +1220,7 @@
     "speed": 3,
     "accuracy": 0.55,
     "available": false,
-    "tier": 36,
+    "tier": 37,
     "costs": [
       {
         "resource": "military",
@@ -1220,7 +1251,7 @@
     "speed": 4,
     "accuracy": 0.8,
     "available": false,
-    "tier": 37,
+    "tier": 38,
     "costs": [
       {
         "resource": "military",
@@ -1251,7 +1282,7 @@
     "speed": 8,
     "accuracy": 0.6,
     "available": false,
-    "tier": 38,
+    "tier": 39,
     "costs": [
       {
         "resource": "military",
@@ -1282,7 +1313,7 @@
     "speed": 7,
     "accuracy": 0.8,
     "available": false,
-    "tier": 39,
+    "tier": 40,
     "costs": [
       {
         "resource": "military",
@@ -1313,7 +1344,7 @@
     "speed": 2,
     "accuracy": 0.6,
     "available": false,
-    "tier": 40,
+    "tier": 41,
     "costs": [
       {
         "resource": "military",
@@ -1344,7 +1375,7 @@
     "speed": 5,
     "accuracy": 0.6,
     "available": false,
-    "tier": 41,
+    "tier": 42,
     "costs": [
       {
         "resource": "military",
@@ -1380,7 +1411,7 @@
     "speed": 6,
     "accuracy": 0.62,
     "available": false,
-    "tier": 42,
+    "tier": 43,
     "costs": [
       {
         "resource": "military",
@@ -1416,7 +1447,7 @@
     "speed": 7,
     "accuracy": 0.65,
     "available": false,
-    "tier": 43,
+    "tier": 44,
     "costs": [
       {
         "resource": "military",
@@ -1452,7 +1483,7 @@
     "speed": 4,
     "accuracy": 0.65,
     "available": false,
-    "tier": 44,
+    "tier": 45,
     "costs": [
       {
         "resource": "military",
@@ -1488,7 +1519,7 @@
     "speed": 5,
     "accuracy": 0.7,
     "available": false,
-    "tier": 45,
+    "tier": 46,
     "costs": [
       {
         "resource": "military",
@@ -1524,7 +1555,7 @@
     "speed": 8,
     "accuracy": 0.7,
     "available": false,
-    "tier": 46,
+    "tier": 47,
     "costs": [
       {
         "resource": "military",
@@ -1560,7 +1591,7 @@
     "speed": 8,
     "accuracy": 0.75,
     "available": false,
-    "tier": 47,
+    "tier": 48,
     "costs": [
       {
         "resource": "military",
@@ -1596,7 +1627,7 @@
     "speed": 2,
     "accuracy": 0.6,
     "available": false,
-    "tier": 48,
+    "tier": 49,
     "costs": [
       {
         "resource": "military",
@@ -1632,7 +1663,7 @@
     "speed": 3,
     "accuracy": 0.6,
     "available": false,
-    "tier": 49,
+    "tier": 50,
     "costs": [
       {
         "resource": "military",
@@ -1673,7 +1704,7 @@
     "speed": 4,
     "accuracy": 0.55,
     "available": false,
-    "tier": 50,
+    "tier": 51,
     "costs": [
       {
         "resource": "military",
@@ -1709,7 +1740,7 @@
     "speed": 9,
     "accuracy": 0.65,
     "available": false,
-    "tier": 51,
+    "tier": 52,
     "costs": [
       {
         "resource": "military",
@@ -1745,7 +1776,7 @@
     "speed": 2,
     "accuracy": 0.65,
     "available": false,
-    "tier": 52,
+    "tier": 53,
     "costs": [
       {
         "resource": "military",
@@ -1781,7 +1812,7 @@
     "speed": 4,
     "accuracy": 0.6,
     "available": false,
-    "tier": 53,
+    "tier": 54,
     "costs": [
       {
         "resource": "military",
@@ -1822,7 +1853,7 @@
     "speed": 5,
     "accuracy": 0.7,
     "available": false,
-    "tier": 54,
+    "tier": 55,
     "costs": [
       {
         "resource": "military",
@@ -1858,7 +1889,7 @@
     "speed": 5,
     "accuracy": 0.75,
     "available": false,
-    "tier": 55,
+    "tier": 56,
     "costs": [
       {
         "resource": "military",
@@ -1894,7 +1925,7 @@
     "speed": 9,
     "accuracy": 0.75,
     "available": false,
-    "tier": 56,
+    "tier": 57,
     "costs": [
       {
         "resource": "military",
@@ -1930,7 +1961,7 @@
     "speed": 4,
     "accuracy": 0.75,
     "available": false,
-    "tier": 57,
+    "tier": 58,
     "costs": [
       {
         "resource": "military",
@@ -1966,7 +1997,7 @@
     "speed": 10,
     "accuracy": 0.72,
     "available": false,
-    "tier": 58,
+    "tier": 59,
     "costs": [
       {
         "resource": "military",
@@ -2002,7 +2033,7 @@
     "speed": 6,
     "accuracy": 0.6,
     "available": false,
-    "tier": 59,
+    "tier": 60,
     "costs": [
       {
         "resource": "military",
@@ -2038,7 +2069,7 @@
     "speed": 3,
     "accuracy": 0.65,
     "available": false,
-    "tier": 60,
+    "tier": 61,
     "costs": [
       {
         "resource": "military",
@@ -2079,7 +2110,7 @@
     "speed": 4,
     "accuracy": 0.5,
     "available": false,
-    "tier": 61,
+    "tier": 62,
     "costs": [
       {
         "resource": "military",
@@ -2120,7 +2151,7 @@
     "speed": 6,
     "accuracy": 0.85,
     "available": false,
-    "tier": 62,
+    "tier": 63,
     "costs": [
       {
         "resource": "military",
@@ -2156,7 +2187,7 @@
     "speed": 5,
     "accuracy": 0.85,
     "available": false,
-    "tier": 63,
+    "tier": 64,
     "costs": [
       {
         "resource": "military",
@@ -2192,7 +2223,7 @@
     "speed": 10,
     "accuracy": 0.88,
     "available": false,
-    "tier": 64,
+    "tier": 65,
     "costs": [
       {
         "resource": "military",
@@ -2233,7 +2264,7 @@
     "speed": 7,
     "accuracy": 0.82,
     "available": false,
-    "tier": 65,
+    "tier": 66,
     "costs": [
       {
         "resource": "military",
@@ -2279,7 +2310,7 @@
     "speed": 9,
     "accuracy": 0.85,
     "available": false,
-    "tier": 66,
+    "tier": 67,
     "costs": [
       {
         "resource": "military",
@@ -2315,7 +2346,7 @@
     "speed": 10,
     "accuracy": 0.92,
     "available": false,
-    "tier": 67,
+    "tier": 68,
     "costs": [
       {
         "resource": "military",
@@ -2356,7 +2387,7 @@
     "speed": 9,
     "accuracy": 0.85,
     "available": false,
-    "tier": 68,
+    "tier": 69,
     "costs": [
       {
         "resource": "military",
@@ -2392,7 +2423,7 @@
     "speed": 3,
     "accuracy": 0.85,
     "available": false,
-    "tier": 69,
+    "tier": 70,
     "costs": [
       {
         "resource": "military",
@@ -2428,7 +2459,7 @@
     "speed": 6,
     "accuracy": 0.85,
     "available": false,
-    "tier": 70,
+    "tier": 71,
     "costs": [
       {
         "resource": "military",
@@ -2474,7 +2505,7 @@
     "speed": 4,
     "accuracy": 0.6,
     "available": false,
-    "tier": 71,
+    "tier": 72,
     "costs": [
       {
         "resource": "military",
@@ -2515,7 +2546,7 @@
     "speed": 8,
     "accuracy": 0.9,
     "available": false,
-    "tier": 72,
+    "tier": 73,
     "costs": [
       {
         "resource": "military",
@@ -2551,7 +2582,7 @@
     "speed": 8,
     "accuracy": 0.8,
     "available": false,
-    "tier": 73,
+    "tier": 74,
     "costs": [
       {
         "resource": "military",
@@ -2592,7 +2623,7 @@
     "speed": 0,
     "accuracy": 1,
     "available": false,
-    "tier": 74,
+    "tier": 75,
     "costs": [
       {
         "resource": "military",
@@ -2633,7 +2664,7 @@
     "speed": 0,
     "accuracy": 0.99,
     "available": false,
-    "tier": 75,
+    "tier": 76,
     "costs": [
       {
         "resource": "military",
@@ -2674,7 +2705,7 @@
     "speed": 6,
     "accuracy": 0.9,
     "available": false,
-    "tier": 76,
+    "tier": 77,
     "costs": [
       {
         "resource": "military",
@@ -2715,7 +2746,7 @@
     "speed": 10,
     "accuracy": 0.95,
     "available": false,
-    "tier": 77,
+    "tier": 78,
     "costs": [
       {
         "resource": "military",

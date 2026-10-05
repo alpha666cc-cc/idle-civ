@@ -125,7 +125,11 @@
   },
   "road_networks": {
     "column": 14,
-    "row": 1
+    "row": 3
+  },
+  "berserker_warbands": {
+    "column": 14,
+    "row": 2
   },
   "metallurgy_prep": {
     "column": 9,
