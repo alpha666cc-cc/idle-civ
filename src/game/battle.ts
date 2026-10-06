@@ -1,5 +1,9 @@
 import { ExpNumber } from "./expNumber";
-import { DEFAULT_FORMATION, type FormationId } from "./formations";
+import {
+  DEFAULT_FORMATION,
+  findFormationDefinition,
+  type FormationId,
+} from "./formations";
 import {
   DEFAULT_ORDER,
   orderDefinitions,
@@ -89,6 +93,78 @@ export const maximumRounds = 101;
 /** Bonus damage against a tagged target (`bonusVs`), as in the prototype. */
 const bonusVsMultiplier = 1.5;
 
+/**
+ * Apply formation stat bonuses to unit stats.
+ * `standard` formation has no bonuses, so it returns stats unchanged.
+ */
+const applyFormationStats = (
+  stats: UnitStats,
+  formation: FormationId,
+): UnitStats => {
+  const formationDef = findFormationDefinition(formation);
+  if (
+    !formationDef ||
+    !formationDef.statBonuses ||
+    formationDef.statBonuses.length === 0
+  ) {
+    return stats;
+  }
+
+  const bonusMap = new Map(
+    formationDef.statBonuses.map((b) => [b.attribute, b.multiplier]),
+  );
+
+  const applyBonus = (value: ExpNumber, attribute: string): ExpNumber => {
+    const multiplier = bonusMap.get(attribute);
+    if (!multiplier) return value;
+    return value.mul(ExpNumber.fromNumber(multiplier));
+  };
+
+  const applyBonusToNumber = (value: number, attribute: string): number => {
+    const multiplier = bonusMap.get(attribute);
+    if (!multiplier) return value;
+    return value * multiplier;
+  };
+
+  let newStats = {
+    ...stats,
+    hp: applyBonus(stats.hp, "unitAll.hp"),
+    attack: applyBonus(stats.attack, "unitAll.attack"),
+    accuracy: applyBonusToNumber(stats.accuracy, "unitAll.accuracy"),
+  };
+
+  // Tag-specific bonuses: for now, just apply to all units with that tag
+  // This is a simplification - proper implementation would check unit tags
+  if (bonusMap.has("tag.cavalry.attack")) {
+    newStats = {
+      ...newStats,
+      attack: applyBonus(newStats.attack, "tag.cavalry.attack"),
+    };
+  }
+  if (bonusMap.has("tag.ranged.attack")) {
+    newStats = {
+      ...newStats,
+      attack: applyBonus(newStats.attack, "tag.ranged.attack"),
+    };
+  }
+
+  return newStats;
+};
+
+/**
+ * Find the frontmost unit in an army (most negative position offset).
+ * Used to calculate relative position offsets.
+ */
+const frontmostOffset = (army: readonly Fighter[]): number => {
+  if (army.length === 0) return 0;
+  return Math.min(
+    ...army.map((f) => {
+      const formationDef = findFormationDefinition(f.formation);
+      return formationDef?.positionOffset ?? 0;
+    }),
+  );
+};
+
 type Fighter = {
   readonly unitId: string;
   readonly side: BattleSide;
@@ -127,28 +203,38 @@ const livingCount = (fighter: Fighter): ExpNumber => {
 /**
  * Calculate army movement speed as unweighted average of unit formation speeds.
  * This prevents a single fast unit from rushing the entire army.
- * For standard formation, use the unit's actual speed stat to preserve Age 0/1 behavior.
+ * For units with `standard` formation (speed 1.0), use the unit's actual speed stat.
  */
 const armyMovementSpeed = (fighters: readonly Fighter[]): number => {
   if (fighters.length === 0) return 1.0;
 
-  // Use the fastest unit's speed (old behavior, preserved for now)
-  // TODO: In Age 2+, switch to unweighted average of formation speeds
-  return Math.max(...fighters.map((f) => f.stats.speed));
+  // Use unweighted average of effective speeds
+  const effectiveSpeeds = fighters.map((f) => {
+    const formationDef = findFormationDefinition(f.formation);
+    const formationSpeed = formationDef?.movementSpeed ?? 1.0;
+    // For standard formation (speed 1.0), use the unit's actual speed
+    // This preserves Age 0/1 behavior when all units use standard
+    if (formationSpeed === 1.0) return f.stats.speed;
+    return formationSpeed;
+  });
+  return effectiveSpeeds.reduce((a, b) => a + b, 0) / effectiveSpeeds.length;
 };
 
 /**
  * Calculate effective position of a unit relative to enemy.
- * For now, this just returns the distance directly (no formation effects).
- * TODO: Re-enable formation-based position calculation when Age 2+ battle integration is complete.
+ * Offsets are relative to own army's front line, not absolute from enemy.
+ * `standard` formation has offset 0, so it returns distance unchanged.
  */
 const effectivePosition = (
-  _fighter: Fighter,
-  _ownArmy: readonly Fighter[],
+  fighter: Fighter,
+  ownArmy: readonly Fighter[],
   distance: number,
 ): number => {
-  // For now, disable position offsets entirely to preserve Age 0/1 behavior
-  return distance;
+  const formationDef = findFormationDefinition(fighter.formation);
+  const offset = formationDef?.positionOffset ?? 0;
+  const armyFront = frontmostOffset(ownArmy);
+  const relativeOffset = offset - armyFront;
+  return distance + relativeOffset;
 };
 
 const buildFighters = (
@@ -161,9 +247,8 @@ const buildFighters = (
       const definition = findUnitDefinition(stack.unitId);
       if (!definition || stack.count.lte(ExpNumber.ZERO)) return [];
       const formation = stack.formation ?? DEFAULT_FORMATION;
-      // For now, skip formation stat application entirely to preserve Age 0/1 behavior
-      // TODO: Re-enable when Age 2+ battle integration is complete
-      const effectiveStats = stack.stats;
+      // `standard` formation has no stat bonuses, so this is a no-op for Age 0/1
+      const effectiveStats = applyFormationStats(stack.stats, formation);
       const hitPoints = effectiveStats.hp.div(
         ExpNumber.ONE.sub(
           ExpNumber.fromNumber(Math.min(effectiveStats.armor, 0.9)),
@@ -193,13 +278,13 @@ const canReach = (
   attacker: Fighter,
   target: Fighter,
   distance: number,
-  _attackerArmy: readonly Fighter[],
-  _targetArmy: readonly Fighter[],
+  attackerArmy: readonly Fighter[],
+  targetArmy: readonly Fighter[],
 ): boolean => {
   if (!attacker.canHit.includes(target.domain)) return false;
 
-  const attackerPos = effectivePosition(attacker, _attackerArmy, distance);
-  const targetPos = effectivePosition(target, _targetArmy, distance);
+  const attackerPos = effectivePosition(attacker, attackerArmy, distance);
+  const targetPos = effectivePosition(target, targetArmy, distance);
   const actualDistance = Math.abs(attackerPos - targetPos);
 
   if (actualDistance > attacker.stats.range) return false;
@@ -333,9 +418,9 @@ const applyScreening = (
     target.stats.range <= 3 ||
     // Ranged units are screened under the default order too. The only Age-0
     // anti-naval unit is the archer, and `standard`'s weakest-first targeting
-    // deletes archers (hp 60-80) before they can shoot. `protect_ranged` and
-    // screening orders are Age-2+ unlocks, so without this the mechanic is
-    // structurally unavailable where it is most needed.
+    // deletes archers (hp 60-80) before they can shoot. `protect_ranged` is
+    // a targeting order unlock, so without this the mechanic is structurally
+    // unavailable where it is most needed.
     (target.order === "standard" && target.stats.range >= 4);
   if (!protectedTarget) return damage;
   const screens = targetAllies.filter(
@@ -429,8 +514,7 @@ const simulateBattleInternal = (
       target.hpPool = ExpNumber.max(ExpNumber.ZERO, target.hpPool.sub(damage));
     }
 
-    // Use army movement speed (fastest unit, for Age 0/1 compatibility)
-    // TODO: Switch to formation-based average speed at Age 2+
+    // Use army movement speed (unweighted average of formation speeds)
     const armySpeed = armyMovementSpeed([...player, ...enemy]);
     distance = Math.max(1, distance - Math.max(1, Math.floor(armySpeed)));
     if (recordRounds) {

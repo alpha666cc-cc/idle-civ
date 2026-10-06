@@ -2,8 +2,8 @@
   {
     "id": "standard",
     "name": "Standard",
-    "description": "No special positioning or stat trades.",
-    "unlockAge": 2,
+    "description": "No special positioning or stat trades. Represents Age 0/1 behavior (fastest unit determines army speed).",
+    "unlockAge": 0,
     "unlockType": "age_entry",
     "positionOffset": 0,
     "movementSpeed": 1.0
@@ -11,7 +11,7 @@
   {
     "id": "frontline",
     "name": "Hold the Line",
-    "description": "Engage the nearest enemy and screen allies behind you.",
+    "description": "Stand forward at the front (+20% HP, +20% movement). Engages enemies first.",
     "unlockAge": 2,
     "unlockType": "age_entry",
     "positionOffset": -2,
