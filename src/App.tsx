@@ -60,6 +60,7 @@ import {
 } from "./game/attributes";
 import ArmyPanel from "./components/ArmyPanel";
 import TradePanel from "./components/TradePanel";
+import WorkerCountInput from "./components/WorkerCountInput";
 import { type BattleSimulation } from "./game/battle";
 import ResearchPanel from "./components/ResearchPanel";
 import BattleSimulatorPanel from "./components/BattleSimulatorPanel";
@@ -1057,6 +1058,28 @@ function App() {
     );
   };
 
+  /**
+   * Sets a resource's assigned worker count to an absolute target (the
+   * production card's count input). The delta is routed through the existing
+   * assign/unassign commands, which clamp it to the available population and
+   * the workers already on that resource.
+   */
+  const setWorkerCount = (
+    resourceKey: ProductionResourceKey,
+    target: number,
+  ) => {
+    const next = Math.max(0, Math.floor(target));
+    setGameState((current) => {
+      const assigned = Math.round(
+        (current.workers[resourceKey] ?? ExpNumber.ZERO).toNumber(),
+      );
+      const delta = next - assigned;
+      if (delta > 0) return current.assignWorker(resourceKey, delta);
+      if (delta < 0) return current.unassignWorker(resourceKey, -delta);
+      return current;
+    });
+  };
+
   const buyBuilding = (building: BuildingPresentation) => {
     if (!gameState.isBuildingAvailable(building.key)) {
       setNotice(`${building.name} will unlock as your civilization advances.`);
@@ -1389,13 +1412,21 @@ function App() {
             >
               <Icon size={17} strokeWidth={1.8} />
               <span>{label}</span>
-              {label === "Upgrades" && hasAffordableUpgrade && (
+              {label === "Upgrades" && unlockedUpgrades.length > 0 && (
                 <span
-                  className="tab-notification"
-                  title="Upgrade available to buy"
+                  className={`tab-notification${
+                    hasAffordableUpgrade ? "" : " pending"
+                  }`}
+                  title={
+                    hasAffordableUpgrade
+                      ? "Upgrade available to buy"
+                      : "Upgrade unlocked, but not enough resources"
+                  }
                 >
                   <span className="visually-hidden">
-                    Upgrade available to buy
+                    {hasAffordableUpgrade
+                      ? "Upgrade available to buy"
+                      : "Upgrade unlocked, but not enough resources"}
                   </span>
                 </span>
               )}
@@ -1431,7 +1462,11 @@ function App() {
                 <div className={`resource-icon ${tone}`}>
                   <Icon size={16} strokeWidth={1.8} />
                 </div>
-                <div className="resource-copy">
+                <div
+                  className={`resource-copy${
+                    key === "population" ? " stacked" : ""
+                  }`}
+                >
                   <span>{label}</span>
                   <strong>
                     {key === "population"
@@ -1865,7 +1900,12 @@ function App() {
                             >
                               −
                             </button>
-                            <span>{fmtCount(workers[key])}</span>
+                            <WorkerCountInput
+                              label={label}
+                              count={workers[key]}
+                              format={numberFormat}
+                              onCommit={(target) => setWorkerCount(key, target)}
+                            />
                             <button
                               onClick={() => changeWorkers(key, 1)}
                               disabled={availableWorkers === 0}
@@ -1911,11 +1951,21 @@ function App() {
                         ))}
                       </ul>
                       <div className="upgrade-cost">
-                        {upgrade.costs.map(({ resource, base }) => (
-                          <span key={resource}>
-                            {fmt(base)} {resource}
-                          </span>
-                        ))}
+                        {upgrade.costs.map(({ resource, base }) => {
+                          const lacking =
+                            !gameState.freeUpgrades &&
+                            resourceAmounts[resource].lt(base);
+                          return (
+                            <span
+                              key={resource}
+                              className={
+                                lacking ? "building-cost-lacking" : undefined
+                              }
+                            >
+                              {fmt(base)} {resource}
+                            </span>
+                          );
+                        })}
                       </div>
                       <button
                         type="button"

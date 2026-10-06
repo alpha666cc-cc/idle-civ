@@ -1,6 +1,6 @@
 /** Scratch: gate outcomes at maximumRounds = 101. */
 import { ExpNumber } from "../src/game/expNumber.js";
-import { simulateBattleOutcome, simulateBattle } from "../src/game/battle.js";
+import { simulateBattle } from "../src/game/battle.js";
 import { CivilizationState } from "../src/game/civilizationState.js";
 
 const state = new CivilizationState();

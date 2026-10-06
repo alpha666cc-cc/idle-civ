@@ -400,6 +400,13 @@ const csvLine = (cells: string[]): string => cells.map(csvCell).join(",");
 
 type Sheet = { name: string; header: string; rows: string[] };
 
+/**
+ * Upgrades whose purchase is timed like a battle. `wonder0` (the Great Monument)
+ * is what closes an age in practice, so its timestamp is the end-of-age event —
+ * add to this list rather than special-casing an id inline.
+ */
+const MILESTONE_UPGRADES = ["wonder0"];
+
 /* ---------------------------------------------------- run one strategy */
 
 /** Runs a strategy and returns one CSV line per `interval` simulated seconds. */
@@ -431,6 +438,8 @@ const runStrategy = (
   };
   const notedBattles = new Set<string>();
   const notedResearch = new Set<number>();
+  const notedFirstResearch = new Set<number>();
+  const notedUpgrades = new Set<string>();
 
   // The capture rides on the strategy hook, so it sees exactly the state the
   // runner would have snapshotted at that second. `rowIndex` is a local counter
@@ -460,6 +469,14 @@ const runStrategy = (
           mark(`won ${id.replace(/^age\d_/, "")}`, at);
         }
       }
+      // Structural upgrades, timed the same way so an end-of-age event can be
+      // compared against the battles and research around it.
+      for (const id of MILESTONE_UPGRADES) {
+        if (state.isUpgradeBought(id) && !notedUpgrades.has(id)) {
+          notedUpgrades.add(id);
+          mark(`built ${id}`, at);
+        }
+      }
       // Research completion is per age and only exists while a tech is buyable;
       // a run that never finishes an age simply records nothing for it.
       const age = state.getCurrentAge();
@@ -470,6 +487,16 @@ const runStrategy = (
         const ageTechs = researchDefinitions.filter(
           (r) => r.age === ageIndex,
         );
+        // The first tech bought in this age. Paired with "<age> research done"
+        // below — the last — so the pair brackets how long research in an age
+        // actually took, which a single arrival time cannot show.
+        if (
+          !notedFirstResearch.has(ageIndex) &&
+          ageTechs.some((r) => state.isResearchBought(r.key))
+        ) {
+          notedFirstResearch.add(ageIndex);
+          mark(`first ${age?.name ?? ageIndex} research`, at);
+        }
         const finished =
           ageTechs.length > 0 &&
           ageTechs.every(
@@ -742,6 +769,10 @@ if (process.argv.includes("--merge")) {
 }
 
 const sheets: Sheet[] = [];
+// Everything `mark()` records, also written to `milestones.txt` — a 10-hour sweep
+// overflows any terminal scrollback, and these timings are the thing worth
+// keeping. One line per milestone, grouped by strategy.
+const milestoneLines: string[] = [];
 mkdirSync(outDir, { recursive: true });
 for (const name of strategies) {
   const result = runStrategy(name);
@@ -768,11 +799,31 @@ for (const name of strategies) {
   // barracks yet still finish first, or win early and then stall on buildings.
   // Unreached milestones are simply absent from the list.
   for (const m of result.milestones) {
+    const percent = Math.round((m.at / Math.max(1, result.gameTime)) * 100);
     console.log(
       `             ${m.label.padEnd(22)} ${clock(m.at).padStart(9)}` +
-        `  (${Math.round((m.at / Math.max(1, result.gameTime)) * 100)}% of run)`,
+        `  (${percent}% of run)`,
+    );
+    milestoneLines.push(`${name}  ${m.label.padEnd(24)} ${clock(m.at).padStart(9)}`);
+  }
+  // The arrival is the headline number and never appears as a milestone: with an
+  // age target the run stops on it, so the hook may not fire again afterwards.
+  // A capped run must not read as an arrival, so the label carries the flag.
+  if (targetAge) {
+    const arrival = result.arrived
+      ? `reached ${targetAge}`
+      : `NO ${targetAge} (horizon)`;
+    milestoneLines.push(
+      `${name}  ${arrival.padEnd(24)} ${clock(result.gameTime).padStart(9)}`,
     );
   }
+  milestoneLines.push("");
 }
 
+writeFileSync(
+  `${outDir}/milestones.txt`,
+  milestoneLines.join("\n") + "\n",
+  "utf8",
+);
+console.log(`\nmilestones: ${outDir}/milestones.txt`);
 writeWorkbook(sheets, header.length);

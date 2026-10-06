@@ -39,7 +39,7 @@ button:focus-visible {
 }
 .app-shell {
   display: grid;
-  grid-template-columns: 268px minmax(440px, 1fr) 342px;
+  grid-template-columns: 280px minmax(440px, 1fr) 342px;
   height: 100dvh;
   min-height: 0;
   overflow: hidden;
@@ -260,6 +260,9 @@ button:focus-visible {
   background: var(--accent);
   box-shadow: 0 0 0 3px var(--ink-soft);
 }
+.tab-notification.pending {
+  background: var(--warm);
+}
 .tab-button.active svg {
   color: var(--accent);
 }
@@ -379,6 +382,15 @@ button:focus-visible {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Population: capacity sits on its own line, so a long "x/y capacity z"
+   row can never stretch or wrap enough to push the sidebar into a scrollbar. */
+.resource-copy.stacked {
+  flex-wrap: wrap;
+}
+.resource-copy.stacked small {
+  flex: 1 0 100%;
+  margin-left: 0;
+}
 /* Rate readout: DM Mono plus a colour cue, so growth vs. drain is readable
    at a glance in the narrow sidebar. */
 .resource-rate {
@@ -430,16 +442,18 @@ button:focus-visible {
   background: #2b332e;
   cursor: not-allowed;
 }
-.worker-controls span {
-  display: grid;
-  place-items: center;
-  width: 19px;
+.worker-controls input {
+  flex: 1;
+  min-width: 0;
   height: 100%;
+  padding: 0 2px;
+  border: 0;
   color: #e4ead7;
   background: #26302a;
   font:
     10px "DM Mono",
     monospace;
+  text-align: center;
 }
 .sidebar-footer {
   display: flex;
@@ -1294,11 +1308,16 @@ button:focus-visible {
   color: #9ca79b;
   background: #e0e4da;
 }
-.production-workbench .worker-controls span {
+.production-workbench .worker-controls input {
   color: #4d5e4e;
   background: #edf0e7;
-  width: 28px;
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.production-workbench .worker-controls input:focus {
+  color: #2c3830;
+  background: #f7f9f1;
+  outline: none;
 }
 .modal-backdrop {
   position: fixed;
