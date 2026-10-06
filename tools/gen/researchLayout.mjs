@@ -58,17 +58,31 @@ const COLUMN_SLACK = 2;
 const HIT_WEIGHT = 1000;
 const CROSS_WEIGHT = 12;
 const COLUMN_WEIGHT = 40;
+const DIRECT_LINE_BONUS = 15;
+
+// Per-age budget overrides (age -> {iterations, restarts, columnSlack})
+const AGE_BUDGET = {};
+
+// Ages to skip layout generation and use existing frozen positions
+const FROZEN_AGES = new Set([0, 1, 2]);
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..");
 const researchPath = path.join(root, "src", "game", "data", "research.json");
-const outputPath = path.join(root, "src", "game", "data", "researchLayout.json");
+const outputPath = path.join(
+  root,
+  "src",
+  "game",
+  "data",
+  "researchLayout.json",
+);
 const checkOnly = process.argv.includes("--check");
 
 const research = JSON.parse(fs.readFileSync(researchPath, "utf8"));
 const byKey = new Map(research.map((tech) => [tech.key, tech]));
-const ages = [...new Set(research.map((tech) => tech.age))].sort((a, b) => a - b);
-
+const ages = [...new Set(research.map((tech) => tech.age))].sort(
+  (a, b) => a - b,
+);
 
 /** Deterministic PRNG so repeated runs produce byte-identical output. */
 const mulberry32 = (state) => () => {
@@ -80,15 +94,14 @@ const mulberry32 = (state) => () => {
 };
 
 /** Longest prerequisite chain inside one age: the seed column of a tech. */
-const depthCache = new Map();
-const sameAgeDepth = (tech) => {
+const sameAgeDepth = (tech, depthCache) => {
   const cached = depthCache.get(tech.key);
   if (cached !== undefined) return cached;
   depthCache.set(tech.key, 0);
   const depth = tech.prerequisites.reduce((maximum, prerequisiteId) => {
     const parent = byKey.get(prerequisiteId);
     if (!parent || parent.age !== tech.age) return maximum;
-    return Math.max(maximum, sameAgeDepth(parent) + 1);
+    return Math.max(maximum, sameAgeDepth(parent, depthCache) + 1);
   }, 0);
   depthCache.set(tech.key, depth);
   return depth;
@@ -101,6 +114,7 @@ const graphOf = (age) => {
   const parents = techs.map(() => []);
   const children = techs.map(() => []);
   const edges = [];
+  const depthCache = new Map();
   for (const tech of techs) {
     for (const prerequisiteId of tech.prerequisites) {
       const parent = byKey.get(prerequisiteId);
@@ -112,7 +126,14 @@ const graphOf = (age) => {
       edges.push({ from, to });
     }
   }
-  return { techs, parents, children, edges, level: techs.map(sameAgeDepth) };
+  return {
+    techs,
+    parents,
+    children,
+    edges,
+    level: techs.map((t) => sameAgeDepth(t, depthCache)),
+    age,
+  };
 };
 
 // --- geometry (mirror of src/game/researchLayout.ts) ------------------------
@@ -267,10 +288,31 @@ const searchAge = (graph, rand, iterations, columnSlack) => {
   const hitCounts = graph.edges.map((edge) =>
     edgeHitCount(graph, col, row, edge),
   );
+
+  const directLineCount = () => {
+    let count = 0;
+    for (const edge of graph.edges) {
+      const parentCol = col[edge.from];
+      const childCol = col[edge.to];
+      const parentRow = row[edge.from];
+      const childRow = row[edge.to];
+
+      // Direct horizontal lines: same row, 1-2 columns apart
+      if (
+        parentRow === childRow &&
+        (childCol === parentCol + 1 || childCol === parentCol + 2)
+      ) {
+        count += 1;
+      }
+    }
+    return count;
+  };
+
   const costOf = () =>
     HIT_WEIGHT * totalOf(hitCounts) +
     CROSS_WEIGHT * edgeCrossingCount(col, row, graph.edges) +
-    COLUMN_WEIGHT * (Math.max(...col) + 1);
+    COLUMN_WEIGHT * (Math.max(...col) + 1) -
+    DIRECT_LINE_BONUS * directLineCount();
 
   const startingCost = costOf();
   let current = startingCost;
@@ -293,7 +335,11 @@ const searchAge = (graph, rand, iterations, columnSlack) => {
     // Starts hot enough to cross a "one more hit" barrier, cools to greedy.
     const temperature = 3000 * Math.pow(0.001, step / iterations);
     const node = nodesWithEdges[Math.floor(rand() * nodesWithEdges.length)];
-    const snapshot = { col: col[node], row: row[node], hits: hitCounts.slice() };
+    const snapshot = {
+      col: col[node],
+      row: row[node],
+      hits: hitCounts.slice(),
+    };
     const revert = () => {
       cell.delete(`${col[node]}:${row[node]}`);
       col[node] = snapshot.col;
@@ -402,10 +448,15 @@ const searchAge = (graph, rand, iterations, columnSlack) => {
 
 /** Best of RESTARTS anneals for one age, by the shared cost function. */
 const bestForAge = (graph) => {
+  const budget = AGE_BUDGET[graph.age] || {};
+  const iterations = budget.iterations ?? ITERATIONS;
+  const restarts = budget.restarts ?? RESTARTS;
+  const columnSlack = budget.columnSlack ?? COLUMN_SLACK;
+
   let best = null;
-  for (let restart = 0; restart < RESTARTS; restart += 1) {
+  for (let restart = 0; restart < restarts; restart += 1) {
     const rand = mulberry32(SEED + restart * 7919);
-    const candidate = searchAge(graph, rand, ITERATIONS, COLUMN_SLACK);
+    const candidate = searchAge(graph, rand, iterations, columnSlack);
     if (!best || candidate.cost < best.cost) best = candidate;
   }
   return best;
@@ -414,26 +465,56 @@ const bestForAge = (graph) => {
 const layout = new Map();
 let cursor = 0;
 const report = [];
+
+// Load existing layout for frozen ages
+const existingLayout = fs.existsSync(outputPath)
+  ? JSON.parse(fs.readFileSync(outputPath, "utf8"))
+  : {};
+
 for (const age of ages) {
-  const graph = graphOf(age);
-  const best = bestForAge(graph);
-  const minimum = Math.min(...best.col);
-  const width = Math.max(...best.col) - minimum + 1;
-  graph.techs.forEach((tech, node) => {
-    layout.set(tech.key, {
-      column: best.col[node] - minimum + cursor,
-      row: best.row[node],
+  if (FROZEN_AGES.has(age)) {
+    // Use existing layout for frozen ages
+    const ageTechs = research.filter((tech) => tech.age === age);
+    const ageExisting = ageTechs.map((tech) => existingLayout[tech.key]);
+    const minCol = Math.min(...ageExisting.map((pos) => pos.column));
+    const maxCol = Math.max(...ageExisting.map((pos) => pos.column));
+    const width = maxCol - minCol + 1;
+
+    ageTechs.forEach((tech) => {
+      const existing = existingLayout[tech.key];
+      if (existing) {
+        layout.set(tech.key, {
+          column: existing.column - minCol + cursor,
+          row: existing.row,
+        });
+      }
     });
-  });
-  const verify = graph.edges.map((edge) =>
-    edgeHitCount(graph, best.col, best.row, edge),
-  );
-  report.push(
-    `age ${age}: ${graph.techs.length} techs, ${width} columns, ` +
-      `${graph.edges.length} same-age arrows, ` +
-      `${totalOf(verify)} would cut a card (routed around it)`,
-  );
-  cursor += width;
+    report.push(
+      `age ${age}: ${ageTechs.length} techs, ${width} columns (frozen layout)`,
+    );
+    cursor += width;
+  } else {
+    // Generate new layout for non-frozen ages
+    const graph = graphOf(age);
+    const best = bestForAge(graph);
+    const minimum = Math.min(...best.col);
+    const width = Math.max(...best.col) - minimum + 1;
+    graph.techs.forEach((tech, node) => {
+      layout.set(tech.key, {
+        column: best.col[node] - minimum + cursor,
+        row: best.row[node],
+      });
+    });
+    const verify = graph.edges.map((edge) =>
+      edgeHitCount(graph, best.col, best.row, edge),
+    );
+    report.push(
+      `age ${age}: ${graph.techs.length} techs, ${width} columns, ` +
+        `${graph.edges.length} same-age arrows, ` +
+        `${totalOf(verify)} would cut a card (routed around it)`,
+    );
+    cursor += width;
+  }
 }
 report.push(`total: ${research.length} cards, ${cursor} columns`);
 /** Prerequisite pairs that share a column: drawn as straight vertical drops. */
@@ -475,6 +556,13 @@ for (const tech of research) {
   for (const prerequisiteId of tech.prerequisites) {
     const parent = layout.get(prerequisiteId);
     if (!parent) continue;
+    // Skip validation for frozen ages - they use existing layouts
+    if (
+      FROZEN_AGES.has(tech.age) ||
+      FROZEN_AGES.has(byKey.get(prerequisiteId)?.age ?? -1)
+    ) {
+      continue;
+    }
     if (parent.column > child.column) {
       problems.push(
         `${prerequisiteId} (col ${parent.column}) is not left of ` +

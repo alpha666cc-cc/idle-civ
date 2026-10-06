@@ -517,7 +517,7 @@
     "description": "production_multiplier trade (small); building_cost_reduction all (small)",
     "age": 1,
     "category": "civilian",
-    "prerequisites": ["writing"],
+    "prerequisites": ["writing", "shipbuilding_principles"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -887,7 +887,7 @@
     "description": "unlock_unit cavalry_iron (small); unit_stat_boost cavalry_attack (small)",
     "age": 1,
     "category": "military",
-    "prerequisites": ["domestication"],
+    "prerequisites": ["domestication", "irrigation"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -910,7 +910,7 @@
     "description": "unlock_unit war_galley_iron (small); unit_stat_boost ship_attack (small)",
     "age": 1,
     "category": "military",
-    "prerequisites": ["galley_design"],
+    "prerequisites": ["galley_design", "shipbuilding_principles"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1079,7 +1079,7 @@
     "description": "building_capacity house (large); production_multiplier house (small)",
     "age": 2,
     "category": "civilian",
-    "prerequisites": ["masonry", "mathematics"],
+    "prerequisites": ["masonry", "mathematics", "architecture"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1127,7 +1127,7 @@
     "description": "worker_efficiency all (small); production_multiplier all (small)",
     "age": 2,
     "category": "civilian",
-    "prerequisites": ["code_of_laws"],
+    "prerequisites": ["code_of_laws", "crop_rotation"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1180,7 +1180,7 @@
     "description": "production_multiplier gold_mine (large); building_cost_reduction all (small)",
     "age": 2,
     "category": "civilian",
-    "prerequisites": ["currency"],
+    "prerequisites": ["currency", "logic"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1272,7 +1272,7 @@
     "description": "building_cost_reduction all (small); production_multiplier all (small)",
     "age": 2,
     "category": "civilian",
-    "prerequisites": ["aqueducts"],
+    "prerequisites": ["surveying", "lumber_mills"],
     "bonuses": [
       {
         "type": "costReductionPercent",
@@ -1436,7 +1436,7 @@
     "description": "unlock_unit hoplite (small); unit_stat_boost infantry_hp (small)",
     "age": 2,
     "category": "military",
-    "prerequisites": ["iron_working"],
+    "prerequisites": ["iron_working", "legion_discipline", "civil_service"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1472,7 +1472,7 @@
     "description": "unlock_unit archer_classical (small); unit_stat_boost ranged_attack (small)",
     "age": 2,
     "category": "military",
-    "prerequisites": ["composite_bowcraft"],
+    "prerequisites": ["composite_bowcraft", "civil_service"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1490,7 +1490,11 @@
     "description": "unlock_unit onager (small); special_ability hit_naval (large)",
     "age": 2,
     "category": "military",
-    "prerequisites": ["engineered_siegecraft"],
+    "prerequisites": [
+      "engineered_siegecraft",
+      "naval_ramming",
+      "recurve_archery"
+    ],
     "bonuses": [],
     "unlocks": ["onager"],
     "ignored": [
@@ -1509,7 +1513,7 @@
     "description": "unlock_unit fire_ship (small); unit_stat_boost ship_attack (small)",
     "age": 2,
     "category": "military",
-    "prerequisites": ["heavy_oar_arrays"],
+    "prerequisites": ["heavy_oar_arrays", "siege_logistics"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1527,7 +1531,7 @@
     "description": "unlock_unit assassin (small); unit_stat_boost infantry_hp (small)",
     "age": 2,
     "category": "military",
-    "prerequisites": ["code_of_laws"],
+    "prerequisites": ["martial_drill", "code_of_laws"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1545,7 +1549,11 @@
     "description": "unlock_unit trader_classical (small); unit_stat_boost ship_attack (small)",
     "age": 2,
     "category": "military",
-    "prerequisites": ["trade_routes", "shipbuilding_principles"],
+    "prerequisites": [
+      "trade_routes",
+      "shipbuilding_principles",
+      "naval_ramming"
+    ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1563,7 +1571,11 @@
     "description": "unit_stat_boost infantry_hp (small); cost_reduction military_units (small)",
     "age": 2,
     "category": "military",
-    "prerequisites": ["iron_shielding"],
+    "prerequisites": [
+      "iron_shielding",
+      "phalanx_doctrine",
+      "currency_standard"
+    ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1586,7 +1598,7 @@
     "description": "cost_reduction siege_units (large); unit_stat_boost army_power (small)",
     "age": 2,
     "category": "military",
-    "prerequisites": ["engineered_siegecraft"],
+    "prerequisites": ["engineered_siegecraft", "recurve_archery"],
     "bonuses": [
       {
         "type": "costReductionPercent",
@@ -1609,7 +1621,7 @@
     "description": "unit_stat_boost ship_attack (small); cost_reduction naval_units (small)",
     "age": 2,
     "category": "military",
-    "prerequisites": ["heavy_oar_arrays"],
+    "prerequisites": ["heavy_oar_arrays", "armor_layering"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1627,12 +1639,12 @@
   },
   {
     "guid": "21331264-4638-5c7a-afe7-3efd78ce30e6",
-    "key": "martival_drill",
+    "key": "martial_drill",
     "name": "Martial Drill",
     "description": "unit_stat_boost army_power (small); cost_reduction military_units (small)",
     "age": 2,
     "category": "military",
-    "prerequisites": ["legion_discipline", "phalanx_doctrine"],
+    "prerequisites": ["phalanx_doctrine", "shock_cavalry"],
     "bonuses": [
       {
         "type": "attributeMultiplier",

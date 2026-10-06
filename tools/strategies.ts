@@ -16,6 +16,7 @@ import { encounterDefinitions } from "../src/game/encounters.js";
 import { researchDefinitions } from "../src/game/research.js";
 import { type ArmyStack } from "../src/game/battle.js";
 import { type FormationId } from "../src/game/formations.js";
+import { type OrderId } from "../src/game/orders.js";
 import {
   simulatorCandidates,
   solveMinimumArmy,
@@ -886,88 +887,72 @@ const simulatorContext = (state: CivilizationState): BattleSimulatorContext => {
   const unitStats = new Map<string, ArmyStack["stats"] | undefined>();
   const enemyStacks = new Map<string, ArmyStack[]>();
 
+  const winsWithTactics = (
+    composition: ReadonlyMap<string, ExpNumber>,
+    battleId: string,
+    formations: ReadonlyMap<string, FormationId> = new Map(),
+    orders: ReadonlyMap<string, OrderId> = new Map(),
+  ): boolean => {
+    const armyKey = [...composition]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([unitId, count]) =>
+        `${unitId}:${count.toString()}:${formations.get(unitId) ?? "standard"}:${orders.get(unitId) ?? "standard"}`,
+      )
+      .join(",");
+    const key = `${combatStateKey}|${battleId}|${armyKey}`;
+    const cached = simulatorWinCache.get(key);
+    if (cached !== undefined) return cached;
+
+    const player: ArmyStack[] = [];
+    for (const [unitId, count] of composition) {
+      if (!unitStats.has(unitId)) {
+        unitStats.set(
+          unitId,
+          state.getUnitStatsWithResearch(unitId, state.boughtResearch),
+        );
+      }
+      const stats = unitStats.get(unitId);
+      if (stats) {
+        player.push({
+          unitId,
+          count,
+          stats,
+          formation: formations.get(unitId),
+          order: orders.get(unitId),
+        });
+      }
+    }
+
+    if (!enemyStacks.has(battleId)) {
+      enemyStacks.set(battleId, state.getEnemyStacks(battleId));
+    }
+    const enemy = enemyStacks.get(battleId) ?? [];
+    const wins =
+      player.length > 0 &&
+      enemy.length > 0 &&
+      state.simulateWithStacksOutcome(player, enemy) === "player";
+    if (simulatorWinCache.size >= simulatorWinCacheLimit) {
+      const oldest = simulatorWinCache.keys().next().value;
+      if (oldest !== undefined) simulatorWinCache.delete(oldest);
+    }
+    simulatorWinCache.set(key, wins);
+    return wins;
+  };
+
   return {
     getCost: (unitId, count) =>
       state.costSeriesFrom(state.getUnitCostParameters(unitId), count),
     getResearch: (unitIds) => state.getResearchForUnitTypes(unitIds),
-    wins: (composition, battleId) => {
-      const armyKey = [...composition]
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([unitId, count]) => `${unitId}:${count.toString()}`)
-        .join(",");
-      const key = `${combatStateKey}|${battleId}|${armyKey}`;
-      const cached = simulatorWinCache.get(key);
-      if (cached !== undefined) return cached;
-
-      const player: ArmyStack[] = [];
-      for (const [unitId, count] of composition) {
-        if (!unitStats.has(unitId)) {
-          unitStats.set(
-            unitId,
-            state.getUnitStatsWithResearch(unitId, state.boughtResearch),
-          );
-        }
-        const stats = unitStats.get(unitId);
-        if (stats) player.push({ unitId, count, stats });
-      }
-
-      if (!enemyStacks.has(battleId)) {
-        enemyStacks.set(battleId, state.getEnemyStacks(battleId));
-      }
-      const enemy = enemyStacks.get(battleId) ?? [];
-      const wins =
-        player.length > 0 &&
-        enemy.length > 0 &&
-        state.simulateWithStacksOutcome(player, enemy) === "player";
-      if (simulatorWinCache.size >= simulatorWinCacheLimit) {
-        const oldest = simulatorWinCache.keys().next().value;
-        if (oldest !== undefined) simulatorWinCache.delete(oldest);
-      }
-      simulatorWinCache.set(key, wins);
-      return wins;
-    },
-    winsWithFormations: (
-      composition: ReadonlyMap<string, ExpNumber>,
-      _formations: ReadonlyMap<string, FormationId>,
-      battleId: string,
-    ) => {
-      // For strategy optimizer, ignore formations and use basic wins check
-      // Formation optimization is handled by the battle simulator UI
-      const armyKey = [...composition]
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([unitId, count]) => `${unitId}:${count.toString()}`)
-        .join(",");
-      const key = `${combatStateKey}|${battleId}|${armyKey}`;
-      const cached = simulatorWinCache.get(key);
-      if (cached !== undefined) return cached;
-
-      const player: ArmyStack[] = [];
-      for (const [unitId, count] of composition) {
-        if (!unitStats.has(unitId)) {
-          unitStats.set(
-            unitId,
-            state.getUnitStatsWithResearch(unitId, state.boughtResearch),
-          );
-        }
-        const stats = unitStats.get(unitId);
-        if (stats) player.push({ unitId, count, stats });
-      }
-
-      if (!enemyStacks.has(battleId)) {
-        enemyStacks.set(battleId, state.getEnemyStacks(battleId));
-      }
-      const enemy = enemyStacks.get(battleId) ?? [];
-      const wins =
-        player.length > 0 &&
-        enemy.length > 0 &&
-        state.simulateWithStacksOutcome(player, enemy) === "player";
-      if (simulatorWinCache.size >= simulatorWinCacheLimit) {
-        const oldest = simulatorWinCache.keys().next().value;
-        if (oldest !== undefined) simulatorWinCache.delete(oldest);
-      }
-      simulatorWinCache.set(key, wins);
-      return wins;
-    },
+    wins: (composition, battleId) =>
+      winsWithTactics(composition, battleId),
+    winsWithFormations: (composition, formations, battleId) =>
+      winsWithTactics(composition, battleId, formations),
+    winsWithFormationsAndOrders: (
+      composition,
+      formations,
+      orders,
+      battleId,
+    ) => winsWithTactics(composition, battleId, formations, orders),
   };
 };
 
@@ -1511,11 +1496,10 @@ const getCheapestHousingAction = (
 abstract class BaseStrategy implements SimulationStrategy {
   abstract name: string;
   abstract description: string;
-  /** Whether gather hints may hold and replace the worker-priority resource. */
-  protected readonly usesGatherWorkerFocus: boolean = true;
   private gatherWorkerFocus:
     | {
         readonly resource: ProductionResourceKey;
+        readonly until: number;
         readonly snapshots: SimulationContext["snapshots"];
       }
     | undefined;
@@ -1596,6 +1580,10 @@ abstract class BaseStrategy implements SimulationStrategy {
   protected getTradeAction(state: CivilizationState): SimulationAction | null {
     const profile = this.getTradeProfile();
     return profile ? getTradeRouteAction(state, profile) : null;
+  }
+
+  protected getWorkerRebalanceThreshold(): number {
+    return 4;
   }
 
   protected getBuildingPriority(): BuildingPriority {
@@ -1694,18 +1682,12 @@ abstract class BaseStrategy implements SimulationStrategy {
   protected getGatherWorkerFocus(
     context: SimulationContext,
   ): ProductionResourceKey | undefined {
-    if (!this.usesGatherWorkerFocus) {
-      this.gatherWorkerFocus = undefined;
-      return undefined;
-    }
     const focus = this.gatherWorkerFocus;
-    // No expiry clock: workers must stay on the resource until the purchase
-    // they are gathering for is actually bought, not until a timer lapses.
-    // A focus dies only when the ladder stops asking for it — when a new focus
-    // arrives it means either the awaited purchase went through (its price is
-    // now payable or no longer blocking) or a higher-priority goal superseded
-    // it. Either way the old hold has served its purpose.
-    if (!focus || focus.snapshots !== context.snapshots) {
+    if (
+      !focus ||
+      focus.snapshots !== context.snapshots ||
+      context.gameTime >= focus.until
+    ) {
       this.gatherWorkerFocus = undefined;
       return undefined;
     }
@@ -1723,25 +1705,18 @@ abstract class BaseStrategy implements SimulationStrategy {
     ) {
       return action;
     }
-    if (!this.usesGatherWorkerFocus) {
-      return (
-        this.assignWorkersByRatio(
-          state,
-          this.getWorkerRatios(),
-          action.resource as ProductionResourceKey,
-        ) ?? action
-      );
-    }
 
     const resource = action.resource as ProductionResourceKey;
-    // A gather always names the resource the ladder wants *right now*, so the
-    // hold is reaffirmed (never timed out) whenever it is re-asked. Replacing
-    // the old focus is itself the release signal: it only happens once the
-    // awaited purchase went through or a higher-priority goal superseded it.
-    this.gatherWorkerFocus = {
-      resource,
-      snapshots: context.snapshots,
-    };
+    const currentFocus = this.getGatherWorkerFocus(context);
+    const focusResource =
+      resource === "food" ? "food" : (currentFocus ?? resource);
+    if (!currentFocus || currentFocus === resource || resource === "food") {
+      this.gatherWorkerFocus = {
+        resource: focusResource,
+        until: context.gameTime + 10,
+        snapshots: context.snapshots,
+      };
+    }
     return (
       this.assignWorkersByRatio(
         state,
@@ -1809,7 +1784,9 @@ abstract class BaseStrategy implements SimulationStrategy {
     if (total === 0) return null;
 
     const totalWorkers = assigned + available;
-    const rebalanceThreshold = priorityResource ? 1 : 4;
+    const rebalanceThreshold = priorityResource
+      ? 1
+      : this.getWorkerRebalanceThreshold();
     // Calculate target assignments for all production resources (integer floors)
     const targets: Record<ProductionResourceKey, number> = {
       food: Math.floor((focusedRatios.food / total) * totalWorkers),
@@ -2339,8 +2316,6 @@ class PlayerOpeningStrategy extends BalancedStrategy {
 }
 
 class PlayerOpeningWoodStrategy extends PlayerOpeningStrategy {
-  protected readonly usesGatherWorkerFocus = false;
-
   protected getWorkerRatios(): WorkerRatios {
     return {
       food: 0.3,
@@ -2452,6 +2427,10 @@ export class MilitaryStrategy extends BaseStrategy {
 export class FastAgeStrategy extends BaseStrategy {
   name = "fast-age";
   description = "Prioritize population growth to reach new ages quickly";
+
+  protected getWorkerRebalanceThreshold(): number {
+    return 10;
+  }
 
   protected getWorkerRatios(): WorkerRatios {
     return {
@@ -2600,7 +2579,7 @@ export class ResearchStrategy extends BaseStrategy {
     context: SimulationContext,
   ): SimulationAction | null {
     if (!state.defeatedEncounters.includes("age0_1_first_fire")) {
-      this.openingStrategy ??= new SpeedrunStrategy(true);
+      this.openingStrategy ??= new SpeedrunStrategy();
       return this.openingStrategy.decideAction(state, context);
     }
 
@@ -2647,7 +2626,6 @@ export class ResearchStrategy extends BaseStrategy {
 export class PlayerStrategy extends ResearchStrategy {
   name = "player";
   description = "Follow the fastest save-derived Age-1 research and opening";
-  protected readonly usesGatherWorkerFocus = false;
   protected playerOpeningStrategy = new PlayerOpeningWoodStrategy();
 
   protected getOpeningBarracksTarget(): number {
@@ -3045,13 +3023,6 @@ export class TradeStrategy extends BaseStrategy {
 export class SpeedrunStrategy extends BaseStrategy {
   name = "speedrun";
   description = "Buy the best time-adjusted ROI purchase for fast progression";
-  protected readonly usesGatherWorkerFocus: boolean;
-
-  constructor(usesGatherWorkerFocus = false) {
-    super();
-    this.usesGatherWorkerFocus = usesGatherWorkerFocus;
-  }
-
   /**
    * This strategy's valuation profile, applied only to its own ROI calls.
    *
@@ -3221,16 +3192,6 @@ export class SpeedrunStrategy extends BaseStrategy {
     return ratios;
   }
 
-  protected focusWorkersForGather(
-    state: CivilizationState,
-    action: SimulationAction,
-    _context: SimulationContext,
-  ): SimulationAction {
-    return action.type === "gather"
-      ? (this.assignWorkersByRatio(state, this.deriveWorkerRatios(state)) ?? action)
-      : action;
-  }
-
   decideAction(
     state: CivilizationState,
     context: SimulationContext,
@@ -3258,7 +3219,6 @@ export class SpeedrunStrategy extends BaseStrategy {
 
     const previousFocus = this.roiGatherFocus;
     const focusIsCurrent =
-      this.usesGatherWorkerFocus &&
       previousFocus?.snapshots === context.snapshots &&
       context.gameTime < previousFocus.until;
     const resource = focusIsCurrent

@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "guid": "6ece3cfb-ca38-5396-98d4-b2a3516511d3",
     "key": "age0_1_first_fire",
@@ -46,8 +46,8 @@
     "enemyArmy": [
       {
         "unitId": "wolf",
-        "count": 35,
-        "label": "35 wolves"
+        "count": 43,
+        "label": "43 wolves"
       },
       {
         "unitId": "bear",
@@ -91,13 +91,13 @@
     "enemyArmy": [
       {
         "unitId": "axeman_bronze",
-        "count": 100,
-        "label": "120 axemen"
+        "count": 85,
+        "label": "85 axemen"
       },
       {
         "unitId": "slinger",
-        "count": 50,
-        "label": "50 slingers"
+        "count": 43,
+        "label": "43 slingers"
       }
     ],
     "bonuses": [
@@ -131,18 +131,18 @@
     "enemyArmy": [
       {
         "unitId": "spearman_bronze",
-        "count": 80,
-        "label": "80 Trojan spearmen"
+        "count": 75,
+        "label": "75 Trojan spearmen"
       },
       {
         "unitId": "bowman_bronze",
-        "count": 120,
-        "label": "120 Trojan bowmen"
+        "count": 100,
+        "label": "100 Trojan bowmen"
       },
       {
         "unitId": "chariot_bronze",
-        "count": 20,
-        "label": "20 Trojan chariots"
+        "count": 15,
+        "label": "15 Trojan chariots"
       },
       {
         "unitId": "trireme_bronze",
