@@ -24,6 +24,7 @@ import {
   type TradeResourceKey,
   type TradeRouteMap,
 } from "./trade";
+import { formationIds, type FormationId } from "./formations";
 
 /**
  * Save system (roadmap Milestone 3).
@@ -39,7 +40,7 @@ import {
  */
 
 /** Bump when the shape changes; `migrateSaveData` handles older documents. */
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 /** How a save travels: the same document, three encodings. */
 export type SaveFormat = "base64" | "json" | "xml";
@@ -144,6 +145,8 @@ export type SaveData = {
   readonly unitCounts: Record<string, string>;
   /** Battle orders per unit id, added in version 5; empty for older documents. */
   readonly unitOrders?: Record<string, string>;
+  /** Formations per unit id, added in version 7; empty for older documents. */
+  readonly unitFormations?: Record<string, string>;
   /** Enabled trade routes per resource id, added in version 6. */
   readonly tradeRoutes?: SerializedTradeRoutes;
   readonly devProductionMultiplier: string;
@@ -265,6 +268,10 @@ export const migrateSaveData = (data: SaveData): SaveData => {
     throw new SaveFormatError(
       `The save was written by a newer build (version ${data.version}).`,
     );
+  }
+  // v6 → v7: formations did not exist, so every old document starts on standard.
+  if (data.version === 6) {
+    return { ...data, version: SAVE_VERSION, unitFormations: {} };
   }
   // v5 → v6: trade routes did not exist, so every old document starts with none.
   if (data.version === 5) {
@@ -654,6 +661,10 @@ export const remapSaveIds = (
       string,
       string
     >,
+    unitFormations: remapRecord(data.unitFormations ?? {}, false) as Record<
+      string,
+      string
+    >,
     buildingCostOverrides: remapRecord(
       data.buildingCostOverrides ?? {},
       true,
@@ -709,9 +720,7 @@ const serializeFactor = ([source, value]: ResourceFactor): [string, string] => [
  * `tradeRoutes` on every read, so persisting them would freeze a stale drain
  * into the document; the first tick after a reload puts the live rows back.
  */
-const withoutTradeRouteRows = (
-  rows: ResourceFactor[],
-): ResourceFactor[] =>
+const withoutTradeRouteRows = (rows: ResourceFactor[]): ResourceFactor[] =>
   rows.filter(
     ([source]) => typeof source !== "string" || !isTradeRouteSource(source),
   );
@@ -726,9 +735,7 @@ const deserializeFactors = (
   // A route's rows are derived, never stored: a hand-written or older document
   // carrying one is stripped on load, so it cannot add to the live drain.
   const kept = (rows: readonly (readonly [string, string])[] | undefined) =>
-    (rows ?? [])
-      .filter(([source]) => !isTradeRouteSource(source))
-      .map(pair);
+    (rows ?? []).filter(([source]) => !isTradeRouteSource(source)).map(pair);
   return {
     additional: kept(data?.additional),
     multiplicative: (data?.multiplicative ?? []).map(pair),
@@ -909,6 +916,12 @@ export const createSaveData = (
       (entry): entry is [string, BattleOrder] => entry[1] !== undefined,
     ),
   ),
+  // Only real (non-standard) formations are written; absence means standard on load.
+  unitFormations: Object.fromEntries(
+    Object.entries(state.unitFormations).filter(
+      (entry): entry is [string, FormationId] => entry[1] !== undefined,
+    ),
+  ),
   // Only enabled routes are written; an absent resource means "not routed", so
   // a route turned back off leaves no trace in the save.
   tradeRoutes: Object.fromEntries(
@@ -963,6 +976,14 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
     unitOrders[key] = value as BattleOrder;
   }
 
+  const unitFormations: Partial<Record<string, FormationId>> = {};
+  for (const [key, value] of Object.entries(data.unitFormations ?? {})) {
+    // A save may name a formation this build no longer knows, or one the loaded
+    // age has not discovered; both fall back to `standard` rather than throwing.
+    if (!formationIds.includes(value as FormationId)) continue;
+    unitFormations[key] = value as FormationId;
+  }
+
   const costOverrides: Record<string, BuildingCost[]> = {};
   for (const [key, costs] of Object.entries(data.buildingCostOverrides ?? {})) {
     costOverrides[key] = (costs ?? []).map(deserializeCost);
@@ -1003,6 +1024,7 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
     data.freeUpgrades ?? false,
     [...(data.boughtResearch ?? [])],
     unitOrders,
+    unitFormations,
     tradeRoutes,
   );
 };

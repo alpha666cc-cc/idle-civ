@@ -9,6 +9,7 @@ import {
   type BattleSimulation,
   type StackSnapshot,
 } from "../game/battle";
+import { findFormationDefinition, type FormationId } from "../game/formations";
 import {
   findUnitDefinition,
   unitStatKeys,
@@ -212,6 +213,12 @@ export default function ArmyPanel({
           const reason = gameState.getUnitFailureReason(unit.key, wanted);
           const icon = unitIcon(unit.key, unit.tags);
           const tone = unitTone(unit.tags);
+          const currentAge = gameState.getCurrentAge();
+          const ageIndex = currentAge
+            ? parseInt(currentAge.key.slice(-1), 10)
+            : 0;
+          const formations = gameState.getAvailableFormations();
+          const formation = gameState.getUnitFormation(unit.key);
           const orders = gameState.getAvailableOrders();
           const order = gameState.getUnitOrder(unit.key);
           return (
@@ -243,18 +250,49 @@ export default function ArmyPanel({
                 </span>
               </div>
 
-              {orders.length > 1 && (
+              {ageIndex >= 2 && formations.length > 1 && (
                 <label className="unit-order">
-                  <span className="unit-order-label">Orders</span>
+                  <span className="unit-order-label">Formation</span>
+                  <select
+                    className="unit-order-select"
+                    value={formation}
+                    onChange={(event) =>
+                      setGameState((current) =>
+                        current.setUnitFormation(
+                          unit.key,
+                          event.target.value as FormationId,
+                        ),
+                      )
+                    }
+                    aria-label={`Formation for ${unit.name}`}
+                  >
+                    {formations.map((option) => {
+                      const def = findFormationDefinition(option);
+                      return (
+                        <option key={option} value={option}>
+                          {def?.name ?? option}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </label>
+              )}
+
+              {ageIndex >= 3 && orders.length > 1 && (
+                <label className="unit-order">
+                  <span className="unit-order-label">Targeting</span>
                   <select
                     className="unit-order-select"
                     value={order}
                     onChange={(event) =>
                       setGameState((current) =>
-                        current.setUnitOrder(unit.key, event.target.value as BattleOrder),
+                        current.setUnitOrder(
+                          unit.key,
+                          event.target.value as BattleOrder,
+                        ),
                       )
                     }
-                    aria-label={`Battle order for ${unit.name}`}
+                    aria-label={`Targeting order for ${unit.name}`}
                     title={battleOrderHints[order]}
                   >
                     {orders.map((option) => (

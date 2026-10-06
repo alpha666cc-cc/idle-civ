@@ -1,5 +1,10 @@
 import { ExpNumber } from "./expNumber";
 import {
+  findFormationDefinition,
+  DEFAULT_FORMATION,
+  type FormationId,
+} from "./formations";
+import {
   findUnitDefinition,
   unitPower,
   type UnitDomain,
@@ -29,6 +34,8 @@ export type ArmyStack = {
   readonly stats: UnitStats;
   /** How this stack picks its target and screens its allies; `standard` if unset. */
   readonly order?: BattleOrder;
+  /** Formation: positioning + stat trades; `standard` if unset. */
+  readonly formation?: FormationId;
 };
 
 /**
@@ -68,32 +75,21 @@ export const battleOrders: readonly BattleOrder[] = [
   "protect_ranged",
 ];
 
-/** Which orders the player has discovered by the time they reach an age. */
+/** Which targeting orders the player has discovered by the time they reach an age. */
 export const orderUnlocks: Record<number, readonly BattleOrder[]> = {
   0: ["standard"],
   1: ["standard"],
-  2: [
-    "standard",
-    "frontline",
-    "backline",
-    "focus_counter",
-    "focus_weak",
-    "focus_strong",
-  ],
+  2: ["standard"], // Age 2: formations unlock, not targeting orders
   3: [
     "standard",
-    "frontline",
-    "backline",
     "focus_counter",
     "focus_weak",
     "focus_strong",
     "same_tag",
     "protect_ranged",
-  ],
+  ], // Age 3: all targeting orders unlock
   4: [
     "standard",
-    "frontline",
-    "backline",
     "focus_counter",
     "focus_weak",
     "focus_strong",
@@ -102,8 +98,6 @@ export const orderUnlocks: Record<number, readonly BattleOrder[]> = {
   ],
   5: [
     "standard",
-    "frontline",
-    "backline",
     "focus_counter",
     "focus_weak",
     "focus_strong",
@@ -112,8 +106,6 @@ export const orderUnlocks: Record<number, readonly BattleOrder[]> = {
   ],
   6: [
     "standard",
-    "frontline",
-    "backline",
     "focus_counter",
     "focus_weak",
     "focus_strong",
@@ -122,8 +114,6 @@ export const orderUnlocks: Record<number, readonly BattleOrder[]> = {
   ],
   7: [
     "standard",
-    "frontline",
-    "backline",
     "focus_counter",
     "focus_weak",
     "focus_strong",
@@ -207,6 +197,8 @@ type Fighter = {
   hpPool: ExpNumber;
   /** The order this stack was told to fight under. */
   readonly order: BattleOrder;
+  /** The formation this stack uses for positioning and stat trades. */
+  readonly formation: FormationId;
   /** Hit points the stack started with, so screening can read its health. */
   readonly initialHpPool: ExpNumber;
 };
@@ -224,6 +216,100 @@ const livingCount = (fighter: Fighter): ExpNumber => {
  * that the same set of units always produces the same battle, however the caller
  * happened to assemble the stack list — see `armySignature` for why.
  */
+/**
+ * Apply formation stat bonuses to unit stats.
+ */
+const applyFormationStats = (
+  stats: UnitStats,
+  formation: FormationId,
+): UnitStats => {
+  const formationDef = findFormationDefinition(formation);
+  if (!formationDef || !formationDef.statBonuses) return stats;
+
+  const bonusMap = new Map(
+    formationDef.statBonuses.map((b) => [b.attribute, b.multiplier]),
+  );
+
+  const applyBonus = (value: ExpNumber, attribute: string): ExpNumber => {
+    const multiplier = bonusMap.get(attribute);
+    if (!multiplier) return value;
+    return value.mul(ExpNumber.fromNumber(multiplier));
+  };
+
+  const applyBonusToNumber = (value: number, attribute: string): number => {
+    const multiplier = bonusMap.get(attribute);
+    if (!multiplier) return value;
+    return value * multiplier;
+  };
+
+  let newStats = {
+    ...stats,
+    hp: applyBonus(stats.hp, "unitAll.hp"),
+    attack: applyBonus(stats.attack, "unitAll.attack"),
+    accuracy: applyBonusToNumber(stats.accuracy, "unitAll.accuracy"),
+  };
+
+  // Tag-specific bonuses: for now, just apply to all units with that tag
+  // This is a simplification - proper implementation would check unit tags
+  if (bonusMap.has("tag.cavalry.attack")) {
+    newStats = {
+      ...newStats,
+      attack: applyBonus(newStats.attack, "tag.cavalry.attack"),
+    };
+  }
+  if (bonusMap.has("tag.ranged.attack")) {
+    newStats = {
+      ...newStats,
+      attack: applyBonus(newStats.attack, "tag.ranged.attack"),
+    };
+  }
+
+  return newStats;
+};
+
+/**
+ * Calculate army movement speed as unweighted average of unit formation speeds.
+ * This prevents a single fast unit from rushing the entire army.
+ */
+const armyMovementSpeed = (fighters: readonly Fighter[]): number => {
+  if (fighters.length === 0) return 1.0;
+  const speeds = fighters.map((f) => {
+    const formationDef = findFormationDefinition(f.formation);
+    return formationDef?.movementSpeed ?? 1.0;
+  });
+  return speeds.reduce((sum, speed) => sum + speed, 0) / speeds.length;
+};
+
+/**
+ * Find the frontmost unit in an army (most negative position offset).
+ * Used to calculate relative position offsets.
+ */
+const frontmostOffset = (army: readonly Fighter[]): number => {
+  if (army.length === 0) return 0;
+  return Math.min(
+    ...army.map((f) => {
+      const formationDef = findFormationDefinition(f.formation);
+      return formationDef?.positionOffset ?? 0;
+    }),
+  );
+};
+
+/**
+ * Calculate effective position of a unit relative to enemy.
+ * Offsets are relative to own army's front line, not absolute from enemy.
+ */
+const effectivePosition = (
+  fighter: Fighter,
+  ownArmy: readonly Fighter[],
+  distance: number,
+): number => {
+  const formationDef = findFormationDefinition(fighter.formation);
+  const offset = formationDef?.positionOffset ?? 0;
+  const armyFront = frontmostOffset(ownArmy);
+  const relativeOffset = offset - armyFront;
+  return distance + relativeOffset;
+};
+
 const buildFighters = (
   stacks: readonly ArmyStack[],
   side: BattleSide,
@@ -233,16 +319,18 @@ const buildFighters = (
     .flatMap((stack) => {
       const definition = findUnitDefinition(stack.unitId);
       if (!definition || stack.count.lte(ExpNumber.ZERO)) return [];
-      const hitPoints = stack.stats.hp.div(
+      const formation = stack.formation ?? DEFAULT_FORMATION;
+      const effectiveStats = applyFormationStats(stack.stats, formation);
+      const hitPoints = effectiveStats.hp.div(
         ExpNumber.ONE.sub(
-          ExpNumber.fromNumber(Math.min(stack.stats.armor, 0.9)),
+          ExpNumber.fromNumber(Math.min(effectiveStats.armor, 0.9)),
         ),
       );
       return [
         {
           unitId: stack.unitId,
           side,
-          stats: stack.stats,
+          stats: effectiveStats,
           domain: definition.domain,
           canHit: definition.canHit,
           bonusVs: definition.bonusVs,
@@ -252,6 +340,7 @@ const buildFighters = (
           hpPool: hitPoints.mul(stack.count),
           initialHpPool: hitPoints.mul(stack.count),
           order: stack.order ?? standardOrder,
+          formation,
         },
       ];
     });
@@ -261,9 +350,16 @@ const canReach = (
   attacker: Fighter,
   target: Fighter,
   distance: number,
+  attackerArmy: readonly Fighter[],
+  targetArmy: readonly Fighter[],
 ): boolean => {
   if (!attacker.canHit.includes(target.domain)) return false;
-  if (distance > attacker.stats.range) return false;
+
+  const attackerPos = effectivePosition(attacker, attackerArmy, distance);
+  const targetPos = effectivePosition(target, targetArmy, distance);
+  const actualDistance = Math.abs(attackerPos - targetPos);
+
+  if (actualDistance > attacker.stats.range) return false;
   if (target.domain === "air" && attacker.stats.range <= 1) return false;
   // Ground melee units cannot hit naval units unless they have sufficient range
   if (
@@ -417,7 +513,8 @@ const applyScreening = (
     (ally) =>
       ally.unitId !== target.unitId &&
       livingCount(ally).gt(ExpNumber.ZERO) &&
-      ((ally.order === "frontline" || ally.order === "protect_ranged") ||
+      (ally.order === "frontline" ||
+        ally.order === "protect_ranged" ||
         // Default-order melee bodyguards its shooters, which is the whole point.
         (ally.order === "standard" && ally.stats.range <= 3)),
   );
@@ -475,7 +572,7 @@ const simulateBattleInternal = (
       const foes = (attacker.side === "player" ? enemy : player).filter(
         (fighter) =>
           fighter.hpPool.gt(ExpNumber.ZERO) &&
-          canReach(attacker, fighter, distance),
+          canReach(attacker, fighter, distance, player, enemy),
       );
       if (foes.length === 0) continue;
       // The stack's order decides the target; `standard` finishes off the weakest.
@@ -504,14 +601,10 @@ const simulateBattleInternal = (
       target.hpPool = ExpNumber.max(ExpNumber.ZERO, target.hpPool.sub(damage));
     }
 
-    const fastest = order.reduce(
-      (speed, fighter) =>
-        fighter.hpPool.gt(ExpNumber.ZERO)
-          ? Math.max(speed, fighter.stats.speed)
-          : speed,
-      0,
-    );
-    distance = Math.max(1, distance - Math.max(1, Math.floor(fastest / 2)));
+    // Use army movement speed (unweighted average of formation speeds)
+    // instead of fastest unit speed to prevent single fast unit from rushing
+    const armySpeed = armyMovementSpeed(order);
+    distance = Math.max(1, distance - Math.max(1, Math.floor(armySpeed)));
     if (recordRounds) {
       rounds.push({
         round,

@@ -325,9 +325,14 @@
         "label": "150k archers"
       },
       {
-        "unitId": "spearman_iron",
+        "unitId": "hoplite",
         "count": 200000,
-        "label": "200k infantry"
+        "label": "200k hoplites"
+      },
+      {
+        "unitId": "trader_classical",
+        "count": 50000,
+        "label": "50k trade galleys"
       }
     ],
     "bonuses": [
@@ -352,12 +357,17 @@
       {
         "unitId": "legionary",
         "count": 300000,
-        "label": "300k Carthaginians"
+        "label": "300k legionaries"
       },
       {
         "unitId": "elephant_iron",
         "count": 4000,
         "label": "4000 elephants"
+      },
+      {
+        "unitId": "fire_ship",
+        "count": 20000,
+        "label": "20k fire ships"
       }
     ],
     "bonuses": [
@@ -380,9 +390,9 @@
     "historical": "macedon 47,000 · persia 100,000",
     "enemyArmy": [
       {
-        "unitId": "chariot_iron",
+        "unitId": "companion",
         "count": 500000,
-        "label": "500000 scythed chariots"
+        "label": "500k companion cavalry"
       },
       {
         "unitId": "elephant_iron",
@@ -390,9 +400,14 @@
         "label": "100k elephants"
       },
       {
-        "unitId": "spearman_iron",
+        "unitId": "hoplite",
         "count": 6000000,
-        "label": "600k Persians"
+        "label": "6M hoplites"
+      },
+      {
+        "unitId": "trader_classical",
+        "count": 300000,
+        "label": "300k trade galleys"
       }
     ],
     "bonuses": [

@@ -10,6 +10,11 @@ import {
 } from "./achievements";
 import { ageDefinitions, findAgeDefinition, type AgeDefinition } from "./ages";
 import {
+  DEFAULT_FORMATION,
+  formationsForAge,
+  type FormationId,
+} from "./formations";
+import {
   buildingPowerAttributeDefinitions,
   computeResourceRate,
   derivedAttributeDefinitions,
@@ -395,6 +400,11 @@ export class CivilizationState {
    */
   readonly unitOrders: Partial<Record<string, BattleOrder>>;
   /**
+   * The formation each owned unit type uses, keyed by unit id. Absent means
+   * `standard`. Only formations the current age has discovered are stored.
+   */
+  readonly unitFormations: Partial<Record<string, FormationId>>;
+  /**
    * Trade routes keyed by resource (Trade tab). Only enabled routes are kept;
    * how many may run at once is the `tradeRoutes` stat, so a later bonus opens
    * another route without the engine naming that content (§13.2).
@@ -426,6 +436,7 @@ export class CivilizationState {
     freeUpgrades = false,
     boughtResearch: readonly string[] = [],
     unitOrders: Partial<Record<string, BattleOrder>> = {},
+    unitFormations: Partial<Record<string, FormationId>> = {},
     tradeRoutes: TradeRouteMap = {},
   ) {
     this.resources = resources;
@@ -442,6 +453,7 @@ export class CivilizationState {
     this.statistics = statistics;
     this.unitCounts = unitCounts;
     this.unitOrders = unitOrders;
+    this.unitFormations = unitFormations;
     this.tradeRoutes = tradeRoutes;
     this.devProductionMultiplier = devProductionMultiplier;
     this.freeBuildings = freeBuildings;
@@ -988,6 +1000,22 @@ export class CivilizationState {
     return this.withState(
       resources,
       this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      this.unitFormations,
+      this.tradeRoutes,
     ).checkAchievements();
   }
 
@@ -1399,6 +1427,20 @@ export class CivilizationState {
       this.buildingCostOverrides,
       this.builtBuildings,
       Math.max(0, autoClicksPerSecond),
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      this.unitFormations,
+      this.tradeRoutes,
     );
   }
 
@@ -1847,17 +1889,55 @@ export class CivilizationState {
         ExpNumber.fromNumber(additionalSlots),
       ),
     };
-    return this.withState(resources, this.buildingCostOverrides);
+    return this.withState(
+      resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      this.unitFormations,
+      this.tradeRoutes,
+    );
   }
 
   upgradeBuildingCosts(
     buildingKey: BuildingKey,
     costs: BuildingCost[],
   ): CivilizationState {
-    return this.withState(this.resources, {
-      ...this.buildingCostOverrides,
-      [buildingKey]: costs,
-    });
+    return this.withState(
+      this.resources,
+      {
+        ...this.buildingCostOverrides,
+        [buildingKey]: costs,
+      },
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      this.unitFormations,
+      this.tradeRoutes,
+    );
   }
 
   addFactor(
@@ -1890,31 +1970,28 @@ export class CivilizationState {
   }
 
   /**
- * A purchase count as a whole number of things purchased.
- *
- * A building and a unit are each a whole thing, so every path that prices or
- * applies a count goes through this rather than trusting the caller's number.
- * `build()` has always floored its own count; the unit side did not, which let a
- * fractional recruit reach `unitCounts`, persist, and permanently offset every
- * later army comparison (`getUnitCount` reporting 4.7 warriors, with a shortfall
- * that can never be recruited away).
- *
- * Deliberately a plain floor, matching `build()` rather than the round-up
- * `capacitySlotCount` uses. That round-up is right for a *capacity* — a capacity
- * of 4.4e2 re-reads a few ULP high and must not lose a slot — but wrong for a
- * purchase: the residue between a full count and a full capacity is 5.68e-14 of
- * headroom, and rounding that up would buy a building or a recruit out of float
- * dust. Flooring also means `0.9999999999999999` reads as zero, which is what
- * `build()` has always done.
- */
-private wholeCount(count: number): number {
-  return Number.isFinite(count) ? Math.floor(count) : 0;
-}
+   * A purchase count as a whole number of things purchased.
+   *
+   * A building and a unit are each a whole thing, so every path that prices or
+   * applies a count goes through this rather than trusting the caller's number.
+   * `build()` has always floored its own count; the unit side did not, which let a
+   * fractional recruit reach `unitCounts`, persist, and permanently offset every
+   * later army comparison (`getUnitCount` reporting 4.7 warriors, with a shortfall
+   * that can never be recruited away).
+   *
+   * Deliberately a plain floor, matching `build()` rather than the round-up
+   * `capacitySlotCount` uses. That round-up is right for a *capacity* — a capacity
+   * of 4.4e2 re-reads a few ULP high and must not lose a slot — but wrong for a
+   * purchase: the residue between a full count and a full capacity is 5.68e-14 of
+   * headroom, and rounding that up would buy a building or a recruit out of float
+   * dust. Flooring also means `0.9999999999999999` reads as zero, which is what
+   * `build()` has always done.
+   */
+  private wholeCount(count: number): number {
+    return Number.isFinite(count) ? Math.floor(count) : 0;
+  }
 
-hasResourcesForBuilding(
-    buildingKey: string,
-    count: number = 1,
-  ): boolean {
+  hasResourcesForBuilding(buildingKey: string, count: number = 1): boolean {
     if (this.freeBuildings) return true;
     const whole = this.wholeCount(count);
     // Zero is a legitimate no-op query: it prices an empty cost list, which every
@@ -2384,6 +2461,7 @@ hasResourcesForBuilding(
           count,
           stats,
           order: this.getUnitOrder(unit.key),
+          formation: this.getUnitFormation(unit.key),
         });
       }
     }
@@ -2440,6 +2518,7 @@ hasResourcesForBuilding(
         this.freeUpgrades,
         this.boughtResearch,
         rest,
+        this.unitFormations,
       );
     }
     if (this.unitOrders[unitId] === order) return this;
@@ -2460,6 +2539,84 @@ hasResourcesForBuilding(
       this.freeUpgrades,
       this.boughtResearch,
       { ...this.unitOrders, [unitId]: order },
+      this.unitFormations,
+      this.tradeRoutes,
+    );
+  }
+
+  /** The formation a unit type uses; `standard` when none is set. */
+  getUnitFormation(unitId: string): FormationId {
+    const formation = this.unitFormations[unitId];
+    return formation && this.isFormationUnlocked(formation)
+      ? formation
+      : DEFAULT_FORMATION;
+  }
+
+  /** Every formation the player's current age has discovered. */
+  getAvailableFormations(): readonly FormationId[] {
+    const currentAge = this.getCurrentAge();
+    const ageIndex = currentAge
+      ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
+      : 0;
+    return formationsForAge(ageIndex);
+  }
+
+  /** Whether a formation is unlocked for the current age. */
+  isFormationUnlocked(formation: FormationId): boolean {
+    return this.getAvailableFormations().includes(formation);
+  }
+
+  /**
+   * Set (or clear, with `standard`) the formation a unit type uses. Returns
+   * `this` unchanged for an unknown unit, a locked formation, or a no-op change.
+   */
+  setUnitFormation(unitId: string, formation: FormationId): CivilizationState {
+    if (!findUnitDefinition(unitId) || !this.isFormationUnlocked(formation))
+      return this;
+    if (formation === DEFAULT_FORMATION) {
+      if (this.unitFormations[unitId] === undefined) return this;
+      const { [unitId]: _removed, ...rest } = this.unitFormations;
+      return this.withState(
+        this.resources,
+        this.buildingCostOverrides,
+        this.builtBuildings,
+        this.autoClicksPerSecond,
+        this.boughtUpgrades,
+        this.defeatedEncounters,
+        this.enteredAges,
+        this.earnedAchievements,
+        this.statistics,
+        this.unitCounts,
+        this.devProductionMultiplier,
+        this.freeBuildings,
+        this.freeUnits,
+        this.freeUpgrades,
+        this.boughtResearch,
+        this.unitOrders,
+        rest,
+        this.unitFormations,
+      );
+    }
+    if (this.unitFormations[unitId] === formation) return this;
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      { ...this.unitFormations, [unitId]: formation },
+      this.tradeRoutes,
     );
   }
 
@@ -2836,7 +2993,26 @@ hasResourcesForBuilding(
   }
 
   private withResources(resources: ResourceAmounts): CivilizationState {
-    return this.withState(resources, this.buildingCostOverrides);
+    return this.withState(
+      resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      this.unitFormations,
+      this.tradeRoutes,
+    );
   }
 
   private withWorkers(workers: WorkerAssignments): CivilizationState {
@@ -2859,6 +3035,7 @@ hasResourcesForBuilding(
       this.freeUpgrades,
       this.boughtResearch,
       this.unitOrders,
+      this.unitFormations,
       this.tradeRoutes,
     );
   }
@@ -2885,6 +3062,7 @@ hasResourcesForBuilding(
       this.freeUpgrades,
       this.boughtResearch,
       this.unitOrders,
+      this.unitFormations,
       this.tradeRoutes,
     );
   }
@@ -2900,6 +3078,15 @@ hasResourcesForBuilding(
       this.enteredAges,
       this.earnedAchievements,
       statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      this.unitFormations,
+      this.tradeRoutes,
     );
   }
 
@@ -2926,6 +3113,14 @@ hasResourcesForBuilding(
       this.earnedAchievements,
       statistics,
       unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      this.unitFormations,
+      this.tradeRoutes,
     );
   }
 
@@ -2946,6 +3141,7 @@ hasResourcesForBuilding(
     freeUpgrades = this.freeUpgrades,
     boughtResearch = this.boughtResearch,
     unitOrders = this.unitOrders,
+    unitFormations = this.unitFormations,
     tradeRoutes = this.tradeRoutes,
   ): CivilizationState {
     return new CivilizationState(
@@ -2967,6 +3163,7 @@ hasResourcesForBuilding(
       freeUpgrades,
       boughtResearch,
       unitOrders,
+      unitFormations,
       tradeRoutes,
     );
   }
@@ -2990,6 +3187,13 @@ hasResourcesForBuilding(
       this.statistics,
       this.unitCounts,
       value,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      this.unitFormations,
+      this.tradeRoutes,
     );
   }
 
@@ -3360,6 +3564,7 @@ hasResourcesForBuilding(
       this.freeUpgrades,
       this.boughtResearch,
       this.unitOrders,
+      this.unitFormations,
       { ...this.tradeRoutes, [resource]: next },
     );
   }

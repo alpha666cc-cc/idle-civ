@@ -410,6 +410,7 @@ describe("trade routes in the save", () => {
       false,
       [],
       {},
+      {},
       { food: { enabled: true, mode: "sell", intensity: 1 } },
     );
     const data = createSaveData(routed, "route-rows", 1);
@@ -424,9 +425,9 @@ describe("trade routes in the save", () => {
 
     // The first tick after a reload puts the live rows back.
     const restored = loadSaveData(data);
-    const drains = restored.getProductionFactors("food").drain.map(
-      ([source]) => String(source),
-    );
+    const drains = restored
+      .getProductionFactors("food")
+      .drain.map(([source]) => String(source));
     expect(drains.some((source) => isTradeRouteSource(source))).toBe(true);
   });
 
