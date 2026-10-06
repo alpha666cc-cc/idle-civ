@@ -322,12 +322,14 @@
       {
         "unitId": "archer_classical",
         "count": 150000,
-        "label": "150k archers"
+        "label": "150k archers",
+        "formation": "backline"
       },
       {
         "unitId": "hoplite",
         "count": 200000,
-        "label": "200k hoplites"
+        "label": "200k hoplites",
+        "formation": "frontline"
       },
       {
         "unitId": "trader_classical",
@@ -357,12 +359,14 @@
       {
         "unitId": "legionary",
         "count": 300000,
-        "label": "300k legionaries"
+        "label": "300k legionaries",
+        "formation": "frontline"
       },
       {
         "unitId": "elephant_iron",
         "count": 4000,
-        "label": "4000 elephants"
+        "label": "4000 elephants",
+        "formation": "rush"
       },
       {
         "unitId": "fire_ship",
@@ -392,17 +396,20 @@
       {
         "unitId": "companion",
         "count": 500000,
-        "label": "500k companion cavalry"
+        "label": "500k companion cavalry",
+        "formation": "rush"
       },
       {
         "unitId": "elephant_iron",
         "count": 100000,
-        "label": "100k elephants"
+        "label": "100k elephants",
+        "formation": "rush"
       },
       {
         "unitId": "hoplite",
         "count": 6000000,
-        "label": "6M hoplites"
+        "label": "6M hoplites",
+        "formation": "frontline"
       },
       {
         "unitId": "trader_classical",

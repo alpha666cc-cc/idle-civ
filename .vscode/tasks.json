@@ -69,44 +69,6 @@
       }
     },
     {
-      "label": "Idle Civ: Start Battle Helper",
-      "type": "shell",
-      "command": "${workspaceFolder}\\tools\\node\\npm.cmd",
-      "args": ["run", "helper:battle"],
-      "isBackground": true,
-      "runOptions": {
-        "instanceLimit": 1
-      },
-      "problemMatcher": {
-        "owner": "battle-helper",
-        "pattern": {
-          "regexp": ".*"
-        },
-        "background": {
-          "beginsPattern": ".*",
-          "endsPattern": "Battle helper: http://127\\.0\\.0\\.1:4174/"
-        }
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": false
-      }
-    },
-    {
-      "label": "Idle Civ: Stop Battle Helper",
-      "type": "process",
-      "command": "powershell.exe",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-Command",
-        "$connections = @(Get-NetTCPConnection -LocalPort 4174 -State Listen -ErrorAction SilentlyContinue); foreach ($connection in $connections) { Stop-Process -Id $connection.OwningProcess -Force -ErrorAction SilentlyContinue }"
-      ],
-      "problemMatcher": []
-    },
-    {
       "label": "Idle Civ: Run Simulation Debug",
       "type": "shell",
       "command": "${workspaceFolder}\\tools\\run-simulation-debug.bat",

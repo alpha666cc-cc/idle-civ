@@ -2665,14 +2665,19 @@ export class CivilizationState {
     ];
     const boosts = [...researchBonusesForIds(researchIds)];
     const stacks: ArmyStack[] = [];
-    for (const { unitId, count } of encounter.enemyArmy) {
+    for (const { unitId, count, formation } of encounter.enemyArmy) {
       const unit = findUnitDefinition(unitId);
       if (!unit) continue;
       const stats = this.unitStatsFromFactors(
         unit,
         this.collectUnitStatFactors(unit, boosts),
       );
-      stacks.push({ unitId, count: ExpNumber.fromNumber(count), stats });
+      stacks.push({
+        unitId,
+        count: ExpNumber.fromNumber(count),
+        stats,
+        formation,
+      });
     }
     return stacks;
   }

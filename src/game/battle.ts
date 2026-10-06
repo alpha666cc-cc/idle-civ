@@ -203,7 +203,8 @@ const livingCount = (fighter: Fighter): ExpNumber => {
 /**
  * Calculate army movement speed as unweighted average of unit formation speeds.
  * This prevents a single fast unit from rushing the entire army.
- * For units with `standard` formation (speed 1.0), use the unit's actual speed stat.
+ * Formation speed is a multiplier on the unit's actual speed stat.
+ * `standard` formation has multiplier 1.0, so it uses the unit's actual speed.
  */
 const armyMovementSpeed = (fighters: readonly Fighter[]): number => {
   if (fighters.length === 0) return 1.0;
@@ -212,10 +213,8 @@ const armyMovementSpeed = (fighters: readonly Fighter[]): number => {
   const effectiveSpeeds = fighters.map((f) => {
     const formationDef = findFormationDefinition(f.formation);
     const formationSpeed = formationDef?.movementSpeed ?? 1.0;
-    // For standard formation (speed 1.0), use the unit's actual speed
-    // This preserves Age 0/1 behavior when all units use standard
-    if (formationSpeed === 1.0) return f.stats.speed;
-    return formationSpeed;
+    // Formation speed is a multiplier on the unit's actual speed
+    return f.stats.speed * formationSpeed;
   });
   return effectiveSpeeds.reduce((a, b) => a + b, 0) / effectiveSpeeds.length;
 };

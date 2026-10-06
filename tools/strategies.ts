@@ -1512,7 +1512,7 @@ abstract class BaseStrategy implements SimulationStrategy {
   abstract name: string;
   abstract description: string;
   /** Whether gather hints may hold and replace the worker-priority resource. */
-  protected readonly usesGatherWorkerFocus = true;
+  protected readonly usesGatherWorkerFocus: boolean = true;
   private gatherWorkerFocus:
     | {
         readonly resource: ProductionResourceKey;
@@ -1724,7 +1724,13 @@ abstract class BaseStrategy implements SimulationStrategy {
       return action;
     }
     if (!this.usesGatherWorkerFocus) {
-      return this.assignWorkersByRatio(state, this.getWorkerRatios()) ?? action;
+      return (
+        this.assignWorkersByRatio(
+          state,
+          this.getWorkerRatios(),
+          action.resource as ProductionResourceKey,
+        ) ?? action
+      );
     }
 
     const resource = action.resource as ProductionResourceKey;
@@ -2594,7 +2600,7 @@ export class ResearchStrategy extends BaseStrategy {
     context: SimulationContext,
   ): SimulationAction | null {
     if (!state.defeatedEncounters.includes("age0_1_first_fire")) {
-      this.openingStrategy ??= new SpeedrunStrategy();
+      this.openingStrategy ??= new SpeedrunStrategy(true);
       return this.openingStrategy.decideAction(state, context);
     }
 
@@ -3039,7 +3045,13 @@ export class TradeStrategy extends BaseStrategy {
 export class SpeedrunStrategy extends BaseStrategy {
   name = "speedrun";
   description = "Buy the best time-adjusted ROI purchase for fast progression";
-  protected readonly usesGatherWorkerFocus = false;
+  protected readonly usesGatherWorkerFocus: boolean;
+
+  constructor(usesGatherWorkerFocus = false) {
+    super();
+    this.usesGatherWorkerFocus = usesGatherWorkerFocus;
+  }
+
   /**
    * This strategy's valuation profile, applied only to its own ROI calls.
    *
@@ -3246,6 +3258,7 @@ export class SpeedrunStrategy extends BaseStrategy {
 
     const previousFocus = this.roiGatherFocus;
     const focusIsCurrent =
+      this.usesGatherWorkerFocus &&
       previousFocus?.snapshots === context.snapshots &&
       context.gameTime < previousFocus.until;
     const resource = focusIsCurrent

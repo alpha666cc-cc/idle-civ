@@ -12,6 +12,11 @@ import { findUnitDefinition } from "../game/units";
 import { findResearchDefinition, researchIdsForBattle } from "../game/research";
 import { ExpNumber } from "../game/expNumber";
 import { findFormationDefinition, type FormationId } from "../game/formations";
+import {
+  findOrderDefinition,
+  type OrderId,
+  DEFAULT_ORDER,
+} from "../game/orders";
 import type { ArmyStack } from "../game/battle";
 
 /** Whether a current army plus the proposed recruits defeats the battle. */
@@ -64,6 +69,36 @@ const winsWithStatsAndFormations = (
       count,
       stats,
       formation: formations.get(unitId),
+      order: DEFAULT_ORDER,
+    });
+  }
+  const enemy = gameState.getEnemyStacks(battleId);
+  if (stacks.length === 0 || enemy.length === 0) return false;
+  return gameState.simulateWithStacksOutcome(stacks, enemy) === "player";
+};
+
+/** Whether a current army with specific formations and orders defeats the battle. */
+const winsWithStatsAndFormationsAndOrders = (
+  gameState: CivilizationState,
+  battleId: string,
+  total: SimulatorTotalArmy,
+  formations: ReadonlyMap<string, FormationId>,
+  orders: ReadonlyMap<string, OrderId>,
+): boolean => {
+  const researchIds = researchIdsForBattle(
+    encounterDefinitions.find(({ key }) => key === battleId)?.age ?? 0,
+    [...total.keys()],
+  );
+  const stacks: ArmyStack[] = [];
+  for (const [unitId, count] of total) {
+    const stats = gameState.getUnitStatsWithResearch(unitId, researchIds);
+    if (!stats) continue;
+    stacks.push({
+      unitId,
+      count,
+      stats,
+      formation: formations.get(unitId),
+      order: orders.get(unitId) ?? DEFAULT_ORDER,
     });
   }
   const enemy = gameState.getEnemyStacks(battleId);
@@ -161,6 +196,14 @@ export default function BattleSimulatorPanel({
               battle.key,
               composition,
               formations,
+            ),
+          winsWithFormationsAndOrders: (composition, formations, orders) =>
+            winsWithStatsAndFormationsAndOrders(
+              gameState,
+              battle.key,
+              composition,
+              formations,
+              orders,
             ),
         },
         selected.size >= 2,
@@ -333,6 +376,21 @@ export default function BattleSimulatorPanel({
                       <li key={unitId}>
                         {findUnitDefinition(unitId)?.name ?? unitId}:{" "}
                         {findFormationDefinition(formation)?.name ?? formation}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {result.orders.size > 0 && (
+                <>
+                  <p className="battle-simulator-subheading">
+                    Recommended targeting orders
+                  </p>
+                  <ul>
+                    {[...result.orders].map(([unitId, order]) => (
+                      <li key={unitId}>
+                        {findUnitDefinition(unitId)?.name ?? unitId}:{" "}
+                        {findOrderDefinition(order)?.name ?? order}
                       </li>
                     ))}
                   </ul>

@@ -12,16 +12,6 @@
       "sourceMaps": true
     },
     {
-      "name": "Idle Civ: Battle Simulator",
-      "type": "pwa-chrome",
-      "request": "launch",
-      "url": "http://127.0.0.1:4174/helper/battle-simulator.html",
-      "webRoot": "${workspaceFolder}",
-      "preLaunchTask": "Idle Civ: Start Battle Helper",
-      "postDebugTask": "Idle Civ: Stop Battle Helper",
-      "sourceMaps": true
-    },
-    {
       "name": "Idle Civ: Simulation Debug (Cheapest 4500s)",
       "type": "node",
       "request": "launch",

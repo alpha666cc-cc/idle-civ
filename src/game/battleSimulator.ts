@@ -13,6 +13,7 @@ import {
   type FormationId,
   DEFAULT_FORMATION,
 } from "./formations";
+import { orderIds, type OrderId, DEFAULT_ORDER } from "./orders";
 
 /** Minimum-army simulator (dev tools only): cheapest winning army per battle. */
 export type SimulatorArmy = ReadonlyMap<string, number>;
@@ -38,6 +39,8 @@ export type SimulatorResult = {
   readonly research: SimulatorResearch;
   /** Optimal formation per unit type for this battle. */
   readonly formations: ReadonlyMap<string, FormationId>;
+  /** Optimal targeting order per unit type for this battle. */
+  readonly orders: ReadonlyMap<string, OrderId>;
 };
 export type BattleSimulatorContext = {
   getCost: (unitId: string, count: number) => BuildingCost[];
@@ -47,6 +50,13 @@ export type BattleSimulatorContext = {
   winsWithFormations: (
     composition: SimulatorTotalArmy,
     formations: ReadonlyMap<string, FormationId>,
+    battleId: string,
+  ) => boolean;
+  /** Test a composition with specific formation and order assignments. */
+  winsWithFormationsAndOrders: (
+    composition: SimulatorTotalArmy,
+    formations: ReadonlyMap<string, FormationId>,
+    orders: ReadonlyMap<string, OrderId>,
     battleId: string,
   ) => boolean;
 };
@@ -101,6 +111,7 @@ const militaryOf = (costs: readonly SimulatorCostTotal[]): ExpNumber => {
  * Find optimal formation assignments for a given army composition.
  * Tries all available formations for each unit type and returns the winning combination.
  * Returns empty map if no formation combination wins (falls back to standard).
+ * Tries non-standard formations first to find tactical advantages.
  */
 export const findOptimalFormations = (
   composition: SimulatorTotalArmy,
@@ -110,6 +121,13 @@ export const findOptimalFormations = (
 ): ReadonlyMap<string, FormationId> => {
   const unitIds = [...composition.keys()];
   if (unitIds.length === 0) return new Map();
+
+  // Sort formations: try non-standard first, then standard as fallback
+  const sortedFormations = [...availableFormations].sort((a, b) => {
+    if (a === "standard") return 1;
+    if (b === "standard") return -1;
+    return a.localeCompare(b);
+  });
 
   // Try all combinations (this is exponential, but unit counts are small in practice)
   // For 3 unit types with 3 formations each: 3^3 = 27 combinations
@@ -124,8 +142,61 @@ export const findOptimalFormations = (
     }
 
     const unitId = unitIds[index];
-    for (const formation of availableFormations) {
+    for (const formation of sortedFormations) {
       current.set(unitId, formation);
+      const result = tryCombinations(index + 1, current);
+      if (result !== null) return result;
+    }
+    current.delete(unitId);
+    return null;
+  };
+
+  const result = tryCombinations(0, new Map());
+  return result ?? new Map();
+};
+
+/**
+ * Find optimal targeting order assignments for a given army composition.
+ * Tries all available orders for each unit type and returns the winning combination.
+ * Returns empty map if no order combination wins (falls back to standard).
+ * Tries non-standard orders first to find tactical advantages.
+ */
+export const findOptimalOrders = (
+  composition: SimulatorTotalArmy,
+  availableOrders: readonly OrderId[],
+  context: BattleSimulatorContext,
+  battleId: string,
+  formations: ReadonlyMap<string, FormationId>,
+): ReadonlyMap<string, OrderId> => {
+  const unitIds = [...composition.keys()];
+  if (unitIds.length === 0) return new Map();
+
+  // Sort orders: try non-standard first, then standard as fallback
+  const sortedOrders = [...availableOrders].sort((a, b) => {
+    if (a === "standard") return 1;
+    if (b === "standard") return -1;
+    return a.localeCompare(b);
+  });
+
+  // Try all combinations (this is exponential, but unit counts are small in practice)
+  const tryCombinations = (
+    index: number,
+    current: Map<string, OrderId>,
+  ): Map<string, OrderId> | null => {
+    if (index >= unitIds.length) {
+      return context.winsWithFormationsAndOrders(
+        composition,
+        formations,
+        current,
+        battleId,
+      )
+        ? current
+        : null;
+    }
+
+    const unitId = unitIds[index];
+    for (const order of sortedOrders) {
+      current.set(unitId, order);
       const result = tryCombinations(index + 1, current);
       if (result !== null) return result;
     }
@@ -182,11 +253,20 @@ export const solveMinimumArmy = (
     const totalComposition = mergeSimulatorArmy(ownedArmy, new Map());
     const availableFormations =
       encounter && encounter.age >= 2 ? formationIds : [DEFAULT_FORMATION];
+    const availableOrders =
+      encounter && encounter.age >= 3 ? orderIds : [DEFAULT_ORDER];
     const formations = findOptimalFormations(
       totalComposition,
       availableFormations,
       context,
       battleId,
+    );
+    const orders = findOptimalOrders(
+      totalComposition,
+      availableOrders,
+      context,
+      battleId,
+      formations,
     );
     return {
       composition: new Map(),
@@ -195,6 +275,7 @@ export const solveMinimumArmy = (
       totalCost: [],
       research: { ids: [], costs: [] },
       formations,
+      orders,
     };
   }
   let best: SimulatorArmy | null = null;
@@ -315,6 +396,19 @@ export const solveMinimumArmy = (
     battleId,
   );
 
+  // Find optimal targeting orders for the winning army
+  // Use standard order for Age 0/2, all available orders for Age 3+
+  const availableOrders =
+    encounter && encounter.age >= 3 ? orderIds : [DEFAULT_ORDER];
+
+  const orders = findOptimalOrders(
+    totalComposition,
+    availableOrders,
+    context,
+    battleId,
+    formations,
+  );
+
   return {
     composition: best,
     totalComposition,
@@ -322,5 +416,6 @@ export const solveMinimumArmy = (
     totalCost: sumCosts(best, context),
     research: context.getResearch(additionalUnitIds(ownedArmy, best)),
     formations,
+    orders,
   };
 };

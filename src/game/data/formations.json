@@ -2,7 +2,7 @@
   {
     "id": "standard",
     "name": "Standard",
-    "description": "No special positioning or stat trades. Represents Age 0/1 behavior (fastest unit determines army speed).",
+    "description": "No special positioning or stat trades. Movement speed multiplier is 1.0 (uses unit's actual speed).",
     "unlockAge": 0,
     "unlockType": "age_entry",
     "positionOffset": 0,

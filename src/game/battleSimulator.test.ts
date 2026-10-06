@@ -31,6 +31,8 @@ const context = () => ({
     (total.get("warrior")?.toNumber() ?? 0) >= 5,
   winsWithFormations: (total: SimulatorTotalArmy) =>
     (total.get("warrior")?.toNumber() ?? 0) >= 5,
+  winsWithFormationsAndOrders: (total: SimulatorTotalArmy) =>
+    (total.get("warrior")?.toNumber() ?? 0) >= 5,
 });
 
 describe("battle simulator current army", () => {
@@ -70,6 +72,7 @@ describe("battle simulator current army", () => {
     expect(result.composition.get("warrior")).toBe(1);
     expect(result.totalComposition.get("warrior")?.toNumber()).toBe(5);
     expect(result.military.toNumber()).toBe(20);
+    expect(result.orders.size).toBeGreaterThanOrEqual(0);
   });
 
   it("returns no additional recruits when the current army already wins", () => {
@@ -81,6 +84,8 @@ describe("battle simulator current army", () => {
         ...context(),
         winsWithFormations: (total: SimulatorTotalArmy) =>
           (total.get("warrior")?.toNumber() ?? 0) >= 5,
+        winsWithFormationsAndOrders: (total: SimulatorTotalArmy) =>
+          (total.get("warrior")?.toNumber() ?? 0) >= 5,
       },
       false,
       owned,
@@ -90,6 +95,7 @@ describe("battle simulator current army", () => {
     expect(result?.totalComposition.get("warrior")?.toNumber()).toBe(5);
     expect(result?.military.isZero).toBe(true);
     expect(result?.formations.size).toBeGreaterThanOrEqual(0);
+    expect(result?.orders.size).toBeGreaterThanOrEqual(0);
   });
 
   it("passes only new unit types to the research cost evaluator", () => {
@@ -106,6 +112,8 @@ describe("battle simulator current army", () => {
           ],
         }),
         winsWithFormations: (total: SimulatorTotalArmy) =>
+          (total.get("warrior")?.toNumber() ?? 0) >= 5,
+        winsWithFormationsAndOrders: (total: SimulatorTotalArmy) =>
           (total.get("warrior")?.toNumber() ?? 0) >= 5,
       },
       false,

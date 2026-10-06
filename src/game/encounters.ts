@@ -3,6 +3,7 @@ import { parseBonusType, type Bonus } from "./bonus";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 import { findUnitDefinition } from "./units";
+import { type FormationId } from "./formations";
 
 /** One enemy stack: how many of a unit stand against the player. */
 export type EnemyStack = {
@@ -10,6 +11,8 @@ export type EnemyStack = {
   readonly count: number;
   /** Historical scale of the force, e.g. "3k Polish dragoons". */
   readonly label?: string;
+  /** Formation for this unit type (Age 2+). Defaults to standard if not set. */
+  readonly formation?: FormationId;
 };
 
 /**
@@ -70,7 +73,12 @@ type EncounterData = {
   year: number;
   isBoss: boolean;
   historical?: string;
-  enemyArmy: { unitId: string; count: number; label?: string }[];
+  enemyArmy: {
+    unitId: string;
+    count: number;
+    label?: string;
+    formation?: FormationId;
+  }[];
   enemyBoosts?: { type: string; destination: string; value: number }[];
   bonuses: { type: string; destination: string; value: number }[];
   unlocks: string[];
@@ -94,10 +102,11 @@ const toEncounterDefinition = (data: EncounterData): EncounterDefinition =>
     data.age,
     data.year,
     data.isBoss,
-    data.enemyArmy.map(({ unitId, count, label }) => ({
+    data.enemyArmy.map(({ unitId, count, label, formation }) => ({
       unitId,
       count,
       label,
+      formation,
     })),
     (data.enemyBoosts ?? []).map(toBonus),
     data.bonuses.map(toBonus),

@@ -13,7 +13,6 @@
     "preview": "vite preview",
     "gen:balance": "tsx tools/gen/balanceSheet.ts",
     "simulate:battle": "node --experimental-strip-types temp/min-army.mjs",
-    "helper:battle": "node helper/serve-battle-simulator.mjs",
     "simulate": "tsx tools/run-simulation.mjs",
     "simulate:compare": "tsx tools/compare-strategies.mjs",
     "simulate:debug": "tsx tools/run-simulation.mjs --strategy cheapest --objective timeLimit --target 4500 --verbose"
