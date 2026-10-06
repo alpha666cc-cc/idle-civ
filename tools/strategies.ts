@@ -1511,6 +1511,8 @@ const getCheapestHousingAction = (
 abstract class BaseStrategy implements SimulationStrategy {
   abstract name: string;
   abstract description: string;
+  /** Whether gather hints may hold and replace the worker-priority resource. */
+  protected readonly usesGatherWorkerFocus = true;
   private gatherWorkerFocus:
     | {
         readonly resource: ProductionResourceKey;
@@ -1692,6 +1694,10 @@ abstract class BaseStrategy implements SimulationStrategy {
   protected getGatherWorkerFocus(
     context: SimulationContext,
   ): ProductionResourceKey | undefined {
+    if (!this.usesGatherWorkerFocus) {
+      this.gatherWorkerFocus = undefined;
+      return undefined;
+    }
     const focus = this.gatherWorkerFocus;
     // No expiry clock: workers must stay on the resource until the purchase
     // they are gathering for is actually bought, not until a timer lapses.
@@ -1716,6 +1722,9 @@ abstract class BaseStrategy implements SimulationStrategy {
       !producerResourceKeys.includes(action.resource as ProductionResourceKey)
     ) {
       return action;
+    }
+    if (!this.usesGatherWorkerFocus) {
+      return this.assignWorkersByRatio(state, this.getWorkerRatios()) ?? action;
     }
 
     const resource = action.resource as ProductionResourceKey;
@@ -2324,6 +2333,8 @@ class PlayerOpeningStrategy extends BalancedStrategy {
 }
 
 class PlayerOpeningWoodStrategy extends PlayerOpeningStrategy {
+  protected readonly usesGatherWorkerFocus = false;
+
   protected getWorkerRatios(): WorkerRatios {
     return {
       food: 0.3,
@@ -2630,6 +2641,7 @@ export class ResearchStrategy extends BaseStrategy {
 export class PlayerStrategy extends ResearchStrategy {
   name = "player";
   description = "Follow the fastest save-derived Age-1 research and opening";
+  protected readonly usesGatherWorkerFocus = false;
   protected playerOpeningStrategy = new PlayerOpeningWoodStrategy();
 
   protected getOpeningBarracksTarget(): number {
@@ -3027,6 +3039,7 @@ export class TradeStrategy extends BaseStrategy {
 export class SpeedrunStrategy extends BaseStrategy {
   name = "speedrun";
   description = "Buy the best time-adjusted ROI purchase for fast progression";
+  protected readonly usesGatherWorkerFocus = false;
   /**
    * This strategy's valuation profile, applied only to its own ROI calls.
    *
@@ -3194,6 +3207,16 @@ export class SpeedrunStrategy extends BaseStrategy {
       ratios.food = 1;
     }
     return ratios;
+  }
+
+  protected focusWorkersForGather(
+    state: CivilizationState,
+    action: SimulationAction,
+    _context: SimulationContext,
+  ): SimulationAction {
+    return action.type === "gather"
+      ? (this.assignWorkersByRatio(state, this.deriveWorkerRatios(state)) ?? action)
+      : action;
   }
 
   decideAction(

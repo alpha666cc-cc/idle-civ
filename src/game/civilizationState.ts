@@ -37,7 +37,6 @@ import {
 } from "./attributes";
 import {
   armyPower,
-  ordersForAge,
   simulateBattle,
   simulateBattleOutcome,
   standardOrder,
@@ -46,6 +45,7 @@ import {
   type BattleSimulation,
   type BattleOutcome,
 } from "./battle";
+import { ordersForAge } from "./orders";
 import {
   collectCostReductions,
   type Bonus,

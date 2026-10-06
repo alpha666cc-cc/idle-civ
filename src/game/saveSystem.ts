@@ -9,8 +9,9 @@ import {
   type ResourceKey,
 } from "./attributes";
 import type { BuildingCost } from "./buildings";
-import { battleOrders, type BattleOrder } from "./battle";
+import { type BattleOrder } from "./battle";
 import { snapshotGuids } from "./dataIds";
+import { orderIds } from "./orders";
 import type { DevLogDocument } from "./devLog";
 import { ExpNumber } from "./expNumber";
 import { CivilizationState } from "./civilizationState";
@@ -972,7 +973,7 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
   for (const [key, value] of Object.entries(data.unitOrders ?? {})) {
     // A save may name an order this build no longer knows, or one the loaded
     // age has not discovered; both fall back to `standard` rather than throwing.
-    if (!battleOrders.includes(value as BattleOrder)) continue;
+    if (!orderIds.includes(value as BattleOrder)) continue;
     unitOrders[key] = value as BattleOrder;
   }
 

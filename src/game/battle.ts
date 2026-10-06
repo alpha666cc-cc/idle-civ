@@ -1,10 +1,11 @@
 import { ExpNumber } from "./expNumber";
-// TODO: Re-enable when formation battle integration is complete
-// import {
-//   findFormationDefinition,
-//   DEFAULT_FORMATION,
-//   type FormationId,
-// } from "./formations";
+import { DEFAULT_FORMATION, type FormationId } from "./formations";
+import {
+  DEFAULT_ORDER,
+  orderDefinitions,
+  ordersForAge,
+  type OrderId,
+} from "./orders";
 import {
   findUnitDefinition,
   unitPower,
@@ -35,123 +36,25 @@ export type ArmyStack = {
   readonly stats: UnitStats;
   /** How this stack picks its target and screens its allies; `standard` if unset. */
   readonly order?: BattleOrder;
-  // TODO: Re-enable when formation battle integration is complete
-  // /** Formation: positioning + stat trades; `standard` if unset. */
-  // readonly formation?: FormationId;
-  // for now, accept formation in ArmyStack but ignore it in battle
-  readonly formation?: string;
+  /** Formation: positioning + stat trades; `standard` if unset. */
+  readonly formation?: FormationId;
 };
 
-/**
- * Battle orders (the "Classical discovery", Age 2).
- *
- * An order is per unit type, not per stack instance — the player has one army and
- * `getArmyStacks()` emits a single stack per unit type, so an order always
- * describes the whole of that type. Orders change only *targeting* and *screening*;
- * they never touch the damage, range or speed rules, so an order can move the
- * cost of a battle but not invalidate a unit's own stats.
- *
- * `standard` is the pre-order behaviour (fire at the weakest stack you can
- * reach). The rest are tactical choices the player unlocks with the classical
- * ages: hold a line, screen the shooters, or concentrate fire differently.
- */
-export type BattleOrder =
-  | "standard"
-  | "frontline"
-  | "backline"
-  | "focus_weak"
-  | "focus_strong"
-  | "focus_counter"
-  | "same_tag"
-  | "protect_ranged";
-
-export const standardOrder: BattleOrder = "standard";
-
-/** Every order, in unlock order; used to validate a loaded save. */
-export const battleOrders: readonly BattleOrder[] = [
-  "standard",
-  "frontline",
-  "backline",
-  "focus_counter",
-  "focus_weak",
-  "focus_strong",
-  "same_tag",
-  "protect_ranged",
-];
-
-/** Which targeting orders the player has discovered by the time they reach an age. */
-export const orderUnlocks: Record<number, readonly BattleOrder[]> = {
-  0: ["standard"],
-  1: ["standard"],
-  2: ["standard"], // Age 2: formations unlock, not targeting orders
-  3: [
-    "standard",
-    "focus_counter",
-    "focus_weak",
-    "focus_strong",
-    "same_tag",
-    "protect_ranged",
-  ], // Age 3: all targeting orders unlock
-  4: [
-    "standard",
-    "focus_counter",
-    "focus_weak",
-    "focus_strong",
-    "same_tag",
-    "protect_ranged",
-  ],
-  5: [
-    "standard",
-    "focus_counter",
-    "focus_weak",
-    "focus_strong",
-    "same_tag",
-    "protect_ranged",
-  ],
-  6: [
-    "standard",
-    "focus_counter",
-    "focus_weak",
-    "focus_strong",
-    "same_tag",
-    "protect_ranged",
-  ],
-  7: [
-    "standard",
-    "focus_counter",
-    "focus_weak",
-    "focus_strong",
-    "same_tag",
-    "protect_ranged",
-  ],
-};
-
-export const battleOrderLabels: Record<BattleOrder, string> = {
-  standard: "Standard",
-  frontline: "Hold the line",
-  backline: "Keep to the rear",
-  focus_weak: "Finish the weakest",
-  focus_strong: "Break the strongest",
-  focus_counter: "Hunt the armoured",
-  same_tag: "Match their kind",
-  protect_ranged: "Guard the shooters",
-};
-
-export const battleOrderHints: Record<BattleOrder, string> = {
-  standard: "Fire at the weakest stack you can reach.",
-  frontline: "Engage the nearest melee line, and screen what is behind it.",
-  backline: "Stand off and screen yourself from the enemy line.",
-  focus_weak: "Concentrate on the smallest remaining stack.",
-  focus_strong: "Concentrate on the largest remaining stack.",
-  focus_counter:
-    "Prefer the enemy your unit counters; fall back if it has none.",
-  same_tag: "Pick a foe of your own kind, or the first you can reach.",
-  protect_ranged: "Body-guard the ranged line, absorbing fire for it.",
-};
-
-/** Orders a player of this age may issue; never empty, always includes standard. */
-export const ordersForAge = (ageIndex: number): readonly BattleOrder[] =>
-  orderUnlocks[Math.max(0, Math.min(7, ageIndex))] ?? orderUnlocks[0];
+/** Battle targeting orders (re-exported from orders.ts for convenience) */
+export type BattleOrder = OrderId;
+export const standardOrder = DEFAULT_ORDER;
+export const battleOrders = orderDefinitions.map(
+  (def) => def.id,
+) as readonly BattleOrder[];
+export const orderUnlocks = (ageIndex: number): readonly BattleOrder[] =>
+  ordersForAge(ageIndex);
+export const battleOrderLabels: Record<BattleOrder, string> =
+  Object.fromEntries(
+    orderDefinitions.map((def) => [def.id, def.name]),
+  ) as Record<BattleOrder, string>;
+export const battleOrderHints: Record<BattleOrder, string> = Object.fromEntries(
+  orderDefinitions.map((def) => [def.id, def.description]),
+) as Record<BattleOrder, string>;
 
 export type BattleSide = "player" | "enemy";
 
@@ -201,8 +104,8 @@ type Fighter = {
   hpPool: ExpNumber;
   /** The order this stack was told to fight under. */
   readonly order: BattleOrder;
-  // TODO: Re-add formation when Age 2+ battle integration is complete
-  // readonly formation: FormationId;
+  /** The formation this stack uses for positioning and stat trades. */
+  readonly formation: FormationId;
   /** Hit points the stack started with, so screening can read its health. */
   readonly initialHpPool: ExpNumber;
 };
@@ -220,120 +123,33 @@ const livingCount = (fighter: Fighter): ExpNumber => {
  * that the same set of units always produces the same battle, however the caller
  * happened to assemble the stack list — see `armySignature` for why.
  */
-/**
- * Apply formation stat bonuses to unit stats.
- * TODO: Re-enable when formation battle integration is complete
- */
-// const applyFormationStats = (
-//   stats: UnitStats,
-//   formation: FormationId,
-// ): UnitStats => {
-//   const formationDef = findFormationDefinition(formation);
-//   if (
-//     !formationDef ||
-//     !formationDef.statBonuses ||
-//     formationDef.statBonuses.length === 0
-//   ) {
-//     return stats;
-//   }
-//
-//   const bonusMap = new Map(
-//     formationDef.statBonuses.map((b) => [b.attribute, b.multiplier]),
-//   );
-//
-//   const applyBonus = (value: ExpNumber, attribute: string): ExpNumber => {
-//     const multiplier = bonusMap.get(attribute);
-//     if (!multiplier) return value;
-//     return value.mul(ExpNumber.fromNumber(multiplier));
-//   };
-//
-//   const applyBonusToNumber = (value: number, attribute: string): number => {
-//     const multiplier = bonusMap.get(attribute);
-//     if (!multiplier) return value;
-//     return value * multiplier;
-//   };
-//
-//   let newStats = {
-//     ...stats,
-//     hp: applyBonus(stats.hp, "unitAll.hp"),
-//     attack: applyBonus(stats.attack, "unitAll.attack"),
-//     accuracy: applyBonusToNumber(stats.accuracy, "unitAll.accuracy"),
-//   };
-//
-//   // Tag-specific bonuses: for now, just apply to all units with that tag
-//   // This is a simplification - proper implementation would check unit tags
-//   if (bonusMap.has("tag.cavalry.attack")) {
-//     newStats = {
-//       ...newStats,
-//       attack: applyBonus(newStats.attack, "tag.cavalry.attack"),
-//     };
-//   }
-//   if (bonusMap.has("tag.ranged.attack")) {
-//     newStats = {
-//       ...newStats,
-//       attack: applyBonus(newStats.attack, "tag.ranged.attack"),
-//     };
-//   }
-//
-//   return newStats;
-// };
 
 /**
  * Calculate army movement speed as unweighted average of unit formation speeds.
  * This prevents a single fast unit from rushing the entire army.
  * For standard formation, use the unit's actual speed stat to preserve Age 0/1 behavior.
- * TODO: Re-enable when formation battle integration is complete
  */
-// const armyMovementSpeed = (fighters: readonly Fighter[]): number => {
-//   if (fighters.length === 0) return 1.0;
-//
-//   // Use the fastest unit's speed (old behavior, preserved for now)
-//   // TODO: In Age 2+, switch to unweighted average of formation speeds
-//   return Math.max(...fighters.map((f) => f.stats.speed));
-// };
-
-// Use the fastest unit's speed (Age 0/1 behavior)
 const armyMovementSpeed = (fighters: readonly Fighter[]): number => {
   if (fighters.length === 0) return 1.0;
+
+  // Use the fastest unit's speed (old behavior, preserved for now)
+  // TODO: In Age 2+, switch to unweighted average of formation speeds
   return Math.max(...fighters.map((f) => f.stats.speed));
 };
 
 /**
- * Find the frontmost unit in an army (most negative position offset).
- * Used to calculate relative position offsets.
- * TODO: Re-enable when formation battle integration is complete
- */
-// const frontmostOffset = (army: readonly Fighter[]): number => {
-//   if (army.length === 0) return 0;
-//   return Math.min(
-//     ...army.map((f) => {
-//       const formationDef = findFormationDefinition(f.formation);
-//       return formationDef?.positionOffset ?? 0;
-//     }),
-//   );
-// };
-
-/**
  * Calculate effective position of a unit relative to enemy.
- * Offsets are relative to own army's front line, not absolute from enemy.
- * For Age 0/1, use simple distance (no formation effects).
- * TODO: Re-enable when formation battle integration is complete
+ * For now, this just returns the distance directly (no formation effects).
+ * TODO: Re-enable formation-based position calculation when Age 2+ battle integration is complete.
  */
-// const effectivePosition = (
-//   fighter: Fighter,
-//   ownArmy: readonly Fighter[],
-//   distance: number,
-//   ageIndex: number,
-// ): number => {
-//   // Age 0/1: no formation effects, use simple distance
-//   if (ageIndex < 2) return distance;
-//
-//   const formationDef = findFormationDefinition(fighter.formation);
-//   const offset = formationDef?.positionOffset ?? 0;
-//   const armyFront = frontmostOffset(ownArmy);
-//   const relativeOffset = offset - armyFront;
-//   return distance + relativeOffset;
-// };
+const effectivePosition = (
+  _fighter: Fighter,
+  _ownArmy: readonly Fighter[],
+  distance: number,
+): number => {
+  // For now, disable position offsets entirely to preserve Age 0/1 behavior
+  return distance;
+};
 
 const buildFighters = (
   stacks: readonly ArmyStack[],
@@ -344,8 +160,9 @@ const buildFighters = (
     .flatMap((stack) => {
       const definition = findUnitDefinition(stack.unitId);
       if (!definition || stack.count.lte(ExpNumber.ZERO)) return [];
-      // TODO: Re-enable formation stat application when Age 2+ battle integration is complete
-      // For now, use raw stats to preserve Age 0/1 behavior
+      const formation = stack.formation ?? DEFAULT_FORMATION;
+      // For now, skip formation stat application entirely to preserve Age 0/1 behavior
+      // TODO: Re-enable when Age 2+ battle integration is complete
       const effectiveStats = stack.stats;
       const hitPoints = effectiveStats.hp.div(
         ExpNumber.ONE.sub(
@@ -366,7 +183,7 @@ const buildFighters = (
           hpPool: hitPoints.mul(stack.count),
           initialHpPool: hitPoints.mul(stack.count),
           order: stack.order ?? standardOrder,
-          // formation,
+          formation,
         },
       ];
     });
@@ -376,22 +193,14 @@ const canReach = (
   attacker: Fighter,
   target: Fighter,
   distance: number,
-  // attackerArmy: readonly Fighter[],
-  // targetArmy: readonly Fighter[],
-  // ageIndex: number,
+  _attackerArmy: readonly Fighter[],
+  _targetArmy: readonly Fighter[],
 ): boolean => {
   if (!attacker.canHit.includes(target.domain)) return false;
 
-  // TODO: Re-enable formation-based position calculation when Age 2+ battle integration is complete
-  // const attackerPos = effectivePosition(
-  //   attacker,
-  //   attackerArmy,
-  //   distance,
-  //   ageIndex,
-  // );
-  // const targetPos = effectivePosition(target, targetArmy, distance, ageIndex);
-  // const actualDistance = Math.abs(attackerPos - targetPos);
-  const actualDistance = distance;
+  const attackerPos = effectivePosition(attacker, _attackerArmy, distance);
+  const targetPos = effectivePosition(target, _targetArmy, distance);
+  const actualDistance = Math.abs(attackerPos - targetPos);
 
   if (actualDistance > attacker.stats.range) return false;
   if (target.domain === "air" && attacker.stats.range <= 1) return false;
@@ -464,7 +273,7 @@ const pickStandardTarget = (foes: readonly Fighter[]): Fighter =>
   weakestFirst(foes);
 
 /**
- * Which foe a stack shoots, by its order. Every order falls back to a reachable
+ * Which foe a stack shoots, by its targeting order. Every order falls back to a reachable
  * target, so an order never makes a stack idle while enemies are in range.
  */
 const pickTargetByOrder = (
@@ -481,20 +290,6 @@ const pickTargetByOrder = (
     case "focus_strong":
       return foes.reduce(
         (strongest, foe) => (foe.hpPool.gt(strongest.hpPool) ? foe : strongest),
-        foes[0],
-      );
-    case "frontline":
-      // The nearest melee line: the shortest reach, and a screen for what is behind.
-      return foes.reduce(
-        (nearest, foe) =>
-          foe.stats.range < nearest.stats.range ? foe : nearest,
-        foes[0],
-      );
-    case "backline":
-      // Keep to the rear: shoot whatever reaches furthest, from behind the line.
-      return foes.reduce(
-        (furthest, foe) =>
-          foe.stats.range > furthest.stats.range ? foe : furthest,
         foes[0],
       );
     case "same_tag": {
@@ -539,7 +334,7 @@ const applyScreening = (
     // Ranged units are screened under the default order too. The only Age-0
     // anti-naval unit is the archer, and `standard`'s weakest-first targeting
     // deletes archers (hp 60-80) before they can shoot. `protect_ranged` and
-    // `frontline` are Age-2 unlocks, so without this the mechanic is
+    // screening orders are Age-2+ unlocks, so without this the mechanic is
     // structurally unavailable where it is most needed.
     (target.order === "standard" && target.stats.range >= 4);
   if (!protectedTarget) return damage;
@@ -547,8 +342,7 @@ const applyScreening = (
     (ally) =>
       ally.unitId !== target.unitId &&
       livingCount(ally).gt(ExpNumber.ZERO) &&
-      (ally.order === "frontline" ||
-        ally.order === "protect_ranged" ||
+      (ally.order === "protect_ranged" ||
         // Default-order melee bodyguards its shooters, which is the whole point.
         (ally.order === "standard" && ally.stats.range <= 3)),
   );
@@ -606,7 +400,7 @@ const simulateBattleInternal = (
       const foes = (attacker.side === "player" ? enemy : player).filter(
         (fighter) =>
           fighter.hpPool.gt(ExpNumber.ZERO) &&
-          canReach(attacker, fighter, distance),
+          canReach(attacker, fighter, distance, player, enemy),
       );
       if (foes.length === 0) continue;
       // The stack's order decides the target; `standard` finishes off the weakest.
@@ -637,7 +431,7 @@ const simulateBattleInternal = (
 
     // Use army movement speed (fastest unit, for Age 0/1 compatibility)
     // TODO: Switch to formation-based average speed at Age 2+
-    const armySpeed = armyMovementSpeed(order);
+    const armySpeed = armyMovementSpeed([...player, ...enemy]);
     distance = Math.max(1, distance - Math.max(1, Math.floor(armySpeed)));
     if (recordRounds) {
       rounds.push({
