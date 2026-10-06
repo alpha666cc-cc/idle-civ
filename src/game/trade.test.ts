@@ -57,6 +57,7 @@ const settlement = (
     false,
     [],
     {},
+    {},
     tradeRoutes,
   );
 
@@ -696,6 +697,7 @@ describe("trade routes", () => {
       false,
       false,
       [],
+      {},
       {},
       { food: enabledRoute("sell") },
     )

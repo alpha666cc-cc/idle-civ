@@ -15,6 +15,7 @@ import {
 import { encounterDefinitions } from "../src/game/encounters.js";
 import { researchDefinitions } from "../src/game/research.js";
 import { type ArmyStack } from "../src/game/battle.js";
+import { type FormationId } from "../src/game/formations.js";
 import {
   simulatorCandidates,
   solveMinimumArmy,
@@ -925,6 +926,48 @@ const simulatorContext = (state: CivilizationState): BattleSimulatorContext => {
       simulatorWinCache.set(key, wins);
       return wins;
     },
+    winsWithFormations: (
+      composition: ReadonlyMap<string, ExpNumber>,
+      _formations: ReadonlyMap<string, FormationId>,
+      battleId: string,
+    ) => {
+      // For strategy optimizer, ignore formations and use basic wins check
+      // Formation optimization is handled by the battle simulator UI
+      const armyKey = [...composition]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([unitId, count]) => `${unitId}:${count.toString()}`)
+        .join(",");
+      const key = `${combatStateKey}|${battleId}|${armyKey}`;
+      const cached = simulatorWinCache.get(key);
+      if (cached !== undefined) return cached;
+
+      const player: ArmyStack[] = [];
+      for (const [unitId, count] of composition) {
+        if (!unitStats.has(unitId)) {
+          unitStats.set(
+            unitId,
+            state.getUnitStatsWithResearch(unitId, state.boughtResearch),
+          );
+        }
+        const stats = unitStats.get(unitId);
+        if (stats) player.push({ unitId, count, stats });
+      }
+
+      if (!enemyStacks.has(battleId)) {
+        enemyStacks.set(battleId, state.getEnemyStacks(battleId));
+      }
+      const enemy = enemyStacks.get(battleId) ?? [];
+      const wins =
+        player.length > 0 &&
+        enemy.length > 0 &&
+        state.simulateWithStacksOutcome(player, enemy) === "player";
+      if (simulatorWinCache.size >= simulatorWinCacheLimit) {
+        const oldest = simulatorWinCache.keys().next().value;
+        if (oldest !== undefined) simulatorWinCache.delete(oldest);
+      }
+      simulatorWinCache.set(key, wins);
+      return wins;
+    },
   };
 };
 
@@ -1471,7 +1514,6 @@ abstract class BaseStrategy implements SimulationStrategy {
   private gatherWorkerFocus:
     | {
         readonly resource: ProductionResourceKey;
-        readonly until: number;
         readonly snapshots: SimulationContext["snapshots"];
       }
     | undefined;
@@ -1651,11 +1693,13 @@ abstract class BaseStrategy implements SimulationStrategy {
     context: SimulationContext,
   ): ProductionResourceKey | undefined {
     const focus = this.gatherWorkerFocus;
-    if (
-      !focus ||
-      focus.snapshots !== context.snapshots ||
-      context.gameTime >= focus.until
-    ) {
+    // No expiry clock: workers must stay on the resource until the purchase
+    // they are gathering for is actually bought, not until a timer lapses.
+    // A focus dies only when the ladder stops asking for it — when a new focus
+    // arrives it means either the awaited purchase went through (its price is
+    // now payable or no longer blocking) or a higher-priority goal superseded
+    // it. Either way the old hold has served its purpose.
+    if (!focus || focus.snapshots !== context.snapshots) {
       this.gatherWorkerFocus = undefined;
       return undefined;
     }
@@ -1675,16 +1719,14 @@ abstract class BaseStrategy implements SimulationStrategy {
     }
 
     const resource = action.resource as ProductionResourceKey;
-    const currentFocus = this.getGatherWorkerFocus(context);
-    const focusResource =
-      resource === "food" ? "food" : (currentFocus ?? resource);
-    if (!currentFocus || currentFocus === resource || resource === "food") {
-      this.gatherWorkerFocus = {
-        resource: focusResource,
-        until: context.gameTime + 10,
-        snapshots: context.snapshots,
-      };
-    }
+    // A gather always names the resource the ladder wants *right now*, so the
+    // hold is reaffirmed (never timed out) whenever it is re-asked. Replacing
+    // the old focus is itself the release signal: it only happens once the
+    // awaited purchase went through or a higher-priority goal superseded it.
+    this.gatherWorkerFocus = {
+      resource,
+      snapshots: context.snapshots,
+    };
     return (
       this.assignWorkersByRatio(
         state,

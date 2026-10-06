@@ -67,6 +67,7 @@ const settlement = ({
     false,
     [],
     {},
+    {},
     tradeRoutes,
   );
 };
@@ -227,7 +228,9 @@ describe("simulation trade advisor", () => {
     // credit on gold's factor model, so `routed`'s own rate already contains the
     // payout and comparing against it would compare a number with itself.
     const passiveGold = state.computeResourceRate("gold").toNumber();
-    const goldDelta = ticked.resources.gold.sub(routed.resources.gold).toNumber();
+    const goldDelta = ticked.resources.gold
+      .sub(routed.resources.gold)
+      .toNumber();
     expect(goldDelta).toBeGreaterThan(passiveGold);
     // The route is sized to roughly one second of inflow, so the shelf must stay
     // essentially where it started. This is a 1e9 stock, so the previous

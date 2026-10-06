@@ -11,6 +11,8 @@ import { encounterDefinitions } from "../game/encounters";
 import { findUnitDefinition } from "../game/units";
 import { findResearchDefinition, researchIdsForBattle } from "../game/research";
 import { ExpNumber } from "../game/expNumber";
+import { findFormationDefinition, type FormationId } from "../game/formations";
+import type { ArmyStack } from "../game/battle";
 
 /** Whether a current army plus the proposed recruits defeats the battle. */
 const winsWithStats = (
@@ -37,6 +39,33 @@ const winsWithStats = (
         stats: NonNullable<ReturnType<CivilizationState["getUnitStats"]>>;
       } => stack.stats !== undefined,
     );
+  const enemy = gameState.getEnemyStacks(battleId);
+  if (stacks.length === 0 || enemy.length === 0) return false;
+  return gameState.simulateWithStacksOutcome(stacks, enemy) === "player";
+};
+
+/** Whether a current army with specific formations defeats the battle. */
+const winsWithStatsAndFormations = (
+  gameState: CivilizationState,
+  battleId: string,
+  total: SimulatorTotalArmy,
+  formations: ReadonlyMap<string, FormationId>,
+): boolean => {
+  const researchIds = researchIdsForBattle(
+    encounterDefinitions.find(({ key }) => key === battleId)?.age ?? 0,
+    [...total.keys()],
+  );
+  const stacks: ArmyStack[] = [];
+  for (const [unitId, count] of total) {
+    const stats = gameState.getUnitStatsWithResearch(unitId, researchIds);
+    if (!stats) continue;
+    stacks.push({
+      unitId,
+      count,
+      stats,
+      formation: formations.get(unitId),
+    });
+  }
   const enemy = gameState.getEnemyStacks(battleId);
   if (stacks.length === 0 || enemy.length === 0) return false;
   return gameState.simulateWithStacksOutcome(stacks, enemy) === "player";
@@ -126,6 +155,13 @@ export default function BattleSimulatorPanel({
           getResearch: (unitIds) => gameState.getResearchForUnitTypes(unitIds),
           wins: (composition) =>
             winsWithStats(gameState, battle.key, composition),
+          winsWithFormations: (composition, formations) =>
+            winsWithStatsAndFormations(
+              gameState,
+              battle.key,
+              composition,
+              formations,
+            ),
         },
         selected.size >= 2,
         ownedArmy,
@@ -287,6 +323,21 @@ export default function BattleSimulatorPanel({
                 </>
               )}
               <p>Additional military (optimized): {fmt(result.military)}</p>
+              {result.formations.size > 0 && (
+                <>
+                  <p className="battle-simulator-subheading">
+                    Recommended formations
+                  </p>
+                  <ul>
+                    {[...result.formations].map(([unitId, formation]) => (
+                      <li key={unitId}>
+                        {findUnitDefinition(unitId)?.name ?? unitId}:{" "}
+                        {findFormationDefinition(formation)?.name ?? formation}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </>
           ) : (
             <p>

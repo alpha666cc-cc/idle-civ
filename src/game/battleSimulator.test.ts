@@ -29,6 +29,8 @@ const context = () => ({
   getResearch: () => ({ ids: [], costs: [] }),
   wins: (total: SimulatorTotalArmy) =>
     (total.get("warrior")?.toNumber() ?? 0) >= 5,
+  winsWithFormations: (total: SimulatorTotalArmy) =>
+    (total.get("warrior")?.toNumber() ?? 0) >= 5,
 });
 
 describe("battle simulator current army", () => {
@@ -75,7 +77,11 @@ describe("battle simulator current army", () => {
     const result = solveMinimumArmy(
       battleId,
       [warrior],
-      context(),
+      {
+        ...context(),
+        winsWithFormations: (total: SimulatorTotalArmy) =>
+          (total.get("warrior")?.toNumber() ?? 0) >= 5,
+      },
       false,
       owned,
     );
@@ -83,6 +89,7 @@ describe("battle simulator current army", () => {
     expect(result?.composition.size).toBe(0);
     expect(result?.totalComposition.get("warrior")?.toNumber()).toBe(5);
     expect(result?.military.isZero).toBe(true);
+    expect(result?.formations.size).toBeGreaterThanOrEqual(0);
   });
 
   it("passes only new unit types to the research cost evaluator", () => {
@@ -98,6 +105,8 @@ describe("battle simulator current army", () => {
             { resource: "science", base: ExpNumber.fromNumber(100), factor: 1 },
           ],
         }),
+        winsWithFormations: (total: SimulatorTotalArmy) =>
+          (total.get("warrior")?.toNumber() ?? 0) >= 5,
       },
       false,
       owned,

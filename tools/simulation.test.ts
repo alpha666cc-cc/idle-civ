@@ -1262,7 +1262,7 @@ describe("required progression strategy", () => {
     expect(action.count).toBeGreaterThan(1);
   });
 
-  it("keeps a focused allocation when another gather hint appears", () => {
+  it("replaces a focused allocation when another gather hint appears", () => {
     class FocusStrategy extends BalancedStrategy {
       focus(
         state: CivilizationState,
@@ -1321,8 +1321,16 @@ describe("required progression strategy", () => {
       ...context,
       gameTime: 1,
     });
-    expect(competingHint).toEqual({ type: "gather", resource: "gold" });
-    expect(strategy.rebalance(state, { ...context, gameTime: 1 })).toBeNull();
+    expect(competingHint).toEqual({
+      type: "assignWorker",
+      resource: "gold",
+      count: expect.any(Number),
+    });
+    expect(strategy.rebalance(state, { ...context, gameTime: 1 })).toEqual({
+      type: "assignWorker",
+      resource: "gold",
+      count: expect.any(Number),
+    });
   });
 
   it("prepares a building once its existing unlock gate is met", () => {

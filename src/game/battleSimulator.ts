@@ -8,6 +8,11 @@ import {
 import { encounterDefinitions } from "./encounters";
 import type { BuildingCost } from "./buildings";
 import type { ResourceKey } from "./attributes";
+import {
+  formationIds,
+  type FormationId,
+  DEFAULT_FORMATION,
+} from "./formations";
 
 /** Minimum-army simulator (dev tools only): cheapest winning army per battle. */
 export type SimulatorArmy = ReadonlyMap<string, number>;
@@ -31,11 +36,19 @@ export type SimulatorResult = {
   readonly military: ExpNumber;
   readonly totalCost: readonly SimulatorCostTotal[];
   readonly research: SimulatorResearch;
+  /** Optimal formation per unit type for this battle. */
+  readonly formations: ReadonlyMap<string, FormationId>;
 };
 export type BattleSimulatorContext = {
   getCost: (unitId: string, count: number) => BuildingCost[];
   getResearch: (unitIds: readonly string[]) => SimulatorResearch;
   wins: (composition: SimulatorTotalArmy, battleId: string) => boolean;
+  /** Test a composition with specific formation assignments. */
+  winsWithFormations: (
+    composition: SimulatorTotalArmy,
+    formations: ReadonlyMap<string, FormationId>,
+    battleId: string,
+  ) => boolean;
 };
 
 /** Buyable units of the battle's age and the previous age. */
@@ -84,6 +97,46 @@ const militaryOf = (costs: readonly SimulatorCostTotal[]): ExpNumber => {
   return total;
 };
 
+/**
+ * Find optimal formation assignments for a given army composition.
+ * Tries all available formations for each unit type and returns the winning combination.
+ * Returns empty map if no formation combination wins (falls back to standard).
+ */
+export const findOptimalFormations = (
+  composition: SimulatorTotalArmy,
+  availableFormations: readonly FormationId[],
+  context: BattleSimulatorContext,
+  battleId: string,
+): ReadonlyMap<string, FormationId> => {
+  const unitIds = [...composition.keys()];
+  if (unitIds.length === 0) return new Map();
+
+  // Try all combinations (this is exponential, but unit counts are small in practice)
+  // For 3 unit types with 3 formations each: 3^3 = 27 combinations
+  const tryCombinations = (
+    index: number,
+    current: Map<string, FormationId>,
+  ): Map<string, FormationId> | null => {
+    if (index >= unitIds.length) {
+      return context.winsWithFormations(composition, current, battleId)
+        ? current
+        : null;
+    }
+
+    const unitId = unitIds[index];
+    for (const formation of availableFormations) {
+      current.set(unitId, formation);
+      const result = tryCombinations(index + 1, current);
+      if (result !== null) return result;
+    }
+    current.delete(unitId);
+    return null;
+  };
+
+  const result = tryCombinations(0, new Map());
+  return result ?? new Map();
+};
+
 const sumCosts = (
   composition: SimulatorArmy,
   context: BattleSimulatorContext,
@@ -121,17 +174,27 @@ export const solveMinimumArmy = (
   requireMixed = false,
   ownedArmy: SimulatorOwnedArmy = new Map(),
 ): SimulatorResult | null => {
-  const battle = encounterDefinitions.find(({ key }) => key === battleId);
-  if (!battle) return null;
+  const encounter = encounterDefinitions.find(({ key }) => key === battleId);
+  if (!encounter) return null;
   const wins = (composition: SimulatorArmy): boolean =>
-    context.wins(mergeSimulatorArmy(ownedArmy, composition), battle.key);
+    context.wins(mergeSimulatorArmy(ownedArmy, composition), battleId);
   if (wins(new Map())) {
+    const totalComposition = mergeSimulatorArmy(ownedArmy, new Map());
+    const availableFormations =
+      encounter && encounter.age >= 2 ? formationIds : [DEFAULT_FORMATION];
+    const formations = findOptimalFormations(
+      totalComposition,
+      availableFormations,
+      context,
+      battleId,
+    );
     return {
       composition: new Map(),
-      totalComposition: mergeSimulatorArmy(ownedArmy, new Map()),
+      totalComposition,
       military: ExpNumber.ZERO,
       totalCost: [],
       research: { ids: [], costs: [] },
+      formations,
     };
   }
   let best: SimulatorArmy | null = null;
@@ -161,31 +224,31 @@ export const solveMinimumArmy = (
   // naval unit can win alone, but their combination can. Seed the hill-climb
   // with bounded power-of-two pair searches so those armies are discoverable.
   if (requireMixed && !best) {
-      const powers = Array.from({ length: 24 }, (_, index) => 2 ** index);
-      for (let leftIndex = 0; leftIndex < candidates.length; leftIndex += 1) {
-        for (
-          let rightIndex = leftIndex + 1;
-          rightIndex < candidates.length;
-          rightIndex += 1
-        ) {
-          const left = candidates[leftIndex];
-          const right = candidates[rightIndex];
-          for (const leftCount of powers) {
-            for (const rightCount of powers) {
-              const composition = new Map([
-                [left.key, leftCount],
-                [right.key, rightCount],
-              ]);
-              if (!wins(composition)) continue;
-              const cost = compositionCost(composition, context);
-              if (cost.lt(bestCost)) {
-                best = composition;
-                bestCost = cost;
-              }
+    const powers = Array.from({ length: 24 }, (_, index) => 2 ** index);
+    for (let leftIndex = 0; leftIndex < candidates.length; leftIndex += 1) {
+      for (
+        let rightIndex = leftIndex + 1;
+        rightIndex < candidates.length;
+        rightIndex += 1
+      ) {
+        const left = candidates[leftIndex];
+        const right = candidates[rightIndex];
+        for (const leftCount of powers) {
+          for (const rightCount of powers) {
+            const composition = new Map([
+              [left.key, leftCount],
+              [right.key, rightCount],
+            ]);
+            if (!wins(composition)) continue;
+            const cost = compositionCost(composition, context);
+            if (cost.lt(bestCost)) {
+              best = composition;
+              bestCost = cost;
             }
           }
         }
       }
+    }
   }
   if (!best) return null;
   const ids = candidates.map((unit) => unit.key);
@@ -238,11 +301,26 @@ export const solveMinimumArmy = (
     best = withCount(best, unitId, lo);
   }
   bestCost = compositionCost(best, context);
+  const totalComposition = mergeSimulatorArmy(ownedArmy, best);
+
+  // Find optimal formations for the winning army
+  // Use standard formation for Age 0/1, all available formations for Age 2+
+  const availableFormations =
+    encounter && encounter.age >= 2 ? formationIds : [DEFAULT_FORMATION];
+
+  const formations = findOptimalFormations(
+    totalComposition,
+    availableFormations,
+    context,
+    battleId,
+  );
+
   return {
     composition: best,
-    totalComposition: mergeSimulatorArmy(ownedArmy, best),
+    totalComposition,
     military: bestCost,
     totalCost: sumCosts(best, context),
     research: context.getResearch(additionalUnitIds(ownedArmy, best)),
+    formations,
   };
 };

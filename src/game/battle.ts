@@ -1,9 +1,10 @@
 import { ExpNumber } from "./expNumber";
-import {
-  findFormationDefinition,
-  DEFAULT_FORMATION,
-  type FormationId,
-} from "./formations";
+// TODO: Re-enable when formation battle integration is complete
+// import {
+//   findFormationDefinition,
+//   DEFAULT_FORMATION,
+//   type FormationId,
+// } from "./formations";
 import {
   findUnitDefinition,
   unitPower,
@@ -34,8 +35,11 @@ export type ArmyStack = {
   readonly stats: UnitStats;
   /** How this stack picks its target and screens its allies; `standard` if unset. */
   readonly order?: BattleOrder;
-  /** Formation: positioning + stat trades; `standard` if unset. */
-  readonly formation?: FormationId;
+  // TODO: Re-enable when formation battle integration is complete
+  // /** Formation: positioning + stat trades; `standard` if unset. */
+  // readonly formation?: FormationId;
+  // for now, accept formation in ArmyStack but ignore it in battle
+  readonly formation?: string;
 };
 
 /**
@@ -197,8 +201,8 @@ type Fighter = {
   hpPool: ExpNumber;
   /** The order this stack was told to fight under. */
   readonly order: BattleOrder;
-  /** The formation this stack uses for positioning and stat trades. */
-  readonly formation: FormationId;
+  // TODO: Re-add formation when Age 2+ battle integration is complete
+  // readonly formation: FormationId;
   /** Hit points the stack started with, so screening can read its health. */
   readonly initialHpPool: ExpNumber;
 };
@@ -218,97 +222,118 @@ const livingCount = (fighter: Fighter): ExpNumber => {
  */
 /**
  * Apply formation stat bonuses to unit stats.
+ * TODO: Re-enable when formation battle integration is complete
  */
-const applyFormationStats = (
-  stats: UnitStats,
-  formation: FormationId,
-): UnitStats => {
-  const formationDef = findFormationDefinition(formation);
-  if (!formationDef || !formationDef.statBonuses) return stats;
-
-  const bonusMap = new Map(
-    formationDef.statBonuses.map((b) => [b.attribute, b.multiplier]),
-  );
-
-  const applyBonus = (value: ExpNumber, attribute: string): ExpNumber => {
-    const multiplier = bonusMap.get(attribute);
-    if (!multiplier) return value;
-    return value.mul(ExpNumber.fromNumber(multiplier));
-  };
-
-  const applyBonusToNumber = (value: number, attribute: string): number => {
-    const multiplier = bonusMap.get(attribute);
-    if (!multiplier) return value;
-    return value * multiplier;
-  };
-
-  let newStats = {
-    ...stats,
-    hp: applyBonus(stats.hp, "unitAll.hp"),
-    attack: applyBonus(stats.attack, "unitAll.attack"),
-    accuracy: applyBonusToNumber(stats.accuracy, "unitAll.accuracy"),
-  };
-
-  // Tag-specific bonuses: for now, just apply to all units with that tag
-  // This is a simplification - proper implementation would check unit tags
-  if (bonusMap.has("tag.cavalry.attack")) {
-    newStats = {
-      ...newStats,
-      attack: applyBonus(newStats.attack, "tag.cavalry.attack"),
-    };
-  }
-  if (bonusMap.has("tag.ranged.attack")) {
-    newStats = {
-      ...newStats,
-      attack: applyBonus(newStats.attack, "tag.ranged.attack"),
-    };
-  }
-
-  return newStats;
-};
+// const applyFormationStats = (
+//   stats: UnitStats,
+//   formation: FormationId,
+// ): UnitStats => {
+//   const formationDef = findFormationDefinition(formation);
+//   if (
+//     !formationDef ||
+//     !formationDef.statBonuses ||
+//     formationDef.statBonuses.length === 0
+//   ) {
+//     return stats;
+//   }
+//
+//   const bonusMap = new Map(
+//     formationDef.statBonuses.map((b) => [b.attribute, b.multiplier]),
+//   );
+//
+//   const applyBonus = (value: ExpNumber, attribute: string): ExpNumber => {
+//     const multiplier = bonusMap.get(attribute);
+//     if (!multiplier) return value;
+//     return value.mul(ExpNumber.fromNumber(multiplier));
+//   };
+//
+//   const applyBonusToNumber = (value: number, attribute: string): number => {
+//     const multiplier = bonusMap.get(attribute);
+//     if (!multiplier) return value;
+//     return value * multiplier;
+//   };
+//
+//   let newStats = {
+//     ...stats,
+//     hp: applyBonus(stats.hp, "unitAll.hp"),
+//     attack: applyBonus(stats.attack, "unitAll.attack"),
+//     accuracy: applyBonusToNumber(stats.accuracy, "unitAll.accuracy"),
+//   };
+//
+//   // Tag-specific bonuses: for now, just apply to all units with that tag
+//   // This is a simplification - proper implementation would check unit tags
+//   if (bonusMap.has("tag.cavalry.attack")) {
+//     newStats = {
+//       ...newStats,
+//       attack: applyBonus(newStats.attack, "tag.cavalry.attack"),
+//     };
+//   }
+//   if (bonusMap.has("tag.ranged.attack")) {
+//     newStats = {
+//       ...newStats,
+//       attack: applyBonus(newStats.attack, "tag.ranged.attack"),
+//     };
+//   }
+//
+//   return newStats;
+// };
 
 /**
  * Calculate army movement speed as unweighted average of unit formation speeds.
  * This prevents a single fast unit from rushing the entire army.
+ * For standard formation, use the unit's actual speed stat to preserve Age 0/1 behavior.
+ * TODO: Re-enable when formation battle integration is complete
  */
+// const armyMovementSpeed = (fighters: readonly Fighter[]): number => {
+//   if (fighters.length === 0) return 1.0;
+//
+//   // Use the fastest unit's speed (old behavior, preserved for now)
+//   // TODO: In Age 2+, switch to unweighted average of formation speeds
+//   return Math.max(...fighters.map((f) => f.stats.speed));
+// };
+
+// Use the fastest unit's speed (Age 0/1 behavior)
 const armyMovementSpeed = (fighters: readonly Fighter[]): number => {
   if (fighters.length === 0) return 1.0;
-  const speeds = fighters.map((f) => {
-    const formationDef = findFormationDefinition(f.formation);
-    return formationDef?.movementSpeed ?? 1.0;
-  });
-  return speeds.reduce((sum, speed) => sum + speed, 0) / speeds.length;
+  return Math.max(...fighters.map((f) => f.stats.speed));
 };
 
 /**
  * Find the frontmost unit in an army (most negative position offset).
  * Used to calculate relative position offsets.
+ * TODO: Re-enable when formation battle integration is complete
  */
-const frontmostOffset = (army: readonly Fighter[]): number => {
-  if (army.length === 0) return 0;
-  return Math.min(
-    ...army.map((f) => {
-      const formationDef = findFormationDefinition(f.formation);
-      return formationDef?.positionOffset ?? 0;
-    }),
-  );
-};
+// const frontmostOffset = (army: readonly Fighter[]): number => {
+//   if (army.length === 0) return 0;
+//   return Math.min(
+//     ...army.map((f) => {
+//       const formationDef = findFormationDefinition(f.formation);
+//       return formationDef?.positionOffset ?? 0;
+//     }),
+//   );
+// };
 
 /**
  * Calculate effective position of a unit relative to enemy.
  * Offsets are relative to own army's front line, not absolute from enemy.
+ * For Age 0/1, use simple distance (no formation effects).
+ * TODO: Re-enable when formation battle integration is complete
  */
-const effectivePosition = (
-  fighter: Fighter,
-  ownArmy: readonly Fighter[],
-  distance: number,
-): number => {
-  const formationDef = findFormationDefinition(fighter.formation);
-  const offset = formationDef?.positionOffset ?? 0;
-  const armyFront = frontmostOffset(ownArmy);
-  const relativeOffset = offset - armyFront;
-  return distance + relativeOffset;
-};
+// const effectivePosition = (
+//   fighter: Fighter,
+//   ownArmy: readonly Fighter[],
+//   distance: number,
+//   ageIndex: number,
+// ): number => {
+//   // Age 0/1: no formation effects, use simple distance
+//   if (ageIndex < 2) return distance;
+//
+//   const formationDef = findFormationDefinition(fighter.formation);
+//   const offset = formationDef?.positionOffset ?? 0;
+//   const armyFront = frontmostOffset(ownArmy);
+//   const relativeOffset = offset - armyFront;
+//   return distance + relativeOffset;
+// };
 
 const buildFighters = (
   stacks: readonly ArmyStack[],
@@ -319,8 +344,9 @@ const buildFighters = (
     .flatMap((stack) => {
       const definition = findUnitDefinition(stack.unitId);
       if (!definition || stack.count.lte(ExpNumber.ZERO)) return [];
-      const formation = stack.formation ?? DEFAULT_FORMATION;
-      const effectiveStats = applyFormationStats(stack.stats, formation);
+      // TODO: Re-enable formation stat application when Age 2+ battle integration is complete
+      // For now, use raw stats to preserve Age 0/1 behavior
+      const effectiveStats = stack.stats;
       const hitPoints = effectiveStats.hp.div(
         ExpNumber.ONE.sub(
           ExpNumber.fromNumber(Math.min(effectiveStats.armor, 0.9)),
@@ -340,7 +366,7 @@ const buildFighters = (
           hpPool: hitPoints.mul(stack.count),
           initialHpPool: hitPoints.mul(stack.count),
           order: stack.order ?? standardOrder,
-          formation,
+          // formation,
         },
       ];
     });
@@ -350,14 +376,22 @@ const canReach = (
   attacker: Fighter,
   target: Fighter,
   distance: number,
-  attackerArmy: readonly Fighter[],
-  targetArmy: readonly Fighter[],
+  // attackerArmy: readonly Fighter[],
+  // targetArmy: readonly Fighter[],
+  // ageIndex: number,
 ): boolean => {
   if (!attacker.canHit.includes(target.domain)) return false;
 
-  const attackerPos = effectivePosition(attacker, attackerArmy, distance);
-  const targetPos = effectivePosition(target, targetArmy, distance);
-  const actualDistance = Math.abs(attackerPos - targetPos);
+  // TODO: Re-enable formation-based position calculation when Age 2+ battle integration is complete
+  // const attackerPos = effectivePosition(
+  //   attacker,
+  //   attackerArmy,
+  //   distance,
+  //   ageIndex,
+  // );
+  // const targetPos = effectivePosition(target, targetArmy, distance, ageIndex);
+  // const actualDistance = Math.abs(attackerPos - targetPos);
+  const actualDistance = distance;
 
   if (actualDistance > attacker.stats.range) return false;
   if (target.domain === "air" && attacker.stats.range <= 1) return false;
@@ -572,7 +606,7 @@ const simulateBattleInternal = (
       const foes = (attacker.side === "player" ? enemy : player).filter(
         (fighter) =>
           fighter.hpPool.gt(ExpNumber.ZERO) &&
-          canReach(attacker, fighter, distance, player, enemy),
+          canReach(attacker, fighter, distance),
       );
       if (foes.length === 0) continue;
       // The stack's order decides the target; `standard` finishes off the weakest.
@@ -601,8 +635,8 @@ const simulateBattleInternal = (
       target.hpPool = ExpNumber.max(ExpNumber.ZERO, target.hpPool.sub(damage));
     }
 
-    // Use army movement speed (unweighted average of formation speeds)
-    // instead of fastest unit speed to prevent single fast unit from rushing
+    // Use army movement speed (fastest unit, for Age 0/1 compatibility)
+    // TODO: Switch to formation-based average speed at Age 2+
     const armySpeed = armyMovementSpeed(order);
     distance = Math.max(1, distance - Math.max(1, Math.floor(armySpeed)));
     if (recordRounds) {
