@@ -26,6 +26,13 @@ import type {
   SimulationContext,
   SimulationStrategy,
 } from "./simulation";
+import type { SimulatorResult } from "../src/game/battleSimulator";
+import {
+  AgeOnePolicy,
+  defaultPolicy,
+  getFastestWorkerAllocation,
+  getSimulatorPlanCosts,
+} from "./age1-policy";
 
 /**
  * A decision context for a fixture. `SimulationContext.timing` is the run's live
@@ -42,6 +49,8 @@ const zeroTiming: SimulationContext["timing"] = {
 };
 
 import {
+  ADAPTIVE_WORKER_FUNDING_ENABLED,
+  ADAPTIVE_WORKER_FUNDING_STRATEGIES,
   BalancedStrategy,
   CheapestStrategy,
   getAgeRouteGrowthAction,
@@ -56,7 +65,12 @@ import {
   getRecommendedBattlePurchase,
   getSimulatorBattlePlan,
   getStrategy,
+  setAdaptiveWorkerFunding,
 } from "./strategies";
+import {
+  getFastestWorkerAllocation as getFastestFundingAllocation,
+  missingCostSeconds,
+} from "./workerFunding";
 
 describe("simulation event snapshots", () => {
   const makeActionRateState = () =>
@@ -540,6 +554,35 @@ describe("simulation event snapshots", () => {
   });
 });
 
+describe("age-1 planned funding costs", () => {
+  it("combines whole-army and prerequisite-research costs by resource", () => {
+    const plan = {
+      composition: new Map<string, number>(),
+      totalComposition: new Map<string, ExpNumber>(),
+      military: ExpNumber.ZERO,
+      totalCost: [
+        { resource: "food", base: ExpNumber.fromNumber(100) },
+        { resource: "wood", base: ExpNumber.fromNumber(20) },
+      ],
+      research: {
+        ids: ["bronze_smelting"],
+        costs: [
+          { resource: "science", base: ExpNumber.fromNumber(50) },
+          { resource: "food", base: ExpNumber.fromNumber(5) },
+        ],
+      },
+      formations: new Map(),
+      orders: new Map(),
+    } as SimulatorResult;
+
+    expect(getSimulatorPlanCosts(plan)).toEqual([
+      { resource: "food", base: ExpNumber.fromNumber(105) },
+      { resource: "wood", base: ExpNumber.fromNumber(20) },
+      { resource: "science", base: ExpNumber.fromNumber(50) },
+    ]);
+  });
+});
+
 describe("required progression strategy", () => {
   const richResources = {
     food: 1e12,
@@ -564,6 +607,7 @@ describe("required progression strategy", () => {
     unitCounts = {},
     defeatedEncounters = [],
     boughtUpgrades = [],
+    enteredAges = [],
   }: {
     people?: number;
     buildings?: Partial<Record<BuildingKey, number>>;
@@ -572,6 +616,7 @@ describe("required progression strategy", () => {
     unitCounts?: Record<string, number>;
     defeatedEncounters?: string[];
     boughtUpgrades?: string[];
+    enteredAges?: string[];
   } = {}): CivilizationState => {
     const amounts = emptyResourceAmounts();
     for (const [key, value] of Object.entries(resources)) {
@@ -596,12 +641,189 @@ describe("required progression strategy", () => {
       0,
       boughtUpgrades,
       defeatedEncounters,
-      [],
+      enteredAges,
       [],
       emptyStatistics(),
       counts,
     );
   };
+
+  it("allocates the whole workforce across a battle unit's cost vector", () => {
+    const state = makeState({
+      people: 90,
+      buildings: { farm: 10, barracks: 3 },
+      resources: {
+        food: 54352,
+        military: 1118,
+        peopleCapacity: 100,
+      },
+    });
+    const allocation = getFastestWorkerAllocation(state, [
+      { resource: "food", base: ExpNumber.fromNumber(313743) },
+      { resource: "military", base: ExpNumber.fromNumber(9413) },
+    ]);
+
+    expect(allocation).not.toBeNull();
+    expect(
+      Object.values(allocation?.assignments ?? {}).reduce(
+        (sum, count) => sum + (count ?? 0),
+        0,
+      ),
+    ).toBe(90);
+    expect(allocation?.assignments.food ?? 0).toBeGreaterThan(0);
+    expect(allocation?.seconds).toBeGreaterThan(0);
+  });
+
+  it("prices the rounded worker allocation using its actual production rate", () => {
+    const state = makeState({
+      people: 90,
+      buildings: { farm: 10, barracks: 3 },
+      resources: {
+        food: 54352,
+        military: 1118,
+        peopleCapacity: 100,
+      },
+    });
+    const costs = [
+      { resource: "food" as const, base: ExpNumber.fromNumber(313743) },
+      { resource: "military" as const, base: ExpNumber.fromNumber(9413) },
+    ];
+    const allocation = getFastestFundingAllocation(state, costs);
+
+    expect(allocation).not.toBeNull();
+    if (!allocation) return;
+
+    let focused = state;
+    for (const [resource, count] of Object.entries(allocation.assignments)) {
+      if (count && count > 0) {
+        focused = focused.assignWorker(
+          resource as ProductionResourceKey,
+          count,
+        );
+      }
+    }
+    expect(allocation.seconds).toBeCloseTo(
+      missingCostSeconds(focused, costs),
+      8,
+    );
+  });
+
+  it("prices only the next research purchase while funding a research plan", () => {
+    class FundingProbe extends AgeOnePolicy {
+      fundingCosts(state: CivilizationState, plan: SimulatorResult | null) {
+        return this.nextFundingCosts(state, plan);
+      }
+    }
+
+    const ageZeroEncounters = encounterDefinitions
+      .filter(({ age }) => age === 0)
+      .map(({ key }) => key);
+    const state = makeState({
+      people: 10,
+      buildings: { university: 1 },
+      resources: { science: 0, peopleCapacity: 20 },
+      defeatedEncounters: ageZeroEncounters,
+      enteredAges: ["age0"],
+    });
+    const plan = {
+      composition: new Map<string, number>(),
+      totalComposition: new Map<string, ExpNumber>(),
+      military: ExpNumber.ZERO,
+      totalCost: [],
+      research: {
+        ids: ["agriculture"],
+        costs: [{ resource: "science", base: ExpNumber.fromNumber(9_000_000) }],
+      },
+      formations: new Map(),
+      orders: new Map(),
+    } as SimulatorResult;
+    const policy = new FundingProbe(defaultPolicy());
+    const costs = policy.fundingCosts(state, plan);
+
+    expect(
+      costs?.map(({ resource, base }) => [resource, base.toString()]),
+    ).toEqual(
+      state
+        .getResearchNextCost()
+        .map(({ resource, base }) => [resource, base.toString()]),
+    );
+    expect(costs?.[0].base.eq(plan.research.costs[0].base)).toBe(false);
+  });
+
+  it("builds a farm when it projects faster than direct food funding", () => {
+    class FundingProbe extends AgeOnePolicy {
+      fund(
+        state: CivilizationState,
+        costs: { resource: ResourceKey; base: ExpNumber }[],
+      ) {
+        return this.fundingAction(state, costs, 0, "farm-funding-test");
+      }
+    }
+
+    const state = makeState({
+      people: 10,
+      buildings: { farm: 0 },
+      resources: { food: 100, wood: 100, peopleCapacity: 20 },
+      workers: { food: 10 },
+    });
+
+    expect(
+      new FundingProbe(defaultPolicy()).fund(state, [
+        { resource: "food", base: ExpNumber.fromNumber(10000) },
+      ]),
+    ).toEqual({ type: "build", building: "farm", count: 1 });
+  });
+
+  it("enables adaptive funding only for strategies with benchmarked improvements", () => {
+    class AdaptiveFundingProbe extends BalancedStrategy {
+      protected getAdaptiveWorkerFundingCosts() {
+        return [
+          { resource: "food" as const, base: ExpNumber.fromNumber(10000) },
+        ];
+      }
+
+      assign(state: CivilizationState) {
+        return this.assignWorkersByRatio(state, this.getWorkerRatios());
+      }
+    }
+
+    const state = makeState({
+      people: 10,
+      buildings: { farm: 0 },
+      resources: { food: 100, wood: 100, peopleCapacity: 20 },
+      workers: { food: 10 },
+    });
+
+    const originalEnabled = ADAPTIVE_WORKER_FUNDING_ENABLED;
+    const originalAllowlist = [...ADAPTIVE_WORKER_FUNDING_STRATEGIES];
+
+    try {
+      expect(ADAPTIVE_WORKER_FUNDING_ENABLED).toBe(true);
+      expect([...ADAPTIVE_WORKER_FUNDING_STRATEGIES]).toEqual([
+        "economy",
+        "production",
+        "fast-age",
+        "military",
+        "research",
+        "trader",
+      ]);
+
+      setAdaptiveWorkerFunding(false, []);
+      expect(new AdaptiveFundingProbe().assign(state)?.type).not.toBe("build");
+
+      setAdaptiveWorkerFunding(true, []);
+      expect(new AdaptiveFundingProbe().assign(state)?.type).not.toBe("build");
+
+      setAdaptiveWorkerFunding(true, ["balanced"]);
+      expect(new AdaptiveFundingProbe().assign(state)).toEqual({
+        type: "build",
+        building: "farm",
+        count: 1,
+      });
+    } finally {
+      setAdaptiveWorkerFunding(originalEnabled, originalAllowlist);
+    }
+  });
 
   it("exposes the next data-defined battle before it is winnable", () => {
     const state = makeState({ resources: richResources });

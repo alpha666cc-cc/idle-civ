@@ -40,7 +40,7 @@ import {
   type ProductionResourceKey,
   type ResourceKey,
 } from "../src/game/attributes.js";
-import type { CivilizationState } from "../src/game/civilizationState.js";
+import { CivilizationState } from "../src/game/civilizationState.js";
 import {
   isResourceGatherable,
   type SimulationAction,
@@ -51,9 +51,11 @@ import {
   getBootstrapGatherResource,
   getRequiredBattleAction,
   getRequiredBattlePreparationAction,
+  getRequiredBattlePreparationCosts,
   getSimulatorBattlePlan,
 } from "./strategies.js";
 import type { SimulatorResult } from "../src/game/battleSimulator.js";
+import { type FundingCost, type WorkerFocus } from "./workerFunding.js";
 
 /**
  * Buildings the policy is allowed to prioritize, in the order `buildOrder`
@@ -239,17 +241,219 @@ const largestDeficitResource = (
   })[0].resource;
 };
 /** One cost entry in the shape the gather helpers read. */
-type PendingCost = { resource: ResourceKey; base: ExpNumber };
+type PendingCost = FundingCost;
 
 /**
  * A battle plan's cost totals in the `PendingCost` shape the gather helpers
  * expect. `SimulatorCostTotal` carries no growth `factor`, which the gather
  * path never reads — it only compares amounts against balances.
  */
-const planCosts = (plan: SimulatorResult): PendingCost[] =>
-  plan.totalCost.map(({ resource, base }) => ({ resource, base }));
+export const getSimulatorPlanCosts = (plan: SimulatorResult): PendingCost[] => {
+  const totals = new Map<ResourceKey, ExpNumber>();
+  for (const { resource, base } of [
+    ...plan.totalCost,
+    ...plan.research.costs,
+  ]) {
+    totals.set(resource, (totals.get(resource) ?? ExpNumber.ZERO).add(base));
+  }
+  return [...totals].map(([resource, base]) => ({ resource, base }));
+};
 
-/** The gatherable resource currently producing the least per second. */
+type FundingRoute = {
+  signature: string;
+  updatedAt: number;
+  building: BuildingKey | null;
+  focus: WorkerFocus | null;
+  costs: PendingCost[];
+};
+
+const copyState = (
+  state: CivilizationState,
+  resources = { ...state.resources },
+  workers = { ...state.workers },
+  buildings = { ...state.builtBuildings },
+): CivilizationState =>
+  new CivilizationState(
+    resources,
+    workers,
+    buildings,
+    state.resourceFactors,
+    state.buildingCostOverrides,
+    state.autoClicksPerSecond,
+    state.boughtUpgrades,
+    state.defeatedEncounters,
+    state.enteredAges,
+    state.earnedAchievements,
+    state.statistics,
+    state.unitCounts,
+    state.devProductionMultiplier,
+    state.freeBuildings,
+    state.freeUnits,
+    state.freeUpgrades,
+    state.boughtResearch,
+    state.unitOrders,
+    state.unitFormations,
+    state.tradeRoutes,
+  );
+
+const withAllWorkersOn = (
+  state: CivilizationState,
+  resource: ProductionResourceKey,
+): CivilizationState => {
+  const workers = { ...state.workers };
+  const totalWorkers = state.assignedWorkers + state.availableWorkers;
+  for (const key of producerResourceKeys as ProductionResourceKey[]) {
+    workers[key] =
+      key === resource ? ExpNumber.fromNumber(totalWorkers) : ExpNumber.ZERO;
+  }
+  return copyState(state, { ...state.resources }, workers);
+};
+
+const withWorkerAllocation = (
+  state: CivilizationState,
+  assignments: Partial<Record<ProductionResourceKey, number>>,
+): CivilizationState => {
+  const workers = { ...state.workers };
+  for (const key of producerResourceKeys as ProductionResourceKey[]) {
+    workers[key] = ExpNumber.fromNumber(assignments[key] ?? 0);
+  }
+  return copyState(state, { ...state.resources }, workers);
+};
+
+const missingCostSeconds = (
+  state: CivilizationState,
+  costs: readonly PendingCost[],
+): number => {
+  let seconds = 0;
+  let reserveSeconds = Infinity;
+  for (const { resource, base } of costs) {
+    const current = state.resources[resource];
+    const rate = state.computeResourceRate(resource);
+    if (current.lt(base)) {
+      if (rate.lte(ExpNumber.ZERO)) return Infinity;
+      const time = base.sub(current).div(rate).toNumber();
+      if (!Number.isFinite(time)) return Infinity;
+      seconds = Math.max(seconds, time);
+    } else if (rate.lt(ExpNumber.ZERO)) {
+      const time = current.sub(base).div(rate.abs()).toNumber();
+      if (!Number.isFinite(time)) return Infinity;
+      reserveSeconds = Math.min(reserveSeconds, time);
+    }
+  }
+  return seconds <= reserveSeconds ? seconds : Infinity;
+};
+
+export const getFastestWorkerAllocation = (
+  state: CivilizationState,
+  costs: readonly PendingCost[],
+): WorkerFocus | null => {
+  const missing = missingGatherableCosts(state, costs);
+  if (missing.length === 0) return null;
+  const totalWorkers = Math.floor(
+    state.assignedWorkers + state.availableWorkers,
+  );
+  if (totalWorkers <= 0) return null;
+
+  const unassigned = withWorkerAllocation(state, {});
+  const rates = [...new Set(costs.map(({ resource }) => resource))].map(
+    (resource) => {
+      const baseRate = unassigned.computeResourceRate(resource).toNumber();
+      const yieldPerWorker = state.isResourceGatherable(resource)
+        ? withAllWorkersOn(state, resource as ProductionResourceKey)
+            .computeResourceRate(resource)
+            .sub(unassigned.computeResourceRate(resource))
+            .div(ExpNumber.fromNumber(totalWorkers))
+            .toNumber()
+        : 0;
+      return {
+        resource,
+        current: state.resources[resource].toNumber(),
+        target: costs
+          .filter((cost) => cost.resource === resource)
+          .reduce((sum, cost) => sum.add(cost.base), ExpNumber.ZERO)
+          .toNumber(),
+        baseRate,
+        yieldPerWorker,
+      };
+    },
+  );
+
+  const allocationAt = (
+    seconds: number,
+  ): Partial<Record<ProductionResourceKey, number>> | null => {
+    const assignments: Partial<Record<ProductionResourceKey, number>> = {};
+    let requiredWorkers = 0;
+    for (const rate of rates) {
+      const requiredRate = (rate.target - rate.current) / seconds;
+      const extraRate = requiredRate - rate.baseRate;
+      if (extraRate <= 0) continue;
+      if (rate.yieldPerWorker <= 0) return null;
+      const workers = extraRate / rate.yieldPerWorker;
+      assignments[rate.resource as ProductionResourceKey] = workers;
+      requiredWorkers += workers;
+      if (requiredWorkers > totalWorkers) return null;
+    }
+    return assignments;
+  };
+
+  let high = 1;
+  while (high < 1e15 && allocationAt(high) === null) high *= 2;
+  if (allocationAt(high) === null) return null;
+  let low = 0;
+  for (let iteration = 0; iteration < 48; iteration += 1) {
+    const middle = (low + high) / 2;
+    if (allocationAt(middle) === null) low = middle;
+    else high = middle;
+  }
+
+  const raw = allocationAt(high);
+  if (!raw) return null;
+  const assignments: Partial<Record<ProductionResourceKey, number>> = {};
+  let assigned = 0;
+  for (const [resource, workers] of Object.entries(raw)) {
+    const count = Math.floor(workers ?? 0);
+    assignments[resource as ProductionResourceKey] = count;
+    assigned += count;
+  }
+  const leftover = totalWorkers - assigned;
+  const priority = rates
+    .filter(({ yieldPerWorker }) => yieldPerWorker > 0)
+    .sort((left, right) => {
+      const leftNeed = (left.target - left.current) / left.yieldPerWorker;
+      const rightNeed = (right.target - right.current) / right.yieldPerWorker;
+      return rightNeed - leftNeed;
+    });
+  for (let index = 0; index < leftover && priority.length > 0; index += 1) {
+    const resource = priority[index % priority.length].resource;
+    const key = resource as ProductionResourceKey;
+    assignments[key] = (assignments[key] ?? 0) + 1;
+  }
+  return { assignments, seconds: high };
+};
+
+const projectFunding = (
+  state: CivilizationState,
+  focus: WorkerFocus | null,
+  seconds: number,
+  costs: readonly PendingCost[],
+): CivilizationState => {
+  const focused = focus
+    ? withWorkerAllocation(state, focus.assignments)
+    : state;
+  const resources = { ...state.resources };
+  for (const resource of producerResourceKeys) {
+    const rate = focused.computeResourceRate(resource);
+    resources[resource] = ExpNumber.max(
+      ExpNumber.ZERO,
+      resources[resource].add(rate.mul(ExpNumber.fromNumber(seconds))),
+    );
+  }
+  for (const { resource, base } of costs) {
+    resources[resource] = resources[resource].sub(base);
+  }
+  return copyState(state, resources, focused.workers);
+};
+
 const lowestRateResource = (state: CivilizationState): string => {
   const available = (producerResourceKeys as ProductionResourceKey[]).filter(
     (key) => isResourceGatherable(state, key as ResourceKey),
@@ -267,17 +471,18 @@ const lowestRateResource = (state: CivilizationState): string => {
   return lowest;
 };
 
-/** How many age-0 encounters the settlement has won (the campaign's own counter). */
 export const ageZeroBattlesWon = (state: CivilizationState): number =>
   state.defeatedEncounters.filter((id) =>
     encounterDefinitions.some(
       (battle) => battle.key === id && battle.age === 0,
     ),
   ).length;
+
 export class AgeOnePolicy implements SimulationStrategy {
   readonly name: string;
   readonly description: string;
   private readonly params: PolicyParams;
+  private fundingRoute: FundingRoute | null = null;
 
   constructor(params: PolicyParams, name = "age1-policy") {
     this.params = params;
@@ -285,16 +490,10 @@ export class AgeOnePolicy implements SimulationStrategy {
     this.description = `Parameterized age-1 push (food ${params.workerFood.toFixed(2)}, pop ${params.popTargetFirst}/${params.popTargetSecond}/${params.popTargetLate})`;
   }
 
-  /** The parameters this policy was built with (the optimizer's vector). */
   getPolicy(): PolicyParams {
     return this.params;
   }
 
-  /**
-   * Whether the army may attack yet. Before age 0 is entered the three
-   * searched thresholds gate the campaign in order; afterwards only the final
-   * one applies, exactly as the shipped route behaves.
-   */
   private routeTargetPopulation(state: CivilizationState): number {
     if (state.enteredAges.includes("age0")) {
       return state.population.gt(
@@ -310,22 +509,13 @@ export class AgeOnePolicy implements SimulationStrategy {
     return this.params.popTargetLate;
   }
 
-  /** Whether the population ramp says it is time to attack. */
   private shouldLaunchBattle(state: CivilizationState): boolean {
     const target = this.routeTargetPopulation(state);
     return target <= 0 || state.population.gte(ExpNumber.fromNumber(target));
   }
-  /**
-   * The age route's growth step, with searched population targets.
-   *
-   * Housing is checked first and unconditionally: a settlement at its
-   * population ceiling cannot grow at all, and the house that lifts the ceiling
-   * is exactly the purchase a target check would otherwise gate behind the cap
-   * it exists to raise.
-   */
+
   private routeGrowthAction(state: CivilizationState): SimulationAction | null {
     if (!state.isBuildingAvailable("people")) return null;
-
     const atHousingCeiling = state.population.gte(
       state.maximumPopulation.floor(),
     );
@@ -341,14 +531,11 @@ export class AgeOnePolicy implements SimulationStrategy {
     const target = this.routeTargetPopulation(state);
     if (target <= 0) return null;
     if (state.population.gte(ExpNumber.fromNumber(target))) return null;
-
     if (state.canBuild("people")) {
       const count = state.getMaxAffordableBuildings("people");
       return count > 0 ? { type: "build", building: "people", count } : null;
     }
 
-    // Capped, and neither house nor town hall is affordable yet: gather for
-    // whichever one is the next real step up.
     if (atHousingCeiling) {
       const nextHousing =
         state.canBuild("house") || !state.canBuild("townHall")
@@ -368,10 +555,6 @@ export class AgeOnePolicy implements SimulationStrategy {
       return null;
     }
 
-    // Citizens are affordable-or-not on food alone, and every citizen drains
-    // 1 food/second, so past a few dozen of them clicking alone cannot keep up.
-    // A farm raises the passive rate, which is what scales — buy one once the
-    // settlement is big enough for it to matter (a searched threshold).
     const citizenCost = state
       .getBuildingCost("people", state.getBuildingCount("people"), 1)
       .find(({ resource }) => resource === "food");
@@ -644,12 +827,263 @@ export class AgeOnePolicy implements SimulationStrategy {
   }
 
   /**
-   * Assign or unassign one worker step toward the searched share. Integer
-   * targets with a threshold, matching the shipped rebalance, so the policy
-   * spends its five action slots per second on meaningful moves instead of
-   * one-worker churn.
+   * Return the first blocked action in the policy ladder as a full cost vector.
    */
-  private workerAction(state: CivilizationState): SimulationAction | null {
+  protected nextFundingCosts(
+    state: CivilizationState,
+    plan: SimulatorResult | null,
+  ): PendingCost[] | null {
+    const preparation = getRequiredBattlePreparationAction(state);
+    if (preparation?.type === "build") return [];
+    if (preparation?.type === "gather") {
+      return getRequiredBattlePreparationCosts(state).map(
+        ({ resource, base }) => ({ resource, base }),
+      );
+    }
+
+    const planResearch = plan?.research.ids.find(
+      (researchId) =>
+        !state.isResearchBought(researchId) &&
+        state.isResearchUnlocked(researchId),
+    );
+    if (planResearch) {
+      return state.canBuyResearch(planResearch)
+        ? []
+        : state.getResearchNextCost().map(({ resource, base }) => ({
+            resource,
+            base,
+          }));
+    }
+
+    const researchId = this.preferredUnlockedResearch(state);
+    if (researchId) {
+      return state.canBuyResearch(researchId)
+        ? []
+        : state.getResearchNextCost().map(({ resource, base }) => ({
+            resource,
+            base,
+          }));
+    }
+
+    const growth = this.routeGrowthAction(state);
+    if (growth?.type === "build") return [];
+    if (growth?.type === "gather") {
+      const atHousingCeiling = state.population.gte(
+        state.maximumPopulation.floor(),
+      );
+      const building = atHousingCeiling
+        ? "house"
+        : growth.resource === "food"
+          ? "people"
+          : null;
+      if (building) {
+        return state
+          .getBuildingCost(building, state.getBuildingCount(building), 1)
+          .map(({ resource, base }) => ({ resource, base }));
+      }
+    }
+
+    if (plan && plan.composition.size > 0) {
+      const hasAffordableUnit = [...plan.composition].some(
+        ([unitId, count]) =>
+          count > 0 &&
+          state.isUnitAvailable(unitId) &&
+          state.getMaxAffordableUnits(unitId) > 0,
+      );
+      if (hasAffordableUnit) return [];
+      const nextUnit = [...plan.composition].find(
+        ([unitId, count]) => count > 0 && state.isUnitAvailable(unitId),
+      );
+      const costs = nextUnit
+        ? state
+            .getUnitCost(nextUnit[0], 1)
+            .map(({ resource, base }) => ({ resource, base }))
+        : [];
+      return missingGatherableCosts(state, costs).length > 0 ? costs : [];
+    }
+
+    for (const key of this.buildPriority()) {
+      if (!state.isBuildingAvailable(key) || state.isBuildingAtCapacity(key)) {
+        continue;
+      }
+      if (state.canBuild(key)) return [];
+      return state
+        .getBuildingCost(key, state.getBuildingCount(key), 1)
+        .map(({ resource, base }) => ({ resource, base }));
+    }
+    return null;
+  }
+
+  private workerAssignmentAction(
+    state: CivilizationState,
+    focus: WorkerFocus,
+  ): SimulationAction | null {
+    const rebalanceDeadband = 3;
+    for (const key of producerResourceKeys as ProductionResourceKey[]) {
+      const current = Math.floor(state.workers[key].toNumber());
+      const target = focus.assignments[key] ?? 0;
+      if (current - target >= rebalanceDeadband) {
+        return {
+          type: "unassignWorker",
+          resource: key,
+          count: current - target,
+        };
+      }
+    }
+    for (const key of producerResourceKeys as ProductionResourceKey[]) {
+      const current = Math.floor(state.workers[key].toNumber());
+      const target = focus.assignments[key] ?? 0;
+      if (target - current >= rebalanceDeadband) {
+        return {
+          type: "assignWorker",
+          resource: key,
+          count: target - current,
+        };
+      }
+    }
+    return null;
+  }
+
+  protected fundingAction(
+    state: CivilizationState,
+    costs: readonly PendingCost[],
+    gameTime: number,
+    signature: string,
+  ): SimulationAction | null {
+    if (
+      !this.fundingRoute ||
+      this.fundingRoute.signature !== signature ||
+      gameTime - this.fundingRoute.updatedAt >= 30
+    ) {
+      const directFocus = getFastestWorkerAllocation(state, costs);
+      const directTime = missingCostSeconds(
+        directFocus
+          ? withWorkerAllocation(state, directFocus.assignments)
+          : state,
+        costs,
+      );
+      let selectedBuilding: BuildingKey | null = null;
+      let selectedBuildFocus: WorkerFocus | null = null;
+      let selectedBuildCosts: PendingCost[] = [];
+      let selectedBuildTime = Infinity;
+      const missingResources = new Set(
+        costs
+          .filter(({ resource, base }) => state.resources[resource].lt(base))
+          .map(({ resource }) => resource),
+      );
+
+      for (const building of buildingDefinitions) {
+        if (
+          !state.isBuildingAvailable(building.key) ||
+          state.isBuildingAtCapacity(building.key)
+        ) {
+          continue;
+        }
+        const helpsTarget = [
+          ...(building.effects.resourceProduction ?? []),
+          ...(building.effects.additiveMultiplier ?? []),
+        ].some(({ resource }) => missingResources.has(resource));
+        if (!helpsTarget) continue;
+
+        const buildingCosts = state
+          .getBuildingCost(
+            building.key,
+            state.getBuildingCount(building.key),
+            1,
+          )
+          .map(({ resource, base }) => ({ resource, base }));
+        const canBuildNow = state.canBuild(building.key);
+        const buildFocus = canBuildNow
+          ? null
+          : getFastestWorkerAllocation(state, buildingCosts);
+        if (!canBuildNow && !buildFocus) continue;
+
+        const buildTime = buildFocus?.seconds ?? 0;
+        const fundedState = projectFunding(
+          state,
+          buildFocus,
+          buildTime,
+          buildingCosts,
+        );
+        const afterBuild = fundedState.build(building.key, 1);
+        if (
+          afterBuild.getBuildingCount(building.key) !==
+          state.getBuildingCount(building.key) + 1
+        ) {
+          continue;
+        }
+
+        const targetFocus = getFastestWorkerAllocation(afterBuild, costs);
+        const targetTime =
+          targetFocus?.seconds ?? missingCostSeconds(afterBuild, costs);
+        const totalTime = buildTime + targetTime + 1;
+        if (totalTime < selectedBuildTime) {
+          selectedBuilding = building.key;
+          selectedBuildFocus = buildFocus;
+          selectedBuildCosts = buildingCosts;
+          selectedBuildTime = totalTime;
+        }
+      }
+
+      const useBuildRoute =
+        selectedBuilding !== null && selectedBuildTime < directTime;
+      this.fundingRoute = {
+        signature,
+        updatedAt: gameTime,
+        building: useBuildRoute ? selectedBuilding : null,
+        focus: useBuildRoute ? selectedBuildFocus : directFocus,
+        costs: useBuildRoute ? selectedBuildCosts : [...costs],
+      };
+    }
+
+    const route = this.fundingRoute;
+    if (route.building && state.canBuild(route.building)) {
+      return { type: "build", building: route.building, count: 1 };
+    }
+    if (route.focus) {
+      const reassignment = this.workerAssignmentAction(state, route.focus);
+      if (reassignment) return reassignment;
+    }
+    const resource = largestDeficitResource(state, route.costs);
+    return resource ? { type: "gather", resource } : null;
+  }
+
+  /** Put every worker on the projected fastest route to the current step. */
+  private workerAction(
+    state: CivilizationState,
+    plan: SimulatorResult | null,
+    gameTime: number,
+  ): SimulationAction | null {
+    const fundingCosts = this.nextFundingCosts(state, plan);
+    if (fundingCosts?.length === 0) return null;
+    if (fundingCosts) {
+      const signature = JSON.stringify({
+        costs: fundingCosts.map(({ resource, base }) => [
+          resource,
+          base.toString(),
+        ]),
+        buildings: state.builtBuildings,
+        units: Object.fromEntries(
+          Object.entries(state.unitCounts).map(([id, count]) => [
+            id,
+            count.toString(),
+          ]),
+        ),
+        research: state.boughtResearch,
+        battles: state.defeatedEncounters,
+        enteredAges: state.enteredAges,
+        workforce: state.assignedWorkers + state.availableWorkers,
+      });
+      const action = this.fundingAction(
+        state,
+        fundingCosts,
+        gameTime,
+        signature,
+      );
+      if (action) return action;
+      return null;
+    }
+
     const shares = normalizedWorkerShares(this.params);
     const total = state.assignedWorkers + state.availableWorkers;
     if (total <= 0) return null;
@@ -722,7 +1156,7 @@ export class AgeOnePolicy implements SimulationStrategy {
     // spends resources that workers produce — so the worker split is settled
     // before any purchase competes for the action slots. Reassigning is free
     // (one action slot, no resources), so doing it early costs nothing.
-    const worker = this.workerAction(state);
+    const worker = this.workerAction(state, plan, context.gameTime);
     if (worker) return worker;
 
     // Gate 4: the building the battle chain needs (barracks / university /
@@ -789,7 +1223,10 @@ export class AgeOnePolicy implements SimulationStrategy {
     const armyGather = this.battlePreparationGather(state, plan);
     if (armyGather) return armyGather;
     void context;
-    return this.fallbackGather(state, plan ? planCosts(plan) : []);
+    return this.fallbackGather(
+      state,
+      plan && plan.composition.size > 0 ? getSimulatorPlanCosts(plan) : [],
+    );
   }
 }
 

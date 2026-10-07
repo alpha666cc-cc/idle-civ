@@ -53,6 +53,56 @@ import {
   type TradeProfile,
 } from "./tradeAdvisor.js";
 import { TRADE_INTENSITY_STOPS } from "../src/game/trade.js";
+import {
+  getFastestFundingRoute,
+  getWorkerAssignmentAction,
+  type FundingCost,
+  type FundingRoute,
+} from "./workerFunding.js";
+
+// Enable adaptive funding only for strategies with measured age-1 improvements.
+export let ADAPTIVE_WORKER_FUNDING_ENABLED = true;
+export const ADAPTIVE_WORKER_FUNDING_STRATEGIES = new Set<string>([
+  "economy",
+  "production",
+  "fast-age",
+  "military",
+  "research",
+  "trader",
+]);
+
+export const setAdaptiveWorkerFunding = (
+  enabled: boolean,
+  strategies: Iterable<string> = [],
+): void => {
+  ADAPTIVE_WORKER_FUNDING_ENABLED = enabled;
+  ADAPTIVE_WORKER_FUNDING_STRATEGIES.clear();
+  for (const strategy of strategies) {
+    ADAPTIVE_WORKER_FUNDING_STRATEGIES.add(strategy);
+  }
+};
+
+const largestDeficitResource = (
+  state: CivilizationState,
+  costs: readonly FundingCost[],
+): ProductionResourceKey | null => {
+  const missing = costs
+    .filter(({ resource, base }) => state.resources[resource].lt(base))
+    .filter(
+      ({ resource }) =>
+        isResourceGatherable(state, resource) &&
+        producerResourceKeys.includes(resource as ProductionResourceKey),
+    );
+  if (missing.length === 0) return null;
+  missing.sort((left, right) => {
+    const leftDeficit = left.base.sub(state.resources[left.resource]);
+    const rightDeficit = right.base.sub(state.resources[right.resource]);
+    if (leftDeficit.gt(rightDeficit)) return -1;
+    if (rightDeficit.gt(leftDeficit)) return 1;
+    return left.resource.localeCompare(right.resource);
+  });
+  return missing[0].resource as ProductionResourceKey;
+};
 
 /**
  * Worker assignment ratios for different strategies.
@@ -214,8 +264,10 @@ const playerResearchOrder = [
 const playerAge1ResearchOrder = [
   "alphabet",
   "philosophy_fundamentals",
+  "shipbuilding_principles",
   "currency",
   "mathematics",
+  "code_of_laws",
   "irrigation",
   "horsemanship",
   "trade_routes",
@@ -228,11 +280,9 @@ const playerAge1ResearchOrder = [
   "heavy_oar_arrays",
   "iron_shielding",
   "cavalry_formations",
-  "code_of_laws",
   "masonry",
   "road_networks",
   "metallurgy_prep",
-  "shipbuilding_principles",
   "engineered_siegecraft",
   "coastal_forts",
   "berserker_warbands",
@@ -850,6 +900,21 @@ export const getRequiredBattlePreparationAction = (
   return null;
 };
 
+export const getRequiredBattlePreparationCosts = (
+  state: CivilizationState,
+): BuildingCost[] => {
+  if (!getRequiredBattle(state)) return [];
+  for (const building of requiredBattleBuildings) {
+    if (
+      state.getBuildingCount(building) === 0 &&
+      state.isBuildingAvailable(building)
+    ) {
+      return state.getBuildingCost(building, 0, 1);
+    }
+  }
+  return [];
+};
+
 /**
  * Returns the age transition action once the current age's data-defined
  * requirements are satisfied.
@@ -895,8 +960,9 @@ const simulatorContext = (state: CivilizationState): BattleSimulatorContext => {
   ): boolean => {
     const armyKey = [...composition]
       .sort(([left], [right]) => left.localeCompare(right))
-      .map(([unitId, count]) =>
-        `${unitId}:${count.toString()}:${formations.get(unitId) ?? "standard"}:${orders.get(unitId) ?? "standard"}`,
+      .map(
+        ([unitId, count]) =>
+          `${unitId}:${count.toString()}:${formations.get(unitId) ?? "standard"}:${orders.get(unitId) ?? "standard"}`,
       )
       .join(",");
     const key = `${combatStateKey}|${battleId}|${armyKey}`;
@@ -943,16 +1009,11 @@ const simulatorContext = (state: CivilizationState): BattleSimulatorContext => {
     getCost: (unitId, count) =>
       state.costSeriesFrom(state.getUnitCostParameters(unitId), count),
     getResearch: (unitIds) => state.getResearchForUnitTypes(unitIds),
-    wins: (composition, battleId) =>
-      winsWithTactics(composition, battleId),
+    wins: (composition, battleId) => winsWithTactics(composition, battleId),
     winsWithFormations: (composition, formations, battleId) =>
       winsWithTactics(composition, battleId, formations),
-    winsWithFormationsAndOrders: (
-      composition,
-      formations,
-      orders,
-      battleId,
-    ) => winsWithTactics(composition, battleId, formations, orders),
+    winsWithFormationsAndOrders: (composition, formations, orders, battleId) =>
+      winsWithTactics(composition, battleId, formations, orders),
   };
 };
 
@@ -1496,6 +1557,9 @@ const getCheapestHousingAction = (
 abstract class BaseStrategy implements SimulationStrategy {
   abstract name: string;
   abstract description: string;
+  private adaptiveFundingRoute:
+    | { signature: string; updatedAt: number; route: FundingRoute }
+    | undefined;
   private gatherWorkerFocus:
     | {
         readonly resource: ProductionResourceKey;
@@ -1744,6 +1808,162 @@ abstract class BaseStrategy implements SimulationStrategy {
     };
   }
 
+  protected getAdaptiveResearchTarget(state: CivilizationState): string | null {
+    if (!this.shouldFundResearch(state)) return null;
+    return (
+      getDynamicResearchOrder(state).find(
+        (researchId) =>
+          state.isResearchUnlocked(researchId) &&
+          !state.isResearchBought(researchId),
+      ) ?? null
+    );
+  }
+
+  protected shouldFundResearch(state: CivilizationState): boolean {
+    return state.defeatedEncounters.includes("age0_1_first_fire");
+  }
+
+  protected getAdaptiveWorkerFundingCosts(
+    state: CivilizationState,
+  ): FundingCost[] | null {
+    const preparation = getRequiredBattlePreparationAction(state);
+    if (preparation?.type === "gather") {
+      return getRequiredBattlePreparationCosts(state).map(
+        ({ resource, base }) => ({ resource, base }),
+      );
+    }
+
+    const plan = getSimulatorBattlePlan(state);
+    const canFundResearch = this.shouldFundResearch(state);
+    const planResearch = canFundResearch
+      ? plan?.research.ids.find(
+          (researchId) =>
+            state.isResearchUnlocked(researchId) &&
+            !state.isResearchBought(researchId),
+        )
+      : undefined;
+    const researchId = planResearch ?? this.getAdaptiveResearchTarget(state);
+    if (researchId && !state.canBuyResearch(researchId)) {
+      return state.getResearchNextCost().map(({ resource, base }) => ({
+        resource,
+        base,
+      }));
+    }
+
+    const growth = getAgeRouteGrowthAction(state);
+    if (growth?.type === "gather") {
+      const atHousingCeiling = state.population.gte(
+        state.maximumPopulation.floor(),
+      );
+      const building = atHousingCeiling
+        ? state.canBuild("house") || !state.canBuild("townHall")
+          ? "house"
+          : "townHall"
+        : growth.resource === "food"
+          ? "people"
+          : null;
+      if (building) {
+        return state
+          .getBuildingCost(building, state.getBuildingCount(building), 1)
+          .map(({ resource, base }) => ({ resource, base }));
+      }
+    }
+
+    if (plan && plan.composition.size > 0) {
+      return plan.totalCost.map(({ resource, base }) => ({
+        resource,
+        base,
+      }));
+    }
+
+    for (const { building, targetCount } of this.getBuildingPriority()) {
+      if (
+        targetCount !== undefined &&
+        state.getBuildingCount(building) >= targetCount
+      ) {
+        continue;
+      }
+      if (
+        !state.isBuildingAvailable(building) ||
+        state.isBuildingAtCapacity(building) ||
+        state.getBuildFailureReason(building) !== "resources"
+      ) {
+        continue;
+      }
+      return state
+        .getBuildingCost(building, state.getBuildingCount(building), 1)
+        .map(({ resource, base }) => ({ resource, base }));
+    }
+    return null;
+  }
+
+  protected getAdaptiveWorkerFundingEnabled(): boolean {
+    if (!ADAPTIVE_WORKER_FUNDING_ENABLED) return false;
+    return ADAPTIVE_WORKER_FUNDING_STRATEGIES.has(this.name);
+  }
+
+  private adaptiveWorkerAction(
+    state: CivilizationState,
+  ): SimulationAction | null | undefined {
+    if (!this.getAdaptiveWorkerFundingEnabled()) return undefined;
+    const costs = this.getAdaptiveWorkerFundingCosts(state);
+    if (!costs || costs.length === 0) return undefined;
+
+    const fundingProgress = costs.map(({ resource, base }) => {
+      const fraction = base.lte(ExpNumber.ZERO)
+        ? 1
+        : state.resources[resource].div(base).toNumber();
+      return [resource, Math.floor(Math.max(0, Math.min(1, fraction)) * 20)];
+    });
+    const signature = JSON.stringify({
+      costs: costs.map(({ resource, base }) => [resource, base.toString()]),
+      buildings: state.builtBuildings,
+      units: Object.fromEntries(
+        Object.entries(state.unitCounts).map(([id, count]) => [
+          id,
+          count.toString(),
+        ]),
+      ),
+      research: state.boughtResearch,
+      battles: state.defeatedEncounters,
+      ages: state.enteredAges,
+      workforce: state.assignedWorkers + state.availableWorkers,
+      workers: Object.fromEntries(
+        (producerResourceKeys as ProductionResourceKey[]).map((resource) => [
+          resource,
+          state.workers[resource].toString(),
+        ]),
+      ),
+      fundingProgress,
+    });
+    if (
+      !this.adaptiveFundingRoute ||
+      this.adaptiveFundingRoute.signature !== signature ||
+      state.statistics.playTimeMs / 1000 -
+        this.adaptiveFundingRoute.updatedAt >=
+        30
+    ) {
+      const gameTime = state.statistics.playTimeMs / 1000;
+      this.adaptiveFundingRoute = {
+        signature,
+        updatedAt: gameTime,
+        route: getFastestFundingRoute(state, costs),
+      };
+    }
+
+    const route = this.adaptiveFundingRoute.route;
+    if (!route.building) return undefined;
+    if (route.building && state.canBuild(route.building)) {
+      return { type: "build", building: route.building, count: 1 };
+    }
+    if (route.focus) {
+      const assignment = getWorkerAssignmentAction(state, route.focus);
+      if (assignment) return assignment;
+    }
+    const resource = largestDeficitResource(state, route.costs);
+    return resource ? { type: "gather", resource } : null;
+  }
+
   /**
    * Rebalance workers toward the strategy ratio. Surplus workers are removed
    * first; the next action can then assign those workers to a deficit resource.
@@ -1753,6 +1973,9 @@ abstract class BaseStrategy implements SimulationStrategy {
     ratios: WorkerRatios,
     priorityResource?: ProductionResourceKey,
   ): SimulationAction | null {
+    const adaptiveAction = this.adaptiveWorkerAction(state);
+    if (adaptiveAction !== undefined) return adaptiveAction;
+
     const focusedRatios = { ...ratios };
     let total = Object.values(focusedRatios).reduce((sum, r) => sum + r, 0);
 
@@ -2503,6 +2726,13 @@ export class ResearchStrategy extends BaseStrategy {
   description = "Prioritize early research and science infrastructure";
   private openingStrategy: SpeedrunStrategy | undefined;
 
+  protected shouldFundResearch(state: CivilizationState): boolean {
+    return (
+      state.defeatedEncounters.includes("age0_1_first_fire") &&
+      !hasCompletedCurrentAgeResearch(state)
+    );
+  }
+
   protected getAgeTransitionAction(
     state: CivilizationState,
   ): SimulationAction | null {
@@ -2674,6 +2904,13 @@ export class PlayerStrategy extends ResearchStrategy {
       !state.defeatedEncounters.includes("age0_1_first_fire") ||
       (state.isResearchBought("pottery") &&
         state.population.lt(ExpNumber.fromNumber(200)))
+    );
+  }
+
+  protected shouldFundResearch(state: CivilizationState): boolean {
+    return (
+      state.defeatedEncounters.includes("age0_1_first_fire") &&
+      !this.isResearchPaused(state)
     );
   }
 
