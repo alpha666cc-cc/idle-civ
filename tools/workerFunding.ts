@@ -147,6 +147,29 @@ export const getFastestWorkerAllocation = (
     },
   );
 
+  const projectedSecondsAt = (
+    assignments: Partial<Record<ProductionResourceKey, number>>,
+  ): number => {
+    let seconds = 0;
+    let reserveSeconds = Infinity;
+    for (const rate of rates) {
+      const currentRate =
+        rate.baseRate +
+        rate.yieldPerWorker *
+          (assignments[rate.resource as ProductionResourceKey] ?? 0);
+      if (rate.current < rate.target) {
+        if (currentRate <= 0) return Infinity;
+        seconds = Math.max(seconds, (rate.target - rate.current) / currentRate);
+      } else if (currentRate < 0) {
+        reserveSeconds = Math.min(
+          reserveSeconds,
+          (rate.current - rate.target) / -currentRate,
+        );
+      }
+    }
+    return seconds <= reserveSeconds ? seconds : Infinity;
+  };
+
   const allocationAt = (
     seconds: number,
   ): Partial<Record<ProductionResourceKey, number>> | null => {
@@ -177,28 +200,57 @@ export const getFastestWorkerAllocation = (
 
   const raw = allocationAt(high);
   if (!raw) return null;
-  const assignments: Partial<Record<ProductionResourceKey, number>> = {};
+  const roundedAssignments: Partial<Record<ProductionResourceKey, number>> = {};
   let assigned = 0;
   for (const [resource, workers] of Object.entries(raw)) {
     const count = Math.floor(workers ?? 0);
-    assignments[resource as ProductionResourceKey] = count;
+    roundedAssignments[resource as ProductionResourceKey] = count;
     assigned += count;
   }
   const leftover = totalWorkers - assigned;
-  const priority = rates
-    .filter(({ yieldPerWorker }) => yieldPerWorker > 0)
-    .sort((left, right) => {
-      const leftNeed = (left.target - left.current) / left.yieldPerWorker;
-      const rightNeed = (right.target - right.current) / right.yieldPerWorker;
-      return rightNeed - leftNeed;
-    });
+  const greedyAssignments = { ...roundedAssignments };
+  const eligibleRates = rates.filter(
+    ({ yieldPerWorker }) => yieldPerWorker > 0,
+  );
+  const priority = [...eligibleRates].sort((left, right) => {
+    const leftNeed = (left.target - left.current) / left.yieldPerWorker;
+    const rightNeed = (right.target - right.current) / right.yieldPerWorker;
+    return rightNeed - leftNeed;
+  });
   for (let index = 0; index < leftover && priority.length > 0; index += 1) {
-    const resource = priority[index % priority.length].resource;
-    const key = resource as ProductionResourceKey;
-    assignments[key] = (assignments[key] ?? 0) + 1;
+    const resource = priority[index % priority.length]
+      .resource as ProductionResourceKey;
+    roundedAssignments[resource] = (roundedAssignments[resource] ?? 0) + 1;
   }
-  const roundedState = withWorkerAllocation(state, assignments);
-  const projectedSeconds = missingCostSeconds(roundedState, costs);
+
+  const roundedSeconds = projectedSecondsAt(roundedAssignments);
+  for (
+    let index = 0;
+    index < leftover && eligibleRates.length > 0;
+    index += 1
+  ) {
+    let bestResource: ProductionResourceKey | null = null;
+    let bestSeconds = Infinity;
+    for (const rate of eligibleRates) {
+      const resource = rate.resource as ProductionResourceKey;
+      const trialAssignments = {
+        ...greedyAssignments,
+        [resource]: (greedyAssignments[resource] ?? 0) + 1,
+      };
+      const trialSeconds = projectedSecondsAt(trialAssignments);
+      if (bestResource === null || trialSeconds < bestSeconds) {
+        bestResource = resource;
+        bestSeconds = trialSeconds;
+      }
+    }
+    if (bestResource === null) break;
+    greedyAssignments[bestResource] =
+      (greedyAssignments[bestResource] ?? 0) + 1;
+  }
+  const greedySeconds = projectedSecondsAt(greedyAssignments);
+  const useGreedy = greedySeconds < roundedSeconds;
+  const assignments = useGreedy ? greedyAssignments : roundedAssignments;
+  const projectedSeconds = useGreedy ? greedySeconds : roundedSeconds;
   if (!Number.isFinite(projectedSeconds)) return null;
   return { assignments, seconds: projectedSeconds };
 };

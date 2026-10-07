@@ -7,14 +7,20 @@
  *
  * Usage:
  *   tsx tools/optimize-age1-research-order.ts [--save=saves/age1-40m.json]
- *     [--budget=200] [--seed=42] [--horizon=7200] [--restarts=4]
+ *     [--budget=200] [--seed=42] [--horizon=18000] [--restarts=4]
  *     [--out=sim-output/age1-research-order.json]
+ *     [--checkpoint=sim-output/age1-research-order.checkpoint.json] [--resume]
  *
  * Each candidate resumes the same age-1 save and races to age 2. Search is
  * stochastic best-improvement over valid prerequisite-preserving insertions and
  * swaps; results are best-found, not a proof of a global optimum.
+ *
+ * A checkpoint is written after every evaluation and on every improvement, so
+ * the current best order is always recoverable and a night stop can continue
+ * with the same flags plus --resume. Resume requires the same save, horizon,
+ * seed, budget and restart count; anything else is rejected loudly.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import type { CivilizationState } from "../src/game/civilizationState.js";
 import { researchDefinitions } from "../src/game/research.js";
@@ -72,6 +78,60 @@ const restarts = Math.max(1, Math.floor(Number(argument("restarts", "4"))));
 const seed = Number(argument("seed", "42")) >>> 0;
 const savePath = argument("save", "saves/age1-40m.json");
 const output = argument("out", "sim-output/age1-research-order.json");
+const resume = process.argv.includes("--resume");
+const checkpointPath = argument(
+  "checkpoint",
+  `${output.replace(/\.json$/, "")}.checkpoint.json`,
+);
+
+type Checkpoint = {
+  version: 1;
+  save: string;
+  horizon: number;
+  seed: number;
+  budget: number;
+  restarts: number;
+  evaluations: number;
+  randomState: number;
+  baselineOrder: string[];
+  baselineScore: Score | null;
+  baselineOrderValid: boolean;
+  startingOrder: string[];
+  bestOrder: string[];
+  bestScore: Score | null;
+  seeds: string[][];
+  restartCursor: number;
+  currentOrder: string[] | null;
+  currentScore: Score | null;
+  cache: Array<[string, Score]>;
+};
+
+const readCheckpoint = (): Checkpoint => {
+  const raw = readFileSync(checkpointPath, "utf8");
+  const parsed = JSON.parse(raw) as Checkpoint;
+  if (parsed.version !== 1) {
+    throw new Error(`Unsupported checkpoint version in ${checkpointPath}`);
+  }
+  if (
+    parsed.save !== savePath ||
+    parsed.horizon !== horizon ||
+    parsed.seed !== seed ||
+    parsed.budget !== budget ||
+    parsed.restarts !== restarts
+  ) {
+    throw new Error(
+      `Checkpoint ${checkpointPath} was written for a different run configuration`,
+    );
+  }
+  return parsed;
+};
+
+const writeCheckpoint = (state: Checkpoint): void => {
+  mkdirSync(dirname(checkpointPath), { recursive: true });
+  const temporaryPath = `${checkpointPath}.tmp`;
+  writeFileSync(temporaryPath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  renameSync(temporaryPath, checkpointPath);
+};
 
 const age1Research = researchDefinitions.filter(({ age }) => age === 1);
 const age1Ids = new Set(age1Research.map(({ key }) => key));
@@ -206,6 +266,12 @@ const isBetter = (candidate: Score, incumbent: Score): boolean => {
 };
 
 let randomState = seed;
+let evaluations = 0;
+const cache = new Map<string, Score>();
+let restartCursor = 0;
+let currentOrder: string[] | null = null;
+let currentScore: Score | null = null;
+let resumedFromCheckpoint = false;
 const random = (): number => {
   randomState = (randomState + 0x6d2b79f5) >>> 0;
   let value = randomState;
@@ -254,8 +320,6 @@ const formatScore = (score: Score): string =>
     ? `reached age2 in ${score.gameTime}s`
     : `did not reach age2 in ${horizon}s (age=${score.age}, population=${score.population})`;
 
-let evaluations = 0;
-const cache = new Map<string, Score>();
 const score = (order: Order): Score => {
   const key = orderKey(order);
   const existing = cache.get(key);
@@ -263,15 +327,118 @@ const score = (order: Order): Score => {
   const result = evaluate(order);
   cache.set(key, result);
   evaluations += 1;
+  writeCheckpoint(checkpointState());
   return result;
 };
 
-const baselineScore = baselineOrderValid ? score(baselineOrder) : null;
-const startingScore = baselineOrderValid
-  ? baselineScore!
-  : score(startingOrder);
-let bestOrder = [...startingOrder];
-let bestScore = startingScore;
+const recordImprovement = (order: Order, improved: Score): void => {
+  bestOrder = [...order];
+  bestScore = improved;
+  console.log(`  improve: ${formatScore(improved)}`);
+  console.log(`  order: ${[...order].join(" -> ")}`);
+  console.log(`  checkpoint: ${checkpointPath}`);
+  writeCheckpoint(checkpointState());
+};
+
+const loadResumedRun = (): {
+  baselineScore: Score | null;
+  startingScore: Score;
+  bestOrder: string[];
+  bestScore: Score;
+  seedOrders: Order[];
+} => {
+  const checkpoint = readCheckpoint();
+  if (
+    orderKey(checkpoint.baselineOrder) !== orderKey(baselineOrder) ||
+    checkpoint.baselineOrderValid !== baselineOrderValid ||
+    orderKey(checkpoint.startingOrder) !== orderKey(startingOrder)
+  ) {
+    throw new Error(
+      `Checkpoint ${checkpointPath} does not match the current registry or player order`,
+    );
+  }
+  randomState = checkpoint.randomState;
+  evaluations = checkpoint.evaluations;
+  restartCursor = checkpoint.restartCursor;
+  currentOrder = checkpoint.currentOrder ? [...checkpoint.currentOrder] : null;
+  currentScore = checkpoint.currentScore;
+  cache.clear();
+  for (const [key, value] of checkpoint.cache) cache.set(key, value);
+  const seedOrders = checkpoint.seeds.map((order) => [...order]);
+  seeds = seedOrders.map((order) => [...order]);
+  const restoredBaselineScore = checkpoint.baselineScore;
+  const restoredBestScore = checkpoint.bestScore;
+  if (!restoredBestScore) {
+    throw new Error(`Checkpoint ${checkpointPath} has no best score yet`);
+  }
+  console.log(
+    `resumed from ${checkpointPath}: ${evaluations} evaluations, best ${formatScore(restoredBestScore)}`,
+  );
+  return {
+    baselineScore: restoredBaselineScore,
+    startingScore: isValidOrder(checkpoint.startingOrder)
+      ? score(checkpoint.startingOrder)
+      : restoredBestScore,
+    bestOrder: [...checkpoint.bestOrder],
+    bestScore: restoredBestScore,
+    seedOrders,
+  };
+};
+
+let baselineScore: Score | null = null;
+let startingScore: Score | null = null;
+let bestOrder: string[] = [...startingOrder];
+let bestScore: Score | null = null;
+let seeds: Order[] = [[...startingOrder]];
+
+const checkpointState = (): Checkpoint => ({
+  version: 1,
+  save: savePath,
+  horizon,
+  seed,
+  budget,
+  restarts,
+  evaluations,
+  randomState,
+  baselineOrder: [...baselineOrder],
+  baselineScore,
+  baselineOrderValid,
+  startingOrder: [...startingOrder],
+  bestOrder: [...bestOrder],
+  bestScore,
+  seeds: seeds.map((order) => [...order]),
+  restartCursor,
+  currentOrder: currentOrder ? [...currentOrder] : null,
+  currentScore,
+  cache: [...cache.entries()],
+});
+
+if (resume) {
+  if (!existsSync(checkpointPath)) {
+    throw new Error(`No checkpoint to resume at ${checkpointPath}`);
+  }
+  const restored = loadResumedRun();
+  resumedFromCheckpoint = true;
+  baselineScore = restored.baselineScore;
+  startingScore = restored.startingScore;
+  bestOrder = restored.bestOrder;
+  if (!restored.bestScore) {
+    throw new Error(`Checkpoint ${checkpointPath} has no best score yet`);
+  }
+  bestScore = restored.bestScore;
+  seeds = restored.seedOrders.map((order) => [...order]);
+} else {
+  seeds = [[...startingOrder]];
+  baselineScore = baselineOrderValid ? score(baselineOrder) : null;
+  startingScore = baselineOrderValid ? baselineScore! : score(startingOrder);
+  bestOrder = [...startingOrder];
+  bestScore = startingScore;
+  writeCheckpoint(checkpointState());
+}
+
+if (!startingScore || !bestScore) {
+  throw new Error("Search state was not initialized");
+}
 
 console.log(
   `age1 research: ${age1Research.length} technologies; start=${savePath}; objective=reach age2; horizon=${horizon}s; budget=${budget}; restarts=${restarts}; seed=${seed}`,
@@ -283,22 +450,27 @@ console.log(
   `baseline: ${baselineScore ? formatScore(baselineScore) : "invalid under current prerequisites"}`,
 );
 console.log(`search start: ${formatScore(startingScore)}`);
+console.log(`checkpoint: ${checkpointPath}${resume ? " (resumed)" : ""}`);
 
-const seeds: Order[] = [startingOrder];
-for (let restart = 1; restart < restarts; restart += 1) {
-  const completed: string[] = [];
-  while (completed.length < age1Ids.size) {
-    const ready = shuffled(age1Research.map(({ key }) => key)).filter(
-      (id) =>
-        !completed.includes(id) &&
-        (prerequisites.get(id) ?? []).every((need) => completed.includes(need)),
-    );
-    if (ready.length === 0) {
-      throw new Error("Age-1 prerequisite cycle detected");
+if (!resumedFromCheckpoint) {
+  for (let restart = 1; restart < restarts; restart += 1) {
+    const completed: string[] = [];
+    while (completed.length < age1Ids.size) {
+      const ready = shuffled(age1Research.map(({ key }) => key)).filter(
+        (id) =>
+          !completed.includes(id) &&
+          (prerequisites.get(id) ?? []).every((need) =>
+            completed.includes(need),
+          ),
+      );
+      if (ready.length === 0) {
+        throw new Error("Age-1 prerequisite cycle detected");
+      }
+      completed.push(ready[0]);
     }
-    completed.push(ready[0]);
+    seeds.push(completed);
   }
-  seeds.push(completed);
+  writeCheckpoint(checkpointState());
 }
 
 const nonBaselineSeeds = seeds.slice(1).map((order) => ({
@@ -317,25 +489,41 @@ const orderedSeeds = [
   ...nonBaselineSeeds,
 ];
 
-for (const [restartIndex, seedResult] of orderedSeeds.entries()) {
+for (
+  let restartIndex = restartCursor;
+  restartIndex < orderedSeeds.length;
+  restartIndex += 1
+) {
+  restartCursor = restartIndex;
   if (evaluations >= budget) break;
-  const seedOrder = seedResult.order;
-  let currentOrder = [...seedOrder];
-  let currentScore = seedResult.score;
-  if (isBetter(currentScore, bestScore)) {
-    bestOrder = currentOrder;
-    bestScore = currentScore;
+  const seedOrder = orderedSeeds[restartIndex].order;
+  if (
+    !currentOrder ||
+    !currentScore ||
+    orderKey(currentOrder) !== orderKey(seedOrder)
+  ) {
+    currentOrder = [...seedOrder];
+    currentScore = orderedSeeds[restartIndex].score;
   }
-  console.log(`restart ${restartIndex + 1}: ${formatScore(currentScore)}`);
+  const incumbentScore: Score = currentScore;
+  let activeOrder: string[] = [...currentOrder];
+  let activeScore: Score = incumbentScore;
+  if (isBetter(activeScore, bestScore)) {
+    recordImprovement(activeOrder, activeScore);
+  }
+  console.log(`restart ${restartIndex + 1}: ${formatScore(activeScore)}`);
+  currentOrder = [...activeOrder];
+  currentScore = activeScore;
+  writeCheckpoint(checkpointState());
 
   while (evaluations < budget) {
-    const candidates = shuffled(neighbours(currentOrder));
-    const sampledCandidates = sampleIndices(
-      candidates.length,
+    const candidateOrders: string[][] = shuffled(neighbours(activeOrder));
+    const sampledCandidates: string[][] = sampleIndices(
+      candidateOrders.length,
       Math.max(1, Math.min(12, budget - evaluations)),
-    ).map((index) => candidates[index]);
+    ).map((index) => candidateOrders[index]);
     let nextOrder: string[] | null = null;
-    let nextScore = currentScore;
+    let nextScore: Score = activeScore;
     for (const candidate of sampledCandidates) {
       const wasEvaluated = cache.has(orderKey(candidate));
       if (!wasEvaluated && evaluations >= budget) break;
@@ -345,15 +533,22 @@ for (const [restartIndex, seedResult] of orderedSeeds.entries()) {
         nextScore = candidateScore;
       }
     }
-    if (!nextOrder || !isBetter(nextScore, currentScore)) break;
-    currentOrder = nextOrder;
-    currentScore = nextScore;
-    if (isBetter(currentScore, bestScore)) {
-      bestOrder = currentOrder;
-      bestScore = currentScore;
+    if (!nextOrder || !isBetter(nextScore, activeScore)) break;
+    activeOrder = nextOrder;
+    activeScore = nextScore;
+    currentOrder = [...activeOrder];
+    currentScore = activeScore;
+    if (isBetter(activeScore, bestScore)) {
+      recordImprovement(activeOrder, activeScore);
+    } else {
+      console.log(`  improve: ${formatScore(activeScore)}`);
+      writeCheckpoint(checkpointState());
     }
-    console.log(`  improve: ${formatScore(currentScore)}`);
   }
+  restartCursor = restartIndex + 1;
+  currentOrder = null;
+  currentScore = null;
+  writeCheckpoint(checkpointState());
 }
 
 const report = {

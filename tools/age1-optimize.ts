@@ -75,6 +75,19 @@ const horizon = Math.max(60, Number(flag("horizon", "20000")));
 const seed = Number(flag("seed", "42"));
 const outDir = flag("out", "sim-output/age1-optimize");
 
+const age1StrategyTimeThresholds: Readonly<Record<string, number>> = {
+  cheapest: 3259,
+  balanced: 3533,
+  economy: 2870,
+  production: 3518,
+  "fast-age": 3536,
+  military: 3923,
+  research: 3170,
+  player: 2085,
+  trader: 3913,
+  speedrun: 4843,
+};
+
 /** The configuration every evaluation shares: identical engine knobs, one objective. */
 const evaluationConfig = (maxGameTime: number): SimulationConfig => ({
   objective: { type: "ageReach", ageId: "age1" },
@@ -398,6 +411,12 @@ const runBaselineStrategies = () =>
         strategy: strategy.name,
         reached: result.objectiveReached,
         gameTime: result.gameTime,
+        thresholdSeconds: age1StrategyTimeThresholds[strategy.name] ?? null,
+        withinThreshold:
+          age1StrategyTimeThresholds[strategy.name] === undefined
+            ? null
+            : result.objectiveReached &&
+              result.gameTime <= age1StrategyTimeThresholds[strategy.name],
       };
     });
 
@@ -413,13 +432,20 @@ console.log(
 console.log(`campaign gate: ${floor.battleChain.join(" -> ")}`);
 console.log(`building target: ${floor.minimumBuildings}\n`);
 
-let baseline: { strategy: string; reached: boolean; gameTime: number }[] = [];
+let baseline: {
+  strategy: string;
+  reached: boolean;
+  gameTime: number;
+  thresholdSeconds: number | null;
+  withinThreshold: boolean | null;
+}[] = [];
 if (hasFlag("baseline")) {
   console.log("--- baseline strategies (same objective, same horizon) ---");
   baseline = runBaselineStrategies();
   for (const row of baseline) {
+    const threshold = row.thresholdSeconds;
     console.log(
-      `  ${row.strategy.padEnd(12)} ${row.reached ? clock(row.gameTime) : `not reached within ${clock(horizon)}`}`,
+      `  ${row.strategy.padEnd(12)} ${row.reached ? clock(row.gameTime) : `not reached within ${clock(horizon)}`}${threshold === null ? "" : `  ${row.withinThreshold ? "PASS" : "REGRESSION"} (limit ${threshold}s)`}`,
     );
   }
   console.log("");
@@ -487,4 +513,8 @@ try {
   console.log(`\nreport written to ${reportPath}`);
 } catch (error) {
   console.error(`could not write report: ${String(error)}`);
+}
+
+if (baseline.some((row) => row.withinThreshold === false)) {
+  process.exitCode = 1;
 }

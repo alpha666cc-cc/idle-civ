@@ -658,10 +658,11 @@ describe("required progression strategy", () => {
         peopleCapacity: 100,
       },
     });
-    const allocation = getFastestWorkerAllocation(state, [
-      { resource: "food", base: ExpNumber.fromNumber(313743) },
-      { resource: "military", base: ExpNumber.fromNumber(9413) },
-    ]);
+    const costs = [
+      { resource: "food" as const, base: ExpNumber.fromNumber(313743) },
+      { resource: "military" as const, base: ExpNumber.fromNumber(9413) },
+    ];
+    const allocation = getFastestWorkerAllocation(state, costs);
 
     expect(allocation).not.toBeNull();
     expect(
@@ -706,6 +707,39 @@ describe("required progression strategy", () => {
       missingCostSeconds(focused, costs),
       8,
     );
+  });
+
+  it("chooses the best integer split for a multi-resource funding target", () => {
+    const people = 6;
+    const resources = { food: 0, wood: 0, peopleCapacity: 10 };
+    const buildings = { farm: 10, lumberYard: 10 };
+    const costs = [
+      { resource: "food" as const, base: ExpNumber.fromNumber(120) },
+      { resource: "wood" as const, base: ExpNumber.fromNumber(80) },
+    ];
+    const state = makeState({
+      people,
+      buildings,
+      resources,
+    });
+    const allocation = getFastestFundingAllocation(state, costs);
+    let bestIntegerSeconds = Infinity;
+
+    for (let foodWorkers = 0; foodWorkers <= people; foodWorkers += 1) {
+      const focused = makeState({
+        people,
+        buildings,
+        resources,
+        workers: { food: foodWorkers, wood: people - foodWorkers },
+      });
+      bestIntegerSeconds = Math.min(
+        bestIntegerSeconds,
+        missingCostSeconds(focused, costs),
+      );
+    }
+
+    expect(allocation).not.toBeNull();
+    expect(allocation?.seconds).toBeCloseTo(bestIntegerSeconds, 8);
   });
 
   it("prices only the next research purchase while funding a research plan", () => {
@@ -800,11 +834,14 @@ describe("required progression strategy", () => {
     try {
       expect(ADAPTIVE_WORKER_FUNDING_ENABLED).toBe(true);
       expect([...ADAPTIVE_WORKER_FUNDING_STRATEGIES]).toEqual([
+        "cheapest",
+        "balanced",
         "economy",
         "production",
         "fast-age",
         "military",
         "research",
+        "player",
         "trader",
       ]);
 

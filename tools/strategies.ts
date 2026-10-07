@@ -63,11 +63,14 @@ import {
 // Enable adaptive funding only for strategies with measured age-1 improvements.
 export let ADAPTIVE_WORKER_FUNDING_ENABLED = true;
 export const ADAPTIVE_WORKER_FUNDING_STRATEGIES = new Set<string>([
+  "cheapest",
+  "balanced",
   "economy",
   "production",
   "fast-age",
   "military",
   "research",
+  "player",
   "trader",
 ]);
 
