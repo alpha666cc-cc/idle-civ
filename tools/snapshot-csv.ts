@@ -15,10 +15,16 @@
  *
  * Usage:
  *   tsx tools/snapshot-csv.ts <strategy...> [--horizon=3600] [--interval=60] [--out=dir]
- *                            [--save=path] [--age=age1]
+ *                            [--save=path] [--age=age1] [--jobs=N]
  *
  * Writes one CSV per simulation plus a combined ODS workbook with a sheet per
  * simulation. Kept as a tool because it is the fastest way to diff two runs.
+ *
+ * Strategies run in parallel worker threads, one per strategy, capped by
+ * `--jobs` (default: machine parallelism). Each worker writes its own CSV and
+ * a milestone fragment; the main thread merges fragments in strategy order, so
+ * output is deterministic regardless of finish order. `--jobs=1` restores the
+ * old sequential behaviour.
  *
  * `--age=<id>` stops each run the moment that age is entered, so a pacing sweep
  * costs what the progression actually takes instead of the full horizon for
@@ -31,11 +37,20 @@
  */
 import {
   appendFileSync,
+  existsSync,
   mkdirSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { deflateRawSync } from "node:zlib";
+import {
+  Worker,
+  isMainThread,
+  parentPort,
+  workerData,
+} from "node:worker_threads";
+import { availableParallelism } from "node:os";
 import {
   GameSimulation,
   createInitialState,
@@ -80,13 +95,33 @@ const flag = (name: string, fallback: string): string => {
   return hit ? hit.slice(name.length + 3) : fallback;
 };
 const DEFAULT_OUT_DIR = "sim-output";
-const horizon = Number(flag("horizon", "3600"));
-const interval = Number(flag("interval", "60"));
+let horizon = Number(flag("horizon", "3600"));
+let interval = Number(flag("interval", "60"));
 const outDir = flag("out", DEFAULT_OUT_DIR);
 const savePath = flag("save", "");
-const targetAge = flag("age", "");
+let targetAge = flag("age", "");
 const named = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const strategies = named.length > 0 ? named : getStrategyNames();
+const jobs = Math.max(1, Math.floor(Number(flag("jobs", "")) || 0));
+
+type WorkerPayload = {
+  name: string;
+  horizon: number;
+  interval: number;
+  outDir: string;
+  savePath: string;
+  targetAge: string;
+  milestoneFragment: string;
+};
+
+type WorkerResult = {
+  name: string;
+  sheet: Sheet | null;
+  milestones: Milestone[];
+  arrived: boolean;
+  gameTime: number;
+  wall: number;
+};
 
 // Every strategy in a sweep must start from the identical save state, so the
 // document is read once and each run gets its own state built from it. Reading
@@ -779,59 +814,241 @@ if (process.argv.includes("--merge")) {
   process.exit(0);
 }
 
-const sheets: Sheet[] = [];
-// Persist milestones as they happen so an interrupted strategy still has its
-// completed milestone history on disk.
-const milestoneFile = `${outDir}/milestones.txt`;
-mkdirSync(outDir, { recursive: true });
-writeFileSync(milestoneFile, "", "utf8");
-for (const name of strategies) {
-  const file = `${outDir}/sim-${name}.csv`;
-  const csvHeader = csvLine(header);
-  writeFileSync(file, `${csvHeader}\n`, "utf8");
+if (!isMainThread) {
+  const payload = workerData as WorkerPayload;
+  horizon = payload.horizon;
+  interval = payload.interval;
+  targetAge = payload.targetAge;
+  if (payload.savePath) saveEntry = loadSaveEntry(payload.savePath);
+  const file = `${payload.outDir}/sim-${payload.name}.csv`;
+  writeFileSync(file, `${csvLine(header)}\n`, "utf8");
+  writeFileSync(payload.milestoneFragment, "", "utf8");
+  const started = Date.now();
   const result = runStrategy(
-    name,
+    payload.name,
     (line) => appendFileSync(file, `${line}\n`, "utf8"),
-    (line) => appendFileSync(milestoneFile, `${line}\n`, "utf8"),
+    (line) => appendFileSync(payload.milestoneFragment, `${line}\n`, "utf8"),
   );
-  if (!result) continue;
-  sheets.push(result.sheet);
+  const wall = Number(((Date.now() - started) / 1000).toFixed(1));
+  const message: WorkerResult = result
+    ? {
+        name: payload.name,
+        sheet: result.sheet,
+        milestones: result.milestones,
+        arrived: result.arrived,
+        gameTime: result.gameTime,
+        wall,
+      }
+    : {
+        name: payload.name,
+        sheet: null,
+        milestones: [],
+        arrived: false,
+        gameTime: 0,
+        wall,
+      };
+  parentPort?.postMessage(message);
+}
+
+const workerExecArgv = (): string[] => {
+  const args: string[] = [];
+  for (let index = 0; index < process.execArgv.length; index += 1) {
+    const argument = process.execArgv[index];
+    if (argument === "--eval" || argument === "-e") {
+      index += 1;
+      continue;
+    }
+    if (argument.startsWith("--eval=")) continue;
+    args.push(argument);
+  }
+  return args;
+};
+
+const runStrategyWorker = (payload: WorkerPayload): Promise<WorkerResult> =>
+  new Promise((resolve, reject) => {
+    const worker = new Worker(new URL(import.meta.url), {
+      workerData: payload,
+      execArgv: workerExecArgv(),
+    });
+    let result: WorkerResult | undefined;
+    worker.on("message", (message) => {
+      result = message as WorkerResult;
+    });
+    worker.on("error", reject);
+    worker.on("exit", (code) => {
+      if (code !== 0) {
+        reject(new Error(`${payload.name} worker exited with code ${code}`));
+      } else if (!result) {
+        reject(new Error(`${payload.name} worker exited without a result`));
+      } else {
+        resolve(result);
+      }
+    });
+  });
+
+const printResult = (
+  name: string,
+  file: string,
+  sheet: Sheet,
+  milestones: Milestone[],
+  arrived: boolean,
+  gameTime: number,
+  wall: number,
+): void => {
   // With an age target the arrival time is the headline number, and a capped run
   // is flagged so it is never mistaken for an age that was actually reached.
   const stop = targetAge
-    ? result.arrived
-      ? `${targetAge} @ ${clock(result.gameTime)}`
-      : `NO ${targetAge} (hit ${clock(result.gameTime)} horizon)`
-    : clock(result.gameTime);
+    ? arrived
+      ? `${targetAge} @ ${clock(gameTime)}`
+      : `NO ${targetAge} (hit ${clock(gameTime)} horizon)`
+    : clock(gameTime);
   console.log(
-    `${name.padEnd(10)} ${String(result.sheet.rows.length).padStart(4)} rows x ${header.length} cols  ${stop.padEnd(26)} ->  ${file}  (${result.wall}s)`,
+    `${name.padEnd(10)} ${String(sheet.rows.length).padStart(4)} rows x ${header.length} cols  ${stop.padEnd(26)} ->  ${file}  (${wall}s)`,
   );
   // Milestones on their own lines, indented under the strategy. A single arrival
   // number hides where the run spent its budget: a strategy can be far behind on
   // barracks yet still finish first, or win early and then stall on buildings.
   // Unreached milestones are simply absent from the list.
-  for (const m of result.milestones) {
-    const percent = Math.round((m.at / Math.max(1, result.gameTime)) * 100);
+  for (const m of milestones) {
+    const percent = Math.round((m.at / Math.max(1, gameTime)) * 100);
     console.log(
       `             ${m.label.padEnd(22)} ${clock(m.at).padStart(9)}` +
         `  (${percent}% of run)`,
     );
   }
+};
+
+const appendMilestones = (
+  name: string,
+  arrived: boolean,
+  gameTime: number,
+  fragment: string,
+): void => {
   // The arrival is the headline number and never appears as a milestone: with an
   // age target the run stops on it, so the hook may not fire again afterwards.
   // A capped run must not read as an arrival, so the label carries the flag.
+  if (existsSync(fragment)) {
+    const body = readFileSync(fragment, "utf8");
+    if (body) appendFileSync(milestoneFile, body, "utf8");
+    rmSync(fragment);
+  }
   if (targetAge) {
-    const arrival = result.arrived
+    const arrival = arrived
       ? `reached ${targetAge}`
       : `NO ${targetAge} (horizon)`;
     appendFileSync(
       milestoneFile,
-      `${name}  ${arrival.padEnd(24)} ${clock(result.gameTime).padStart(9)}\n`,
+      `${name}  ${arrival.padEnd(24)} ${clock(gameTime).padStart(9)}\n`,
       "utf8",
     );
   }
   appendFileSync(milestoneFile, "\n", "utf8");
-}
+};
 
-console.log(`\nmilestones: ${milestoneFile}`);
-writeWorkbook(sheets, header.length);
+// Declared at module scope so the milestone merger (used by both the
+// sequential path and the parallel fragment merge) can reach it.
+const milestoneFile = `${outDir}/milestones.txt`;
+
+if (isMainThread) {
+  const sheets: Sheet[] = [];
+  // Persist milestones as they happen so an interrupted strategy still has its
+  // completed milestone history on disk.
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(milestoneFile, "", "utf8");
+  const maxJobs = jobs > 0 ? jobs : availableParallelism();
+  const payloads: WorkerPayload[] = strategies.map((name) => ({
+    name,
+    horizon,
+    interval,
+    outDir,
+    savePath,
+    targetAge,
+    milestoneFragment: `${outDir}/milestones-${name}.frag.txt`,
+  }));
+  if (maxJobs <= 1) {
+    for (const payload of payloads) {
+      const file = `${outDir}/sim-${payload.name}.csv`;
+      writeFileSync(file, `${csvLine(header)}\n`, "utf8");
+      writeFileSync(payload.milestoneFragment, "", "utf8");
+      const started = Date.now();
+      const result = runStrategy(
+        payload.name,
+        (line) => appendFileSync(file, `${line}\n`, "utf8"),
+        (line) =>
+          appendFileSync(payload.milestoneFragment, `${line}\n`, "utf8"),
+      );
+      if (!result) {
+        rmSync(payload.milestoneFragment, { force: true });
+        continue;
+      }
+      sheets.push(result.sheet);
+      printResult(
+        payload.name,
+        file,
+        result.sheet,
+        result.milestones,
+        result.arrived,
+        result.gameTime,
+        Number(((Date.now() - started) / 1000).toFixed(1)),
+      );
+      appendMilestones(
+        payload.name,
+        result.arrived,
+        result.gameTime,
+        payload.milestoneFragment,
+      );
+    }
+  } else {
+    const results = new Map<string, WorkerResult>();
+    let next = 0;
+    let active = 0;
+    let failed = false;
+    await new Promise<void>((resolve, reject) => {
+      const launch = (): void => {
+        while (active < maxJobs && next < payloads.length && !failed) {
+          const payload = payloads[next];
+          next += 1;
+          active += 1;
+          runStrategyWorker(payload).then(
+            (result) => {
+              active -= 1;
+              results.set(result.name, result);
+              if (next >= payloads.length && active === 0) resolve();
+              else launch();
+            },
+            (error: unknown) => {
+              failed = true;
+              reject(error);
+            },
+          );
+        }
+      };
+      launch();
+    });
+    // Merge in strategy order, not finish order, so milestones.txt and the
+    // console output are deterministic run to run.
+    for (const payload of payloads) {
+      const result = results.get(payload.name);
+      if (!result?.sheet) continue;
+      sheets.push(result.sheet);
+      printResult(
+        payload.name,
+        `${outDir}/sim-${payload.name}.csv`,
+        result.sheet,
+        result.milestones,
+        result.arrived,
+        result.gameTime,
+        result.wall,
+      );
+      appendMilestones(
+        payload.name,
+        result.arrived,
+        result.gameTime,
+        payload.milestoneFragment,
+      );
+    }
+  }
+
+  console.log(`\nmilestones: ${milestoneFile}`);
+  writeWorkbook(sheets, header.length);
+}

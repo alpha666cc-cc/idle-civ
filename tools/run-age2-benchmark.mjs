@@ -1,37 +1,35 @@
-/**
- * Simple benchmark for age1->age2 in 40 minutes
- */
+/** Run the Age-1-to-Age-2 strategy sweep with one worker thread per strategy. */
 
+import { Worker } from "node:worker_threads";
 import { GameSimulation, createInitialState } from "./simulation.js";
-import { formatExpoNumber } from "./simFormat.js";
+import { createSaveData } from "../src/game/saveSystem.js";
 import {
-  CheapestStrategy,
-  BalancedStrategy,
-  ProductionStrategy,
-  MilitaryStrategy,
-  FastAgeStrategy,
-  EconomyStrategy,
-  ResearchStrategy,
-  PlayerStrategy,
-  SpeedrunStrategy,
-  TradeStrategy,
+  ADAPTIVE_WORKER_FUNDING_ENABLED,
+  ADAPTIVE_WORKER_FUNDING_STRATEGIES,
+  getStrategy,
 } from "./strategies.js";
 
-const MAX_TIME = 7200; // 2 hours
+const maxTimeArgument = process.argv.find((argument) =>
+  argument.startsWith("--max-time="),
+);
+const MAX_TIME = Number(maxTimeArgument?.slice("--max-time=".length) ?? 18000);
 const OBJECTIVE = { type: "ageReach", ageId: "age2" };
-
-const strategies = [
-  new CheapestStrategy(),
-  new BalancedStrategy(),
-  new ProductionStrategy(),
-  new MilitaryStrategy(),
-  new FastAgeStrategy(),
-  new EconomyStrategy(),
-  new ResearchStrategy(),
-  new PlayerStrategy(),
-  new SpeedrunStrategy(),
-  new TradeStrategy(),
+const strategyNames = [
+  "cheapest",
+  "balanced",
+  "production",
+  "military",
+  "fast-age",
+  "economy",
+  "research",
+  "player",
+  "speedrun",
+  "trader",
 ];
+
+if (!Number.isFinite(MAX_TIME) || MAX_TIME <= 0) {
+  throw new Error("--max-time must be a positive number of seconds");
+}
 
 function formatGameTime(seconds) {
   const total = Math.floor(seconds);
@@ -47,71 +45,61 @@ function formatGameTime(seconds) {
   return `${secs}s`;
 }
 
-function runStrategy(strategy, initialState) {
-  const config = {
-    objective: OBJECTIVE,
-    gatherClicksPerAction: 10,
-    actionsPerSecond: 5,
-    maxGameTime: MAX_TIME,
-    recordSnapshots: true,
-    snapshotIntervalSeconds: 60,
-    verbose: false,
-    fromScratch: false,
-  };
-
-  console.log(`Running strategy: ${strategy.name}...`);
-  const startTime = Date.now();
-
-  const simulation = new GameSimulation(initialState, strategy, config);
-  const result = simulation.run();
-
-  const endTime = Date.now();
-
-  const battleEvents = result.events.filter((e) => e.type === "battle");
-
-  const battleTimesFromSnapshots = [];
-  let lastBattleCount = 0;
-  for (const snapshot of result.snapshots) {
-    if (snapshot.battlesWon > lastBattleCount) {
-      const newBattles = snapshot.battlesWon - lastBattleCount;
-      for (let i = 0; i < newBattles; i++) {
-        battleTimesFromSnapshots.push({
-          timestamp: snapshot.timestamp,
-          battleCount: lastBattleCount + i + 1,
-        });
-      }
-      lastBattleCount = snapshot.battlesWon;
+const workerExecArgv = () => {
+  const args = [];
+  for (let index = 0; index < process.execArgv.length; index += 1) {
+    const argument = process.execArgv[index];
+    if (argument === "--eval" || argument === "-e") {
+      index += 1;
+      continue;
     }
+    if (argument.startsWith("--eval=")) continue;
+    args.push(argument);
   }
+  return args;
+};
 
-  const battleTimes = result.finalState.defeatedEncounters.map(
-    (encounterId, index) => {
-      const event = battleEvents.find((e) => e.id === encounterId);
-      const snapshotTime = battleTimesFromSnapshots[index]?.timestamp;
-      return {
-        id: encounterId,
-        time: event ? event.time : snapshotTime || null,
-      };
-    },
-  );
+const runStrategyWorker = (strategyName, initialStateData) =>
+  new Promise((resolve, reject) => {
+    const worker = new Worker(
+      new URL("./age2-benchmark-worker.mjs", import.meta.url),
+      {
+        workerData: {
+          strategyName,
+          initialStateData,
+          maxTime: MAX_TIME,
+          adaptiveWorkerFundingEnabled: ADAPTIVE_WORKER_FUNDING_ENABLED,
+          adaptiveWorkerFundingStrategies: [
+            ...ADAPTIVE_WORKER_FUNDING_STRATEGIES,
+          ],
+        },
+        execArgv: workerExecArgv(),
+      },
+    );
+    let result;
+    worker.on("message", (message) => {
+      result = message;
+    });
+    worker.on("error", reject);
+    worker.on("exit", (code) => {
+      if (code !== 0) {
+        reject(new Error(`${strategyName} worker exited with code ${code}`));
+      } else if (!result) {
+        reject(new Error(`${strategyName} worker exited without a result`));
+      } else {
+        resolve(result);
+      }
+    });
+  });
 
-  return {
-    strategyName: strategy.name,
-    result,
-    battleTimes,
-    runTime: endTime - startTime,
-  };
-}
-
-function main() {
+async function main() {
   console.log("=== Running all 10 strategies from age1 to age2 ===");
   console.log(`Objective: Reach age2`);
-  console.log(`Max time: ${MAX_TIME}s (${formatGameTime(MAX_TIME)}) - 2 hours`);
+  console.log(`Max time: ${MAX_TIME}s (${formatGameTime(MAX_TIME)})`);
   console.log("");
 
   // Create age1 starting state
   console.log("Creating age1 starting state using balanced strategy...");
-  const balancedStrategy = new BalancedStrategy();
   const age1Config = {
     objective: { type: "ageReach", ageId: "age1" },
     gatherClicksPerAction: 10,
@@ -124,22 +112,24 @@ function main() {
   const initialState = createInitialState();
   const age1Sim = new GameSimulation(
     initialState,
-    balancedStrategy,
+    getStrategy("balanced"),
     age1Config,
   );
   const age1Result = age1Sim.run();
   console.log(`Age1 state created at ${age1Result.gameTime}s`);
   console.log("");
 
-  const results = [];
-
-  for (const strategy of strategies) {
-    const runResult = runStrategy(strategy, age1Result.finalState);
-    if (runResult) {
-      results.push(runResult);
-    }
-    console.log("");
-  }
+  const initialStateData = createSaveData(
+    age1Result.finalState,
+    "age2-benchmark",
+    0,
+  );
+  console.log(`Starting ${strategyNames.length} strategy workers...`);
+  const results = await Promise.all(
+    strategyNames.map((strategyName) =>
+      runStrategyWorker(strategyName, initialStateData),
+    ),
+  );
 
   console.log("\n=== RESULTS SUMMARY ===\n");
 
@@ -152,20 +142,12 @@ function main() {
     );
     console.log(`  Real Time: ${(runTime / 1000).toFixed(2)}s`);
     console.log(`  Termination: ${result.terminationReason}`);
-    console.log(
-      `  Final Age: ${result.finalState.getCurrentAge()?.key || "unknown"}`,
-    );
-    console.log(
-      `  Final Population: ${formatExpoNumber(result.finalState.population)}`,
-    );
-    console.log(
-      `  Battles Won: ${result.finalState.defeatedEncounters.length}`,
-    );
-    console.log(
-      `  Upgrades Bought: ${result.finalState.boughtUpgrades.length}`,
-    );
-    const wonderUpgrade = result.finalState.boughtUpgrades.find((u) =>
-      u.includes("wonder"),
+    console.log(`  Final Age: ${result.finalAge}`);
+    console.log(`  Final Population: ${result.population}`);
+    console.log(`  Battles Won: ${result.battlesWon}`);
+    console.log(`  Upgrades Bought: ${result.upgradesBought}`);
+    const wonderUpgrade = result.boughtUpgrades.find((upgrade) =>
+      upgrade.includes("wonder"),
     );
     console.log(
       `  Great Monument (5000 pop): ${wonderUpgrade ? "BOUGHT" : "NOT BOUGHT"}`,
@@ -195,7 +177,7 @@ function main() {
 
   for (const { strategyName, result } of results) {
     console.log(
-      `${strategyName.padEnd(9)} | ${String(result.gameTime).padEnd(10)} | ${String(result.objectiveReached).padEnd(7)} | ${result.finalState.defeatedEncounters.length}`,
+      `${strategyName.padEnd(9)} | ${String(result.gameTime).padEnd(10)} | ${String(result.objectiveReached).padEnd(7)} | ${result.battlesWon}`,
     );
   }
 }
