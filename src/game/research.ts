@@ -1,6 +1,7 @@
 import researchData from "./data/research.json";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
+import { findFormationDefinition } from "./formations";
 import { buildingDefinitions } from "./buildings";
 import { parseBonusType, type Bonus } from "./bonus";
 import { findAttributeDefinition } from "./attributes";
@@ -39,6 +40,7 @@ export class ResearchDefinition extends GameObject {
   readonly prerequisites: readonly string[];
   readonly bonuses: Bonus[];
   readonly unlocks: readonly string[];
+  readonly unlocksFormations: readonly string[];
   readonly conversions: readonly UnitConversion[];
   readonly ignored: readonly {
     readonly type: string;
@@ -56,6 +58,7 @@ export class ResearchDefinition extends GameObject {
     prerequisites: readonly string[],
     bonuses: Bonus[],
     unlocks: readonly string[],
+    unlocksFormations: readonly string[],
     conversions: readonly UnitConversion[],
     ignored: readonly {
       readonly type: string;
@@ -72,6 +75,7 @@ export class ResearchDefinition extends GameObject {
     this.prerequisites = prerequisites;
     this.bonuses = bonuses;
     this.unlocks = unlocks;
+    this.unlocksFormations = unlocksFormations;
     this.conversions = conversions;
     this.ignored = ignored;
   }
@@ -86,6 +90,7 @@ type ResearchData = {
   prerequisites: string[];
   bonuses: { type: string; destination: string; value: number | string }[];
   unlocks?: string[];
+  unlocksFormations?: string[];
   conversions?: { from: string; to: string; ratio?: number }[];
   ignored?: {
     type: string;
@@ -112,6 +117,7 @@ const toResearchDefinition = (data: ResearchData): ResearchDefinition =>
       value: ExpNumber.from(value),
     })),
     [...(data.unlocks ?? [])],
+    [...(data.unlocksFormations ?? [])],
     (data.conversions ?? []).map(({ from, to, ratio }) => ({
       from,
       to,
@@ -230,6 +236,14 @@ for (const research of researchDefinitions) {
     if (!findUnitDefinition(unitId)) {
       throw new Error(
         `Unknown research unit unlock: ${research.key} → ${unitId}`,
+      );
+    }
+  }
+  for (const formationId of research.unlocksFormations) {
+    const formation = findFormationDefinition(formationId);
+    if (!formation || formation.researchId !== research.key) {
+      throw new Error(
+        `Mismatched research formation unlock: ${research.key} → ${formationId}`,
       );
     }
   }

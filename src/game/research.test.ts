@@ -25,6 +25,7 @@ import {
 import { isBuyableUnit, unitDefinitions } from "./units";
 import { UpgradeDefinition, upgradeDefinitions } from "./upgrades";
 import { parseBonus } from "./bonus";
+import { formationDefinitions, type FormationId } from "./formations";
 
 /**
  * An age0 state with a pool of science to buy research with. Research is priced
@@ -86,6 +87,20 @@ describe("age progression", () => {
     expect(belowTarget.getAgeBuildingProgress()).toEqual([1499, 1500]);
     expect(belowTarget.canEnterAge("age0")).toBe(false);
     expect(atTarget.canEnterAge("age0")).toBe(true);
+  });
+
+  it("zeros age-0 units when entering age 2 so they leave later armies", () => {
+    const state = stateWith(
+      0,
+      ["age0"],
+      { warrior: ExpNumber.fromNumber(8) },
+    );
+
+    const entered = state.enterAge("age1");
+
+    expect(entered.unitCounts.warrior?.eq(ExpNumber.ZERO)).toBe(true);
+    expect(entered.getArmyStacks().some(({ unitId }) => unitId === "warrior"))
+      .toBe(false);
   });
 });
 
@@ -660,6 +675,47 @@ describe("research unlocks units", () => {
   });
 });
 
+describe("research formation unlocks", () => {
+  it("mirrors each research formation unlock in the formation definition", () => {
+    for (const research of researchDefinitions) {
+      for (const formationId of research.unlocksFormations) {
+        expect(
+          formationDefinitions.find(({ id }) => id === formationId)?.researchId,
+        ).toBe(research.key);
+      }
+    }
+    for (const formation of formationDefinitions) {
+      if (formation.unlockType === "research") {
+        expect(
+          researchDefinitions.find(({ key }) => key === formation.researchId)
+            ?.unlocksFormations,
+        ).toContain(formation.id);
+      }
+    }
+  });
+
+  it("makes a research-gated formation selectable only after purchase", () => {
+    const formation = formationDefinitions.find(
+      ({ unlockType }) => unlockType === "research",
+    );
+    expect(formation).toBeDefined();
+    if (!formation || !formation.researchId) return;
+
+    const ageIndex = formation.unlockAge;
+    const enteredAges = ageDefinitions
+      .slice(0, ageIndex + 1)
+      .map(({ key }) => key);
+    const state = stateWith(1e30, enteredAges);
+    const formationId = formation.id as FormationId;
+    expect(state.isFormationUnlocked(formationId)).toBe(false);
+
+    const bought = buyPrerequisiteClosure(state, formation.researchId).buyResearch(
+      formation.researchId,
+    );
+    expect(bought.isFormationUnlocked(formationId)).toBe(true);
+  });
+});
+
 describe("research unit conversions", () => {
   const conversion = researchDefinitions.find(
     (research) => research.conversions.length > 0,
@@ -685,9 +741,9 @@ describe("research unit conversions", () => {
     expect(state.isUnitAvailable(to)).toBe(true);
   });
 
-  it("converts owned units at the ratio, keeping the remainder", () => {
+  it("converts owned units at the ratio and zeros the source unit count", () => {
     const counts = buyAt(1e30, { [from]: ExpNumber.fromNumber(25) }).unitCounts;
-    expect(counts[from].toNumber()).toBe(25 % ratio);
+    expect(counts[from].toNumber()).toBe(0);
     expect(counts[to].toNumber()).toBe(Math.floor(25 / ratio));
   });
 

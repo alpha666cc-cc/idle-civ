@@ -11,7 +11,7 @@ import {
 import { ageDefinitions, findAgeDefinition, type AgeDefinition } from "./ages";
 import {
   DEFAULT_FORMATION,
-  formationsForAge,
+  formationsForUnlocks,
   type FormationId,
 } from "./formations";
 import {
@@ -885,15 +885,15 @@ export class CivilizationState {
     for (const { resource, base } of researchCost) {
       resources[resource] = resources[resource].sub(base);
     }
-    // Apply the tech's unit conversions: every `ratio` owned units of `from`
-    // become one unit of `to`; the remainder stays on the (now closed) line.
+    // Apply the tech's unit conversions: convert whole groups, then retire the
+    // source line, including any remainder that cannot form a full group.
     let unitCounts = this.unitCounts;
     for (const { from, to, ratio } of research?.conversions ?? []) {
       const owned = unitCounts[from] ?? ExpNumber.ZERO;
       const converted = owned.div(ExpNumber.fromNumber(ratio)).floor();
       if (converted.lte(ExpNumber.ZERO)) continue;
       if (unitCounts === this.unitCounts) unitCounts = { ...this.unitCounts };
-      unitCounts[from] = owned.sub(converted.mul(ExpNumber.fromNumber(ratio)));
+      unitCounts[from] = ExpNumber.ZERO;
       unitCounts[to] = (unitCounts[to] ?? ExpNumber.ZERO).add(converted);
     }
     return this.withState(
@@ -2558,7 +2558,7 @@ export class CivilizationState {
     const ageIndex = currentAge
       ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
       : 0;
-    return formationsForAge(ageIndex);
+    return formationsForUnlocks(ageIndex < 0 ? 0 : ageIndex, this.boughtResearch);
   }
 
   /** Whether a formation is unlocked for the current age. */
@@ -3355,9 +3355,10 @@ export class CivilizationState {
     const age = findAgeDefinition(ageId);
     if (!age) return this;
 
-    // Retire units from N-2 age (units from two ages ago)
+    // `ageId` is the age being completed; the destination is the next age.
+    // Retire units from two ages before that destination.
     const currentAgeIndex = ageDefinitions.findIndex((a) => a.key === ageId);
-    const retireAgeIndex = currentAgeIndex - 2;
+    const retireAgeIndex = currentAgeIndex - 1;
     let wasted = ExpNumber.ZERO;
     const newUnitCounts = { ...this.unitCounts };
 
@@ -3372,7 +3373,7 @@ export class CivilizationState {
             ExpNumber.ZERO,
           );
           wasted = wasted.add(totalCost);
-          delete newUnitCounts[unitId];
+          newUnitCounts[unitId] = ExpNumber.ZERO;
         }
       }
     }

@@ -309,6 +309,10 @@ const canAttackDomain = (attacker: Fighter, target: Fighter): boolean =>
 /** Contextual damage multipliers, kept identical to the prototype's rules. */
 const matchupMultiplier = (attacker: Fighter, target: Fighter): number => {
   let multiplier = 1;
+  if (attacker.formation === "pike_square") {
+    if (target.tags.includes("cavalry")) multiplier *= 1.5;
+    if (target.tags.includes("ranged")) multiplier *= 0.8;
+  }
   if (attacker.bonusVs.some((tag) => target.tags.includes(tag))) {
     multiplier *= bonusVsMultiplier;
   }

@@ -1402,6 +1402,7 @@
       }
     ],
     "unlocks": ["hoplite"],
+    "unlocksFormations": [],
     "ignored": []
   },
   {
@@ -1420,6 +1421,7 @@
       }
     ],
     "unlocks": ["companion"],
+    "unlocksFormations": ["rush"],
     "conversions": [
       {
         "from": "cavalry_iron",
@@ -1651,6 +1653,7 @@
       }
     ],
     "unlocks": [],
+    "unlocksFormations": ["turtle"],
     "ignored": []
   },
   {
@@ -2091,6 +2094,7 @@
       }
     ],
     "unlocks": ["caravel"],
+    "unlocksFormations": ["skirmish"],
     "ignored": []
   },
   {
@@ -2451,6 +2455,7 @@
       }
     ],
     "unlocks": ["pikeman_ren"],
+    "unlocksFormations": ["shield_wall", "pike_square"],
     "ignored": []
   },
   {

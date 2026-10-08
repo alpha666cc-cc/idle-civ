@@ -90,12 +90,19 @@ export type FormationDefinition = FormationDefinition_;
  * Get formations available at a given age (entry unlocks only).
  * Research-unlocked formations are not included here.
  */
-export const formationsForAge = (ageIndex: number): readonly FormationId[] => {
-  if (ageIndex < 2) return ["standard"];
-  return formationDefinitions
-    .filter((f) => f.unlockType === "age_entry" && f.unlockAge <= ageIndex)
-    .map((f) => f.id as FormationId);
-};
+export const formationsForUnlocks = (
+  ageIndex: number,
+  boughtResearch: readonly string[],
+): readonly FormationId[] =>
+  formationDefinitions
+    .filter(
+      (formation) =>
+        formation.unlockAge <= ageIndex &&
+        (formation.unlockType === "age_entry" ||
+          (formation.researchId !== undefined &&
+            boughtResearch.includes(formation.researchId))),
+    )
+    .map((formation) => formation.id as FormationId);
 
 /**
  * Default formation for a unit type when none is set.

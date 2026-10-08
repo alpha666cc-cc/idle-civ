@@ -113,21 +113,12 @@
   {
     "id": "pike_square",
     "name": "Pike Square",
-    "description": "Anti-cavalry: bonus vs cavalry, penalty vs ranged.",
+    "description": "A dense pike formation that holds against cavalry charges but is vulnerable to ranged fire.",
     "unlockAge": 4,
     "unlockType": "research",
-    "researchId": "pike_square_tactics",
+    "researchId": "tercio_formations",
     "positionOffset": 0,
     "movementSpeed": 0.7,
-    "statBonuses": [
-      {
-        "attribute": "tag.cavalry.attack",
-        "multiplier": 1.5
-      },
-      {
-        "attribute": "tag.ranged.attack",
-        "multiplier": 0.8
-      }
-    ]
+    "statBonuses": []
   }
 ]
