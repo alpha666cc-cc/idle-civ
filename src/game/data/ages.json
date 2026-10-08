@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "guid": "3e82e183-2793-5632-991f-91ef0fbcd131",
     "key": "age0",
@@ -37,12 +37,37 @@
       {
         "type": "attributeMultiplier",
         "destination": "townHallCapacity",
-        "value": "2"
+        "value": "10"
       },
       {
         "type": "attributeMultiplier",
         "destination": "buildingPower",
         "value": 1.5
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "townHall",
+        "value": "2"
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "barracks",
+        "value": "2"
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "university",
+        "value": "2"
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "smithy",
+        "value": "2"
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "market",
+        "value": "2"
       }
     ]
   },

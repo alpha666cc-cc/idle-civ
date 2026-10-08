@@ -339,6 +339,10 @@
       "resourceProduction": {
         "resource": "trade",
         "amount": 1
+      },
+      "additiveMultiplier": {
+        "resource": "trade",
+        "perBuilding": 0.05
       }
     },
     "unlock": {

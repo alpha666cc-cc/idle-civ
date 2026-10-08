@@ -2833,5 +2833,89 @@
         "value": 0.95
       }
     ]
+  },
+  {
+    "guid": "ff7fce88-4ac1-54a3-b86d-da6bbf363d47",
+    "key": "wonder_a2_military",
+    "name": "The Immortal Legion",
+    "description": "A legendary host and its arsenal multiply military production a thousandfold.",
+    "building": "barracks",
+    "threshold": 10000,
+    "tier": 0,
+    "costs": [
+      { "resource": "wood", "base": "1e50", "factor": 1 },
+      { "resource": "stone", "base": "1e50", "factor": 1 },
+      { "resource": "military", "base": "1e40", "factor": 1 }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": 1000
+      }
+    ]
+  },
+  {
+    "guid": "e786cabf-e84d-5a21-87fd-8d26fd78187c",
+    "key": "wonder_a2_science",
+    "name": "The Great Library of Alexandria",
+    "description": "A vast center of learning multiplies science production a thousandfold.",
+    "building": "university",
+    "threshold": 10000,
+    "tier": 0,
+    "costs": [
+      { "resource": "wood", "base": "1e50", "factor": 1 },
+      { "resource": "stone", "base": "1e50", "factor": 1 },
+      { "resource": "science", "base": "1e40", "factor": 1 }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 1000
+      }
+    ]
+  },
+  {
+    "guid": "43c564ee-5074-5096-a547-f47a81995391",
+    "key": "wonder_a2_trade",
+    "name": "The Thousand-Sail Harbor",
+    "description": "A great harbor sends trade power coursing through the settlement a thousand times faster.",
+    "building": "market",
+    "threshold": 10000,
+    "tier": 0,
+    "costs": [
+      { "resource": "wood", "base": "1e50", "factor": 1 },
+      { "resource": "stone", "base": "1e50", "factor": 1 },
+      { "resource": "trade", "base": "1e40", "factor": 1 }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": 1000
+      }
+    ]
+  },
+  {
+    "guid": "adb9655b-0234-5e64-954d-b439c101b4b4",
+    "key": "wonder_a2_metalwork",
+    "name": "The Colossus Foundry",
+    "description": "A monumental forge multiplies metalwork production a thousandfold.",
+    "building": "smithy",
+    "threshold": 10000,
+    "tier": 0,
+    "costs": [
+      { "resource": "wood", "base": "1e50", "factor": 1 },
+      { "resource": "stone", "base": "1e50", "factor": 1 },
+      { "resource": "metalwork", "base": "1e40", "factor": 1 }
+    ],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 1000
+      }
+    ]
   }
 ]

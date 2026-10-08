@@ -1094,18 +1094,16 @@
       {
         "type": "attributeMultiplier",
         "destination": "houseCapacity",
-        "value": "100"
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "food",
+        "value": "10"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "production_multiplier",
-        "target": "house",
-        "value": "small",
-        "reason": "capacity-adjacent "
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "972a8869-fe18-55d8-ab36-38953cae1005",
@@ -1119,7 +1117,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "allProduction",
-        "value": "3"
+        "value": "5"
       },
       {
         "type": "costReductionPercent",
@@ -1151,14 +1149,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "worker_efficiency",
-        "target": "all",
-        "value": "small",
-        "reason": "no per-worker efficiency attribute"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "a558f260-76de-55d7-872b-20cdab62d8ed",
@@ -1172,7 +1163,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "science",
-        "value": "100"
+        "value": "10"
       },
       {
         "type": "costReductionPercent",
@@ -1287,7 +1278,7 @@
       {
         "type": "costReductionPercent",
         "destination": "allBuildings",
-        "value": "0.5"
+        "value": "0.75"
       },
       {
         "type": "attributeMultiplier",
@@ -1310,18 +1301,21 @@
       {
         "type": "attributeMultiplier",
         "destination": "gold",
-        "value": "2"
+        "value": "10"
+      },
+      {
+        "type": "attributeFlat",
+        "destination": "tradeRoutes",
+        "value": "1"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": "10"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "resource_capacity",
-        "target": "gold",
-        "value": "large",
-        "reason": "no resource storage cap"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "cec4b87c-e59d-5fc2-8aef-3a0f3209629c",
@@ -1334,63 +1328,13 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "peopleCapacity",
-        "value": "2"
+        "destination": "trade",
+        "value": "20"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "houseCapacity",
-        "value": "2"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "farmCapacity",
-        "value": "2"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "lumberYardCapacity",
-        "value": "2"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "quarryCapacity",
-        "value": "2"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "goldMineCapacity",
-        "value": "2"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "townHallCapacity",
-        "value": "2"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "barracksCapacity",
-        "value": "2"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "universityCapacity",
-        "value": "2"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "smithyCapacity",
-        "value": "2"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "marketCapacity",
-        "value": "2"
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "allProduction",
-        "value": "2"
+        "destination": "metalwork",
+        "value": "20"
       }
     ],
     "unlocks": [],
@@ -1408,18 +1352,11 @@
       {
         "type": "attributeMultiplier",
         "destination": "science",
-        "value": "2"
+        "value": "20"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "research_speed",
-        "target": "all",
-        "value": "small",
-        "reason": "research purchase is instant; no speed mechanic"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "ddc071bd-1415-5a6a-a738-d7ca6e99200a",
@@ -1433,7 +1370,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.infantry.hp",
-        "value": "1.25"
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": "10"
       }
     ],
     "unlocks": ["legionary"],
@@ -1451,7 +1393,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.infantry.hp",
-        "value": "1.25"
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": "10"
       }
     ],
     "unlocks": ["hoplite"],
@@ -1469,10 +1416,17 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.armored.attack",
-        "value": "1.25"
+        "value": "2"
       }
     ],
     "unlocks": ["companion"],
+    "conversions": [
+      {
+        "from": "cavalry_iron",
+        "to": "companion",
+        "ratio": 3
+      }
+    ],
     "ignored": []
   },
   {
@@ -1487,7 +1441,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.ranged.attack",
-        "value": "1.25"
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": "10"
       }
     ],
     "unlocks": ["archer_classical"],
@@ -1505,16 +1464,20 @@
       "naval_ramming",
       "recurve_archery"
     ],
-    "bonuses": [],
-    "unlocks": ["onager"],
-    "ignored": [
+    "bonuses": [
       {
-        "type": "special_ability",
-        "target": "hit_naval",
-        "value": "large",
-        "reason": "no such mechanic"
+        "type": "attributeMultiplier",
+        "destination": "tag.siege.attack",
+        "value": "2"
+      },
+      {
+        "type": "attributeFlat",
+        "destination": "tag.siege.range",
+        "value": "2"
       }
-    ]
+    ],
+    "unlocks": ["onager"],
+    "ignored": []
   },
   {
     "guid": "9b9b21aa-1f56-54d9-8503-4a683b882a0c",
@@ -1528,7 +1491,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.naval.attack",
-        "value": "1.25"
+        "value": "2"
       }
     ],
     "unlocks": ["fire_ship"],
@@ -1568,7 +1531,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.naval.attack",
-        "value": "1.25"
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": "100"
       }
     ],
     "unlocks": ["trader_classical"],
@@ -1590,12 +1558,17 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.infantry.hp",
-        "value": "1.25"
+        "value": "2"
       },
       {
         "type": "costReductionPercent",
         "destination": "allUnits",
-        "value": "0.5"
+        "value": "0.75"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": "10"
       }
     ],
     "unlocks": [],
@@ -1658,13 +1631,23 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "unitAll.attack",
-        "value": "1.25"
+        "destination": "tag.infantry.attack",
+        "value": "2"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.cavalry.attack",
+        "value": "2"
       },
       {
         "type": "costReductionPercent",
         "destination": "allUnits",
-        "value": "0.5"
+        "value": "0.75"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": "10"
       }
     ],
     "unlocks": [],
@@ -1776,7 +1759,7 @@
       {
         "type": "costReductionPercent",
         "destination": "allBuildings",
-        "value": "0.5"
+        "value": "0.9"
       },
       {
         "type": "attributeMultiplier",

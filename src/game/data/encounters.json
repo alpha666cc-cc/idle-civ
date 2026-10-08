@@ -342,6 +342,16 @@
         "type": "attributeMultiplier",
         "destination": "military",
         "value": 5
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "townHallCapacity",
+        "value": 5
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": 10
       }
     ],
     "unlocks": []
@@ -363,6 +373,18 @@
         "formation": "frontline"
       },
       {
+        "unitId": "onager",
+        "count": 10000,
+        "label": "10k onagers",
+        "formation": "backline"
+      },
+      {
+        "unitId": "archer_classical",
+        "count": 500000,
+        "label": "500k archers",
+        "formation": "backline"
+      },
+      {
         "unitId": "elephant_iron",
         "count": 4000,
         "label": "4000 elephants",
@@ -379,6 +401,16 @@
         "type": "attributeMultiplier",
         "destination": "military",
         "value": 5
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 10
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 10
       }
     ],
     "unlocks": []
@@ -412,6 +444,12 @@
         "formation": "frontline"
       },
       {
+        "unitId": "archer_classical",
+        "count": 1000000,
+        "label": "1M archers",
+        "formation": "backline"
+      },
+      {
         "unitId": "trader_classical",
         "count": 300000,
         "label": "300k trade galleys"
@@ -420,18 +458,8 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "military",
-        "value": 1.1
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "unitAll.hp",
-        "value": 1.05
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "unitAll.attack",
-        "value": 1.05
+        "destination": "food",
+        "value": 1000
       }
     ],
     "unlocks": []
