@@ -277,7 +277,6 @@ const playerAge1ResearchOrder = [
   "ram_hulls",
   "iron_mining",
   "iron_working",
-  "howdah_mounting",
   "iron_forging",
   "iron_chariotry",
   "heavy_oar_arrays",
@@ -288,6 +287,7 @@ const playerAge1ResearchOrder = [
   "metallurgy_prep",
   "engineered_siegecraft",
   "coastal_forts",
+  "howdah_mounting",
   "berserker_warbands",
 ] as const;
 
