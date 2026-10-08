@@ -46,8 +46,8 @@
     "enemyArmy": [
       {
         "unitId": "wolf",
-        "count": 43,
-        "label": "43 wolves"
+        "count": 35,
+        "label": "35 wolves"
       },
       {
         "unitId": "bear",
@@ -199,7 +199,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "military",
-        "value": 2
+        "value": 3
       },
       {
         "type": "attributeMultiplier",
@@ -244,7 +244,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "trade",
-        "value": 2
+        "value": 3
       },
       {
         "type": "attributeMultiplier",
@@ -321,8 +321,8 @@
     "enemyArmy": [
       {
         "unitId": "archer_classical",
-        "count": 150000,
-        "label": "150k archers",
+        "count": 100000,
+        "label": "100k archers",
         "formation": "backline"
       },
       {
@@ -333,8 +333,8 @@
       },
       {
         "unitId": "trader_classical",
-        "count": 50000,
-        "label": "50k trade galleys"
+        "count": 10000,
+        "label": "10k trade galleys"
       }
     ],
     "bonuses": [

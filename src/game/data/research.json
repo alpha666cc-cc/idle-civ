@@ -573,7 +573,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "trade",
-        "value": "100"
+        "value": "20"
       },
       {
         "type": "attributeMultiplier",
@@ -601,7 +601,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "science",
-        "value": "100"
+        "value": "10"
       },
       {
         "type": "attributeMultiplier",
@@ -820,12 +820,12 @@
       {
         "from": "spearman_bronze",
         "to": "spearman_iron",
-        "ratio": 10
+        "ratio": 3
       },
       {
         "from": "warrior",
         "to": "spearman_iron",
-        "ratio": 10
+        "ratio": 3
       }
     ],
     "ignored": []
@@ -850,7 +850,7 @@
       {
         "from": "axeman_bronze",
         "to": "swordsman_iron",
-        "ratio": 10
+        "ratio": 3
       }
     ],
     "ignored": []
@@ -868,6 +868,11 @@
         "type": "attributeMultiplier",
         "destination": "tag.armored.attack",
         "value": "1.5"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": "3"
       }
     ],
     "unlocks": ["chariot_iron"],
@@ -875,7 +880,7 @@
       {
         "from": "chariot_bronze",
         "to": "chariot_iron",
-        "ratio": 10
+        "ratio": 3
       }
     ],
     "ignored": []
@@ -1026,6 +1031,11 @@
         "type": "costReductionPercent",
         "destination": "tag.cavalry",
         "value": "0.75"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": "3"
       }
     ],
     "unlocks": [],
@@ -1969,7 +1979,7 @@
       {
         "from": "archer_classical",
         "to": "longbow",
-        "ratio": 10
+        "ratio": 3
       }
     ],
     "ignored": []
@@ -2437,7 +2447,7 @@
       {
         "from": "crossbow",
         "to": "musketeer",
-        "ratio": 10
+        "ratio": 2
       }
     ],
     "ignored": []
@@ -3518,7 +3528,7 @@
       {
         "from": "ww2_infantry",
         "to": "soldier_modern",
-        "ratio": 10
+        "ratio": 2
       }
     ],
     "ignored": []
