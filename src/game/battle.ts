@@ -20,11 +20,11 @@ import {
 /**
  * The battle model (AGENTS.md §14, roadmap Milestone 8).
  *
- * A round is one second of playback: every stack that can reach an enemy fires
- * once, in speed order, and then the lines close. Casualties are tracked as an
- * aggregate hit point pool per stack — never one object per unit — so a stack of
- * a million spearmen costs exactly as much to simulate as a stack of one, and a
- * battle always finishes in bounded time.
+ * A round is one second of playback: both armies advance one position, then
+ * every stack that can reach an enemy fires once in speed order. Casualties are
+ * tracked as an aggregate hit point pool per stack — never one object per unit —
+ * so a million spearmen cost exactly as much to simulate as a stack of one, and
+ * a battle always finishes in bounded time.
  *
  * The simulation is pure and deterministic: damage has no random component, so
  * the same armies always produce the same battle, however many times it is
@@ -64,17 +64,46 @@ export type BattleSide = "player" | "enemy";
 
 export type StackSnapshot = {
   readonly unitId: string;
+  readonly side: BattleSide;
   /** Units still standing, rounded up so a wounded unit is still a unit. */
   readonly count: ExpNumber;
   readonly hpPool: ExpNumber;
+  readonly position: number;
+};
+
+export type BattleAttackLog = {
+  readonly attackerSide: BattleSide;
+  readonly attackerId: string;
+  readonly targetSide: BattleSide;
+  readonly targetId: string;
+  readonly attackerPosition: number;
+  readonly targetPosition: number;
+  readonly reachableTargets: readonly string[];
+  readonly reachableTargetSide: BattleSide;
+  readonly attackerCountBefore: ExpNumber;
+  readonly attackerCountAfter: ExpNumber;
+  readonly attackerAliveBefore: ExpNumber;
+  readonly attackerAliveAfter: ExpNumber;
+  readonly targetAliveBefore: ExpNumber;
+  readonly targetAliveAfter: ExpNumber;
+  readonly intendedDamage: ExpNumber;
+  readonly targetDamage: ExpNumber;
+  readonly screening: readonly {
+    readonly side: BattleSide;
+    readonly unitId: string;
+    readonly damage: ExpNumber;
+    readonly aliveBefore: ExpNumber;
+    readonly aliveAfter: ExpNumber;
+  }[];
 };
 
 export type BattleRound = {
   readonly round: number;
-  /** Closing distance at the start of the round; range gates who may fire. */
+  /** Distance between the armies' front lines at the start of the round. */
   readonly distance: number;
   readonly player: readonly StackSnapshot[];
   readonly enemy: readonly StackSnapshot[];
+  readonly attacks: readonly BattleAttackLog[];
 };
 
 export type BattleOutcome = "player" | "enemy" | "stalemate";
@@ -86,8 +115,6 @@ export type BattleSimulation = {
   readonly enemySurvivors: ExpNumber;
 };
 
-/** Armies deploy this far apart; the lines close a little every round. */
-export const initialDistance = 20;
 /** A battle that has not resolved by then is a stalemate (counted as a loss). */
 export const maximumRounds = 101;
 /** Bonus damage against a tagged target (`bonusVs`), as in the prototype. */
@@ -151,20 +178,6 @@ const applyFormationStats = (
   return newStats;
 };
 
-/**
- * Find the frontmost unit in an army (most negative position offset).
- * Used to calculate relative position offsets.
- */
-const frontmostOffset = (army: readonly Fighter[]): number => {
-  if (army.length === 0) return 0;
-  return Math.min(
-    ...army.map((f) => {
-      const formationDef = findFormationDefinition(f.formation);
-      return formationDef?.positionOffset ?? 0;
-    }),
-  );
-};
-
 type Fighter = {
   readonly unitId: string;
   readonly side: BattleSide;
@@ -182,6 +195,8 @@ type Fighter = {
   readonly order: BattleOrder;
   /** The formation this stack uses for positioning and stat trades. */
   readonly formation: FormationId;
+  /** Attack-only advance; formation position remains unchanged for targeting. */
+  attackAdvance: number;
   /** Hit points the stack started with, so screening can read its health. */
   readonly initialHpPool: ExpNumber;
 };
@@ -200,40 +215,23 @@ const livingCount = (fighter: Fighter): ExpNumber => {
  * happened to assemble the stack list — see `armySignature` for why.
  */
 
-/**
- * Calculate army movement speed as unweighted average of unit formation speeds.
- * This prevents a single fast unit from rushing the entire army.
- * Formation speed is a multiplier on the unit's actual speed stat.
- * `standard` formation has multiplier 1.0, so it uses the unit's actual speed.
- */
-const armyMovementSpeed = (fighters: readonly Fighter[]): number => {
-  if (fighters.length === 0) return 1.0;
-
-  // Use unweighted average of effective speeds
-  const effectiveSpeeds = fighters.map((f) => {
-    const formationDef = findFormationDefinition(f.formation);
-    const formationSpeed = formationDef?.movementSpeed ?? 1.0;
-    // Formation speed is a multiplier on the unit's actual speed
-    return f.stats.speed * formationSpeed;
-  });
-  return effectiveSpeeds.reduce((a, b) => a + b, 0) / effectiveSpeeds.length;
+const effectivePosition = (fighter: Fighter, armyPosition: number): number => {
+  const offset =
+    findFormationDefinition(fighter.formation)?.positionOffset ?? 0;
+  return armyPosition + (fighter.side === "player" ? -offset : offset);
 };
 
-/**
- * Calculate effective position of a unit relative to enemy.
- * Offsets are relative to own army's front line, not absolute from enemy.
- * `standard` formation has offset 0, so it returns distance unchanged.
- */
-const effectivePosition = (
-  fighter: Fighter,
-  ownArmy: readonly Fighter[],
-  distance: number,
+const armyFrontPosition = (
+  fighters: readonly Fighter[],
+  armyPosition: number,
 ): number => {
-  const formationDef = findFormationDefinition(fighter.formation);
-  const offset = formationDef?.positionOffset ?? 0;
-  const armyFront = frontmostOffset(ownArmy);
-  const relativeOffset = offset - armyFront;
-  return distance + relativeOffset;
+  const positions = fighters
+    .filter((fighter) => fighter.hpPool.gt(ExpNumber.ZERO))
+    .map((fighter) => effectivePosition(fighter, armyPosition));
+  if (positions.length === 0) return armyPosition;
+  return fighters[0].side === "player"
+    ? Math.max(...positions)
+    : Math.min(...positions);
 };
 
 const buildFighters = (
@@ -268,35 +266,45 @@ const buildFighters = (
           initialHpPool: hitPoints.mul(stack.count),
           order: stack.order ?? standardOrder,
           formation,
+          attackAdvance: 0,
         },
       ];
     });
 
-/** Range and domain rules: who is allowed to shoot whom, and from how far. */
+/** Range and domain rules use signed army positions plus mirrored formation offsets. */
 const canReach = (
   attacker: Fighter,
   target: Fighter,
-  distance: number,
-  attackerArmy: readonly Fighter[],
-  targetArmy: readonly Fighter[],
+  playerPosition: number,
+  enemyPosition: number,
+  attackAdvance = 0,
 ): boolean => {
-  if (!attacker.canHit.includes(target.domain)) return false;
+  if (!canAttackDomain(attacker, target)) return false;
 
-  const attackerPos = effectivePosition(attacker, attackerArmy, distance);
-  const targetPos = effectivePosition(target, targetArmy, distance);
-  const actualDistance = Math.abs(attackerPos - targetPos);
+  const attackerPos = effectivePosition(
+    attacker,
+    attacker.side === "player" ? playerPosition : enemyPosition,
+  );
+  const targetPos = effectivePosition(
+    target,
+    target.side === "player" ? playerPosition : enemyPosition,
+  );
+  const attackPosition =
+    attackerPos + (attacker.side === "player" ? attackAdvance : -attackAdvance);
+  const actualDistance = Math.abs(attackPosition - targetPos);
 
   if (actualDistance > attacker.stats.range) return false;
-  if (target.domain === "air" && attacker.stats.range <= 1) return false;
-  // Ground melee units cannot hit naval units unless they have sufficient range
-  if (
+  return true;
+};
+
+const canAttackDomain = (attacker: Fighter, target: Fighter): boolean =>
+  attacker.canHit.includes(target.domain) &&
+  !(target.domain === "air" && attacker.stats.range <= 1) &&
+  !(
     attacker.domain === "ground" &&
     target.domain === "naval" &&
     attacker.stats.range <= 3
-  )
-    return false;
-  return true;
-};
+  );
 
 /** Contextual damage multipliers, kept identical to the prototype's rules. */
 const matchupMultiplier = (attacker: Fighter, target: Fighter): number => {
@@ -319,11 +327,17 @@ export const armyPower = (stacks: readonly ArmyStack[]): ExpNumber =>
     ExpNumber.ZERO,
   );
 
-const snapshot = (fighters: readonly Fighter[]): StackSnapshot[] =>
+const snapshot = (
+  fighters: readonly Fighter[],
+  armyPosition: number,
+  side: BattleSide,
+): StackSnapshot[] =>
   fighters.map((fighter) => ({
     unitId: fighter.unitId,
+    side,
     count: livingCount(fighter),
     hpPool: fighter.hpPool,
+    position: effectivePosition(fighter, armyPosition),
   }));
 
 const totalLiving = (fighters: readonly Fighter[]): ExpNumber =>
@@ -412,23 +426,16 @@ const applyScreening = (
   damage: ExpNumber,
   targetAllies: readonly Fighter[],
 ): ExpNumber => {
-  const protectedTarget =
-    target.order === "protect_ranged" ||
-    target.stats.range <= 3 ||
-    // Ranged units are screened under the default order too. The only Age-0
-    // anti-naval unit is the archer, and `standard`'s weakest-first targeting
-    // deletes archers (hp 60-80) before they can shoot. `protect_ranged` is
-    // a targeting order unlock, so without this the mechanic is structurally
-    // unavailable where it is most needed.
-    (target.order === "standard" && target.stats.range >= 4);
+  const protectedTarget = target.tags.some(
+    (tag) => tag === "ranged" || tag === "siege",
+  );
   if (!protectedTarget) return damage;
   const screens = targetAllies.filter(
     (ally) =>
       ally.unitId !== target.unitId &&
       livingCount(ally).gt(ExpNumber.ZERO) &&
-      (ally.order === "protect_ranged" ||
-        // Default-order melee bodyguards its shooters, which is the whole point.
-        (ally.order === "standard" && ally.stats.range <= 3)),
+      ally.domain === "ground" &&
+      ally.tags.includes("infantry"),
   );
   if (screens.length === 0) return damage;
   const shared = damage.mul(ExpNumber.fromNumber(screeningShare));
@@ -458,6 +465,15 @@ const simulateBattleInternal = (
 ): BattleSimulation => {
   const player = buildFighters(playerStacks, "player");
   const enemy = buildFighters(enemyStacks, "enemy");
+  const maximumRange = Math.max(
+    0,
+    ...[...player, ...enemy].map((fighter) => fighter.stats.range),
+  );
+  const startingGap = Math.ceil(maximumRange) + 1;
+  const playerFrontOffset = armyFrontPosition(player, 0);
+  const enemyFrontOffset = armyFrontPosition(enemy, 0);
+  let playerPosition = -Math.floor(startingGap / 2) - playerFrontOffset;
+  let enemyPosition = Math.ceil(startingGap / 2) - enemyFrontOffset;
   // Speed decides who fires first; equal speeds keep deployment order.
   const order = [...player, ...enemy].sort(
     (a, b) => b.stats.speed - a.stats.speed,
@@ -467,61 +483,160 @@ const simulateBattleInternal = (
   if (recordRounds) {
     rounds.push({
       round: 0,
-      distance: initialDistance,
-      player: snapshot(player),
-      enemy: snapshot(enemy),
+      distance: Math.abs(
+        armyFrontPosition(enemy, enemyPosition) -
+          armyFrontPosition(player, playerPosition),
+      ),
+      player: snapshot(player, playerPosition, "player"),
+      enemy: snapshot(enemy, enemyPosition, "enemy"),
+      attacks: [],
     });
   }
 
-  let distance = initialDistance;
   let round = 0;
   while (round < maxRounds && hasLiving(player) && hasLiving(enemy)) {
     round += 1;
+    const frontGap =
+      armyFrontPosition(enemy, enemyPosition) -
+      armyFrontPosition(player, playerPosition);
+    if (frontGap > 1) {
+      playerPosition += 1;
+      enemyPosition -= 1;
+    }
+    const attacks: BattleAttackLog[] = [];
 
     for (const attacker of order) {
       const attackers = livingCount(attacker);
       if (attackers.lte(ExpNumber.ZERO)) continue;
-      const foes = (attacker.side === "player" ? enemy : player).filter(
-        (fighter) =>
-          fighter.hpPool.gt(ExpNumber.ZERO) &&
-          canReach(attacker, fighter, distance, player, enemy),
+      const enemyForces = attacker.side === "player" ? enemy : player;
+      const livingFoes = enemyForces.filter((fighter) =>
+        fighter.hpPool.gt(ExpNumber.ZERO),
       );
-      if (foes.length === 0) continue;
+      const positionOf = (fighter: Fighter): number =>
+        effectivePosition(
+          fighter,
+          fighter.side === "player" ? playerPosition : enemyPosition,
+        );
+      const attackerPosition = positionOf(attacker);
+      const foes = livingFoes.filter((fighter) =>
+        canReach(
+          attacker,
+          fighter,
+          playerPosition,
+          enemyPosition,
+          attacker.attackAdvance,
+        ),
+      );
+      if (foes.length === 0) {
+        const isInContact =
+          Math.abs(
+            armyFrontPosition(enemy, enemyPosition) -
+              armyFrontPosition(player, playerPosition),
+          ) <= 1;
+        const hasValidTarget = livingFoes.some((fighter) =>
+          canAttackDomain(attacker, fighter),
+        );
+        if (isInContact && hasValidTarget) {
+          attacker.attackAdvance += 1;
+        }
+        continue;
+      }
+      const melee = attacker.stats.range <= 1;
+      const eligible = melee
+        ? foes
+            .filter((foe) => attacker.canHit.includes(foe.domain))
+            .sort((left, right) =>
+              Math.abs(positionOf(left) - attackerPosition) -
+              Math.abs(positionOf(right) - attackerPosition),
+            )
+            .slice(0, 1)
+        : foes;
+      if (eligible.length === 0) continue;
       // The stack's order decides the target; `standard` finishes off the weakest.
-      const target = pickTargetByOrder(attacker, foes);
+      const target = pickTargetByOrder(attacker, eligible);
+      const attackerBefore = livingCount(attacker);
+      const targetBefore = livingCount(target);
+      const targetHpBefore = target.hpPool;
+      const screenBefore = new Map(
+        (attacker.side === "player" ? enemy : player).map((fighter) => [
+          fighter,
+          { hp: fighter.hpPool, count: livingCount(fighter) },
+        ]),
+      );
+      const attackerPos = attackerPosition;
+      const targetPos = positionOf(target);
+      const attackPosition =
+        attackerPos +
+        (attacker.side === "player"
+          ? attacker.attackAdvance
+          : -attacker.attackAdvance);
+      const distance = Math.abs(attackPosition - targetPos);
       const hitChance = Math.max(
         0.05,
         Math.min(
           1,
           attacker.stats.accuracy *
-            (1 - Math.min(1, distance / attacker.stats.range) * 0.3),
+            (1 - Math.min(1, distance / Math.max(1, attacker.stats.range)) * 0.3),
         ),
       );
       const targetAllies = attacker.side === "player" ? enemy : player;
       // A line that screens its allies absorbs part of the hit meant for them.
+      const intendedDamage = attackers
+        .mul(attacker.stats.attack)
+        .mul(
+          ExpNumber.fromNumber(
+            hitChance * matchupMultiplier(attacker, target),
+          ),
+        );
       const damage = applyScreening(
         target,
-        attackers
-          .mul(attacker.stats.attack)
-          .mul(
-            ExpNumber.fromNumber(
-              hitChance * matchupMultiplier(attacker, target),
-            ),
-          ),
+        intendedDamage,
         targetAllies,
       );
       target.hpPool = ExpNumber.max(ExpNumber.ZERO, target.hpPool.sub(damage));
+      attacks.push({
+        attackerSide: attacker.side,
+        attackerId: attacker.unitId,
+        targetSide: target.side,
+        targetId: target.unitId,
+        attackerPosition: attackerPos,
+        targetPosition: targetPos,
+        reachableTargets: foes.map((foe) => foe.unitId),
+        reachableTargetSide: attacker.side === "player" ? "enemy" : "player",
+        attackerCountBefore: attackerBefore,
+        attackerCountAfter: livingCount(attacker),
+        attackerAliveBefore: attackerBefore,
+        attackerAliveAfter: livingCount(attacker),
+        targetAliveBefore: targetBefore,
+        targetAliveAfter: livingCount(target),
+        intendedDamage,
+        targetDamage: ExpNumber.max(ExpNumber.ZERO, targetHpBefore.sub(target.hpPool)),
+        screening: targetAllies
+          .filter((fighter) => fighter !== target)
+          .flatMap((fighter) => {
+            const before = screenBefore.get(fighter);
+            if (!before || before.hp.eq(fighter.hpPool)) return [];
+            return [{
+              side: fighter.side,
+              unitId: fighter.unitId,
+              damage: before.hp.sub(fighter.hpPool),
+              aliveBefore: before.count,
+              aliveAfter: livingCount(fighter),
+            }];
+          }),
+      });
     }
 
-    // Use army movement speed (unweighted average of formation speeds)
-    const armySpeed = armyMovementSpeed([...player, ...enemy]);
-    distance = Math.max(1, distance - Math.max(1, Math.floor(armySpeed)));
     if (recordRounds) {
       rounds.push({
         round,
-        distance,
-        player: snapshot(player),
-        enemy: snapshot(enemy),
+        distance: Math.abs(
+          armyFrontPosition(enemy, enemyPosition) -
+            armyFrontPosition(player, playerPosition),
+        ),
+        player: snapshot(player, playerPosition, "player"),
+        enemy: snapshot(enemy, enemyPosition, "enemy"),
+        attacks,
       });
     }
   }

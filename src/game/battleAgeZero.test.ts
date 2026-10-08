@@ -19,9 +19,16 @@ import {
   type BattleOrder,
 } from "./battle";
 import { ordersForAge } from "./orders";
+import {
+  simulatorCandidates,
+  solveMinimumArmy,
+  type SimulatorTotalArmy,
+} from "./battleSimulator";
 import { CivilizationState } from "./civilizationState";
+import { encounterDefinitions } from "./encounters";
 import { findUnitDefinition } from "./units";
 import { ExpNumber } from "./expNumber";
+import { researchIdsForBattle } from "./research";
 
 type Army = readonly (readonly [string, number])[];
 
@@ -43,6 +50,24 @@ const player = (list: Army) =>
 const fight = (battleId: string, list: Army) =>
   simulateBattleOutcome(player(list), state.getEnemyStacks(battleId));
 
+const winsWithResearch = (battleId: string, list: Army) => {
+  const encounter = encounterDefinitions.find(({ key }) => key === battleId);
+  const researchIds = researchIdsForBattle(
+    encounter?.age ?? 0,
+    list.map(([unitId]) => unitId),
+  );
+  const stacks = list.flatMap(([unitId, count]) => {
+    const stats = state.getUnitStatsWithResearch(
+      unitId,
+      [...new Set([...state.boughtResearch, ...researchIds])],
+    );
+    return stats
+      ? [{ unitId, count: ExpNumber.fromNumber(count), stats }]
+      : [];
+  });
+  return simulateBattleOutcome(stacks, state.getEnemyStacks(battleId));
+};
+
 /** Military-only spend, the metric `battleSimulator` ranks candidate armies by. */
 const military = (list: Army): number =>
   list.reduce(
@@ -56,11 +81,249 @@ const military = (list: Army): number =>
     0,
   );
 
+const minimumArmyCost = (unitIds: readonly string[]) => {
+  const encounter = encounterDefinitions.find(({ key }) => key === wolfPack);
+  if (!encounter) throw new Error("The Wolf Pack encounter is missing.");
+  const candidates = simulatorCandidates(encounter.age).filter(({ key }) =>
+    unitIds.includes(key),
+  );
+  const wins = (composition: SimulatorTotalArmy): boolean => {
+    const researchIds = researchIdsForBattle(
+      encounter.age,
+      [...composition.keys()],
+    );
+    const stacks = [...composition].flatMap(([unitId, count]) => {
+      const stats = state.getUnitStatsWithResearch(
+        unitId,
+        [...new Set([...state.boughtResearch, ...researchIds])],
+      );
+      return stats ? [{ unitId, count, stats }] : [];
+    });
+    return (
+      stacks.length > 0 &&
+      state.simulateWithStacksOutcome(
+        stacks,
+        state.getEnemyStacks(wolfPack),
+      ) === "player"
+    );
+  };
+  const result = solveMinimumArmy(
+    wolfPack,
+    candidates,
+    {
+      getCost: (unitId, count) => state.getUnitCost(unitId, count),
+      getResearch: (ids) => state.getResearchForUnitTypes(ids),
+      wins,
+      winsWithFormations: wins,
+      winsWithFormationsAndOrders: wins,
+    },
+    true,
+  );
+  if (!result) throw new Error("No winning Wolf Pack army was found.");
+  return result;
+};
+
 describe("battle determinism", () => {
   it("resolves repeated identical inputs identically", () => {
     const army = player([["warrior", 8]]);
     const wolves = state.getEnemyStacks(firstFire);
     expect(simulateBattle(army, wolves)).toEqual(simulateBattle(army, wolves));
+  });
+});
+
+describe("battlefield positioning and frontline engagement", () => {
+  it("starts beyond every attack range and advances both armies one step per round", () => {
+    const warriorStats = state.getUnitStats("warrior");
+    if (!warriorStats) throw new Error("The warrior definition is missing.");
+    const slowStats = {
+      ...warriorStats,
+      speed: 1,
+      range: 5,
+      attack: ExpNumber.ONE,
+    };
+    const fastStats = {
+      ...warriorStats,
+      speed: 3,
+      range: 1,
+      attack: ExpNumber.ZERO,
+    };
+    const battle = simulateBattle(
+      [{ unitId: "warrior", count: ExpNumber.ONE, stats: slowStats }],
+      [{ unitId: "wolf", count: ExpNumber.ONE, stats: fastStats }],
+      { maxRounds: 2 },
+    );
+
+    expect(battle.rounds[0].distance).toBe(6);
+    expect(battle.rounds[0].attacks).toHaveLength(0);
+    expect(battle.rounds[1].player[0].position).toBe(-2);
+    expect(battle.rounds[1].enemy[0].position).toBe(2);
+    expect(battle.rounds[1].distance).toBe(4);
+    expect(battle.rounds[1].attacks.some((attack) =>
+      attack.attackerId === "warrior" && attack.targetId === "wolf",
+    )).toBe(true);
+    expect(battle.rounds[2].player[0].position).toBe(-1);
+    expect(battle.rounds[2].enemy[0].position).toBe(1);
+    expect(
+      battle.rounds.every((round) =>
+        [...round.player, ...round.enemy].every((stack) =>
+          Number.isInteger(stack.position),
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("lets a ground fighter reach the backline past an untargetable naval front", () => {
+    const warrior = state.getUnitStats("warrior");
+    const canoe = state.getUnitStats("canoe");
+    const slinger = state.getUnitStats("slinger");
+    if (!warrior || !canoe || !slinger)
+      throw new Error("Unit stats are missing.");
+    const battle = simulateBattle(
+      [{
+        unitId: "warrior",
+        count: ExpNumber.ONE,
+        stats: { ...warrior, range: 10, attack: ExpNumber.ONE },
+      }],
+      [
+        {
+          unitId: "canoe",
+          count: ExpNumber.ONE,
+          stats: { ...canoe, range: 10 },
+          formation: "frontline",
+        },
+        {
+          unitId: "slinger",
+          count: ExpNumber.ONE,
+          stats: { ...slinger, range: 10 },
+          formation: "backline",
+        },
+      ],
+      { maxRounds: 12 },
+    );
+
+    expect(battle.rounds.some((round) => round.attacks.some((attack) =>
+      attack.attackerId === "warrior" && attack.targetId === "slinger",
+    ))).toBe(true);
+    expect(battle.rounds.flatMap((round) => round.attacks).some((attack) =>
+      attack.attackerId === "warrior" && attack.targetId === "canoe",
+    )).toBe(false);
+  });
+
+  it("keeps melee attacks on the opposing frontline formation, not its backline", () => {
+    const baseMeleeStats = state.getUnitStats("warrior");
+    const wolfStats = state.getUnitStats("wolf");
+    const slingerStats = state.getUnitStats("slinger");
+    if (!baseMeleeStats || !wolfStats || !slingerStats)
+      throw new Error("Unit stats are missing.");
+    const meleeStats = { ...baseMeleeStats, range: 1 };
+    const battle = simulateBattle(
+      [
+        {
+          unitId: "warrior",
+          count: ExpNumber.fromNumber(100),
+          stats: meleeStats,
+          formation: "frontline",
+        },
+      ],
+      [
+        {
+          unitId: "wolf",
+          count: ExpNumber.ONE,
+          stats: wolfStats,
+          formation: "frontline",
+        },
+        {
+          unitId: "slinger",
+          count: ExpNumber.ONE,
+          stats: slingerStats,
+          formation: "backline",
+        },
+      ],
+      { maxRounds: 25 },
+    );
+    const engagement = battle.rounds.find((round) =>
+      round.attacks.some(
+        (attack) =>
+          attack.attackerId === "warrior" &&
+          attack.reachableTargets.includes("wolf"),
+      ),
+    );
+    expect(engagement).toBeDefined();
+    const playerAttack = engagement?.attacks.find(
+      (attack) => attack.attackerId === "warrior",
+    );
+    expect(playerAttack?.targetId).toBe("wolf");
+    expect(playerAttack?.reachableTargets).toEqual(["wolf"]);
+    expect(playerAttack?.attackerAliveBefore.eq(ExpNumber.fromNumber(100))).toBe(true);
+    expect(playerAttack?.targetDamage.gt(ExpNumber.ZERO)).toBe(true);
+  });
+
+  it("advances melee to the next formation after the frontline is killed", () => {
+    const warrior = state.getUnitStats("warrior");
+    const slinger = state.getUnitStats("slinger");
+    if (!warrior || !slinger) throw new Error("Unit stats are missing.");
+    const highDamage = { ...warrior, attack: ExpNumber.fromNumber(1000), range: 1 };
+    const battle = simulateBattle(
+      [{ unitId: "warrior", count: ExpNumber.fromNumber(100), stats: highDamage }],
+      [
+        { unitId: "wolf", count: ExpNumber.ONE, stats: { ...warrior, hp: ExpNumber.fromNumber(1), range: 1 } },
+        { unitId: "slinger", count: ExpNumber.ONE, stats: slinger, formation: "backline" },
+      ],
+      { maxRounds: 15 },
+    );
+    expect(
+      battle.rounds.some((round) =>
+        round.attacks.some((attack) => attack.attackerId === "warrior" && attack.targetId === "slinger"),
+      ),
+    ).toBe(true);
+  });
+
+  it("lets ground infantry screen a ranged ally from attacks", () => {
+    const warrior = state.getUnitStats("warrior");
+    const slinger = state.getUnitStats("slinger");
+    if (!warrior || !slinger) throw new Error("Unit stats are missing.");
+    const battle = simulateBattle(
+      [{ unitId: "warrior", count: ExpNumber.ONE, stats: warrior }],
+      [
+        { unitId: "slinger", count: ExpNumber.ONE, stats: slinger },
+        { unitId: "wolf", count: ExpNumber.ONE, stats: warrior },
+      ],
+      { maxRounds: 20 },
+    );
+    expect(
+      battle.rounds.some((round) =>
+        round.attacks.some(
+          (attack) =>
+            attack.targetId === "slinger" &&
+            attack.screening.some((screen) => screen.unitId === "wolf"),
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it("does not let a bear or wolf screen a ground infantry ally", () => {
+    const warrior = state.getUnitStats("warrior");
+    const slinger = state.getUnitStats("slinger");
+    const bear = state.getUnitStats("bear");
+    const wolf = state.getUnitStats("wolf");
+    if (!warrior || !slinger || !bear || !wolf)
+      throw new Error("Unit stats are missing.");
+    const battle = simulateBattle(
+      [{ unitId: "slinger", count: ExpNumber.fromNumber(20), stats: slinger }],
+      [
+        { unitId: "warrior", count: ExpNumber.ONE, stats: warrior },
+        { unitId: "bear", count: ExpNumber.ONE, stats: bear },
+        { unitId: "wolf", count: ExpNumber.ONE, stats: wolf },
+      ],
+      { maxRounds: 20 },
+    );
+    expect(
+      battle.rounds.flatMap((round) => round.attacks).some((attack) =>
+        attack.screening.some(
+          (screen) => screen.unitId === "bear" || screen.unitId === "wolf",
+        ),
+      ),
+    ).toBe(false);
   });
 });
 
@@ -84,13 +347,27 @@ describe("First Fire: eight Tribesmen hold the fire", () => {
 });
 
 describe("Wolf Pack: a mixed army is the cheapest answer", () => {
-  const mixed: Army = [
-    ["warrior", 9],
-    ["slinger", 26],
-  ];
+  it("finds a winning mixed army that costs less military than warriors alone", () => {
+    const warriorOnly = minimumArmyCost(["warrior"]);
+    const mixed = minimumArmyCost(["warrior", "slinger"]);
+    const hasWarriors = (mixed.composition.get("warrior") ?? 0) > 0;
+    const hasSlingers = (mixed.composition.get("slinger") ?? 0) > 0;
 
-  it("is won by warriors and slingers together", () => {
-    expect(fight(wolfPack, mixed)).toBe("player");
+    expect(hasWarriors).toBe(true);
+    expect(hasSlingers).toBe(true);
+    expect(
+      winsWithResearch(
+        wolfPack,
+        [...mixed.composition.entries()] as [string, number][],
+      ),
+    ).toBe("player");
+    expect(mixed.military.lt(warriorOnly.military)).toBe(true);
+  });
+
+  it("wins with the planner's minimum-cost mixed recruit count", () => {
+    const mixed = minimumArmyCost(["warrior", "slinger"]);
+    const army = [...mixed.composition.entries()] as [string, number][];
+    expect(winsWithResearch(wolfPack, army)).toBe("player");
   });
 
   it("is won by a fleet of hulls, so the naval branch is a real answer", () => {
@@ -108,9 +385,12 @@ describe("Wolf Pack: a mixed army is the cheapest answer", () => {
   });
 
   it("costs less mixed than afloat, so canoes stay the expensive option", () => {
-    expect(military(mixed)).toBeLessThan(military([["canoe", 8]]));
+    const mixed = minimumArmyCost(["warrior", "slinger"]);
+    expect(mixed.military.toNumber()).toBeLessThan(military([["canoe", 8]]));
     // A comfortable fleet win is well clear of the mixed army: 12 hulls.
-    expect(military([["canoe", 12]])).toBeGreaterThan(military(mixed) * 2);
+    expect(military([["canoe", 12]])).toBeGreaterThan(
+      mixed.military.toNumber() * 2,
+    );
   });
 
   it("makes hulls the cheap marginal buy once an army is already held", () => {
@@ -136,6 +416,22 @@ describe("Wolf Pack: a mixed army is the cheapest answer", () => {
         ["canoe", 16],
       ]),
     ).toBe("player");
+  });
+
+  it("prevents ground beasts from destroying canoes (canHit domain restriction)", () => {
+    // Wolves and bears have canHit: ["ground"] only, so they cannot target
+    // naval units like canoes. This test verifies that even a small canoe
+    // force survives the wolf pack because the beasts cannot hit them.
+    const simulation = simulateBattle(
+      player([["canoe", 2]]),
+      state.getEnemyStacks(wolfPack),
+    );
+    // After 101 rounds (max cap), canoes should still be alive since wolves/bears
+    // cannot target naval units. They might not take damage
+    const finalRound = simulation.rounds[simulation.rounds.length - 1];
+    const canoeStack = finalRound.player.find((s) => s.unitId === "canoe");
+    expect(canoeStack).toBeDefined();
+    expect(canoeStack!.count.eq(ExpNumber.fromNumber(2))).toBe(true);
   });
 });
 

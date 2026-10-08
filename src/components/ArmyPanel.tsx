@@ -10,12 +10,12 @@ import {
   type StackSnapshot,
 } from "../game/battle";
 import { findFormationDefinition, type FormationId } from "../game/formations";
+import { ExpNumber } from "../game/expNumber";
 import {
   findUnitDefinition,
   unitStatKeys,
   unitStatLabels,
 } from "../game/units";
-import type { ExpNumber } from "../game/expNumber";
 import { unitIcon, unitTone } from "./unitIcons";
 
 type Multiplier = number | "Max";
@@ -155,6 +155,62 @@ export default function ArmyPanel({
     if (sim !== null && sim.outcome === "player") return;
     const result = gameState.simulateEncounter(battle.key);
     if (!result) return;
+    const debugFileName =
+      `battle-debug-${battle.key}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    const debugUrl = `${window.location.origin}/__battle-debug/${debugFileName}`;
+    void fetch("/__battle-debug", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: debugFileName,
+        text: JSON.stringify(result, null, 2),
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        console.log(`[battle debug] saved to saves/auto/battle/${debugFileName}`);
+        console.log(
+          `%c[battle debug] open JSON: ${debugUrl}`,
+          "color: #1683d8; text-decoration: underline;",
+        );
+      })
+      .catch((error: unknown) => {
+        console.error("[battle debug] could not save JSON on the Vite server", error);
+      });
+    console.groupCollapsed(`[battle debug] ${battle.key}: ${result.outcome}`);
+    for (const round of result.rounds) {
+      console.groupCollapsed(`Round ${round.round} · distance ${round.distance}`);
+      console.table(
+        round.attacks.map((attack) => ({
+          attacker: `${attack.attackerSide.toUpperCase()} · ${attack.attackerId}`,
+          attackerPosition: attack.attackerPosition,
+          reachable: attack.reachableTargets
+            .map((unitId) => `${attack.reachableTargetSide.toUpperCase()} · ${unitId}`)
+            .join(", "),
+          target: `${attack.targetSide.toUpperCase()} · ${attack.targetId}`,
+          targetPosition: attack.targetPosition,
+          damagedUnits: [
+            ...(attack.targetDamage.gt(ExpNumber.fromNumber(0))
+              ? [{
+                  side: attack.targetSide.toUpperCase(),
+                  unit: attack.targetId,
+                  countToAlive: `${attack.targetAliveBefore} → ${attack.targetAliveAfter}`,
+                  damage: `${attack.targetDamage}`,
+                }]
+              : []),
+            ...attack.screening.map((screen) => ({
+              side: screen.side.toUpperCase(),
+              unit: screen.unitId,
+              countToAlive: `${screen.aliveBefore} → ${screen.aliveAfter}`,
+              damage: `${screen.damage}`,
+            })),
+          ],
+          intendedDamage: `${attack.intendedDamage}`,
+        })),
+      );
+      console.groupEnd();
+    }
+    console.groupEnd();
     // oxlint-disable-next-line react/purity
     const startTime = Date.now();
     roundIndexRef.current = 0;
@@ -425,8 +481,10 @@ export default function ArmyPanel({
           <ArmySide
             snapshots={enemyStacks.map((stack) => ({
               unitId: stack.unitId,
+              side: "enemy",
               count: stack.count,
               hpPool: stack.count,
+              position: 20,
             }))}
             fmt={fmt}
             onOpenGamepedia={onOpenGamepedia}

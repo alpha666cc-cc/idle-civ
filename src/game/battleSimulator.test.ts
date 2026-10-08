@@ -36,6 +36,31 @@ const context = () => ({
 });
 
 describe("battle simulator current army", () => {
+  it("lets a standard elephant close two positions to attack hoplites", () => {
+    const elephant = findUnitDefinition("elephant_iron");
+    const hoplite = findUnitDefinition("hoplite");
+    if (!elephant || !hoplite)
+      throw new Error("The elephant or hoplite definition is missing.");
+    const battle = simulateBattle(
+      [{ unitId: elephant.key, count: ExpNumber.ONE, stats: elephant.stats }],
+      [{ unitId: hoplite.key, count: ExpNumber.ONE, stats: hoplite.stats }],
+      { maxRounds: 12 },
+    );
+    const elephantAttacks = battle.rounds.flatMap((round) =>
+      round.attacks.filter((attack) => attack.attackerId === elephant.key),
+    );
+
+    expect(elephantAttacks.length).toBeGreaterThan(0);
+    expect(elephantAttacks[0].targetId).toBe(hoplite.key);
+    expect(elephantAttacks[0].attackerPosition).toBe(0);
+    expect(elephantAttacks[0].attackerSide).toBe("player");
+    expect(elephantAttacks[0].targetSide).toBe("enemy");
+    expect(elephantAttacks[0].reachableTargets).toContain(hoplite.key);
+    expect(elephantAttacks[0].reachableTargetSide).toBe("enemy");
+    expect(battle.rounds[0].player[0].side).toBe("player");
+    expect(battle.rounds[0].enemy[0].side).toBe("enemy");
+  });
+
   it("matches full playback outcomes without producing logs", () => {
     const player = [
       {

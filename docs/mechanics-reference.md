@@ -216,15 +216,18 @@ livingCount = ceil(hpPool / hitPoints)
 
 | constant | value | meaning |
 | --- | --- | --- |
-| `initialDistance` | **20** | armies deploy this far apart; range gates who may fire |
-| `maximumRounds` | **200** | unresolved by then ⇒ `stalemate`, counted as a loss |
+| starting gap | **maximum army range + 1** | Round 0 deployment; no unit is in range |
+| `maximumRounds` | **101** | unresolved by then ⇒ `stalemate`, counted as a loss |
 | `bonusVsMultiplier` | **1.5** | damage multiplier against a countered tag |
 | `screeningShare` | **0.25** | share of damage redirected to screens |
 
 ### One round (one second of playback)
 
-The lines close a little, then **every stack that can reach an enemy fires
-once, in speed order**, then the lines close again.
+Round 0 is a deployment snapshot with no attacks. At the start of each active
+round, both armies advance one position toward each other, then **every stack that
+can reach an enemy fires once, in speed order**. Unit speed determines attack order,
+not movement. Thus a unit can become targetable in Round 1, and a backline unit
+can be reached even when an untargetable unit holds the opposing frontline.
 
 **Who can hit whom (`canReach`)** — the attacker's `canHit` domains must include
 the target's `domain`; `distance <= attacker.range`; an `air` target needs
