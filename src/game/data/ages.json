@@ -47,27 +47,27 @@
       {
         "type": "costReductionFactor",
         "destination": "townHall",
-        "value": "2"
+        "value": "1.65"
       },
       {
         "type": "costReductionFactor",
-        "destination": "barracks",
-        "value": "2"
+        "destination": "advancedProductionBuildings",
+        "value": "1.7"
       },
       {
-        "type": "costReductionFactor",
-        "destination": "university",
-        "value": "2"
+        "type": "attributeMultiplier",
+        "destination": "gold",
+        "value": 2000
       },
       {
-        "type": "costReductionFactor",
-        "destination": "smithy",
-        "value": "2"
+        "type": "attributeMultiplier",
+        "destination": "basicProductionPerWorker",
+        "value": 1.0
       },
       {
-        "type": "costReductionFactor",
-        "destination": "market",
-        "value": "2"
+        "type": "attributeMultiplier",
+        "destination": "advancedProductionPerWorker",
+        "value": 1.0
       }
     ]
   },
@@ -78,7 +78,7 @@
     "description": "City-states and legions. The old units fall, and a new order takes the field.",
     "buildingThreshold": 15000,
     "unlocks": [],
-    "research": { "base": "1e15", "factor": 2000 },
+    "research": { "base": "1e21", "factor": 2000 },
     "bonuses": []
   },
   {

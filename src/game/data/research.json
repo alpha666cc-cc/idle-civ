@@ -1163,7 +1163,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "science",
-        "value": "10"
+        "value": "20"
       },
       {
         "type": "costReductionPercent",
@@ -1329,7 +1329,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "trade",
-        "value": "20"
+        "value": "10"
       },
       {
         "type": "attributeMultiplier",
@@ -1353,6 +1353,11 @@
         "type": "attributeMultiplier",
         "destination": "science",
         "value": "20"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "advancedProductionPerWorker",
+        "value": 2
       }
     ],
     "unlocks": [],

@@ -352,6 +352,11 @@
         "type": "attributeMultiplier",
         "destination": "wood",
         "value": 10
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 10
       }
     ],
     "unlocks": []

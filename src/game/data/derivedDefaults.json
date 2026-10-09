@@ -10,8 +10,8 @@
   "woodProductionPerWorker": 1,
   "stoneProductionPerWorker": 1,
   "goldProductionPerWorker": 1,
-  "militaryProductionPerWorker": 1,
-  "scienceProductionPerWorker": 1,
-  "metalworkProductionPerWorker": 1,
-  "tradeProductionPerWorker": 1
+  "militaryProductionPerWorker": 0.1,
+  "scienceProductionPerWorker": 0.1,
+  "metalworkProductionPerWorker": 0.1,
+  "tradeProductionPerWorker": 0.1
 }
