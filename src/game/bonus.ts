@@ -1,6 +1,13 @@
 import { ExpNumber } from "./expNumber";
 import type { BuildingKey } from "./buildings";
 import type { AttributeKey, CapacityResourceKey } from "./attributes";
+import { findAttributeDefinition } from "./attributes";
+import { buildingDefinitions } from "./buildings";
+import {
+  findUnitDefinition,
+  parseUnitStatTarget,
+  unitDomainLabels,
+} from "./units";
 
 /**
  * The single unit of change (AGENTS.md §13.1). Attribute-targeted bonuses reuse the
@@ -30,6 +37,11 @@ export type BonusType =
 export type BuyableCostTarget = "allBuildings" | "allUnits";
 
 export type BonusDestination = AttributeKey | BuyableCostTarget | string;
+
+/** Group targets for cost reductions */
+export type BuildingCostGroup =
+  | "basicProductionBuildings" // farm, lumberYard, quarry, goldMine
+  | "advancedProductionBuildings"; // barracks, university, smithy, market
 
 export type Bonus = {
   readonly type: BonusType;
@@ -86,6 +98,57 @@ const bonusTypes: readonly BonusType[] = [
 export const parseBonusType = (type: string): BonusType => {
   if (bonusTypes.includes(type as BonusType)) return type as BonusType;
   throw new Error(`Unknown bonus type: ${type}`);
+};
+
+/**
+ * Validates a bonus destination string. Returns true if the destination is a
+ * recognized target (attribute, building, unit, or group scope), false otherwise.
+ * Used by data loaders to catch typos in bonus destinations.
+ */
+export const isValidBonusDestination = (destination: string): boolean => {
+  // Group targets for production
+  if (
+    destination === "allProduction" ||
+    destination === "basicProduction" ||
+    destination === "advancedProduction" ||
+    destination === "allProductionPerWorker" ||
+    destination === "basicProductionPerWorker" ||
+    destination === "advancedProductionPerWorker"
+  ) {
+    return true;
+  }
+
+  // Group targets for building cost reductions
+  if (
+    destination === "basicProductionBuildings" ||
+    destination === "advancedProductionBuildings"
+  ) {
+    return true;
+  }
+
+  // Unit stat targets
+  if (parseUnitStatTarget(destination)) return true;
+
+  // Attribute definitions
+  if (findAttributeDefinition(destination)) return true;
+
+  // Building keys
+  if (buildingDefinitions.some(({ key }) => key === destination)) return true;
+
+  // Buyable group targets
+  if (destination === "allBuildings" || destination === "allUnits") return true;
+
+  // Unit tag scopes
+  if (destination.startsWith("tag.")) return true;
+
+  // Unit domain scopes
+  const domain = /^domain\.([a-z]+)$/.exec(destination);
+  if (domain && domain[1] in unitDomainLabels) return true;
+
+  // Unit ids
+  if (findUnitDefinition(destination)) return true;
+
+  return false;
 };
 
 /** Parses a bonus from JSON data (AGENTS.md §13.5: one file per type). Definition

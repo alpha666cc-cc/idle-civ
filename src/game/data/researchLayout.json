@@ -1,75 +1,75 @@
 {
   "agriculture": {
     "column": 0,
-    "row": 2
+    "row": 0
   },
   "pottery": {
     "column": 1,
-    "row": 1
+    "row": 4
   },
   "animal_husbandry": {
     "column": 0,
-    "row": 4
+    "row": 2
   },
   "sling_throwing": {
-    "column": 5,
-    "row": 1
+    "column": 3,
+    "row": 4
   },
   "mining": {
     "column": 1,
-    "row": 3
+    "row": 1
   },
   "stone_working": {
     "column": 2,
-    "row": 4
+    "row": 2
   },
   "forestry": {
     "column": 1,
-    "row": 4
+    "row": 2
   },
   "weaving": {
-    "column": 1,
-    "row": 0
+    "column": 0,
+    "row": 4
   },
   "writing": {
     "column": 2,
-    "row": 0
+    "row": 3
   },
   "calendar": {
     "column": 3,
-    "row": 0
+    "row": 3
   },
   "city_planning": {
     "column": 3,
-    "row": 4
+    "row": 2
   },
   "tribal_organization": {
     "column": 4,
-    "row": 2
+    "row": 0
   },
   "archery_mechanics": {
-    "column": 5,
-    "row": 0
+    "column": 4,
+    "row": 2
   },
   "flint_knapping": {
-    "column": 6,
-    "row": 0
-  },
-  "domestication": {
     "column": 4,
     "row": 4
   },
-  "trapping": {
+  "domestication": {
     "column": 5,
-    "row": 4
+    "row": 0
+  },
+  "trapping": {
+    "column": 6,
+    "row": 0
   },
   "woodcraft_hulls": {
     "column": 5,
-    "row": 2
+    "row": 3
   },
   "bronze_smelting": {
     "column": 5,
-    "row": 3
+    "row": 1
   },
   "bronze_casting": {
     "column": 6,
@@ -77,15 +77,19 @@
   },
   "wheel_axle": {
     "column": 6,
-    "row": 4
+    "row": 1
   },
   "composite_bowcraft": {
-    "column": 7,
-    "row": 1
+    "column": 6,
+    "row": 4
   },
   "galley_design": {
     "column": 7,
-    "row": 4
+    "row": 3
+  },
+  "torsion_physics": {
+    "column": 7,
+    "row": 1
   },
   "iron_mining": {
     "column": 8,
@@ -135,10 +139,7 @@
     "column": 9,
     "row": 2
   },
-  "torsion_physics": {
-    "column": 7,
-    "row": 3
-  },
+
   "iron_working": {
     "column": 9,
     "row": 1

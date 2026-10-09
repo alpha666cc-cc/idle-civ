@@ -1,6 +1,6 @@
 import ageData from "./data/ages.json";
 import { GameObject } from "./gameObject";
-import { parseBonus, type Bonus } from "./bonus";
+import { parseBonus, type Bonus, isValidBonusDestination } from "./bonus";
 import { ExpNumber } from "./expNumber";
 import type { ResourceKey } from "./attributes";
 
@@ -80,14 +80,24 @@ type AgeData = {
   research?: { base: number | string; factor: number };
 };
 
-const toAgeDefinition = (data: AgeData): AgeDefinition =>
-  new AgeDefinition(
+const toAgeDefinition = (data: AgeData): AgeDefinition => {
+  const bonuses = (data.bonuses ?? []).map((b) => {
+    const destination = String(b.destination);
+    if (!isValidBonusDestination(destination)) {
+      throw new Error(
+        `Unknown age bonus destination: ${data.key} → ${destination}`,
+      );
+    }
+    return parseBonus(b.type, b.destination, b.value);
+  });
+
+  return new AgeDefinition(
     data.key,
     data.name,
     data.description,
     data.buildingThreshold,
     data.unlocks ?? [],
-    (data.bonuses ?? []).map((b) => parseBonus(b.type, b.destination, b.value)),
+    bonuses,
     (data.costMultipliers ?? []).map(({ resource, factor }) => ({
       resource: resource as ResourceKey,
       factor: ExpNumber.from(factor),
@@ -99,6 +109,7 @@ const toAgeDefinition = (data: AgeData): AgeDefinition =>
         }
       : undefined,
   );
+};
 
 export const ageDefinitions: AgeDefinition[] = ageData.map(toAgeDefinition);
 

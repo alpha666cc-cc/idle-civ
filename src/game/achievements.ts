@@ -1,5 +1,5 @@
 import achievementData from "./data/achievements.json";
-import { parseBonusType, type Bonus } from "./bonus";
+import { parseBonusType, type Bonus, isValidBonusDestination } from "./bonus";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 import { buildingDefinitions, type BuildingKey } from "./buildings";
@@ -192,11 +192,19 @@ export const achievementDefinitions: AchievementDefinition[] = (
       data.name,
       data.description,
       toRequirement(data.requirement),
-      (data.bonuses ?? []).map(({ type, destination, value }) => ({
-        type: parseBonusType(type),
-        destination,
-        value: ExpNumber.fromNumber(value),
-      })),
+      (data.bonuses ?? []).map(({ type, destination, value }) => {
+        const dest = String(destination);
+        if (!isValidBonusDestination(dest)) {
+          throw new Error(
+            `Unknown achievement bonus destination: ${data.key} → ${dest}`,
+          );
+        }
+        return {
+          type: parseBonusType(type),
+          destination,
+          value: ExpNumber.fromNumber(value),
+        };
+      }),
       data.family,
       data.tier,
     ),

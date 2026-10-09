@@ -377,8 +377,10 @@ for (const key of [
   "wastedResources",
   "tradeProductionMultiplier",
   "tradeRoutes",
+  "offlineEfficiency",
   "buildingPower",
   ...buildingPowerAttributeDefinitions.map(({ key }) => key),
+  ...productionDefinitions.map(({ key }) => `${key}ProductionPerWorker`),
 ]) {
   // A building's power base comes from its own definition (`power` in
   // buildings.json, defaulting to 1), so a building can start above or below 1;
@@ -390,8 +392,10 @@ for (const key of [
         ? (state) => state.statistics.wastedResources
         : key === "tradeProductionMultiplier"
           ? (state) => calculateTradeMultiplier(state.resources.trade)
-          : (state) => compoundStatValue(state, key),
-    base: () => building?.power ?? ExpNumber.ONE,
+          : key === "offlineEfficiency"
+            ? (state) => ExpNumber.fromNumber(state.getOfflineEfficiency())
+            : (state) => compoundStatValue(state, key),
+    base: () => building?.power ?? ExpNumber.fromNumber(0.25),
   };
 }
 
@@ -993,16 +997,7 @@ export class CivilizationState {
 
   /** Offline efficiency after achievement bonuses, as a fraction of live gain. */
   getOfflineEfficiency(): number {
-    let efficiency = ExpNumber.fromNumber(0.25);
-    const bonusesByDest = this.activeBonusesByDestination();
-    const offlineBonuses = bonusesByDest.get("offlineEfficiency") ?? [];
-    for (const [, bonus] of offlineBonuses) {
-      if (bonus.type === "attributeFlat")
-        efficiency = efficiency.add(bonus.value);
-      if (bonus.type === "attributeMultiplier")
-        efficiency = efficiency.mul(bonus.value);
-    }
-    return Math.max(0, efficiency.toNumber());
+    return Math.max(0, this.getAttributeValue("offlineEfficiency").toNumber());
   }
 
   /**
@@ -1170,10 +1165,44 @@ export class CivilizationState {
           bonusFactors.additional.push([sourceId, bonus.value]);
         }
       }
+
+      // Get bonuses for basic/advanced production groups
+      const isBasic = ["food", "wood", "stone", "gold"].includes(resourceKey);
+      const isAdvanced = ["military", "science", "metalwork", "trade"].includes(
+        resourceKey,
+      );
+
+      if (isBasic) {
+        const basicProductionBonuses =
+          bonusesByDest.get("basicProduction") ?? [];
+        for (const [sourceId, bonus] of basicProductionBonuses) {
+          if (bonus.type === "attributeMultiplier") {
+            bonusFactors.multiplicative.push([sourceId, bonus.value]);
+          } else if (bonus.type === "attributeFlat") {
+            bonusFactors.additional.push([sourceId, bonus.value]);
+          }
+        }
+      }
+
+      if (isAdvanced) {
+        const advancedProductionBonuses =
+          bonusesByDest.get("advancedProduction") ?? [];
+        for (const [sourceId, bonus] of advancedProductionBonuses) {
+          if (bonus.type === "attributeMultiplier") {
+            bonusFactors.multiplicative.push([sourceId, bonus.value]);
+          } else if (bonus.type === "attributeFlat") {
+            bonusFactors.additional.push([sourceId, bonus.value]);
+          }
+        }
+      }
     }
 
+    // Worker production: workers × productionPerWorker stat (which can be boosted)
+    const productionPerWorkerStat = this.getAttributeValue(
+      `${resourceKey}ProductionPerWorker`,
+    );
     const workerAdditional: ResourceFactor[] = [
-      [workerProduction, workerProduction.workerProduction],
+      [workerProduction, workerProduction.workers.mul(productionPerWorkerStat)],
     ];
     if (
       workerProduction.autoClickProduction.gt(ExpNumber.ZERO) &&
@@ -1319,6 +1348,36 @@ export class CivilizationState {
           bonusFactors.additional.push([sourceId, bonus.value]);
         }
       }
+
+      // Get bonuses for basic/advanced production groups
+      const isBasic = ["food", "wood", "stone", "gold"].includes(resourceKey);
+      const isAdvanced = ["military", "science", "metalwork", "trade"].includes(
+        resourceKey,
+      );
+
+      if (isBasic) {
+        const basicProductionBonuses =
+          bonusesByDest.get("basicProduction") ?? [];
+        for (const [sourceId, bonus] of basicProductionBonuses) {
+          if (bonus.type === "attributeMultiplier") {
+            bonusFactors.multiplicative.push([sourceId, bonus.value]);
+          } else if (bonus.type === "attributeFlat") {
+            bonusFactors.additional.push([sourceId, bonus.value]);
+          }
+        }
+      }
+
+      if (isAdvanced) {
+        const advancedProductionBonuses =
+          bonusesByDest.get("advancedProduction") ?? [];
+        for (const [sourceId, bonus] of advancedProductionBonuses) {
+          if (bonus.type === "attributeMultiplier") {
+            bonusFactors.multiplicative.push([sourceId, bonus.value]);
+          } else if (bonus.type === "attributeFlat") {
+            bonusFactors.additional.push([sourceId, bonus.value]);
+          }
+        }
+      }
     }
 
     const multiplicative = [
@@ -1385,14 +1444,12 @@ export class CivilizationState {
   computeClickGain(resourceKey: ResourceKey): ExpNumber {
     if (!(resourceKey in this.workers)) return ExpNumber.ZERO;
     const factors = this.getProductionFactors(resourceKey);
-    const definition = productionDefinitions.find(
-      ({ key }) => key === resourceKey,
-    );
     // The global click power stat scales every manual click (§13.2 decision 2);
-    // the resource's own `productionPerWorker` stays resource data.
-    const clickPower = this.computeClickPower().mul(
-      ExpNumber.fromNumber(definition?.productionPerWorker ?? 1),
+    // the resource's own `productionPerWorker` stat (which can be boosted) also applies.
+    const productionPerWorkerStat = this.getAttributeValue(
+      `${resourceKey}ProductionPerWorker`,
     );
+    const clickPower = this.computeClickPower().mul(productionPerWorkerStat);
     return computeResourceRate({
       additional: [[clickPowerStatSource, clickPower]],
       multiplicative: factors.multiplicative,
@@ -1454,6 +1511,53 @@ export class CivilizationState {
         factors.multiplicative.push([sourceId, bonus.value]);
       }
     }
+
+    // Group bonuses for productionPerWorker stats
+    if (key.endsWith("ProductionPerWorker")) {
+      const resourceKey = key.replace(
+        "ProductionPerWorker",
+        "",
+      ) as ProductionResourceKey;
+      const isBasic = ["food", "wood", "stone", "gold"].includes(resourceKey);
+      const isAdvanced = ["military", "science", "metalwork", "trade"].includes(
+        resourceKey,
+      );
+
+      const allProductionPerWorkerBonuses =
+        bonusesByDest.get("allProductionPerWorker") ?? [];
+      for (const [sourceId, bonus] of allProductionPerWorkerBonuses) {
+        if (bonus.type === "attributeMultiplier") {
+          factors.multiplicative.push([sourceId, bonus.value]);
+        } else if (bonus.type === "attributeFlat") {
+          factors.additional.push([sourceId, bonus.value]);
+        }
+      }
+
+      if (isBasic) {
+        const basicProductionPerWorkerBonuses =
+          bonusesByDest.get("basicProductionPerWorker") ?? [];
+        for (const [sourceId, bonus] of basicProductionPerWorkerBonuses) {
+          if (bonus.type === "attributeMultiplier") {
+            factors.multiplicative.push([sourceId, bonus.value]);
+          } else if (bonus.type === "attributeFlat") {
+            factors.additional.push([sourceId, bonus.value]);
+          }
+        }
+      }
+
+      if (isAdvanced) {
+        const advancedProductionPerWorkerBonuses =
+          bonusesByDest.get("advancedProductionPerWorker") ?? [];
+        for (const [sourceId, bonus] of advancedProductionPerWorkerBonuses) {
+          if (bonus.type === "attributeMultiplier") {
+            factors.multiplicative.push([sourceId, bonus.value]);
+          } else if (bonus.type === "attributeFlat") {
+            factors.additional.push([sourceId, bonus.value]);
+          }
+        }
+      }
+    }
+
     // A building's power folds in the global `buildingPower` multiplier, so the
     // displayed value is the effective one (§13.2).
     if (buildingPowerAttributeDefinitions.some(({ key: pk }) => pk === key)) {
@@ -1586,7 +1690,32 @@ export class CivilizationState {
       // Research is not a building, so the blanket `allBuildings` discounts do
       // not reach it — only a bonus that names "research" explicitly does.
       if (isResearch) return false;
-      if (isBuilding) return destination === "allBuildings";
+      if (isBuilding) {
+        if (destination === "allBuildings") return true;
+        // Building cost group targets
+        const basicProductionBuildings = [
+          "farm",
+          "lumberYard",
+          "quarry",
+          "goldMine",
+        ];
+        const advancedProductionBuildings = [
+          "barracks",
+          "university",
+          "smithy",
+          "market",
+        ];
+        if (
+          destination === "basicProductionBuildings" &&
+          basicProductionBuildings.includes(buyableId)
+        )
+          return true;
+        if (
+          destination === "advancedProductionBuildings" &&
+          advancedProductionBuildings.includes(buyableId)
+        )
+          return true;
+      }
       if (!unit) return destination === "allUnits";
       if (destination === "allUnits") return true;
       // `tag.<t>` and `domain.<d>` are group scopes, not content ids: a

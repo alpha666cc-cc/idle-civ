@@ -45,7 +45,16 @@ export type DerivedAttributeKey =
   | "buildingCostMultiplier"
   | "wastedResources"
   | "tradeProductionMultiplier"
-  | "tradeRoutes";
+  | "tradeRoutes"
+  | "offlineEfficiency"
+  | "foodProductionPerWorker"
+  | "woodProductionPerWorker"
+  | "stoneProductionPerWorker"
+  | "goldProductionPerWorker"
+  | "militaryProductionPerWorker"
+  | "scienceProductionPerWorker"
+  | "metalworkProductionPerWorker"
+  | "tradeProductionPerWorker";
 
 /** Every value-side key a bonus destination may name; buyable ids are separate. */
 export type AttributeKey = ResourceKey | DerivedAttributeKey;
@@ -111,17 +120,9 @@ export const capacityDefinitions: AttributeDefinition[] = [
     "capacity",
   ),
   new AttributeDefinition("quarryCapacity", "Quarry Capacity", "capacity"),
-  new AttributeDefinition(
-    "goldMineCapacity",
-    "Gold Mine Capacity",
-    "capacity",
-  ),
+  new AttributeDefinition("goldMineCapacity", "Gold Mine Capacity", "capacity"),
   new AttributeDefinition("marketCapacity", "Market Capacity", "capacity"),
-  new AttributeDefinition(
-    "townHallCapacity",
-    "Town Hall Capacity",
-    "capacity",
-  ),
+  new AttributeDefinition("townHallCapacity", "Town Hall Capacity", "capacity"),
   new AttributeDefinition("smithyCapacity", "Smithy Capacity", "capacity"),
   new AttributeDefinition("barracksCapacity", "Barracks Capacity", "capacity"),
   new AttributeDefinition(
@@ -177,9 +178,7 @@ derivedAttributeDefinitions.push(wastedResourcesDefinition);
  */
 export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
   buildingDefinitions
-    .filter(
-      (b) => b.effects.additiveMultiplier || b.effects.resourceProduction,
-    )
+    .filter((b) => b.effects.additiveMultiplier || b.effects.resourceProduction)
     .map(
       (b) =>
         new AttributeDefinition(
@@ -192,6 +191,36 @@ export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
 
 derivedAttributeDefinitions.push(...buildingPowerAttributeDefinitions);
 
+/**
+ * Production-per-worker stats: one per production resource, base 1, multiplied by
+ * bonuses targeting `<resource>ProductionPerWorker` or the group targets
+ * `basicProductionPerWorker` (food/wood/stone/gold), `advancedProductionPerWorker`
+ * (military/science/metalwork/trade), or `allProductionPerWorker` (all 8).
+ */
+const productionPerWorkerAttributeDefinitions: AttributeDefinition[] =
+  productionDefinitions.map(
+    ({ key, label }) =>
+      new AttributeDefinition(
+        `${key}ProductionPerWorker` as DerivedAttributeKey,
+        `${label} production per worker`,
+        "derived",
+        `Base 1 worker production for ${label.toLowerCase()}. Multiplied by bonuses to make workers more effective.`,
+        1,
+      ),
+  );
+
+derivedAttributeDefinitions.push(...productionPerWorkerAttributeDefinitions);
+
+/** Offline efficiency: the fraction of live production gained while offline (base 0.25). */
+const offlineEfficiencyDefinition = new AttributeDefinition(
+  "offlineEfficiency",
+  "Offline Efficiency",
+  "derived",
+  "Fraction of live production gained while offline. Base 0.25; bonuses raise it.",
+  0.25,
+);
+
+derivedAttributeDefinitions.push(offlineEfficiencyDefinition);
 
 export const attributeDefinitions: AttributeDefinition[] = [
   ...productionDefinitions,
@@ -252,11 +281,11 @@ export const emptyResourceAmounts = (): ResourceAmounts => ({
   peopleCapacity: ExpNumber.ZERO,
   houseCapacity: ExpNumber.ZERO,
   farmCapacity: ExpNumber.fromNumber(10),
-  "lumberYardCapacity": ExpNumber.fromNumber(10),
+  lumberYardCapacity: ExpNumber.fromNumber(10),
   quarryCapacity: ExpNumber.fromNumber(10),
-  "goldMineCapacity": ExpNumber.fromNumber(10),
+  goldMineCapacity: ExpNumber.fromNumber(10),
   marketCapacity: ExpNumber.fromNumber(10),
-  "townHallCapacity": ExpNumber.fromNumber(1),
+  townHallCapacity: ExpNumber.fromNumber(1),
   smithyCapacity: ExpNumber.fromNumber(10),
   barracksCapacity: ExpNumber.fromNumber(10),
   universityCapacity: ExpNumber.fromNumber(10),
@@ -274,26 +303,126 @@ export const emptyWorkerAssignments = (): WorkerAssignments => ({
 });
 
 export const emptyResourceFactors = (): ResourceFactorMap => ({
-  food: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  wood: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  stone: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  gold: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  population: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  science: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  military: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  metalwork: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  trade: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  peopleCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  houseCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  farmCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  "lumberYardCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  quarryCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  "goldMineCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  marketCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  "townHallCapacity": { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  smithyCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  barracksCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
-  universityCapacity: { additional: [], multiplicative: [], additiveMultiplier: [], drain: [] },
+  food: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  wood: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  stone: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  gold: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  population: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  science: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  military: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  metalwork: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  trade: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  peopleCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  houseCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  farmCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  lumberYardCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  quarryCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  goldMineCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  marketCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  townHallCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  smithyCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  barracksCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
+  universityCapacity: {
+    additional: [],
+    multiplicative: [],
+    additiveMultiplier: [],
+    drain: [],
+  },
 });
 
 export const summarizeResourceFactors = ({

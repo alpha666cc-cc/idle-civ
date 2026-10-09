@@ -600,6 +600,9 @@ function App() {
     for (const encounterId of gameState.defeatedEncounters) {
       gamepedia.reveal(encounterId);
     }
+    for (const ageId of gameState.enteredAges) {
+      gamepedia.reveal(ageId);
+    }
     for (const achievementId of gameState.earnedAchievements) {
       const definition = findAchievementDefinition(achievementId);
       if (definition) gamepedia.ensureAchievementEntry(definition);

@@ -1,5 +1,5 @@
 import encounterData from "./data/encounters.json";
-import { parseBonusType, type Bonus } from "./bonus";
+import { parseBonusType, type Bonus, isValidBonusDestination } from "./bonus";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 import { findUnitDefinition } from "./units";
@@ -88,11 +88,17 @@ const toBonus = (data: {
   type: string;
   destination: string;
   value: number;
-}): Bonus => ({
-  type: parseBonusType(data.type),
-  destination: data.destination,
-  value: ExpNumber.fromNumber(data.value),
-});
+}): Bonus => {
+  const destination = String(data.destination);
+  if (!isValidBonusDestination(destination)) {
+    throw new Error(`Unknown encounter bonus destination: ${destination}`);
+  }
+  return {
+    type: parseBonusType(data.type),
+    destination: data.destination,
+    value: ExpNumber.fromNumber(data.value),
+  };
+};
 
 const toEncounterDefinition = (data: EncounterData): EncounterDefinition =>
   new EncounterDefinition(
