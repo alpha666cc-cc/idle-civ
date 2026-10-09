@@ -6,6 +6,7 @@ import {
   type AchievementDefinition,
 } from "./achievements";
 import { encounterDefinitions } from "./encounters";
+import { ageDefinitions } from "./ages";
 import { GameObject } from "./gameObject";
 import { upgradeDefinitions } from "./upgrades";
 import { researchDefinitions } from "./research";
@@ -25,6 +26,7 @@ export type GamepediaCategory =
   | "achievement"
   | "stat"
   | "research"
+  | "age"
   | "combat";
 
 export type GamepediaEntry = {
@@ -249,6 +251,17 @@ for (const encounter of encounterDefinitions) {
     object: encounter,
     category: "combat",
     relatedIds: [...new Set(relatedIds)],
+  });
+}
+
+for (const age of ageDefinitions) {
+  gamepedia.register({
+    object: age,
+    category: "age",
+    relatedIds: [
+      ...age.unlocks,
+      ...age.bonuses.map(({ destination }) => String(destination).split(".")[0]),
+    ],
   });
 }
 

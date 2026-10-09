@@ -19,6 +19,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { BuildingDefinition } from "../game/buildings";
 import type { EncounterDefinition } from "../game/encounters";
+import type { AgeDefinition } from "../game/ages";
 import {
   unitDomainLabels,
   unitStatKeys,
@@ -78,6 +79,7 @@ const categoryTabs: CategoryTab[] = [
   { category: "achievement", label: "Achievements", icon: Trophy },
   { category: "stat", label: "Stats", icon: ChartColumn },
   { category: "research", label: "Research", icon: BookOpen },
+  { category: "age", label: "Ages", icon: Sparkles },
   { category: "combat", label: "Battles", icon: Swords },
 ];
 
@@ -90,6 +92,7 @@ const categoryLabels: Record<GamepediaCategory, string> = {
   achievement: "Achievements",
   stat: "Stats",
   research: "Research",
+  age: "Ages",
   combat: "Battles",
 };
 
@@ -722,6 +725,48 @@ export default function GamepediaModal({
     </div>
   );
 
+  const renderBonusList = (bonuses: readonly Bonus[], heading: string) =>
+    bonuses.length > 0 ? (
+      <>
+        <p className="gamepedia-category">{heading}</p>
+        <div className="gamepedia-effect-list">
+          {bonuses.map((bonus, index) => (
+            <div
+              className="gamepedia-effect-row"
+              key={`${bonus.type}-${bonus.destination}-${index}`}
+            >
+              <div className="gamepedia-effect-copy">
+                <span className="gamepedia-effect-meta">
+                  {bonusEffectLabel(bonus)}
+                </span>
+              </div>
+              <strong className="gamepedia-effect-total">
+                {bonusValueText(bonus, numberFormat)}
+              </strong>
+            </div>
+          ))}
+        </div>
+      </>
+    ) : null;
+
+  const renderAgeDetail = (entry: GamepediaEntry) => {
+    const age = entry.object as AgeDefinition;
+    return (
+      <div className="gamepedia-detail">
+        {renderDetailHeader(entry)}
+        <p className="gamepedia-detail-description">{age.description}</p>
+        <div className="gamepedia-stats">
+          <div className="gamepedia-stat">
+            <span>Building threshold</span>
+            <strong>{formatNumber(age.buildingThreshold, numberFormat)}</strong>
+          </div>
+        </div>
+        {renderBonusList(age.bonuses, "Age bonuses")}
+        {renderRelated(entry)}
+      </div>
+    );
+  };
+
   const renderCapacityDetail = (entry: GamepediaEntry) => {
     const resources = gameState.resources as Record<string, ExpNumber>;
     return (
@@ -1157,6 +1202,7 @@ export default function GamepediaModal({
             <strong>{encounter.isBoss ? "Yes" : "No"}</strong>
           </div>
         </div>
+        {renderBonusList(encounter.bonuses, "Battle rewards")}
         {renderRelated(entry)}
       </div>
     );
@@ -1165,6 +1211,7 @@ export default function GamepediaModal({
   const renderDetail = (entry: GamepediaEntry) => {
     if (entry.category === "unit") return renderUnitDetail(entry);
     if (entry.category === "combat") return renderBattleDetail(entry);
+    if (entry.category === "age") return renderAgeDetail(entry);
     if (entry.category === "building") return renderBuildingDetail(entry);
     if (entry.category === "resource") return renderResourceDetail(entry);
     if (entry.category === "capacity") return renderCapacityDetail(entry);
