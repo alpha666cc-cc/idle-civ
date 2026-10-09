@@ -1715,6 +1715,9 @@ export class CivilizationState {
           advancedProductionBuildings.includes(buyableId)
         )
           return true;
+        // A building never falls through to the unit scopes below: `allUnits`
+        // (and tag./domain.) must not reach buildings.
+        return false;
       }
       if (!unit) return destination === "allUnits";
       if (destination === "allUnits") return true;

@@ -623,6 +623,39 @@ describe("research buying", () => {
     );
   });
 
+  it("does not leak the Great Monument's allUnits factor onto buildings", () => {
+    // wonder0 carries costReductionFactor 0.9 → allBuildings and 0.8 → allUnits.
+    // A building must take only the 0.9; the 0.8 belongs to units alone.
+    const monument = new CivilizationState(
+      { ...emptyResourceAmounts() },
+      emptyWorkerAssignments(),
+      {},
+      emptyResourceFactors(),
+      {},
+      0,
+      ["wonder0"],
+      [],
+      [],
+      [],
+      emptyStatistics(),
+      {},
+      ExpNumber.ONE,
+      false,
+      false,
+      false,
+      [],
+    );
+    const { reductions, sources } =
+      monument.getBuildingCostModifiers("farm");
+    expect(sources.some(([, bonus]) => bonus.destination === "allUnits")).toBe(
+      false,
+    );
+    expect(reductions.factor.toNumber()).toBeCloseTo(0.9, 10);
+    expect(
+      monument.getUnitCostModifiers("warrior").reductions.factor.toNumber(),
+    ).toBeCloseTo(0.8, 10);
+  });
+
   it("scopes iron_shielding's cost factor to ground units only", () => {
     // `domain.ground` is a scope, not a unit id: it must reach every ground unit
     // and leave naval and air units untouched. The other allUnits percent cuts
