@@ -393,9 +393,7 @@ for (const key of [
         ? (state) => state.statistics.wastedResources
         : key === "tradeProductionMultiplier"
           ? (state) => calculateTradeMultiplier(state.resources.trade)
-          : key === "offlineEfficiency"
-            ? (state) => ExpNumber.fromNumber(state.getOfflineEfficiency())
-            : (state) => compoundStatValue(state, key),
+          : (state) => compoundStatValue(state, key),
     base: () =>
       building?.power ?? ExpNumber.fromNumber(getDerivedAttributeDefault(key)),
   };
@@ -999,17 +997,7 @@ export class CivilizationState {
 
   /** Offline efficiency after achievement bonuses, as a fraction of live gain. */
   getOfflineEfficiency(): number {
-    const base = getDerivedAttributeDefault("offlineEfficiency");
-    let efficiency = ExpNumber.fromNumber(base);
-    const bonusesByDest = this.activeBonusesByDestination();
-    const offlineBonuses = bonusesByDest.get("offlineEfficiency") ?? [];
-    for (const [, bonus] of offlineBonuses) {
-      if (bonus.type === "attributeFlat")
-        efficiency = efficiency.add(bonus.value);
-      if (bonus.type === "attributeMultiplier")
-        efficiency = efficiency.mul(bonus.value);
-    }
-    return Math.max(0, efficiency.toNumber());
+    return Math.max(0, this.getAttributeValue("offlineEfficiency").toNumber());
   }
 
   /**
