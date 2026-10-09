@@ -243,6 +243,15 @@ const crossoverToSqrt = (
  */
 const earnedAchievementSets = new WeakMap<readonly string[], Set<string>>();
 
+/** Cached next hoarder exponent per chain, keyed on earnedAchievements identity.
+ * Maps chain family to the next unearned exponent. This avoids scanning the
+ * entire earned achievements list on every tick to find the highest tier.
+ */
+const hoarderNextExponents = new WeakMap<
+  readonly string[],
+  Map<string, number>
+>();
+
 /** Cached activeBonuses(), keyed on the identity tuple of the four source lists
  * (upgrades, encounters, achievements, research, ages). */
 type ActiveBonusList = [sourceId: string, bonus: Bonus][];
@@ -253,6 +262,20 @@ const activeBonusCaches = new WeakMap<
     WeakMap<
       readonly string[],
       WeakMap<readonly string[], WeakMap<readonly string[], ActiveBonusList>>
+    >
+  >
+>();
+
+/** Cached activeBonusesByDestination(), indexed by destination for O(1) lookups.
+ * Same cache key as activeBonuses() since they have the same invalidation criteria. */
+type BonusMap = Map<string, [sourceId: string, bonus: Bonus][]>;
+const activeBonusByDestinationCaches = new WeakMap<
+  readonly string[],
+  WeakMap<
+    readonly string[],
+    WeakMap<
+      readonly string[],
+      WeakMap<readonly string[], WeakMap<readonly string[], BonusMap>>
     >
   >
 >();
@@ -971,8 +994,9 @@ export class CivilizationState {
   /** Offline efficiency after achievement bonuses, as a fraction of live gain. */
   getOfflineEfficiency(): number {
     let efficiency = ExpNumber.fromNumber(0.25);
-    for (const [, bonus] of this.activeBonuses()) {
-      if (bonus.destination !== "offlineEfficiency") continue;
+    const bonusesByDest = this.activeBonusesByDestination();
+    const offlineBonuses = bonusesByDest.get("offlineEfficiency") ?? [];
+    for (const [, bonus] of offlineBonuses) {
       if (bonus.type === "attributeFlat")
         efficiency = efficiency.add(bonus.value);
       if (bonus.type === "attributeMultiplier")
@@ -1046,9 +1070,10 @@ export class CivilizationState {
    */
   private remainingDrainShare(destination: string): ExpNumber {
     let remaining = ExpNumber.ONE;
-    for (const [, bonus] of this.activeBonuses()) {
+    const bonusesByDest = this.activeBonusesByDestination();
+    const drainBonuses = bonusesByDest.get(destination) ?? [];
+    for (const [, bonus] of drainBonuses) {
       if (bonus.type !== "removeDrain") continue;
-      if (bonus.destination !== destination) continue;
       const kept = ExpNumber.ONE.sub(bonus.value);
       if (kept.lte(ExpNumber.ZERO)) return ExpNumber.ZERO;
       remaining = remaining.mul(kept);
@@ -1123,15 +1148,27 @@ export class CivilizationState {
       additiveMultiplier: [],
       drain: [],
     };
-    for (const [sourceId, bonus] of this.activeBonuses()) {
-      const targetsResource = String(bonus.destination) === resourceKey;
-      const targetsAllProduction =
-        bonus.destination === "allProduction" && isProductionKey;
-      if (!targetsResource && !targetsAllProduction) continue;
+    const bonusesByDest = this.activeBonusesByDestination();
+
+    // Get bonuses specifically for this resource (O(1) lookup)
+    const resourceBonuses = bonusesByDest.get(resourceKey) ?? [];
+    for (const [sourceId, bonus] of resourceBonuses) {
       if (bonus.type === "attributeMultiplier") {
         bonusFactors.multiplicative.push([sourceId, bonus.value]);
       } else if (bonus.type === "attributeFlat") {
         bonusFactors.additional.push([sourceId, bonus.value]);
+      }
+    }
+
+    // Get bonuses for all production (O(1) lookup)
+    if (isProductionKey) {
+      const allProductionBonuses = bonusesByDest.get("allProduction") ?? [];
+      for (const [sourceId, bonus] of allProductionBonuses) {
+        if (bonus.type === "attributeMultiplier") {
+          bonusFactors.multiplicative.push([sourceId, bonus.value]);
+        } else if (bonus.type === "attributeFlat") {
+          bonusFactors.additional.push([sourceId, bonus.value]);
+        }
       }
     }
 
@@ -1262,15 +1299,25 @@ export class CivilizationState {
       additiveMultiplier: [],
       drain: [],
     };
-    for (const [sourceId, bonus] of this.activeBonuses()) {
-      const targetsResource = String(bonus.destination) === resourceKey;
-      const targetsAllProduction =
-        bonus.destination === "allProduction" && isProductionKey;
-      if (!targetsResource && !targetsAllProduction) continue;
+    const bonusesByDest = this.activeBonusesByDestination();
+
+    const resourceBonuses = bonusesByDest.get(resourceKey) ?? [];
+    for (const [sourceId, bonus] of resourceBonuses) {
       if (bonus.type === "attributeMultiplier") {
         bonusFactors.multiplicative.push([sourceId, bonus.value]);
       } else if (bonus.type === "attributeFlat") {
         bonusFactors.additional.push([sourceId, bonus.value]);
+      }
+    }
+
+    if (isProductionKey) {
+      const allProductionBonuses = bonusesByDest.get("allProduction") ?? [];
+      for (const [sourceId, bonus] of allProductionBonuses) {
+        if (bonus.type === "attributeMultiplier") {
+          bonusFactors.multiplicative.push([sourceId, bonus.value]);
+        } else if (bonus.type === "attributeFlat") {
+          bonusFactors.additional.push([sourceId, bonus.value]);
+        }
       }
     }
 
@@ -1361,8 +1408,9 @@ export class CivilizationState {
   computeClickPower(): ExpNumber {
     let flat = ExpNumber.ONE;
     let multiplier = ExpNumber.ONE;
-    for (const [, bonus] of this.activeBonuses()) {
-      if (!this.isClickPowerDestination(String(bonus.destination))) continue;
+    const bonusesByDest = this.activeBonusesByDestination();
+    const clickPowerBonuses = bonusesByDest.get("clickPower") ?? [];
+    for (const [, bonus] of clickPowerBonuses) {
       if (bonus.type === "attributeFlat") flat = flat.add(bonus.value);
       else if (bonus.type === "attributeMultiplier")
         multiplier = multiplier.mul(bonus.value);
@@ -1397,8 +1445,9 @@ export class CivilizationState {
       additional: [],
       multiplicative: [],
     };
-    for (const [sourceId, bonus] of this.activeBonuses()) {
-      if (String(bonus.destination) !== key) continue;
+    const bonusesByDest = this.activeBonusesByDestination();
+    const keyBonuses = bonusesByDest.get(key) ?? [];
+    for (const [sourceId, bonus] of keyBonuses) {
       if (bonus.type === "attributeFlat") {
         factors.additional.push([sourceId, bonus.value]);
       } else if (bonus.type === "attributeMultiplier") {
@@ -1414,11 +1463,6 @@ export class CivilizationState {
       ]);
     }
     return factors;
-  }
-
-  /** True when `destination` names the global click power attribute. */
-  private isClickPowerDestination(destination: string): boolean {
-    return destination === clickPowerStatSource;
   }
 
   setAutoClicksPerSecond(autoClicksPerSecond: number): CivilizationState {
@@ -1453,11 +1497,10 @@ export class CivilizationState {
     let max = this.resources[capacity];
 
     // Apply capacity multipliers
-    for (const [, bonus] of this.activeBonuses()) {
-      if (
-        bonus.type === "attributeMultiplier" &&
-        bonus.destination === capacity
-      ) {
+    const bonusesByDest = this.activeBonusesByDestination();
+    const capacityBonuses = bonusesByDest.get(capacity) ?? [];
+    for (const [, bonus] of capacityBonuses) {
+      if (bonus.type === "attributeMultiplier") {
         max = max.mul(bonus.value);
       }
     }
@@ -2241,6 +2284,62 @@ export class CivilizationState {
   }
 
   /**
+   * Active bonuses indexed by destination for O(1) lookups. Cached by the same
+   * identity tuple as activeBonuses() since they have identical invalidation criteria.
+   */
+  private activeBonusesByDestination(): Map<
+    string,
+    [sourceId: string, bonus: Bonus][]
+  > {
+    let byUpgrades = activeBonusByDestinationCaches.get(this.boughtUpgrades);
+    if (!byUpgrades) {
+      byUpgrades = new WeakMap<
+        readonly string[],
+        WeakMap<
+          readonly string[],
+          WeakMap<readonly string[], WeakMap<readonly string[], BonusMap>>
+        >
+      >();
+      activeBonusByDestinationCaches.set(this.boughtUpgrades, byUpgrades);
+    }
+    let byEncounters = byUpgrades.get(this.defeatedEncounters);
+    if (!byEncounters) {
+      byEncounters = new WeakMap<
+        readonly string[],
+        WeakMap<readonly string[], WeakMap<readonly string[], BonusMap>>
+      >();
+      byUpgrades.set(this.defeatedEncounters, byEncounters);
+    }
+    let byAchievements = byEncounters.get(this.earnedAchievements);
+    if (!byAchievements) {
+      byAchievements = new WeakMap<
+        readonly string[],
+        WeakMap<readonly string[], BonusMap>
+      >();
+      byEncounters.set(this.earnedAchievements, byAchievements);
+    }
+    let byResearch = byAchievements.get(this.boughtResearch);
+    if (!byResearch) {
+      byResearch = new WeakMap<readonly string[], BonusMap>();
+      byAchievements.set(this.boughtResearch, byResearch);
+    }
+    const cached = byResearch.get(this.enteredAges);
+    if (cached) return cached;
+
+    const bonuses = this.activeBonuses();
+    const byDestination = new Map<string, [sourceId: string, bonus: Bonus][]>();
+    for (const [sourceId, bonus] of bonuses) {
+      const dest = String(bonus.destination);
+      if (!byDestination.has(dest)) {
+        byDestination.set(dest, []);
+      }
+      byDestination.get(dest)!.push([sourceId, bonus]);
+    }
+    byResearch.set(this.enteredAges, byDestination);
+    return byDestination;
+  }
+
+  /**
    * Bonuses from bought researches, paired with the research id as the source.
    * Derived from the bought id list, never stored as applied values (§13.4).
    */
@@ -2338,6 +2437,33 @@ export class CivilizationState {
       earnedAchievementSets.set(this.earnedAchievements, set);
     }
     return set;
+  }
+
+  /**
+   * Cached next unearned exponent for a hoarder chain, keyed on earnedAchievements identity.
+   * This avoids scanning the entire earned achievements list on every tick.
+   */
+  private getHoarderNextExponent(chainFamily: string): number {
+    let map = hoarderNextExponents.get(this.earnedAchievements);
+    if (!map) {
+      map = new Map();
+      hoarderNextExponents.set(this.earnedAchievements, map);
+    }
+    const cached = map.get(chainFamily);
+    if (cached !== undefined) return cached;
+
+    const chain = openEndedHoarderChains.find(
+      ({ family }) => family === chainFamily,
+    );
+    if (!chain)
+      return chainFamily === "militaryHoarder" ||
+        chainFamily === "metalworkHoarder"
+        ? 3
+        : 9;
+
+    const next = nextHoarderExponent(chain, this.earnedAchievements);
+    map.set(chainFamily, next);
+    return next;
   }
 
   /** Can the player buy this unit: base-available, unlocked by a won battle or
@@ -2558,7 +2684,10 @@ export class CivilizationState {
     const ageIndex = currentAge
       ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
       : 0;
-    return formationsForUnlocks(ageIndex < 0 ? 0 : ageIndex, this.boughtResearch);
+    return formationsForUnlocks(
+      ageIndex < 0 ? 0 : ageIndex,
+      this.boughtResearch,
+    );
   }
 
   /** Whether a formation is unlocked for the current age. */
@@ -2891,6 +3020,9 @@ export class CivilizationState {
    * from the highest recorded milestone, so spending resources cannot roll the
    * chain back; a jump spanning more than 1,000 tiers collapses into one range
    * record (`…-through-e…`) whose reward sums every spanned tier.
+   *
+   * Optimized: if the next unearned tier is not met, no higher tier can be met either,
+   * so we skip the chain entirely. Uses cached next exponent to avoid scanning earned achievements.
    */
   private openEndedChainEarnings(): string[] {
     const newlyEarned: string[] = [];
@@ -2898,21 +3030,29 @@ export class CivilizationState {
       const held = this.resources[chain.resource];
       if (held.lte(ExpNumber.ZERO)) continue;
       const heldExponent = Math.floor(held.log10());
-      let exponent = nextHoarderExponent(chain, this.earnedAchievements);
+      const nextExponent = this.getHoarderNextExponent(chain.family);
+
+      // Quick rejection: if the next unearned tier isn't met, skip this chain
+      if (heldExponent < nextExponent) continue;
+
       const endExponent =
         chain.startExponent +
         Math.floor((heldExponent - chain.startExponent) / chain.exponentStep) *
           chain.exponentStep;
-      if (!Number.isSafeInteger(endExponent) || exponent > endExponent)
+      if (!Number.isSafeInteger(endExponent) || nextExponent > endExponent)
         continue;
-      const count = (endExponent - exponent) / chain.exponentStep + 1;
+      const count = (endExponent - nextExponent) / chain.exponentStep + 1;
       if (count > 1000) {
         newlyEarned.push(
-          `${chain.family}-e${exponent}-through-e${endExponent}`,
+          `${chain.family}-e${nextExponent}-through-e${endExponent}`,
         );
         continue;
       }
-      for (; exponent <= endExponent; exponent += chain.exponentStep) {
+      for (
+        let exponent = nextExponent;
+        exponent <= endExponent;
+        exponent += chain.exponentStep
+      ) {
         newlyEarned.push(`${chain.family}-e${exponent}`);
       }
     }
@@ -2975,6 +3115,27 @@ export class CivilizationState {
    */
   checkAchievements(battle?: BattleAchievementContext): CivilizationState {
     const earned = this.earnedAchievementSet();
+    const chainEarnings = this.openEndedChainEarnings();
+
+    // Quick check: if all concrete achievements are earned, only process chains
+    const allConcreteEarned = achievementDefinitions.every(({ key }) =>
+      earned.has(key),
+    );
+    if (allConcreteEarned) {
+      if (chainEarnings.length === 0) return this;
+      return this.withState(
+        this.resources,
+        this.buildingCostOverrides,
+        this.builtBuildings,
+        this.autoClicksPerSecond,
+        this.boughtUpgrades,
+        this.defeatedEncounters,
+        this.enteredAges,
+        [...this.earnedAchievements, ...chainEarnings],
+        this.statistics,
+      );
+    }
+
     const newlyEarned = [
       ...achievementDefinitions
         .filter(
@@ -2982,7 +3143,7 @@ export class CivilizationState {
             !earned.has(key) && this.meetsRequirement(requirement, battle),
         )
         .map(({ key }) => key),
-      ...this.openEndedChainEarnings(),
+      ...chainEarnings,
     ];
     if (newlyEarned.length === 0) return this;
     return this.withState(
@@ -2994,6 +3155,7 @@ export class CivilizationState {
       this.defeatedEncounters,
       this.enteredAges,
       [...this.earnedAchievements, ...newlyEarned],
+      this.statistics,
     );
   }
 
