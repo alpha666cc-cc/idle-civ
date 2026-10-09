@@ -22,6 +22,7 @@ import {
   emptyResourceFactors,
   emptyWorkerAssignments,
   findAttributeDefinition,
+  getDerivedAttributeDefault,
   producerResourceKeys,
   productionDefinitions,
   summarizeResourceFactors,
@@ -384,7 +385,7 @@ for (const key of [
 ]) {
   // A building's power base comes from its own definition (`power` in
   // buildings.json, defaulting to 1), so a building can start above or below 1;
-  // every other derived stat here is based at 1.
+  // every other derived stat here uses its default from derivedDefaults.json.
   const building = buildingDefinitions.find((b) => `${b.key}Power` === key);
   derivedAttributeComputations[key] = {
     value:
@@ -395,7 +396,8 @@ for (const key of [
           : key === "offlineEfficiency"
             ? (state) => ExpNumber.fromNumber(state.getOfflineEfficiency())
             : (state) => compoundStatValue(state, key),
-    base: () => building?.power ?? ExpNumber.fromNumber(0.25),
+    base: () =>
+      building?.power ?? ExpNumber.fromNumber(getDerivedAttributeDefault(key)),
   };
 }
 
@@ -997,7 +999,17 @@ export class CivilizationState {
 
   /** Offline efficiency after achievement bonuses, as a fraction of live gain. */
   getOfflineEfficiency(): number {
-    return Math.max(0, this.getAttributeValue("offlineEfficiency").toNumber());
+    const base = getDerivedAttributeDefault("offlineEfficiency");
+    let efficiency = ExpNumber.fromNumber(base);
+    const bonusesByDest = this.activeBonusesByDestination();
+    const offlineBonuses = bonusesByDest.get("offlineEfficiency") ?? [];
+    for (const [, bonus] of offlineBonuses) {
+      if (bonus.type === "attributeFlat")
+        efficiency = efficiency.add(bonus.value);
+      if (bonus.type === "attributeMultiplier")
+        efficiency = efficiency.mul(bonus.value);
+    }
+    return Math.max(0, efficiency.toNumber());
   }
 
   /**

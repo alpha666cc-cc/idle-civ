@@ -1,0 +1,17 @@
+{
+  "clickPower": 1,
+  "autoClickRate": 0,
+  "buildingCostMultiplier": 1,
+  "wastedResources": 0,
+  "tradeProductionMultiplier": 1,
+  "tradeRoutes": 1,
+  "offlineEfficiency": 0.25,
+  "foodProductionPerWorker": 1,
+  "woodProductionPerWorker": 1,
+  "stoneProductionPerWorker": 1,
+  "goldProductionPerWorker": 1,
+  "militaryProductionPerWorker": 1,
+  "scienceProductionPerWorker": 1,
+  "metalworkProductionPerWorker": 1,
+  "tradeProductionPerWorker": 1
+}

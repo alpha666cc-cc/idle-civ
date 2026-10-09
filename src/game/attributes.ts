@@ -1,7 +1,17 @@
 import { buildingDefinitions } from "./buildings";
 import statData from "./data/stats.json";
+import derivedDefaults from "./data/derivedDefaults.json";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
+
+/**
+ * Default values for derived attributes, read from JSON.
+ * Building powers use their definition's power field instead.
+ */
+export const getDerivedAttributeDefault = (key: string): number => {
+  const defaults = derivedDefaults as Record<string, number>;
+  return defaults[key] ?? 1;
+};
 
 /**
  * Attribute families (AGENTS.md §13.2): every value a bonus destination can name on
@@ -192,8 +202,8 @@ export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
 derivedAttributeDefinitions.push(...buildingPowerAttributeDefinitions);
 
 /**
- * Production-per-worker stats: one per production resource, base 1, multiplied by
- * bonuses targeting `<resource>ProductionPerWorker` or the group targets
+ * Production-per-worker stats: one per production resource, base from derivedDefaults.json,
+ * multiplied by bonuses targeting `<resource>ProductionPerWorker` or the group targets
  * `basicProductionPerWorker` (food/wood/stone/gold), `advancedProductionPerWorker`
  * (military/science/metalwork/trade), or `allProductionPerWorker` (all 8).
  */
@@ -204,20 +214,20 @@ const productionPerWorkerAttributeDefinitions: AttributeDefinition[] =
         `${key}ProductionPerWorker` as DerivedAttributeKey,
         `${label} production per worker`,
         "derived",
-        `Base 1 worker production for ${label.toLowerCase()}. Multiplied by bonuses to make workers more effective.`,
-        1,
+        `Base ${getDerivedAttributeDefault(`${key}ProductionPerWorker`)} worker production for ${label.toLowerCase()}. Multiplied by bonuses to make workers more effective.`,
+        getDerivedAttributeDefault(`${key}ProductionPerWorker`),
       ),
   );
 
 derivedAttributeDefinitions.push(...productionPerWorkerAttributeDefinitions);
 
-/** Offline efficiency: the fraction of live production gained while offline (base 0.25). */
+/** Offline efficiency: the fraction of live production gained while offline. */
 const offlineEfficiencyDefinition = new AttributeDefinition(
   "offlineEfficiency",
   "Offline Efficiency",
   "derived",
-  "Fraction of live production gained while offline. Base 0.25; bonuses raise it.",
-  0.25,
+  "Fraction of live production gained while offline. Default 0.25; bonuses raise it.",
+  getDerivedAttributeDefault("offlineEfficiency"),
 );
 
 derivedAttributeDefinitions.push(offlineEfficiencyDefinition);
