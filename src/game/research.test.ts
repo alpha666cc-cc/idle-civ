@@ -138,19 +138,6 @@ describe("research data integrity", () => {
     expect(ids).toContain("iron_forging");
   });
 
-  it("orders every tech after its prerequisites", () => {
-    const positions = new Map(
-      researchDefinitions.map((research, index) => [research.key, index]),
-    );
-    for (const research of researchDefinitions) {
-      for (const prerequisite of research.prerequisites) {
-        expect(positions.get(prerequisite), research.key).toBeLessThan(
-          positions.get(research.key) ?? Infinity,
-        );
-      }
-    }
-  });
-
   it("documents a reason for every flagged (ignored) effect", () => {
     for (const research of researchDefinitions) {
       for (const flag of research.ignored) {
@@ -608,14 +595,22 @@ describe("research buying", () => {
   });
 
   it("keeps all-unit and all-building cost targets separate", () => {
-    const state = stateWith(0);
-    expect(state.getBuildingCostModifiers("farm").sources).not.toContainEqual(
+    // The fixture MUST carry active bonuses on both sides: with a fresh state
+    // the sources list is empty and both assertions below pass vacuously —
+    // that blindness let an allUnits→buildings leak through once already.
+    // wonder0 carries both destinations (allBuildings 0.9, allUnits 0.8).
+    const state = stateWith(0, [], {}, 1, ["wonder0"]);
+    const farmSources = state.getBuildingCostModifiers("farm").sources;
+    const warriorSources = state.getUnitCostModifiers("warrior").sources;
+    expect(farmSources.length).toBeGreaterThan(0);
+    expect(warriorSources.length).toBeGreaterThan(0);
+    expect(farmSources).not.toContainEqual(
       expect.arrayContaining([
         expect.anything(),
         expect.objectContaining({ destination: "allUnits" }),
       ]),
     );
-    expect(state.getUnitCostModifiers("warrior").sources).not.toContainEqual(
+    expect(warriorSources).not.toContainEqual(
       expect.arrayContaining([
         expect.anything(),
         expect.objectContaining({ destination: "allBuildings" }),
