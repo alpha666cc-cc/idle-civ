@@ -6,33 +6,33 @@ import {
   createSaveData,
   SAVE_VERSION,
   serializeSave,
-} from "../src/game/saveSystem";
-import { describeSaveEntry, loadSaveEntry, writeSaveEntry } from "./saveEntry";
+} from "../../src/game/saveSystem";
+import { describeSaveEntry, loadSaveEntry, writeSaveEntry } from "../saveEntry";
 import {
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
   type ProductionResourceKey,
   type ResourceKey,
-} from "../src/game/attributes";
-import { buildingDefinitions, type BuildingKey } from "../src/game/buildings";
-import { encounterDefinitions } from "../src/game/encounters";
-import { CivilizationState } from "../src/game/civilizationState";
-import { ExpNumber } from "../src/game/expNumber";
-import { emptyStatistics } from "../src/game/statistics";
-import { GameSimulation, createInitialState } from "./simulation";
+} from "../../src/game/attributes";
+import { buildingDefinitions, type BuildingKey } from "../../src/game/buildings";
+import { encounterDefinitions } from "../../src/game/encounters";
+import { CivilizationState } from "../../src/game/civilizationState";
+import { ExpNumber } from "../../src/game/expNumber";
+import { emptyStatistics } from "../../src/game/statistics";
+import { GameSimulation, createInitialState } from "../simulation";
 import type {
   SimulationAction,
   SimulationContext,
   SimulationStrategy,
-} from "./simulation";
-import type { SimulatorResult } from "../src/game/battleSimulator";
+} from "../simulation";
+import type { SimulatorResult } from "../../src/game/battleSimulator";
 import {
   AgeOnePolicy,
   defaultPolicy,
   getFastestWorkerAllocation,
   getSimulatorPlanCosts,
-} from "./age1-policy";
+} from "../age1-policy";
 
 /**
  * A decision context for a fixture. `SimulationContext.timing` is the run's live
@@ -66,11 +66,11 @@ import {
   getSimulatorBattlePlan,
   getStrategy,
   setAdaptiveWorkerFunding,
-} from "./strategies";
+} from "../strategies";
 import {
   getFastestWorkerAllocation as getFastestFundingAllocation,
   missingCostSeconds,
-} from "./workerFunding";
+} from "../workerFunding";
 
 describe("simulation event snapshots", () => {
   const makeActionRateState = () =>

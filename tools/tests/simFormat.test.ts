@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatExpoNumber } from "./simFormat";
+import { formatExpoNumber } from "../simFormat";
 
 describe("formatExpoNumber", () => {
   it("rounds readable values to two decimals and trims trailing zeros", () => {

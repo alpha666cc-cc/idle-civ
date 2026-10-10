@@ -12,9 +12,9 @@ import {
   progression,
   settleAchievements,
   woodWorkerFloor,
-} from "./analytic.js";
-import { CivilizationState } from "../src/game/civilizationState.js";
-import { researchDefinitions } from "../src/game/research.js";
+} from "../analytic.js";
+import { CivilizationState } from "../../src/game/civilizationState.js";
+import { researchDefinitions } from "../../src/game/research.js";
 
 /**
  * The closed-form cost inversion is the load-bearing claim of this module: it is

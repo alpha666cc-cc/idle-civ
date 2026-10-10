@@ -5,16 +5,16 @@ import {
   emptyWorkerAssignments,
   type ProductionResourceKey,
   type ResourceKey,
-} from "../src/game/attributes";
-import { type BuildingKey } from "../src/game/buildings";
-import { CivilizationState } from "../src/game/civilizationState";
-import { encounterDefinitions } from "../src/game/encounters";
-import { ExpNumber } from "../src/game/expNumber";
-import { researchDefinitions } from "../src/game/research";
-import { emptyStatistics } from "../src/game/statistics";
-import { getBestRoiAction, getBuyableRoi, getRoiCandidates } from "./roi";
-import { getStrategy } from "./strategies";
-import type { SimulationContext } from "./simulation";
+} from "../../src/game/attributes";
+import { type BuildingKey } from "../../src/game/buildings";
+import { CivilizationState } from "../../src/game/civilizationState";
+import { encounterDefinitions } from "../../src/game/encounters";
+import { ExpNumber } from "../../src/game/expNumber";
+import { researchDefinitions } from "../../src/game/research";
+import { emptyStatistics } from "../../src/game/statistics";
+import { getBestRoiAction, getBuyableRoi, getRoiCandidates } from "../roi";
+import { getStrategy } from "../strategies";
+import type { SimulationContext } from "../simulation";
 
 /**
  * A decision context for a fixture. `SimulationContext.timing` is the run's live

@@ -6,23 +6,23 @@ import {
   type ResourceAmounts,
   type ResourceKey,
   type WorkerAssignments,
-} from "../src/game/attributes";
-import type { BuildingKey } from "../src/game/buildings";
-import { CivilizationState } from "../src/game/civilizationState";
-import { ExpNumber } from "../src/game/expNumber";
-import { emptyStatistics } from "../src/game/statistics";
+} from "../../src/game/attributes";
+import type { BuildingKey } from "../../src/game/buildings";
+import { CivilizationState } from "../../src/game/civilizationState";
+import { ExpNumber } from "../../src/game/expNumber";
+import { emptyStatistics } from "../../src/game/statistics";
 import {
   TRADE_INTENSITY_STOPS,
   tradeIntensityForStop,
   type TradeRouteMap,
-} from "../src/game/trade";
-import { getStrategy } from "./strategies";
+} from "../../src/game/trade";
+import { getStrategy } from "../strategies";
 import {
   getTradeDirective,
   getTradeRouteAction,
   tradeProfile,
-} from "./tradeAdvisor";
-import { GameSimulation, type SimulationStrategy } from "./simulation";
+} from "../tradeAdvisor";
+import { GameSimulation, type SimulationStrategy } from "../simulation";
 
 /** Ten food and one gold per second before the reserve's trade multiplier. */
 const workers = (food: number, gold: number): WorkerAssignments => ({
