@@ -465,6 +465,11 @@
         "type": "attributeMultiplier",
         "destination": "food",
         "value": 1000
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 5
       }
     ],
     "unlocks": []

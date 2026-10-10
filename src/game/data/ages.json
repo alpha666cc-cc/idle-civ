@@ -61,13 +61,13 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "basicProductionPerWorker",
-        "value": 1.0
+        "destination": "allProductionPerWorker",
+        "value": 2.0
       },
       {
         "type": "attributeMultiplier",
         "destination": "advancedProductionPerWorker",
-        "value": 1.0
+        "value": 5.0
       }
     ]
   },
