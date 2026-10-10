@@ -3,14 +3,14 @@ import {
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
-} from "./attributes";
-import { CivilizationState } from "./civilizationState";
-import { ExpNumber } from "./expNumber";
-import { emptyStatistics } from "./statistics";
-import { researchDefinitions } from "./research";
-import { findAgeDefinition } from "./ages";
-import { upgradeDefinitions } from "./upgrades";
-import { deserializeStatistics, serializeStatistics } from "./saveSystem";
+} from "../attributes";
+import { CivilizationState } from "../civilizationState";
+import { ExpNumber } from "../expNumber";
+import { emptyStatistics } from "../statistics";
+import { researchDefinitions } from "../research";
+import { findAgeDefinition } from "../ages";
+import { upgradeDefinitions } from "../upgrades";
+import { deserializeStatistics, serializeStatistics } from "../saveSystem";
 
 
 /** A fresh age0 state with the same pile of food and wood. */

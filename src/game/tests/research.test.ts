@@ -1,31 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { CivilizationState } from "./civilizationState";
+import { CivilizationState } from "../civilizationState";
 import {
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
-} from "./attributes";
-import { emptyStatistics } from "./statistics";
-import { ExpNumber } from "./expNumber";
-import { findAgeDefinition, ageDefinitions } from "./ages";
-import { encounterDefinitions } from "./encounters";
-import type { BuildingKey } from "./buildings";
+} from "../attributes";
+import { emptyStatistics } from "../statistics";
+import { ExpNumber } from "../expNumber";
+import { findAgeDefinition, ageDefinitions } from "../ages";
+import { encounterDefinitions } from "../encounters";
+import type { BuildingKey } from "../buildings";
 import {
   findResearchDefinition,
   researchDefinitions,
   researchIdsForBattle,
   researchesUnlockingUnit,
-} from "./research";
+} from "../research";
 import {
   SAVE_VERSION,
   createSaveData,
   loadSaveData,
   migrateSaveData,
-} from "./saveSystem";
-import { isBuyableUnit, unitDefinitions } from "./units";
-import { UpgradeDefinition, upgradeDefinitions } from "./upgrades";
-import { parseBonus } from "./bonus";
-import { formationDefinitions, type FormationId } from "./formations";
+} from "../saveSystem";
+import { isBuyableUnit, unitDefinitions } from "../units";
+import { UpgradeDefinition, upgradeDefinitions } from "../upgrades";
+import { parseBonus } from "../bonus";
+import { formationDefinitions, type FormationId } from "../formations";
 
 /**
  * An age0 state with a pool of science to buy research with. Research is priced
@@ -803,7 +803,7 @@ describe("research in the save system", () => {
   });
 
   it("resolves every research id in the guid registry", async () => {
-    const { entryGuidById } = await import("./dataIds");
+    const { entryGuidById } = await import("../dataIds");
     for (const research of researchDefinitions) {
       expect(entryGuidById.get(research.key), research.key).toBeDefined();
     }

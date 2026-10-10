@@ -17,18 +17,18 @@ import {
   simulateBattle,
   simulateBattleOutcome,
   type BattleOrder,
-} from "./battle";
-import { ordersForAge } from "./orders";
+} from "../battle";
+import { ordersForAge } from "../orders";
 import {
   simulatorCandidates,
   solveMinimumArmy,
   type SimulatorTotalArmy,
-} from "./battleSimulator";
-import { CivilizationState } from "./civilizationState";
-import { encounterDefinitions } from "./encounters";
-import { findUnitDefinition } from "./units";
-import { ExpNumber } from "./expNumber";
-import { researchIdsForBattle } from "./research";
+} from "../battleSimulator";
+import { CivilizationState } from "../civilizationState";
+import { encounterDefinitions } from "../encounters";
+import { findUnitDefinition } from "../units";
+import { ExpNumber } from "../expNumber";
+import { researchIdsForBattle } from "../research";
 
 type Army = readonly (readonly [string, number])[];
 

@@ -12,27 +12,27 @@ import {
   invalidGuids,
   resolveEntryId,
   snapshotGuids,
-} from "./dataIds";
+} from "../dataIds";
 import {
   calculateOfflineGain,
   createSaveData,
   findUnknownContentIds,
   loadSaveData,
-} from "./saveSystem";
-import { ageDefinitions } from "./ages";
-import { buildingDefinitions } from "./buildings";
-import { achievementDefinitions } from "./achievements";
-import { encounterDefinitions } from "./encounters";
-import { upgradeDefinitions } from "./upgrades";
-import { unitDefinitions } from "./units";
-import { CivilizationState } from "./civilizationState";
+} from "../saveSystem";
+import { ageDefinitions } from "../ages";
+import { buildingDefinitions } from "../buildings";
+import { achievementDefinitions } from "../achievements";
+import { encounterDefinitions } from "../encounters";
+import { upgradeDefinitions } from "../upgrades";
+import { unitDefinitions } from "../units";
+import { CivilizationState } from "../civilizationState";
 import {
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
-} from "./attributes";
-import { ExpNumber } from "./expNumber";
-import { emptyStatistics } from "./statistics";
+} from "../attributes";
+import { ExpNumber } from "../expNumber";
+import { emptyStatistics } from "../statistics";
 
 /**
  * Content-integrity guards. These are the tests that fail when a data edit would

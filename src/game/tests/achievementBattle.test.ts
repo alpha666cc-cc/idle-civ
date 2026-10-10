@@ -3,12 +3,12 @@ import {
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
-} from "./attributes";
-import type { BattleSimulation } from "./battle";
-import { CivilizationState } from "./civilizationState";
-import { ExpNumber } from "./expNumber";
-import { emptyStatistics } from "./statistics";
-import { unitStatKeys } from "./units";
+} from "../attributes";
+import type { BattleSimulation } from "../battle";
+import { CivilizationState } from "../civilizationState";
+import { ExpNumber } from "../expNumber";
+import { emptyStatistics } from "../statistics";
+import { unitStatKeys } from "../units";
 
 const achievementId = "aGoodLegalCheatForBattle";
 const firstBattle = "age0_1_first_fire";

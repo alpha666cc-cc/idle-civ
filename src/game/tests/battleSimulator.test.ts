@@ -4,10 +4,10 @@ import {
   solveMinimumArmy,
   type SimulatorOwnedArmy,
   type SimulatorTotalArmy,
-} from "./battleSimulator";
-import { ExpNumber } from "./expNumber";
-import { simulateBattle, simulateBattleOutcome } from "./battle";
-import { findUnitDefinition } from "./units";
+} from "../battleSimulator";
+import { ExpNumber } from "../expNumber";
+import { simulateBattle, simulateBattleOutcome } from "../battle";
+import { findUnitDefinition } from "../units";
 
 const battleId = "age0_1_first_fire";
 const warrior = findUnitDefinition("warrior");

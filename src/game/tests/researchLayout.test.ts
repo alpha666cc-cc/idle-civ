@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import researchData from "./data/research.json";
-import layoutData from "./data/researchLayout.json";
+import researchData from "../data/research.json";
+import layoutData from "../data/researchLayout.json";
 import {
   AGE_CARD_ROWS,
   routeTechEdge,
@@ -8,7 +8,7 @@ import {
   techRect,
   type Point,
   type TechPlacement,
-} from "./researchLayout";
+} from "../researchLayout";
 
 /**
  * The research tree ships as a fixed-pixel grid (`data/researchLayout.json`)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CivilizationState } from "./civilizationState";
+import { CivilizationState } from "../civilizationState";
 import {
   DEFAULT_DEV_LOG_SNAPSHOT_SECONDS,
   appendDevLogEvent,
@@ -12,19 +12,19 @@ import {
   devLogGameSeconds,
   diffDevLogEvents,
   isDevLogSnapshotDue,
-} from "./devLog";
+} from "../devLog";
 import {
   createSaveData,
   loadSaveData,
   saveFromJson,
   saveToJson,
-} from "./saveSystem";
+} from "../saveSystem";
 import {
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
-} from "./attributes";
-import { emptyStatistics } from "./statistics";
+} from "../attributes";
+import { emptyStatistics } from "../statistics";
 
 const runId = "abcdef12-3456-7890-abcd-ef1234567890";
 

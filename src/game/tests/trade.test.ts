@@ -7,12 +7,12 @@ import {
   type ResourceFactor,
   type ResourceKey,
   type WorkerAssignments,
-} from "./attributes";
-import type { BuildingKey } from "./buildings";
-import { CivilizationState } from "./civilizationState";
-import { ExpNumber } from "./expNumber";
-import { formatNumber } from "./numberFormat";
-import { emptyStatistics } from "./statistics";
+} from "../attributes";
+import type { BuildingKey } from "../buildings";
+import { CivilizationState } from "../civilizationState";
+import { ExpNumber } from "../expNumber";
+import { formatNumber } from "../numberFormat";
+import { emptyStatistics } from "../statistics";
 import {
   calculateTradeMultiplier,
   clampTradeIntensity,
@@ -26,7 +26,7 @@ import {
   unitsForVolume,
   type TradeResourceKey,
   type TradeRouteMap,
-} from "./trade";
+} from "../trade";
 
 /**
  * A settlement with the given stock, workers and buildings. Prices read the live

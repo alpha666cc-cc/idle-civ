@@ -4,10 +4,10 @@ import {
   emptyResourceFactors,
   emptyWorkerAssignments,
   type ResourceKey,
-} from "./attributes";
-import { CivilizationState } from "./civilizationState";
-import { ExpNumber } from "./expNumber";
-import { emptyStatistics } from "./statistics";
+} from "../attributes";
+import { CivilizationState } from "../civilizationState";
+import { ExpNumber } from "../expNumber";
+import { emptyStatistics } from "../statistics";
 
 /**
  * A settlement at `population` citizens. `people` carries a real food drain, so

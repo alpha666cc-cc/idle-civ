@@ -3,11 +3,11 @@ import {
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
-} from "./attributes";
-import { buildingDefinitions } from "./buildings";
-import { CivilizationState } from "./civilizationState";
-import { ExpNumber } from "./expNumber";
-import { emptyStatistics } from "./statistics";
+} from "../attributes";
+import { buildingDefinitions } from "../buildings";
+import { CivilizationState } from "../civilizationState";
+import { ExpNumber } from "../expNumber";
+import { emptyStatistics } from "../statistics";
 
 /** A settlement that can afford anything, with the given buildings standing. */
 const stateWith = (built: Record<string, number> = {}): CivilizationState =>

@@ -26,29 +26,29 @@ import {
   serializeSave,
   toBase64,
   type SaveData,
-} from "./saveSystem";
-import { CivilizationState } from "./civilizationState";
+} from "../saveSystem";
+import { CivilizationState } from "../civilizationState";
 import {
   emptyResourceAmounts,
   emptyResourceFactors,
   emptyWorkerAssignments,
-} from "./attributes";
-import { type BuildingKey } from "./buildings";
-import { entryGuidById, entryIdByGuid } from "./dataIds";
-import { ExpNumber } from "./expNumber";
-import { emptyStatistics } from "./statistics";
-import { isTradeRouteSource, type TradeMode } from "./trade";
+} from "../attributes";
+import { type BuildingKey } from "../buildings";
+import { entryGuidById, entryIdByGuid } from "../dataIds";
+import { ExpNumber } from "../expNumber";
+import { emptyStatistics } from "../statistics";
+import { isTradeRouteSource, type TradeMode } from "../trade";
 import {
   achievementDefinitions,
   findAchievementDefinition,
-} from "./achievements";
-import { ageDefinitions } from "./ages";
-import { buildingDefinitions } from "./buildings";
-import { encounterDefinitions } from "./encounters";
-import { researchDefinitions } from "./research";
-import { unitDefinitions } from "./units";
-import { upgradeDefinitions } from "./upgrades";
-import offlineGainVectors from "./data/offlineGainVectors.json";
+} from "../achievements";
+import { ageDefinitions } from "../ages";
+import { buildingDefinitions } from "../buildings";
+import { encounterDefinitions } from "../encounters";
+import { researchDefinitions } from "../research";
+import { unitDefinitions } from "../units";
+import { upgradeDefinitions } from "../upgrades";
+import offlineGainVectors from "../../../tools/tests/offlineGainVectors.json";
 
 /** A state that exercises every field the save has to carry. */
 const sampleState = (): CivilizationState =>

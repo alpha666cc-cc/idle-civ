@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ExpNumber } from "./expNumber";
-import { formatNumber, formatWholeNumber } from "./numberFormat";
+import { ExpNumber } from "../expNumber";
+import { formatNumber, formatWholeNumber } from "../numberFormat";
 
 describe("player-facing number rounding", () => {
   it("hides floating-point noise in every number format", () => {

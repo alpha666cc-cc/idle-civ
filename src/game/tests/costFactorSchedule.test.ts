@@ -5,7 +5,7 @@ import {
   costFactorAt,
   costFactorSteps,
   productionStepFromCount,
-} from "./costFactorSchedule";
+} from "../costFactorSchedule";
 
 /**
  * The schedule is a design artifact walking k from its modeled start to the

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ExpNumber } from "./expNumber";
+import { ExpNumber } from "../expNumber";
 
 describe("ExpNumber cancellation", () => {
   it("returns exact whole numbers after a cancelling subtraction", () => {

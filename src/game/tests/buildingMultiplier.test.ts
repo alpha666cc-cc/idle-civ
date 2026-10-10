@@ -7,11 +7,11 @@ import {
   findAttributeDefinition,
   summarizeResourceFactors,
   type WorkerAssignments,
-} from "./attributes";
-import { buildingDefinitions, type BuildingKey } from "./buildings";
-import { CivilizationState } from "./civilizationState";
-import { ExpNumber } from "./expNumber";
-import { emptyStatistics } from "./statistics";
+} from "../attributes";
+import { buildingDefinitions, type BuildingKey } from "../buildings";
+import { CivilizationState } from "../civilizationState";
+import { ExpNumber } from "../expNumber";
+import { emptyStatistics } from "../statistics";
 
 /** An age0 state with the given building counts and worker split. */
 const stateWith = (
