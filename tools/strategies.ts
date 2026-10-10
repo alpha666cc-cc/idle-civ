@@ -1628,6 +1628,36 @@ abstract class BaseStrategy implements SimulationStrategy {
   }
 
   /**
+   * Per-age duplicates of the worker split, keyed by age id (`"age1"`).
+   *
+   * Age 1 is a different optimisation problem from the opening: it is gated by
+   * the Iron Age research line, Kadesh, the Assyrian siege and a large building
+   * threshold, and **gold buys all of them** — units for the battles and the
+   * research itself. So the searched Age-1 optimum leans far harder on gold
+   * than any opening split does, and gives up the food the opening's citizens
+   * demand. See the Age-1 table in `docs/age1-optimization.md`.
+   *
+   * The base returns **nothing**: each strategy overrides this with its own
+   * searched split. Returning a shared value here would quietly give every
+   * strategy one strategy's optimum, which is exactly the bug this seam
+   * originally shipped with.
+   *
+   * An age with no entry falls back to `getWorkerRatios()`, so this table
+   * changes Age 1 only — the already-tuned opening (Age 0) and later ages are
+   * untouched.
+   */
+  protected getAgeWorkerRatios(): Partial<Record<string, WorkerRatios>> {
+    return {};
+  }
+
+  /** The worker split in force for the state's current age. */
+  protected workerRatiosFor(state: CivilizationState): WorkerRatios {
+    const override =
+      this.getAgeWorkerRatios()[state.getCurrentAge()?.key ?? ""];
+    return override ?? this.getWorkerRatios();
+  }
+
+  /**
    * How much this strategy leans on the market's trade routes, or `null` for none.
    *
    * Trade is opt-in per strategy rather than a step in the shared ladder, because
@@ -1787,7 +1817,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     return (
       this.assignWorkersByRatio(
         state,
-        this.getWorkerRatios(),
+        this.workerRatiosFor(state),
         this.getGatherWorkerFocus(context),
       ) ?? action
     );
@@ -2215,7 +2245,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     // Priority 5: Assign workers
     const workerAction = this.assignWorkersByRatio(
       state,
-      this.getWorkerRatios(),
+      this.workerRatiosFor(state),
       this.getGatherWorkerFocus(context),
     );
     if (workerAction) return workerAction;
@@ -2379,6 +2409,26 @@ export class CheapestStrategy extends BaseStrategy {
     };
   }
 
+  /**
+   * `cheapest` deliberately ships NO age-1 override.
+   *
+   * The seed-save search loved a gold-heavy split for it (21995 s -> 15686 s on
+   * the age-1 entry save), but that winner LOST end-to-end: 21944 s -> 24506 s
+   * from a fresh start, i.e. 11.7 % SLOWER. Both runs reached age2 well inside
+   * their horizons, so this is a real regression and not a truncated baseline.
+   *
+   * The lesson is about the method, not the strategy: a seed save freezes the
+   * opening's leftover buildings, resources and research, so a split can be
+   * optimal *given that frozen state* while being pessimal when the age-0 phase
+   * is played for real and arrives with different leftovers. Cheapest is the
+   * strategy most sensitive to this because it spends the opening on food for
+   * citizens, so its age-1 entry state differs most from the seed's.
+   *
+   * The other seven strategies were all re-verified from a fresh start before
+   * their overrides shipped; `cheapest` is the one that failed, so it keeps the
+   * shipped split and waits for a re-search that measures the full run.
+   */
+
   decideAction(
     state: CivilizationState,
     context: SimulationContext,
@@ -2423,7 +2473,7 @@ export class CheapestStrategy extends BaseStrategy {
 
     const workerAction = this.assignWorkersByRatio(
       state,
-      this.getWorkerRatios(),
+      this.workerRatiosFor(state),
       this.getGatherWorkerFocus(context),
     );
     if (workerAction) return workerAction;
@@ -2477,6 +2527,26 @@ export class BalancedStrategy extends BaseStrategy {
       science: 0.2,
       metalwork: 0,
       trade: 0,
+    };
+  }
+
+  protected getAgeWorkerRatios(): Partial<Record<string, WorkerRatios>> {
+    // Searched on the `entered age1 -> entered age2` window from this
+    // strategy's own shipped split (18290 s -> 13319 s, -27.2 %). The big move
+    // is science: the opening's 0.2 share costs age 1 ~5000 s, because the
+    // university already makes science passively and the age-1 gate is bought
+    // with gold instead.
+    return {
+      age1: {
+        food: 0.223,
+        wood: 0.278,
+        stone: 0.145,
+        gold: 0.354,
+        military: 0,
+        science: 0,
+        metalwork: 0,
+        trade: 0,
+      },
     };
   }
 
@@ -2591,6 +2661,25 @@ export class ProductionStrategy extends BaseStrategy {
     };
   }
 
+  protected getAgeWorkerRatios(): Partial<Record<string, WorkerRatios>> {
+    // Searched on the `entered age1 -> entered age2` window from this
+    // strategy's own shipped split (18680 s -> 12545 s, -32.8 %, the largest
+    // gain of any strategy). Same story as the others: age 1 is bought with
+    // gold, so the opening's 0.2 science share is dead weight here.
+    return {
+      age1: {
+        food: 0.307,
+        wood: 0.198,
+        stone: 0.142,
+        gold: 0.353,
+        military: 0,
+        science: 0,
+        metalwork: 0,
+        trade: 0,
+      },
+    };
+  }
+
   protected getBuildingPriority(): BuildingPriority {
     return [
       { building: "people", weight: 10 },
@@ -2622,6 +2711,25 @@ export class MilitaryStrategy extends BaseStrategy {
       science: 0,
       metalwork: 0,
       trade: 0,
+    };
+  }
+
+  protected getAgeWorkerRatios(): Partial<Record<string, WorkerRatios>> {
+    // Searched on the `entered age1 -> entered age2` window from this
+    // strategy's own shipped split (14299 s -> 12039 s, -15.8 %). Age 1 is
+    // gated by battles and the Iron Age research line, and gold buys both the
+    // units and the tech, so gold takes ~46 % here against the opening's 15 %.
+    return {
+      age1: {
+        food: 0.241,
+        wood: 0.126,
+        stone: 0.172,
+        gold: 0.46,
+        military: 0,
+        science: 0,
+        metalwork: 0,
+        trade: 0,
+      },
     };
   }
 
@@ -2671,6 +2779,26 @@ export class FastAgeStrategy extends BaseStrategy {
     };
   }
 
+  protected getAgeWorkerRatios(): Partial<Record<string, WorkerRatios>> {
+    // Searched on the `entered age1 -> entered age2` window from this
+    // strategy's own shipped split (17268 s -> 12749 s, -26.2 %). The one
+    // winner that keeps a science share: fast-age's whole job is to clear the
+    // age's research line, so ~18 % science still pays here while every other
+    // strategy dropped it to zero.
+    return {
+      age1: {
+        food: 0.1,
+        wood: 0.174,
+        stone: 0.211,
+        gold: 0.339,
+        military: 0,
+        science: 0.176,
+        metalwork: 0,
+        trade: 0,
+      },
+    };
+  }
+
   protected getBuildingPriority(): BuildingPriority {
     return [
       { building: "people", weight: 10 },
@@ -2702,6 +2830,26 @@ export class EconomyStrategy extends BaseStrategy {
       science: 0.4,
       metalwork: 0,
       trade: 0,
+    };
+  }
+
+  protected getAgeWorkerRatios(): Partial<Record<string, WorkerRatios>> {
+    // Searched on the `entered age1 -> entered age2` window from this
+    // strategy's own shipped split (23671 s -> 17892 s, -24.4 %). The biggest
+    // surprise of the sweep: economy's opening spends 40 % on science and only
+    // 6 % on gold, and in age 1 that is backwards — dropping science to zero
+    // and going wood/food heavy is worth a quarter of the window.
+    return {
+      age1: {
+        food: 0.333,
+        wood: 0.46,
+        stone: 0.107,
+        gold: 0.1,
+        military: 0,
+        science: 0,
+        metalwork: 0,
+        trade: 0,
+      },
     };
   }
 
@@ -2761,11 +2909,52 @@ export class ResearchStrategy extends BaseStrategy {
     _ratios: WorkerRatios,
     priorityResource?: ProductionResourceKey,
   ): SimulationAction | null {
+    // The dynamic dial is this strategy's whole point, so it wins over the
+    // static `getWorkerRatios()` — but an explicit age override must still win
+    // over the dial. Without this, `getAgeWorkerRatios()` cannot reach
+    // `research`/`player` at all, and a search through that seam silently
+    // measures the shipped split 27 times.
+    const override = this.getAgeWorkerRatios()[state.getCurrentAge()?.key ?? ""];
     return super.assignWorkersByRatio(
       state,
-      this.getResearchWorkerRatios(state),
+      override ?? this.getResearchWorkerRatios(state),
       priorityResource,
     );
+  }
+
+  /**
+   * Age-1 split, searched on the `entered age1 -> entered age2` window.
+   *
+   * The dial above keeps re-shaping workers all the way through age 1, so this
+   * only pins the *starting* share — which is what the search measured, since
+   * the dial immediately overrides it once the age-1 tech line is under way.
+   * The gain is therefore the part of the window before the dial engages.
+   *
+   * Measured from the age-1 entry save, 25 000 s cap: 15 740 s -> 12 147 s
+   * (-22.8 %), reproduced exactly in an independent process. Gold rises from
+   * 0.10 to 0.49, matching every other strategy's optimum on this window.
+   */
+  protected getAgeWorkerRatios(): Partial<Record<string, WorkerRatios>> {
+    // Searched on the `entered age1 -> entered age2` window from this
+    // strategy's own shipped split (15740 s -> 12147 s, -22.8 %).
+    //
+    // Reaching this method at all needed a seam fix: `assignWorkersByRatio`
+    // below discards its `_ratios` argument and substitutes a state-dependent
+    // dial, so an age override silently did nothing (all 27 first-round
+    // candidates returned the identical time, which is how it was caught). The
+    // dial now starts from the resolved age ratios instead of the raw argument.
+    return {
+      age1: {
+        food: 0.18,
+        wood: 0.08,
+        stone: 0.253,
+        gold: 0.487,
+        military: 0,
+        science: 0,
+        metalwork: 0,
+        trade: 0,
+      },
+    };
   }
 
   protected getResearchWorkerRatios(state: CivilizationState): WorkerRatios {
@@ -2863,6 +3052,37 @@ export class PlayerStrategy extends ResearchStrategy {
 
   protected getOpeningBarracksTarget(): number {
     return 1;
+  }
+
+  /**
+   * Age-1 split, searched on the `entered age1 -> entered age2` window.
+   *
+   * Overrides `ResearchStrategy`'s own override: `player` follows a save-derived
+   * opening and its wood-driven start means its optimum is *not* research's.
+   * Leaving this out would silently hand `player` the `research` numbers.
+   *
+   * Measured from the age-1 entry save, 25 000 s cap: 11 115 s -> 7 540 s
+   * (-32.2 %), reproduced exactly in an independent process. It keeps far more
+   * wood than any other strategy (0.197) because its opening is wood-gated,
+   * while food drops to 0.088 — the largest food cut measured.
+   */
+  protected getAgeWorkerRatios(): Partial<Record<string, WorkerRatios>> {
+    // Searched on the `entered age1 -> entered age2` window from this
+    // strategy's own shipped split (11115 s -> 7540 s, -32.2 %, the second
+    // largest gain). This class overrides the same seam for the same reason as
+    // `ResearchStrategy` — see the note there.
+    return {
+      age1: {
+        food: 0.088,
+        wood: 0.197,
+        stone: 0.25,
+        gold: 0.465,
+        military: 0,
+        science: 0,
+        metalwork: 0,
+        trade: 0,
+      },
+    };
   }
 
   protected getResearchAction(

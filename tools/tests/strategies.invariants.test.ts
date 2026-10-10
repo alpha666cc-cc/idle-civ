@@ -9,10 +9,10 @@
  * prose.
  */
 import { describe, expect, it } from "vitest";
-import { GameSimulation, createInitialState } from "./simulation";
-import { getStrategy, getStrategyNames } from "./strategies";
-import { researchDefinitions } from "../src/game/research";
-import { ExpNumber } from "../src/game/expNumber";
+import { GameSimulation, createInitialState } from "../simulation";
+import { getStrategy, getStrategyNames } from "../strategies";
+import { researchDefinitions } from "../../src/game/research";
+import { ExpNumber } from "../../src/game/expNumber";
 
 const RUN = {
   objective: { type: "timeLimit", seconds: 2000 },

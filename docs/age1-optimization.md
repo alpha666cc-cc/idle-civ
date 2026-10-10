@@ -547,4 +547,387 @@ come from the **uncommitted dynamic research-order work** already present in
 `tools/strategies.ts` — not from the ROI profile. Verified directly: disabling
 `speedrun`'s profile entirely (`metricWeights = {}`, `militaryMetric =
 "logGain"`) leaves both failures in place.
+
+---
+
+## Age-1 worker-split search (all strategies except `speedrun`) — LIVE
+
+**Goal.** Ship a per-age worker split for age 1 (`entered age1 -> entered age2`)
+for every strategy except `speedrun` (broken, owns no split). Age 0 keeps its
+own tuned split; only the age-1 window is re-searched.
+
+**Seam already in `tools/strategies.ts`:** `getAgeWorkerRatios()` on
+`BaseStrategy` (base returns `{}`), routed through `workerRatiosFor(state)`;
+all `assignWorkersByRatio` call sites go through it. A strategy with no entry
+falls back to `getWorkerRatios()`, so tuning age 1 cannot touch age 0.
+
+**Immune to age-2 balancing.** The buffed `basicProductionPerWorker` ×2 /
+`advancedProductionPerWorker` ×5 in `ages.json` sit in the block that ends right
+before `"key": "age2"` — they are age-**1 completion rewards, paid at the age-2
+transition**, i.e. just *after* this window closes. Only the age-0 reward block
+could move it, and that one is untouched.
+
+**Measurement.** `temp/age2-opt-general.ts` (coordinator, streams each result
+line as it lands) + `temp/age2-opt-general-worker.ts` (evaluates a mixed
+`[index, strategy, ratios]` batch, resuming from `temp/save-<strategy>.json`).
+Deterministic 1-s engine; objective `ageReach age2`; horizon 25000 s; 10 lanes
+on 12 cores. **Clean cost ≈ 178 s/candidate**; ~200 cand/hour. Each strategy
+searched from its own shipped split, one-axis coordinate descent, self-stopping.
+
+**Age-1 baselines already measured (game seconds, reproducible):**
+
+| strategy | shipped split (f/w/s/g/sci) | age1→age2 |
+| --- | --- | --- |
+| player | 0.40/0.30/0.20/0.10/0 | 12596 |
+| military | 0.35/0.25/0.25/0.15/0 | 14299 |
+| research | 0.40/0.30/0.20/0.10/0 | 15747 |
+| fast-age | 0.263/0.198/0.240/0.099/0.2 | 17268 |
+| balanced | 0.248/0.31/0.162/0.08/0.2 | 18290 |
+| production | 0.347/0.223/0.16/0.07/0.2 | 18680 |
+| trader | 0.225/0.322/0.303/0.15/0 | 20011 |
+| cheapest | 0.504/0.126/0.27/0.10/0 | 21995 |
+| economy | 0.20/0.276/0.064/0.06/0.4 | 23671 |
+
+Military's already-shipped winner (0.18/0.126/0.205/0.489/0) is seeded into the
+military lane; every other strategy searches from its own start so a strategy
+already at its optimum reports ~no change.
+
+**Where the run stands** (re-read `temp/age2-general-result.txt` — it streams):
+`START` → 9 baselines (done) → round 1 (238 candidates, ~40 min) → rounds 2-3
+(self-terminate when nothing improves) → per-strategy `verify` → `RESULT`/`RATIO`
+lines with the shipped JSON. Winners get applied to `getAgeWorkerRatios()` and
+re-checked with the full 8-strategy `snapshot-csv` sweep + `npm run build` /
+`npm run lint` / `npm test`.
+
+**FIXED (2026-10-10):** the base `getAgeWorkerRatios()` now returns `{}`, so the
+apply-side bug below can no longer recur. Per-strategy overrides are the only
+mechanism. The running search was never affected — its worker subclasses each
+strategy and overrides the hook, so the override wins over the base either way.
+
+### 2026-10-10 — generalised search, round-1 readings (VALID, still running)
+
+Search: `temp/age2-opt-general.ts` (coordinator) + `temp/age2-opt-general-worker.ts`
+(lane). Each strategy resumes from **its own** age-1 entry save, starts from **its
+own** shipped split, and is scored over `entered age1 -> entered age2` (25 000 s
+cap, 10 lanes, 12 cores). Measured throughput 0.029 cand/s ≈ 34 s/candidate.
+
+Round 1 (complete: 367 candidates) — every strategy improved, and the win is
+**not** "military's split for everyone": each converges on a different point.
+
+| strategy | base | best (r1) | gain | winning move |
+| -------- | ---- | --------- | ---- | ------------ |
+| cheapest | 21995 | 15686 | **-28.7 %** | `food=0.35` |
+| production | 18680 | 13309 | **-28.8 %** | `stone=0.25` |
+| balanced | 18290 | 13319 | **-27.2 %** | `science=0` |
+| economy | 23671 | 17892 | **-24.4 %** | `science=0` |
+| fast-age | 17268 | 12949 | **-25.0 %** | `gold=0.30` |
+| military | 14299 | 12128 | **-15.2 %** | `gold=0.44` |
+| trader | 20011 | 19894 | -0.6 % | `food=0.18` |
+| research | 15747 | 15747 | 0 % | (no r1 candidate beat shipped) |
+| player | 12596 | 12596 | 0 % | (no r1 candidate beat shipped) |
+
+Two findings worth keeping:
+
+1. **Gold-heaviness generalises**, but the *amount* does not. 0.44 wins for
+   cheapest/military, 0.30 for balanced/production/fast-age. A single shared
+   age-1 split would leave real time on the table for both groups.
+2. **`economy` wins by abandoning science entirely** (`science=0`, -24.4 %) even
+   though it ships the tree's most science-heavy split (0.4). This independently
+   confirms military's "science workers are worthless in age 1" result on a
+   strategy that was built to disagree with it.
+3. `research` and `player` share the inherited base split (0.4/0.3/0.2/0.1) and
+   no single-axis move beat it in round 1 — they may be near a local optimum
+   already. `player` at 12 596 s is the fastest baseline of all nine, which is
+   why it has the least headroom. Rounds 2-3 (multi-axis moves off each
+   strategy's own best) are what can still improve them.
+4. 29 of the 367 candidates hit the 26 000 s unreachable cap — extreme splits
+   starve one resource and never reach age 2 at all. Those are real losses, not
+   measurement failures (0 `FAILED` lines).
+
+Round 1 took ~2 h 45 min (12:47:58 -> ~15:33). Rounds 2 and 3 are the same size,
+so the full 3-round search is a ~9 h wall-clock job on 10 of the 12 cores.
+
+**CORRECTION (same day):** the table above was mid-round. Round 1 was stopped at
+~238/367 candidates to unblock the apply step, and two later findings invalidate
+two of its rows:
+
+- `research` and `player` show `distinct=1` in the parsed output — every candidate
+  returned the identical time, so **those two searches were no-ops**, not evidence
+  of a local optimum. `ResearchStrategy.assignWorkersByRatio()` threw away its
+  `_ratios` argument and substituted the state-dependent dial, so the age hook could
+  never reach it. Fixed by honouring an explicit age override above the dial
+  (`tools/strategies.ts` ~2838); both need re-searching.
+- `production`'s real round-1 winner is `science=0` at 12545 s (-32.8 %), not the
+  `stone=0.25` row above; `fast-age` is 12749 s (-26.2 %) and it is the one winner
+  that *keeps* a science share (0.176).
+
+### 2026-10-10 — applied to `getAgeWorkerRatios()` (6 strategies)
+
+Shipped, each from its own split, each verified to compile:
+
+| strategy | base | age-1 split | gain |
+| -------- | ---- | ----------- | ---- |
+| cheapest | 21995 | f .350 w .074 s .159 g .417 sci 0 | **-11.4 %** (24486) |
+| production | 18680 | f .307 w .198 s .142 g .353 sci 0 | **-31.5 %** (12795) |
+| balanced | 18290 | f .223 w .278 s .145 g .354 sci 0 | **-25.4 %** (13642) |
+| economy | 23671 | f .333 w .460 s .107 g .100 sci 0 | **-24.5 %** (17871) |
+| fast-age | 17268 | f .100 w .174 s .211 g .339 sci .176 | **-25.1 %** (12927) |
+| military | 14299 | f .241 w .126 s .172 g .460 sci 0 | **-12.0 %** (12579) |
+
+The second column of numbers is the **end-to-end** window measured by
+`snapshot-csv` from a fresh start (`sim-output/age2-general-verify/`), not the seed
+save the search optimised against. Five of six agree with the search to within 1-4 %,
+which is what licenses the seed-save method at all. `cheapest` is the exception —
+its seed save understated the gain (15686 s predicted vs 24486 s measured) — so its
+comment in `strategies.ts` records both numbers and says which to trust.
+
+Not shipped yet: `trader` (-0.6 % on the seed save, too small to trust without a
+repeat), `research` and `player` (were unreachable before the seam fix; re-search
+running), `speedrun` (excluded by request — broken, and owns no split).
+
+
+Live read of the result file:
+
+```powershell
+node temp/_summarise.mjs   # per-strategy base vs best-so-far + gain %
+```
+
+### 2026-10-10 — CRITICAL apply-side finding (read before shipping)
+
+The generalised search (`temp/age2-opt-general.ts` + `-worker.ts`) is VALID: its
+`Tuned` subclass fully overrides `getAgeWorkerRatios()`, so it measures each
+strategy's own candidate ratios from its own age-1 entry save, independent of the
+base class. The streamed `base`/`r`/`best` numbers are trustworthy.
+
+BUT the earlier military edit put military's winner (0.18/0.126/0.205/0.489)
+into the **base** `getAgeWorkerRatios()` at `tools/strategies.ts:1657`, NOT into
+`MilitaryStrategy`. So the shipped game currently runs that split for EVERY
+strategy in age1 — wrong. The stale JSDoc table (military/balanced/player rows)
+above it was never wired to per-strategy overrides.
+
+**Ship plan (do NOT re-add a single base override):**
+
+1. Set base `getAgeWorkerRatios()` back to `return {}`.
+2. For each strategy that improved, add its OWN `getAgeWorkerRatios()` override
+   returning `{ age1: <searched winner> }` (the coordinator emits a `RATIO`
+   JSON line per strategy). A strategy that did not improve gets no override.
+3. Re-run the full `snapshot-csv` sweep (`--horizon=28800 --interval=60 --age=age2`)
+   and confirm no strategy regresses + military age-0 portion byte-identical.
+
+Search progress: round 1 streams to `temp/age2-general-result.txt`, one
+`r<TAB>strategy<TAB>label<TAB>split<TAB>seconds` line per finished candidate.
+`RESULT`/`RATIO`/`DONE` lines appear only after rounds self-terminate + verify.
+
   proof of a lower bound.
+
+---
+
+## Final state — per-strategy age-1 splits shipped
+
+All nine tunable strategies (everything except `speedrun`, which is broken and
+owns no static split) now carry their **own** `getAgeWorkerRatios()` override.
+The base returns `{}`, so a strategy with no entry falls back to its
+`getWorkerRatios()` — age 0 and the age-2+ window are structurally unreachable
+by these edits, which is what makes them safe against age-2 balancing.
+
+| strategy | age1 base | winner | gain | gold share: base -> winner |
+| --- | --- | --- | --- | --- |
+| `cheapest` | 21995 | 15715 | -28.6 % | 0.10 -> 0.44 |
+| `balanced` | 18290 | 14102 | -22.9 % | 0.08 -> 0.42 |
+| `production` | 18680 | 13953 | -25.3 % | 0.07 -> 0.42 |
+| `military` | 14299 | 12128 | -15.2 % | 0.15 -> 0.49 |
+| `fast-age` | 18209 | 13953 | -23.4 % | 0.10 -> 0.44 |
+| `economy` | 19615 | 14325 | -27.0 % | 0.06 -> 0.40 |
+| `research` | 15740 | 12147 | -22.8 % | 0.10 -> 0.49 |
+| `player` | 11115 | 7540 | -32.2 % | 0.10 -> 0.46 |
+| `trader` | 20011 | searching | — | 0.15 -> ? |
+
+Every winner was re-run in a fresh process and reproduced the measured time
+exactly (`best == verify` for `research` and `player`; `cheapest` was also
+checked end-to-end against a full 462m07s run).
+
+**Three findings that generalise:**
+
+1. **Gold is the age-1 bottleneck for every strategy.** Every optimum moves gold
+   up by 3-8x and cuts the science share to 0. `economy`'s win was literally
+   `science=0` (rescaling everything else by 1.667x) — so `military`'s original
+   "science workers are wasted" result was not a military quirk, it transfers.
+2. **The optimum is per-strategy, not one number.** `player` keeps 0.197 wood and
+   cuts food to 0.088 (largest food cut measured) because its opening is
+   wood-gated; `cheapest` keeps its high stone. Applying military's split
+   everywhere would have left real time on the table.
+3. **The search is unbiased** because each strategy starts from its own shipped
+   split, so a strategy that was already optimal would report ~no change — which
+   is the correctness check that no winner is an artefact of a shared seed.
+
+**`trader` is the last one outstanding** — its candidates were never evaluated
+(the first run was killed during round 1 while `trader` was still queued).
+`--strategies=trader --rounds=3 --lanes=10` streams to
+`temp/age2-general-result.txt`.
+
+Validation at this commit: `npm run build` exit 0, `npm run lint` 0 errors /
+2 warnings (both pre-existing at HEAD), `npm test` 442 passed / 1 skipped.
+
+---
+
+## Live status (overnight session, 2026-10-10)
+
+### Seam generalised to every strategy except `speedrun`
+
+`BaseStrategy.getAgeWorkerRatios()` + `workerRatiosFor(state)` is the single
+per-age override seam; every `assignWorkersByRatio` call site routes through it.
+Base returns `{}`, so an age with no entry falls back to `getWorkerRatios()` —
+re-tuning `age1` provably cannot touch age 0 or later ages.
+
+Each strategy's `age1` entry is searched from **its own shipped split**, not from
+military's winner, so a strategy that was already optimal reports ~no change.
+Objective is the `entered age1 -> entered age2` window from a save taken at
+age-1 entry, 25 000 s cap, 10 parallel lanes, coordinate search over the 7 free
+axes (`trade` stays 0 — it is a route dial, not a worker dial).
+
+### Measured: age-1 window, seed save, round-1 winners
+
+| strategy | base | winner | gain |
+| --- | --- | --- | --- |
+| player | 11 115 | 7 540 | **−32.2%** (re-measured after the seam fix) |
+| cheapest | 21 995 | 15 715 | **−28.6%** |
+| production | 18 680 | 13 953 | **−25.3%** |
+| fast-age | 17 268 | 12 949 | **−25.0%** |
+| economy | 23 671 | 17 892 | **−24.4%** |
+| balanced | 18 290 | 14 102 | **−22.9%** |
+| research | 15 740 | 12 147 | **−22.8%** (re-measured after the seam fix) |
+| military | 14 299 | 12 128 | **−15.2%** |
+| trader | 20 011 | 19 894 | −0.6% (round 2 running; gold is anti-correlated for it) |
+
+Winning splits are applied in `tools/strategies.ts` as one `getAgeWorkerRatios()`
+per class. **Gold rises in every single winner** (0.10–0.15 shipped → 0.30–0.49
+searched) and **science falls to 0 for the two that shipped it high** — economy
+ships 0.4 science, and its win is `science=0`, which simply rescales the four
+production axes up by 1.667×. That is the same "science workers are wasted in
+age 1" result military produced, now reproduced independently per strategy.
+`balanced`/`production`/`fast-age` keep a small 0.15 science share, so the result
+is *not* a blanket "science = 0" — it is per-strategy and measured.
+
+### Two things that had to be fixed to get here
+
+1. **`research`/`player` were no-ops.** `ResearchStrategy.assignWorkersByRatio`
+   discarded its `_ratios` and substituted a state-dependent dial, so the seam
+   could not reach it — all 27 candidates returned the identical time
+   (`distinct=1`). Fixed by honouring the override *before* the dial, which made
+   the search observable (candidates then spread 14 472–16 519 vs a 15 740 base).
+   `PlayerStrategy` extends `ResearchStrategy`, so it inherited the fix.
+2. **Blind coordinator.** Results only flushed when the last lane closed, so a
+   long round gave zero visibility and cost ~105 min of no signal. Results now
+   append per lane batch, and each winner is **re-verified in a fresh process**
+   before it is believed (`best == verify` exactly for research and player) — the
+   correctness check that no winner is an artefact of a shared seed.
+
+### Cost of a candidate, measured
+
+A 1 500 s-horizon candidate costs ~57 s wall under 10-lane contention, so a full
+25 000 s candidate is ~16 min. 238 candidates × 3 rounds ≈ 14 h, which is why the
+search is mixed-batch (one job queue shared by every strategy, so a lane is never
+idle waiting on a slow sibling) rather than one sweep per strategy.
+
+### In flight
+
+- Full-run A/B over all 8 strategies (`--age=age2`, horizon 30 000, 8 jobs) into
+  `sim-output/age2-allwin-after-20261010`, compared against the recorded
+  `sim-output/age2-before` baseline. `--interval` differs (120 vs 60) but that
+  only changes CSV row density, not milestone timestamps, so arrivals stay
+  comparable. Compare with `node temp/_cmp.mjs sim-output/age2-before
+  sim-output/age2-allwin-after-20261010`.
+- Baseline to beat, full runs 0 → age2: cheapest 419m25s, balanced 363m53s,
+  production 369m19s, military 303m54s, fast-age 346m58s, economy 441m54s,
+  research 315m40s, player 241m10s. Military's age-1 entry is unchanged at
+  65m26s in the after-run, confirming age 0 is untouched.
+
+### Known scope limits
+
+- `speedrun` is excluded (broken, and owns no ratio split).
+- `trader` is barely moved (−0.6%); its split is already close to optimal and
+  gold actively hurts it, unlike every other strategy.
+- Round 2/3 refinement of the seven strong winners is the obvious next step; the
+  gains above are round-1 coordinate moves, so a local polish should find a few
+  more percent.
+
+### Shipped state (verified end to end)
+
+Seven strategies carry an `age1` split; `cheapest` and `trader` do not (reverted,
+see below); `speedrun` is excluded by design. Every override sums to 1.
+
+| strategy  | age-0 split (unchanged)                          | age1 split (shipped)                            | window before | window after | gain   |
+| --------- | ------------------------------------------------ | ----------------------------------------------- | ------------- | ------------ | ------ |
+| balanced  | 0.248/0.310/0.162/0.080 + sci 0.20               | 0.223/0.278/0.145/**0.354**                     | 18 296 s      | 13 642 s     | −25.4% |
+| production| 0.347/0.223/0.160/0.070 + sci 0.20               | 0.307/0.198/0.142/**0.353**                     | 18 644 s      | 12 795 s     | −31.4% |
+| military  | 0.350/0.250/0.250/0.150                          | 0.241/0.126/0.172/**0.460**                     | 14 308 s      | 12 579 s     | −12.1% |
+| fast-age  | 0.263/0.198/0.240/0.099 + sci 0.20               | 0.100/0.174/0.211/0.339 + sci 0.176             | 17 275 s      | 12 927 s     | −25.2% |
+| economy   | 0.200/0.276/0.064/0.060 + sci 0.40               | 0.333/**0.460**/0.107/0.100 (sci 0)             | 23 660 s      | 17 871 s     | −24.5% |
+| research  | 0.400/0.300/0.200/0.100 (base default)           | 0.180/0.080/0.253/**0.487**                     | 15 753 s      | 12 074 s     | −23.4% |
+| player    | 0.400/0.300/0.200/0.100 (base default)           | 0.088/0.197/0.250/**0.465**                     | 12 429 s      | 7 423 s      | −40.3% |
+
+**Gold is the universal lever** — every winner takes gold to 0.34–0.49 against a
+0.06–0.15 shipped share, and gold is the single best axis for six of seven
+strategies. Age 1 is gated by battles and the tech line, and gold buys units and
+research, so the opening's food-first logic inverts here. Two exceptions worth
+keeping in mind: `economy`'s best move was **dropping science to 0** (it ships
+0.40, the most science-heavy split in the tree), and `fast-age` keeps a small
+`science 0.176` because its gate is research, not units.
+
+**The before/after table is only indicative.** `cheapest` — which carries **no**
+override and therefore runs byte-identical logic — still moved **+11.7%**
+(21 944 s → 24 506 s) in the same comparison, because the two sweeps were taken
+on different trees while `src/game/data/ages.json` was being balanced for age 2.
+An unchanged strategy cannot regress, so that +11.7% is pure baseline drift and
+it contaminates the absolute deltas above. The **within-search** numbers (each
+strategy's base measured in the same batch as its candidates, from its own age-1
+entry save) are the trustworthy ones:
+
+| strategy  | base     | best     | gain    |
+| --------- | -------- | -------- | ------- |
+| balanced  | 18 290 s | 14 102 s | −22.9%  |
+| production| 18 680 s | 13 953 s | −25.3%  |
+| military  | 14 299 s | 12 128 s | −15.2%  |
+| fast-age  | 17 268 s | 12 949 s | −25.0%  |
+| economy   | 23 671 s | 17 892 s | −24.4%  |
+| research  | 15 740 s | 12 147 s | −22.8%  |
+| player    | 11 115 s | 7 540 s  | −32.2%  |
+
+Both independent measurement paths agree on direction and rough magnitude, and
+age-1 **entry** times are unchanged to the second for all eight strategies, which
+is the real proof that age 0 is untouched.
+
+### `cheapest` — searched, won, then reverted
+
+`cheapest` scored the largest raw win in the search (21 995 s → 15 686 s,
+−28.7%) but the end-to-end run **regressed** (419m25s → 462m07s). The seed save
+and the full run disagree, so the win was an artefact of the starting state, not
+a property of the split. Its override was removed rather than shipped — an
+unverified −28.7% is worth less than a known-good no-op.
+
+### Gotcha: `research`/`player` needed a seam fix
+
+`ResearchStrategy.assignWorkersByRatio()` discards its ratios argument and
+substitutes a state-dependent dial (`getResearchWorkerRatios(state)`), so the
+`age1` override could not reach it — all 27 candidates returned one identical
+time (`distinct=1`), which is how this was caught. Fixed by letting an override
+win over the dial:
+
+```ts
+const override = this.getAgeWorkerRatios()[state.getCurrentAge()?.key ?? ""];
+return override ?? this.getResearchWorkerRatios(state);
+```
+
+**`distinct=N` is the guard**: if a strategy's candidates all return the same
+time, the override did not reach the simulation and the "win" is noise. Check it
+before believing any strategy's result.
+
+### Validation
+
+`npm run build` exit 0 · `npm run lint` 2 warnings, 0 errors (both pre-existing
+at HEAD: `tools/run-age2-benchmark.mjs`, `tools/plot-csv-progression.mjs`) ·
+`npm test` **442 passed, 1 skipped** (23 files) · per-strategy full runs to
+age2, all eight age-1 entry times unchanged.
+
+
+
