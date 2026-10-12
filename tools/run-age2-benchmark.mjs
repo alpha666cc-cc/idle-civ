@@ -13,7 +13,6 @@ const maxTimeArgument = process.argv.find((argument) =>
   argument.startsWith("--max-time="),
 );
 const MAX_TIME = Number(maxTimeArgument?.slice("--max-time=".length) ?? 18000);
-const OBJECTIVE = { type: "ageReach", ageId: "age2" };
 const strategyNames = [
   "cheapest",
   "balanced",
