@@ -54,19 +54,12 @@ export interface SnapshotTiming {
 }
 
 /**
- * A snapshot of game state at a milestone for analysis.
+ * The state fields both a snapshot and an event carry, so the two log lines can
+ * share one renderer. An event is a snapshot-minus-the-runner-metadata: the
+ * same population, resources, army, buildings, … captured the instant something
+ * happened, without the snapshot's ordinal / timing / resourcesSpent bookkeeping.
  */
-export interface SimulationSnapshot {
-  /**
-   * Zero-based ordinal of this snapshot, from the runner's own counter rather
-   * than the array length. A gap between consecutive `index` values means
-   * snapshots were skipped, and a `timestamp` that jumps without one marks
-   * exactly where the run stalled.
-   */
-  index: number;
-  /** Timing sampled at the instant this snapshot was taken. */
-  timing: SnapshotTiming;
-  timestamp: number; // Game time in seconds
+export interface SimulationStateSummary {
   age: string;
   population: number;
   resources: Record<string, string>; // ExpNumber as string for serialization
@@ -74,11 +67,45 @@ export interface SimulationSnapshot {
   buildings: { building: BuildingKey; count: number }[];
   units: { unit: string; count: string }[]; // ExpNumber counts as strings
   productionRates: Record<string, string>; // per-second rates
-  /** Cumulative resources spent so far, per resource id (ExpNumber as string). */
-  resourcesSpent: Record<string, string>;
   battlesWon: number;
   totalBuildings: number;
   militaryPower?: number;
+}
+
+/**
+ * Why a snapshot was taken. Periodic rows sit on the interval grid; the
+ * milestone kinds (age / battle) and `final` are stamped at the exact second
+ * something happened, so their `timestamp` is deliberately off-grid.
+ */
+export type SnapshotKind = "periodic" | "age" | "battle" | "final";
+
+/**
+ * A snapshot of game state at a milestone for analysis.
+ */
+export interface SimulationSnapshot extends SimulationStateSummary {
+  /** What triggered this snapshot — see {@link SnapshotKind}. */
+  kind: SnapshotKind;
+  /** For `age` / `battle` milestones: the age or encounter id. */
+  milestoneId?: string;
+  /**
+   * Zero-based ordinal among `periodic` snapshots only; `undefined` for
+   * milestones and the closing `final` row. This is the number the runner
+   * prints as "Snapshot N", and because it counts periodic rows alone it stays
+   * on the interval grid no matter how many milestones interleave.
+   */
+  periodicIndex?: number;
+  /**
+   * Zero-based ordinal of this snapshot across *all* kinds, from the runner's
+   * own counter rather than the array length. A gap between consecutive
+   * `index` values means snapshots were skipped, and a `timestamp` that jumps
+   * without one marks exactly where the run stalled.
+   */
+  index: number;
+  /** Timing sampled at the instant this snapshot was taken. */
+  timing: SnapshotTiming;
+  timestamp: number; // Game time in seconds
+  /** Cumulative resources spent so far, per resource id (ExpNumber as string). */
+  resourcesSpent: Record<string, string>;
 }
 
 /**
@@ -155,15 +182,10 @@ export type SimulationEventType =
   | "battle"
   | "research";
 
-export interface SimulationEvent {
+export interface SimulationEvent extends SimulationStateSummary {
   time: number; // game time in seconds
   type: SimulationEventType;
   id: string;
-  /** Resource balances when the event fired (ExpNumber as string). */
-  resources: Record<string, string>;
-  /** Per-second production rates when the event fired. */
-  productionRates: Record<string, string>;
-  population: number;
 }
 
 /**
@@ -287,6 +309,17 @@ export class GameSimulation {
   private tickCount = 0;
   private tickTotalMs = 0;
   private tickMaxMs = 0;
+  /**
+   * Next game time a periodic snapshot is due. This is a self-contained clock
+   * (seeded at the first interval, then advanced by one interval per snapshot)
+   * rather than "now minus the last snapshot's timestamp", so an off-grid
+   * milestone snapshot can no longer push the periodic grid sideways. It also
+   * survives `skipTime`'s batched ticks, which can step `gameTime` by up to 60
+   * seconds past the due point between two `checkMilestones()` calls.
+   */
+  private nextPeriodicTime = 0;
+  /** Count of periodic snapshots taken, for the player-facing "Snapshot N". */
+  private periodicCount = 0;
   private decisionCount = 0;
   private decisionTotalMs = 0;
   private decisionMaxMs = 0;
@@ -355,6 +388,7 @@ export class GameSimulation {
 
     this.gameTime += 1;
     this.recordEvents();
+    this.recordPeriodicSnapshot();
   }
 
   /**
@@ -370,6 +404,40 @@ export class GameSimulation {
     this.recordNewEvents("research", this.state.boughtResearch);
   }
 
+  /**
+   * The state fields both snapshots and events log, built once so the two can
+   * never drift apart. This is what lets an `[EVENT]` line render exactly like a
+   * `[SNAPSHOT]` line. `getArmyPower()` is the one non-trivial call here; events
+   * fire on every new progression id, so this is the cost of event/snapshot
+   * parity — measured, and worth it, because the alternative is two shape
+   * definitions that silently diverge.
+   */
+  private buildStateSummary(): SimulationStateSummary {
+    const currentAge = this.state.getCurrentAge();
+    return {
+      age: currentAge?.key || "unknown",
+      population: this.state.population.toNumber(),
+      resources: this.resourceSnapshot(),
+      researches: [...this.state.boughtResearch],
+      buildings: Object.entries(this.state.builtBuildings).map(
+        ([building, count]) => ({
+          building: building as BuildingKey,
+          count: count ?? 0,
+        }),
+      ),
+      units: Object.entries(this.state.unitCounts)
+        .filter(([, count]) => count.gt(ExpNumber.ZERO))
+        .map(([unit, count]) => ({ unit, count: count.toString() })),
+      productionRates: this.computeProductionRates(),
+      battlesWon: this.state.defeatedEncounters.length,
+      totalBuildings: Object.values(this.state.builtBuildings).reduce(
+        (sum, count) => sum + (count ?? 0),
+        0,
+      ),
+      militaryPower: this.state.getArmyPower().toNumber(),
+    };
+  }
+
   private recordNewEvents(
     type: SimulationEventType,
     ids: readonly string[],
@@ -379,12 +447,10 @@ export class GameSimulation {
       if (this.seenEvents.has(key)) continue;
       this.seenEvents.add(key);
       const event: SimulationEvent = {
+        ...this.buildStateSummary(),
         time: this.gameTime,
         type,
         id,
-        resources: this.resourceSnapshot(),
-        productionRates: this.computeProductionRates(),
-        population: this.state.population.toNumber(),
       };
       this.events.push(event);
       this.config.onEvent?.(event);
@@ -791,7 +857,7 @@ export class GameSimulation {
       this.state.enteredAges.includes(ageId)
     ) {
       this.lastMilestoneAge = ageId;
-      this.recordSnapshot();
+      this.recordSnapshot("age", ageId);
       this.strategy.onMilestone?.({ type: "ageEntered", ageId }, this.state);
     }
 
@@ -800,60 +866,67 @@ export class GameSimulation {
     if (battlesWon > this.lastMilestoneBattles) {
       const newBattle = this.state.defeatedEncounters[battlesWon - 1];
       this.lastMilestoneBattles = battlesWon;
-      this.recordSnapshot();
+      this.recordSnapshot("battle", newBattle);
       this.strategy.onMilestone?.(
         { type: "battleWon", encounterId: newBattle },
         this.state,
       );
     }
+  }
 
-    // Periodic snapshots, every `snapshotIntervalSeconds` (default 300).
-    if (this.config.recordSnapshots && this.gameTime > 0) {
-      const interval = this.config.snapshotIntervalSeconds ?? 60;
-      const lastSnapshotTime =
-        this.snapshots[this.snapshots.length - 1]?.timestamp || 0;
-      if (this.gameTime - lastSnapshotTime >= interval) {
-        this.recordSnapshot();
-      }
+  /**
+   * Record a periodic snapshot when the interval grid says one is due.
+   *
+   * Called from `tick()` — every simulated second, including each second inside
+   * `skipTime`'s batches — so the snapshot lands on the exact grid second rather
+   * than up to a batch late. `nextPeriodicTime` is a self-contained clock (seeded
+   * at the first interval, then realigned to the next absolute grid multiple), so
+   * an off-grid milestone snapshot recorded elsewhere can no longer push the
+   * periodic cadence sideways the way the old "now minus last snapshot" anchor
+   * did. Milestones keep their own rows; this only advances the periodic grid.
+   */
+  private recordPeriodicSnapshot(): void {
+    if (!this.config.recordSnapshots || this.gameTime <= 0) return;
+
+    const interval = this.config.snapshotIntervalSeconds ?? 60;
+    if (this.nextPeriodicTime === 0) this.nextPeriodicTime = interval;
+    if (this.gameTime >= this.nextPeriodicTime) {
+      this.recordSnapshot("periodic");
+      // Realign to the next absolute grid multiple past the current game time.
+      // With the check on every tick this is normally `+interval`, but the floor
+      // keeps the grid anchored to interval multiples should it ever overshoot.
+      this.nextPeriodicTime =
+        (Math.floor(this.gameTime / interval) + 1) * interval;
     }
   }
 
   /**
-   * Record a snapshot at the current state.
+   * Record a snapshot at the current state, tagged with what triggered it.
+   *
+   * `index` stays a single counter across every kind (the CSV and the stall
+   * detector read it as "the nth row"); `periodicIndex` counts periodic rows
+   * alone so the runner's "Snapshot N" stays on the interval grid regardless of
+   * how many milestone rows interleave.
    */
-  private recordSnapshot(): void {
+  private recordSnapshot(kind: SnapshotKind, milestoneId?: string): void {
     if (!this.config.recordSnapshots) return;
 
-    const currentAge = this.state.getCurrentAge();
+    const periodicIndex = kind === "periodic" ? this.periodicCount : undefined;
+    if (kind === "periodic") this.periodicCount += 1;
+
     const snapshot: SimulationSnapshot = {
+      ...this.buildStateSummary(),
+      kind,
+      milestoneId,
+      periodicIndex,
       index: this.snapshotCount,
       timing: this.currentTiming(),
       timestamp: this.gameTime,
-      age: currentAge?.key || "unknown",
-      population: this.state.population.toNumber(),
-      resources: this.resourceSnapshot(),
-      researches: [...this.state.boughtResearch],
-      buildings: Object.entries(this.state.builtBuildings).map(
-        ([building, count]) => ({
-          building: building as BuildingKey,
-          count: count ?? 0,
-        }),
-      ),
-      units: Object.entries(this.state.unitCounts)
-        .filter(([, count]) => count.gt(ExpNumber.ZERO))
-        .map(([unit, count]) => ({ unit, count: count.toString() })),
-      productionRates: this.computeProductionRates(),
       resourcesSpent: Object.fromEntries(
         Object.entries(this.state.statistics.resourcesSpent).map(
           ([key, value]) => [key, value.toString()],
         ),
       ),
-      battlesWon: this.state.defeatedEncounters.length,
-      totalBuildings: Object.values(this.state.builtBuildings).reduce(
-        (sum, count) => sum + (count ?? 0),
-        0,
-      ),
-      militaryPower: this.state.getArmyPower().toNumber(),
     };
 
     this.snapshots.push(snapshot);
@@ -903,7 +976,7 @@ export class GameSimulation {
       this.config.recordSnapshots &&
       this.snapshots[this.snapshots.length - 1]?.timestamp !== this.gameTime
     ) {
-      this.recordSnapshot();
+      this.recordSnapshot("final");
     }
 
     return {

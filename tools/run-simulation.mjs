@@ -10,7 +10,7 @@
  *   --age <id>             Age ID for ageReach objective
  *   --battle <id>          Encounter ID for battleVictory objective
  *   --max-time <seconds>   Maximum simulation time (default: 3600)
- *   --snapshot-interval <s> Seconds between snapshots (default: 300)
+ *   --snapshot-interval <s> Seconds between snapshots (default: 100)
  *   --actions-per-second <n> Strategy actions per simulated second (default: 5)
  *   --output <file>        Output file for results (JSON)
  *   --no-snapshots         Disable snapshot recording
@@ -40,7 +40,7 @@ function parseArgs() {
     age: null,
     battle: null,
     maxTime: "36000",
-    snapshotInterval: "300",
+    snapshotInterval: "100",
     actionsPerSecond: "5",
     output: null,
     snapshots: true,
@@ -125,7 +125,7 @@ Options:
   --age <id>             Age ID for ageReach objective (e.g., age1; age-1 is accepted)
   --battle <id>          Encounter ID for battleVictory objective
   --max-time <seconds>   Maximum simulation time (default: 3600)
-  --snapshot-interval <s> Seconds between snapshots (default: 300)
+  --snapshot-interval <s> Seconds between snapshots (default: 100)
   --actions-per-second <n> Strategy actions per simulated second (default: 5)
   --output <file>        Output file for results (JSON)
   --no-snapshots         Disable snapshot recording
@@ -202,19 +202,54 @@ function buildObjective(options) {
   }
 }
 
-/** Render a game-second count as `1h 02m 03s` (or `12m 03s` / `03s`). */
-function formatGameTime(seconds) {
+/**
+ * Render a game-second count as `1144s (19m 04s)` — the raw seconds *and* the
+ * minutes/seconds breakdown together, so a reader never has to convert between
+ * them. The old `1h 02m 03s` / `12m 03s` / `03s` switch was the confusion; hours
+ * fold into the minutes here and the leading raw-second count keeps long runs exact.
+ */
+function formatGameTimeBoth(seconds) {
   const total = Math.floor(seconds);
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
+  const minutes = Math.floor(total / 60);
   const secs = total % 60;
-  if (hours > 0) {
-    return `${hours}h ${String(minutes).padStart(2, "0")}m ${String(secs).padStart(2, "0")}s`;
+  return `${total}s (${minutes}m ${String(secs).padStart(2, "0")}s)`;
+}
+
+/**
+ * The labelled block [SNAPSHOT] and [EVENT] share, so an event reads exactly
+ * like a snapshot: Time (dual format), Population, Resources, Production. Age
+ * and Researches print only when the source carries them — snapshots do, events
+ * do not — which is why the event skips them rather than reusing a fuller shape.
+ * Snapshot-only fields (buildings, units, battles, timing) follow this call.
+ */
+function printSummaryBlock(data) {
+  console.log(`  Time: ${formatGameTimeBoth(data.time ?? data.timestamp)}`);
+  console.log(`  Age: ${data.age}`);
+  console.log(`  Population: ${formatExpoNumber(data.population)}`);
+  const researchList = data.researches?.length
+    ? data.researches.join(", ")
+    : "none";
+  console.log(`  Researches: [${researchList}]`);
+  const resourceList = Object.entries(data.resources ?? {})
+    .map(([key, value]) => `${key}: ${formatExpoNumber(value)}`)
+    .join(", ");
+  console.log(`  Resources: { ${resourceList || "none"} }`);
+  const productionList = Object.entries(data.productionRates ?? {})
+    .map(([key, value]) => `${key}: ${formatExpoNumber(value)}/s`)
+    .join(", ");
+  console.log(`  Production: { ${productionList || "none"} }`);
+  const buildingList = (data.buildings ?? [])
+    .map((b) => `${b.building} x${b.count}`)
+    .join(", ");
+  console.log(`  Buildings: [${buildingList}] (${data.totalBuildings} total)`);
+  const unitList = (data.units ?? [])
+    .map((u) => `${u.unit} x${formatExpoNumber(u.count)}`)
+    .join(", ");
+  console.log(`  Units: [${unitList || "none"}]`);
+  console.log(`  Battles Won: ${data.battlesWon}`);
+  if (data.militaryPower) {
+    console.log(`  Military Power: ${formatExpoNumber(data.militaryPower)}`);
   }
-  if (minutes > 0) {
-    return `${minutes}m ${String(secs).padStart(2, "0")}s`;
-  }
-  return `${secs}s`;
 }
 
 async function main() {
@@ -255,55 +290,25 @@ async function main() {
     // A save is a mid-game state: the from-scratch prologue must not run.
     fromScratch: options.save === null,
     onEvent: (event) => {
-      console.log(
-        `\n[EVENT] [${formatGameTime(event.time)}] ${event.type}: ${event.id}`,
-      );
-      console.log(`    Population: ${formatExpoNumber(event.population)}`);
-      const eventResourceList = Object.entries(event.resources ?? {})
-        .map(([key, value]) => `${key}: ${formatExpoNumber(value)}`)
-        .join(", ");
-      console.log(`    Resources: { ${eventResourceList || "none"} }`);
-      const eventProductionList = Object.entries(event.productionRates ?? {})
-        .map(([key, value]) => `${key}: ${formatExpoNumber(value)}/s`)
-        .join(", ");
-      console.log(`    Production: { ${eventProductionList || "none"} }`);
+      console.log(`\n[EVENT] ${event.type}: ${event.id}`);
+      printSummaryBlock(event);
     },
     onSnapshot: (snapshot) => {
       const timing = snapshot.timing;
-      // The snapshot's own counter, not the callback's index, so the number
-      // printed here is the same one recorded in the snapshot and the CSV.
-      console.log(`\n[SNAPSHOT] Snapshot ${snapshot.index + 1}:`);
-      console.log(`  Time: ${snapshot.timestamp}s`);
-      console.log(`  Age: ${snapshot.age}`);
-      console.log(`  Population: ${formatExpoNumber(snapshot.population)}`);
-      const researchList = snapshot.researches?.length
-        ? snapshot.researches.join(", ")
-        : "none";
-      console.log(`  Researches: [${researchList}]`);
-      const resourceList = Object.entries(snapshot.resources ?? {})
-        .map(([key, value]) => `${key}: ${formatExpoNumber(value)}`)
-        .join(", ");
-      console.log(`  Resources: { ${resourceList || "none"} }`);
-      const productionList = Object.entries(snapshot.productionRates ?? {})
-        .map(([key, value]) => `${key}: ${formatExpoNumber(value)}/s`)
-        .join(", ");
-      console.log(`  Production: { ${productionList || "none"} }`);
-      const buildingList = snapshot.buildings
-        .map((b) => `${b.building} x${b.count}`)
-        .join(", ");
-      console.log(
-        `  Buildings: [${buildingList}] (${snapshot.totalBuildings} total)`,
-      );
-      const unitList = snapshot.units
-        .map((u) => `${u.unit} x${formatExpoNumber(u.count)}`)
-        .join(", ");
-      console.log(`  Units: [${unitList || "none"}]`);
-      console.log(`  Battles Won: ${snapshot.battlesWon}`);
-      if (snapshot.militaryPower) {
-        console.log(
-          `  Military Power: ${formatExpoNumber(snapshot.militaryPower)}`,
-        );
-      }
+      // Periodic rows print "Snapshot N" on the interval grid (periodicIndex
+      // counts periodic rows alone); milestones and the closing row get their
+      // own label so an off-grid battle/age is no longer mistaken for a
+      // mis-timed periodic snapshot.
+      const label =
+        snapshot.kind === "periodic"
+          ? `Snapshot ${snapshot.periodicIndex + 1}`
+          : snapshot.kind === "final"
+            ? "Final state"
+            : snapshot.kind === "age"
+              ? `Age ${snapshot.milestoneId}`
+              : `Battle ${snapshot.milestoneId}`;
+      console.log(`\n[SNAPSHOT] ${label}:`);
+      printSummaryBlock(snapshot);
       // The timing sampled at this instant, so a run that starts slowing down
       // shows it snapshot by snapshot rather than only in the end-of-run totals.
       console.log(

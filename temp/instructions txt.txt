@@ -155,3 +155,97 @@ verify, on a battle ( and battle simulation), ennemy should have
 
 
 
+simulation : 
+- improve research dynamic algo
+ -check why dynamic research diverge from player research 
+ - delay military research ( if no prod boost) until battle resources are colllected
+- better worker assignment:
+  -> solve worker assignment reverting it self to often
+  -> try a 100% worker assignment 
+- objective simulation : 
+  -> defines objectives/ sub objective to better do the optimization of worker/research
+  
+  
+balance :
+- ship are too strong :
+  -> ideas
+   - default battle order so that archer are more protected?
+   - anti naval boost for some units?
+   - additional age1 ground unit : berserker more powerful , spammable
+   - cavalery>infantery>archer/siege>naval>cavalery
+   
+- boost torsion_physics
+
+others:
+
+
+- put your knowledge in a file to feed other models
+- resume all mecanics /boosts to feed another ai for opimizati
+
+
+
+back to the plan: what to do first?
+- improve research dynamic algo
+- better worker assignment
+- objective simulation
+- balance
+
+
+objective simulation:
+create a new strategy : objective
+for each age it will have clear age objective then subobjective...etc
+
+for example : age0 objective are 
+- 90 people, 
+-battle 1
+-battle 2,
+-battle 3,
+-1000 people 
+-battle 4
+
+and subojective for battle 2 is something like that
+is : 
+- one universitry
+- 200 people
+- get writing
+- get sling_throwing
+- boost military prod
+- get units for battle
+- battle
+
+
+each objective must optimize the time to get there, and list needed building/units, researches
+- subobjective can serve as milestone for worker assignment  or can be done in parallel. 
+ideally, i would like you ( the AI) or the program to find objectives ( what do you think are objectives for age 1)
+and subobjective may be recomputed on the fly..
+(ideally, only objectvie computation/subobjective shoudl take a lot of decision time)
+
+what do you think of it?
+
+
+for now consider only age0 and age1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
