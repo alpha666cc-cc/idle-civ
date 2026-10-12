@@ -6,6 +6,7 @@ import { ageDefinitions } from "../game/ages";
 import { buildingDefinitions, type BuildingKey } from "../game/buildings";
 import { researchDefinitions, type ResearchDefinition } from "../game/research";
 import { unitDefinitions } from "../game/units";
+import { findFormationDefinition } from "../game/formations";
 import { ExpNumber } from "../game/expNumber";
 import type { Bonus } from "../game/bonus";
 import {
@@ -225,11 +226,7 @@ const buildLayout = (): Layout => {
       const key = `${prerequisiteId}->${research.key}`;
       const parentIndex = indexByKey.get(prerequisiteId);
       if (parentIndex === undefined) return { path: "", key, crossAge: false };
-      const route = routeTechEdge(
-        nodes[parentIndex],
-        nodes[childIndex],
-        nodes,
-      );
+      const route = routeTechEdge(nodes[parentIndex], nodes[childIndex], nodes);
       return { path: route.path, key, crossAge: route.crossAge };
     }),
   );
@@ -248,6 +245,18 @@ const buildingNames = new Map(
   buildingDefinitions.map((building) => [building.key, building.name]),
 );
 const unitNames = new Map(unitDefinitions.map((unit) => [unit.id, unit.name]));
+const formationNames = new Map<string, string>(
+  [
+    "standard",
+    "frontline",
+    "backline",
+    "rush",
+    "turtle",
+    "skirmish",
+    "shield_wall",
+    "pike_square",
+  ].map((id) => [id, findFormationDefinition(id)?.name ?? id]),
+);
 
 /** Unit-stat bonus destinations in player words. */
 const unitStatLabels: Record<string, string> = {
@@ -367,6 +376,9 @@ const ResearchCard = ({
   const unlocks = research.unlocks.map(
     (unitId) => unitNames.get(unitId) ?? unitId,
   );
+  const unlocksFormations = (research.unlocksFormations ?? []).map(
+    (formationId) => formationNames.get(formationId) ?? formationId,
+  );
   const conversions = research.conversions.map(
     ({ from, to, ratio }) =>
       `Converts ${unitNames.get(from) ?? from} → ${unitNames.get(to) ?? to} (${ratio}:1)`,
@@ -376,6 +388,15 @@ const ResearchCard = ({
       ? [
           `Unlocks ${unlocks.slice(0, 2).join(", ")}${
             unlocks.length > 2 ? ` +${unlocks.length - 2} more` : ""
+          }`,
+        ]
+      : []),
+    ...(unlocksFormations.length > 0
+      ? [
+          `Unlocks formations: ${unlocksFormations.slice(0, 2).join(", ")}${
+            unlocksFormations.length > 2
+              ? ` +${unlocksFormations.length - 2} more`
+              : ""
           }`,
         ]
       : []),

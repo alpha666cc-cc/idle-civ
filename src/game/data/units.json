@@ -672,12 +672,12 @@
     "costs": [
       {
         "resource": "military",
-        "base": 9876000000,
+        "base": 2.9e10,
         "factor": 1.4
       },
       {
         "resource": "metalwork",
-        "base": 987600000,
+        "base": 2.9e10,
         "factor": 1.4
       }
     ]
@@ -703,12 +703,12 @@
     "costs": [
       {
         "resource": "military",
-        "base": 1306200000000,
+        "base": 5e10,
         "factor": 1.4
       },
       {
         "resource": "metalwork",
-        "base": 130620000000,
+        "base": 1e10,
         "factor": 1.4
       }
     ]
@@ -734,12 +734,12 @@
     "costs": [
       {
         "resource": "military",
-        "base": 104230000000000,
+        "base": 1e11,
         "factor": 1.6
       },
       {
         "resource": "metalwork",
-        "base": 10423000000000,
+        "base": 1e10,
         "factor": 1.6
       }
     ]
@@ -765,12 +765,17 @@
     "costs": [
       {
         "resource": "military",
-        "base": 127320000000000000,
+        "base": 3e11,
         "factor": 1.8
       },
       {
         "resource": "metalwork",
-        "base": 12732000000000000,
+        "base": 1e11,
+        "factor": 1.8
+      },
+      {
+        "resource": "wood",
+        "base": 1e13,
         "factor": 1.8
       }
     ]
@@ -796,12 +801,12 @@
     "costs": [
       {
         "resource": "military",
-        "base": 2.9144e22,
+        "base": 1e12,
         "factor": 2
       },
       {
         "resource": "metalwork",
-        "base": 2.9144e21,
+        "base": 5e11,
         "factor": 2
       }
     ]
@@ -827,17 +832,17 @@
     "costs": [
       {
         "resource": "military",
-        "base": 3.9718e27,
+        "base": 1e15,
         "factor": 2.5
       },
       {
         "resource": "metalwork",
-        "base": 3.9718e26,
+        "base": 1e14,
         "factor": 2.5
       },
       {
         "resource": "wood",
-        "base": 7.9436e26,
+        "base": 1e17,
         "factor": 2.5
       }
     ]
@@ -863,12 +868,12 @@
     "costs": [
       {
         "resource": "military",
-        "base": 7.9057e33,
+        "base": 1e17,
         "factor": 1.5
       },
       {
         "resource": "metalwork",
-        "base": 7.9057e32,
+        "base": 1e16,
         "factor": 1.5
       }
     ]
@@ -894,17 +899,17 @@
     "costs": [
       {
         "resource": "military",
-        "base": 4.87e41,
+        "base": 1e20,
         "factor": 2.5
       },
       {
         "resource": "metalwork",
-        "base": 4.87e40,
+        "base": 1e19,
         "factor": 2.5
       },
       {
         "resource": "wood",
-        "base": 9.7401e40,
+        "base": 1e24,
         "factor": 2.5
       }
     ]

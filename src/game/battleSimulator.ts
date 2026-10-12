@@ -244,23 +244,32 @@ export const solveMinimumArmy = (
   context: BattleSimulatorContext,
   requireMixed = false,
   ownedArmy: SimulatorOwnedArmy = new Map(),
+  lockedFormations: ReadonlyMap<string, FormationId> = new Map(),
 ): SimulatorResult | null => {
   const encounter = encounterDefinitions.find(({ key }) => key === battleId);
   if (!encounter) return null;
-  const wins = (composition: SimulatorArmy): boolean =>
-    context.wins(mergeSimulatorArmy(ownedArmy, composition), battleId);
+  const wins = (composition: SimulatorArmy): boolean => {
+    const total = mergeSimulatorArmy(ownedArmy, composition);
+    if (lockedFormations.size > 0) {
+      return context.winsWithFormations(total, lockedFormations, battleId);
+    }
+    return context.wins(total, battleId);
+  };
   if (wins(new Map())) {
     const totalComposition = mergeSimulatorArmy(ownedArmy, new Map());
     const availableFormations =
       encounter && encounter.age >= 2 ? formationIds : [DEFAULT_FORMATION];
     const availableOrders =
       encounter && encounter.age >= 3 ? orderIds : [DEFAULT_ORDER];
-    const formations = findOptimalFormations(
-      totalComposition,
-      availableFormations,
-      context,
-      battleId,
-    );
+    const formations =
+      lockedFormations.size > 0
+        ? lockedFormations
+        : findOptimalFormations(
+            totalComposition,
+            availableFormations,
+            context,
+            battleId,
+          );
     const orders = findOptimalOrders(
       totalComposition,
       availableOrders,
@@ -386,15 +395,19 @@ export const solveMinimumArmy = (
 
   // Find optimal formations for the winning army
   // Use standard formation for Age 0/1, all available formations for Age 2+
+  // Use locked formations if provided, otherwise find optimal
   const availableFormations =
     encounter && encounter.age >= 2 ? formationIds : [DEFAULT_FORMATION];
 
-  const formations = findOptimalFormations(
-    totalComposition,
-    availableFormations,
-    context,
-    battleId,
-  );
+  const formations =
+    lockedFormations.size > 0
+      ? lockedFormations
+      : findOptimalFormations(
+          totalComposition,
+          availableFormations,
+          context,
+          battleId,
+        );
 
   // Find optimal targeting orders for the winning army
   // Use standard order for Age 0/2, all available orders for Age 3+

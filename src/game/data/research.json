@@ -1278,7 +1278,7 @@
       {
         "type": "costReductionPercent",
         "destination": "allBuildings",
-        "value": "0.75"
+        "value": "0.95"
       },
       {
         "type": "attributeMultiplier",
