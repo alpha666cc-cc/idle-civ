@@ -48,7 +48,6 @@ import type { FundingCost } from "./workerFunding.js";
 import type { SimulationAction } from "./simulation.js";
 import {
   getRecommendedBattlePurchase,
-  getRequiredBattlePreparationCosts,
   getSimulatorBattlePlan,
 } from "./strategies.js";
 
@@ -74,6 +73,10 @@ export type Objective = {
 /** Whole number of people, the engine's derivation rather than a stored count. */
 const populationOf = (state: CivilizationState): number =>
   state.population.floor().toNumber();
+
+/** Current people capacity — the house cap the settlement is actually held to. */
+const peopleCapacityOf = (state: CivilizationState): number =>
+  state.resources.peopleCapacity.floor().toNumber();
 
 /** `capacityProvided` by one building toward another, e.g. a house's people slots. */
 const capacityPer = (source: BuildingKey, forBuilding: BuildingKey): number => {
@@ -205,46 +208,43 @@ export const growthCosts = (
     0,
     state.resources.houseCapacity.floor().toNumber() - houses,
   );
-  // Active citizen gap: how many more people we can hold right now. The
-  // settlement can only grow by buying citizens up to its housing cap, so
-  // this (not the full `target - population` delta) is the real demand for
-  // houses. Priced from the *current* cap, not a static floor, so the vector
-  // re-solves as the settlement adds houses and un-locks real slots.
-  const activeGap = Math.max(0, target - state.resources.peopleCapacity.floor().toNumber());
-  const housesToReachCap = Math.ceil(activeGap / peoplePerHouse);
-  // We already own `houses` that hold `houseRoom` slots; price only the
-  // *new* houses that close the gap and are still within the actual capacity.
-  const housesPriced = Math.min(
-    housesToReachCap,
-    Math.max(0, Math.floor(houseRoom / peoplePerHouse)),
-  );
-  const housesToAdd = Math.min(housesToReachCap, housesPriced);
-  if (housesToAdd > 0) add(state.getBuildingCost("house", houses, housesToAdd));
-
   const hallsPer = capacityPer("townHall", "house");
   if (hallsPer <= 0) return costs;
 
   const townHallCapacity = state.resources.townHallCapacity.floor().toNumber();
   const townHalls = state.getBuildingCount("townHall");
-  // The town hall is what lifts the house cap. Price extra halls only for
-  // house slots we cannot already reach from the live house capacity.
-  const housesStillNeeded = housesToReachCap - houseRoom;
-  const hallsToAdd = Math.max(
-    0,
-    Math.ceil(housesStillNeeded / hallsPer),
+  const activeGap = Math.max(0, target - state.resources.peopleCapacity.floor().toNumber());
+  const housesToReachCap = Math.ceil(activeGap / peoplePerHouse);
+  // The town hall is what lifts the *house* cap. A hall adds `hallsPer` house
+  // slots, so halls lift the house ceiling in `hallsPer`-house rungs. Price the
+  // halls the target's houses actually need beyond the house slots the
+  // settlement can already reach (`houseRoom`), capped at the halls the engine
+  // will let us buy (`townHallCapacity`), and raised to at least one whenever a
+  // hall is needed at all: with zero halls in the vector the worker split never
+  // funds the stone/gold that lifts the cap, so the settlement walks to
+  // `peopleCapacity` and freezes there forever waiting for a hall that was never
+  // priced. Pricing the hall before the houses it unlocks keeps the vector
+  // honest — the next rung is always a hall first, then the houses it opens.
+  const houseRoomInHouses = Math.floor(houseRoom / hallsPer);
+  const housesBeyondHalls = Math.max(0, housesToReachCap - houseRoomInHouses);
+  const hallsNeeded = Math.ceil(housesBeyondHalls / hallsPer);
+  const hallsPriced = Math.min(
+    Math.max(1, hallsNeeded),
+    Math.max(0, townHallCapacity - townHalls),
   );
-  const hallsCapped = townHalls >= townHallCapacity && townHallCapacity > 0;
-  const hallsAffordable = !hallsCapped && hallsToAdd > 0;
-  if (hallsAffordable) {
-    // Price the min(affordable needs, available halls) so the split funds a
-    // real hall and the solver sees the resource it is short of, instead of a
-    // cost the engine will never let pay.
-    const hallsPriced = Math.min(
-      hallsToAdd,
-      Math.max(0, townHallCapacity - townHalls),
-    );
-    if (hallsPriced > 0) add(state.getBuildingCost("townHall", townHalls, hallsPriced));
+  if (hallsPriced > 0) {
+    add(state.getBuildingCost("townHall", townHalls, hallsPriced));
   }
+
+  // Houses come after the halls they depend on. Only the houses that fit inside
+  // the hall-boosted house ceiling are priced, so the vector never carries a
+  // wood bill the engine would refuse — that would mislead the worker split.
+  const houseCeiling = houseRoom + hallsPriced * hallsPer;
+  const housesPriced = Math.min(housesToReachCap, houseCeiling);
+  if (housesPriced > 0) {
+    add(state.getBuildingCost("house", houses, housesPriced));
+  }
+
   return costs;
 };
 
@@ -286,7 +286,31 @@ const populationObjective = (
   id,
   label,
   done: (state) => state.population.gte(ExpNumber.fromNumber(target)),
-  costs: (state) => growthCosts(state, target),
+  // Price only the *next* citizen plus the housing it needs, then re-solve after
+  // each purchase. The whole-90 vector asks the worker solver to reach a food
+  // rate near ~380/s from a rate that is negative while citizens outpace the
+  // farms; that split is infeasible, `focus` comes back null, no worker is ever
+  // assigned, and the settlement freezes at the first cap. A one-citizen step is
+  // always reachable, so the split fires immediately and the walk parallelises
+  // food against housing instead of serially saving food first.
+  costs: (state) => {
+    const owned = populationOf(state);
+    const capacity = peopleCapacityOf(state);
+    // Fund only the next citizen plus the housing that makes room for it, then
+    // re-solve after each purchase. The whole-90 vector asks the worker solver
+    // to reach a food rate near ~380/s from a rate that is *negative* while
+    // citizens outpace the farms; that split is infeasible, `focus` comes back
+    // null, no worker is ever assigned, and the settlement starves at the first
+    // cap. A one-rung step is always reachable, so the split fires at once and
+    // the walk parallelises food against housing instead of serially saving
+    // food first. Pricing to the *current* capacity alone is not enough — at the
+    // cap that vector is food-only and the wood for the next house never
+    // arrives — so reach at least one housing rung (`peoplePerHouse`) past it.
+    const peoplePerHouse = capacityPer("house", "people");
+    const nextRung = peoplePerHouse > 0 ? capacity + peoplePerHouse : capacity + 1;
+    const stepTarget = Math.min(target, Math.max(nextRung, owned + 1));
+    return growthCosts(state, stepTarget);
+  },
   purchase: (state) => buyIfAffordable(state, growthBuilding(state, target)),
 });
 
@@ -297,20 +321,6 @@ const populationObjective = (
  * needs slingers funds agriculture -> pottery -> sling_throwing instead of
  * stalling on a unit the engine will not sell yet.
  */
-const battleCosts = (state: CivilizationState): FundingCost[] => {
-  const preparation = getRequiredBattlePreparationCosts(state);
-  if (preparation.length > 0) {
-    return preparation.map(({ resource, base }) => ({ resource, base }));
-  }
-  const plan = getSimulatorBattlePlan(state);
-  if (!plan) return [];
-  const totals = new Map<ResourceKey, ExpNumber>();
-  for (const { resource, base } of [...plan.totalCost, ...plan.research.costs]) {
-    totals.set(resource, (totals.get(resource) ?? ExpNumber.ZERO).add(base));
-  }
-  return [...totals].map(([resource, base]) => ({ resource, base }));
-};
-
 const battleObjective = (
   id: string,
   label: string,
@@ -319,7 +329,21 @@ const battleObjective = (
   id,
   label,
   done: (state) => state.defeatedEncounters.includes(encounterId),
-  costs: (state) => battleCosts(state),
+  costs: (state) => {
+    const preparation = requiredPreparationBuilding(state);
+    if (preparation) {
+      return state
+        .getBuildingCost(preparation, state.getBuildingCount(preparation), 1)
+        .map(({ resource, base }) => ({ resource, base }));
+    }
+    const plan = getSimulatorBattlePlan(state);
+    if (!plan) return [];
+    const totals = new Map<ResourceKey, ExpNumber>();
+    for (const { resource, base } of [...plan.totalCost, ...plan.research.costs]) {
+      totals.set(resource, (totals.get(resource) ?? ExpNumber.ZERO).add(base));
+    }
+    return [...totals].map(([resource, base]) => ({ resource, base }));
+  },
   purchase: (state) =>
     buyIfAffordable(state, requiredPreparationBuilding(state)) ??
     getRecommendedBattlePurchase(state, getSimulatorBattlePlan(state)),
@@ -358,6 +382,62 @@ const buildingsObjective: Objective = {
 };
 
 /**
+ * The age-0 production bootstrap: the first farm and lumber yard.
+ *
+ * Without these the settlement has no passive income, so once citizens outpace
+ * the (zero) farms every gatherable rate goes net-negative, `yieldPerWorker`
+ * is zero, and the worker solver returns `null` — every worker stays idle and
+ * the whole economy is the single manual gather. Worse, the walk deadlocks: a
+ * farm costs food *and* wood, but a food-bleeding settlement only ever gathers
+ * food (food is the only deficit it ever sees), so the wood the farm needs
+ * never arrives and the farm never gets built. This objective funds the pair up
+ * front — before the population walk adds drains it cannot yet feed — so wood
+ * enters the short set, passive income engages, and the solver wakes up.
+ *
+ * It is done once each production pair has at least one member; growth past
+ * that is the helper-building rung's job, bounded by each building's capacity.
+ */
+const productionBootstrapObjective: Objective = {
+  id: "bootstrap-production",
+  label: "Raise a farm and a lumber yard",
+  done: (state) =>
+    helperBuildings
+      .slice(0, 2)
+      .every(
+        (building) =>
+          state.getBuildingCount(building) > 0 || !state.isBuildingAvailable(building),
+      ),
+  costs: (state) => {
+    const costs: FundingCost[] = [];
+    for (const building of helperBuildings.slice(0, 2)) {
+      if (
+        state.getBuildingCount(building) > 0 ||
+        !state.isBuildingAvailable(building) ||
+        state.isBuildingAtCapacity(building)
+      ) {
+        continue;
+      }
+      for (const { resource, base } of state.getBuildingCost(
+        building,
+        state.getBuildingCount(building),
+        1,
+      )) {
+        costs.push({ resource, base });
+      }
+    }
+    return costs;
+  },
+  purchase: (state) => {
+    for (const building of helperBuildings.slice(0, 2)) {
+      if (state.getBuildingCount(building) > 0) continue;
+      const action = buyIfAffordable(state, building);
+      if (action) return action;
+    }
+    return null;
+  },
+};
+
+/**
  * The age-0 campaign, in the order the engine actually offers it.
  *
  * The population checkpoints mirror `ageZeroRouteTargets`, which the benchmark
@@ -366,6 +446,7 @@ const buildingsObjective: Objective = {
  * Troy. Moving it is a one-row edit here, and worth benchmarking if it is tried.
  */
 export const age0Objectives: readonly Objective[] = [
+  productionBootstrapObjective,
   populationObjective("pop90", "Grow to 90 citizens", 90),
   battleObjective("first-fire", "Win First Fire", "age0_1_first_fire"),
   populationObjective("pop200", "Grow to 200 citizens", 200),

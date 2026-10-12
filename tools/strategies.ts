@@ -55,10 +55,16 @@ import {
 import { TRADE_INTENSITY_STOPS } from "../src/game/trade.js";
 import {
   getFastestFundingRoute,
+  getFastestWorkerAllocation,
   getWorkerAssignmentAction,
   type FundingCost,
   type FundingRoute,
+  type WorkerFocus,
 } from "./workerFunding.js";
+import {
+  currentObjective,
+  helperBuildingAction,
+} from "./objectivePlan.js";
 
 // Enable adaptive funding only for strategies with measured age-1 improvements.
 export let ADAPTIVE_WORKER_FUNDING_ENABLED = true;
@@ -213,83 +219,71 @@ const hasReachedResearchAge = (
   return researchAge <= currentAgeIndex;
 };
 
-const playerResearchOrder = [
-  "agriculture",
-  "pottery",
-  "writing",
-  "sling_throwing",
-  "tribal_organization",
-  "woodcraft_hulls",
-  "forestry",
-  "mining",
-  "stone_working",
-  "city_planning",
-  "domestication",
-  "trapping",
-  "animal_husbandry",
-  "weaving",
-  "calendar",
-  "archery_mechanics",
-  "flint_knapping",
-  "bronze_smelting",
-  "bronze_casting",
-  "composite_bowcraft",
-  "wheel_axle",
-  "galley_design",
-  "torsion_physics",
-] as const;
-
 /**
- * Age-1 buy order. It started from the purchase order recorded in
- * `saves/age2-start.json` (the fastest run that reached Age 2), filtered to the
- * entries whose research `age` is 1, and has since been hand-tuned: `currency`
- * and `mathematics` now sit ahead of `irrigation` and `ram_hulls`, so the cheap
- * already-unlocked techs are bought before the expensive one rather than behind
- * it.
+ * Recorded `player` research buy order, one array per age. The Age-0 order is
+ * the buy order of the fastest run to clear it. Age 1 starts with the fastest
+ * Age-2 run's recorded order, filtered by age and hand-tuned to buy cheap,
+ * available technologies earlier. Later ages fall back to the dynamic heuristic.
  *
- * Measured on the AGENTS §7.2 sweep (7200 s / 60 s), this order gives `player`
- * 5.318e3 population, 10794 buildings and 2.0155e10 army power against 5.313e3,
- * 10787 and 1.9987e10 for the dynamic order it replaced; the other nine
- * strategies came back byte-identical.
- *
- * The *mechanism* is deliberately not asserted here. Price is ordinal
- * (`getResearchCostForCount` prices the n-th tech of the age, not the tech), so
- * any order that buys the whole set costs the same, and
- * `docs/age1-optimization.md` §8.4 puts research order at roughly a fifth of the
- * weight of the base strategy. What is measured is the sign, not the reason —
- * re-verify with `temp/age1-tune.ts` (same config as `snapshot-csv.ts`) before
- * moving entries around again.
- *
- * `berserker_warbands` is appended because it is newer than that save: its
- * prerequisites (`howdah_mounting`, `coastal_forts`) are later entries here, so
- * it can only be bought once they are in.
  */
-const playerAge1ResearchOrder = [
-  "alphabet",
-  "philosophy_fundamentals",
-  "shipbuilding_principles",
-  "currency",
-  "mathematics",
-  "code_of_laws",
-  "irrigation",
-  "horsemanship",
-  "trade_routes",
-  "ram_hulls",
-  "iron_mining",
-  "iron_working",
-  "iron_forging",
-  "iron_chariotry",
-  "heavy_oar_arrays",
-  "iron_shielding",
-  "cavalry_formations",
-  "masonry",
-  "road_networks",
-  "metallurgy_prep",
-  "engineered_siegecraft",
-  "coastal_forts",
-  "howdah_mounting",
-  "berserker_warbands",
-] as const;
+const playerResearchOrderByAge: readonly (readonly string[])[] = [
+  [
+    "agriculture",
+    "pottery",
+    "writing",
+    "sling_throwing",
+    "tribal_organization",
+    "woodcraft_hulls",
+    "forestry",
+    "mining",
+    "stone_working",
+    "city_planning",
+    "domestication",
+    "trapping",
+    "animal_husbandry",
+    "weaving",
+    "calendar",
+    "archery_mechanics",
+    "flint_knapping",
+    "bronze_smelting",
+    "bronze_casting",
+    "composite_bowcraft",
+    "wheel_axle",
+    "galley_design",
+    "torsion_physics",
+  ],
+  [
+    "alphabet",
+    "philosophy_fundamentals",
+    "shipbuilding_principles",
+    "currency",
+    "mathematics",
+    "code_of_laws",
+    "irrigation",
+    "horsemanship",
+    "trade_routes",
+    "ram_hulls",
+    "iron_mining",
+    "iron_working",
+    "iron_forging",
+    "iron_chariotry",
+    "heavy_oar_arrays",
+    "iron_shielding",
+    "cavalry_formations",
+    "masonry",
+    "road_networks",
+    "metallurgy_prep",
+    "engineered_siegecraft",
+    "coastal_forts",
+    "howdah_mounting",
+    "berserker_warbands",
+  ],
+];
+
+const getRecordedPlayerResearchOrder = (
+  ageIndex: number,
+): readonly string[] | undefined =>
+  ageIndex < 0 ? undefined : playerResearchOrderByAge[ageIndex];
 
 const hasResearchBonus = (researchId: string, destination: string): boolean =>
   researchDefinitions
@@ -536,7 +530,7 @@ const hasCompletedPlayerResearch = (state: CivilizationState): boolean => {
     : 0;
 
   if (currentAgeIndex === 0) {
-    return playerResearchOrder.every((researchId) =>
+    return (getRecordedPlayerResearchOrder(0) ?? []).every((researchId) =>
       state.isResearchBought(researchId),
     );
   }
@@ -3107,19 +3101,14 @@ export class PlayerStrategy extends ResearchStrategy {
   protected getPlayerResearchOrder(
     state?: CivilizationState,
   ): readonly string[] {
-    if (!state) return playerResearchOrder;
-    const currentAge = state.getCurrentAge();
-    if (!currentAge || currentAge.key === ageDefinitions[0]?.key) {
-      return playerResearchOrder;
-    }
-    const currentAgeIndex = ageDefinitions.findIndex(
-      ({ key }) => key === currentAge.key,
+    const currentAge = state?.getCurrentAge();
+    const currentAgeIndex = currentAge
+      ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
+      : 0;
+    return (
+      getRecordedPlayerResearchOrder(currentAgeIndex) ??
+      (state ? getDynamicResearchOrder(state, true) : [])
     );
-    // Age 1 follows the recorded buy order of the fastest run to clear it
-    // instead of the dynamic heuristic, so the opening stays reproducible.
-    return currentAgeIndex === 1
-      ? playerAge1ResearchOrder
-      : getDynamicResearchOrder(state, true);
   }
 
   private isResearchPaused(state: CivilizationState): boolean {
@@ -3730,6 +3719,87 @@ export class SpeedrunStrategy extends BaseStrategy {
 }
 
 /**
+ * Follow an explicit per-age objective plan, funding whatever is first and
+ * unfinished from that objective's own cost set.
+ */
+export class ObjectiveStrategy implements SimulationStrategy {
+  name = "objective";
+  description =
+    "Follow an explicit per-age objective plan and fund each one from its own cost set";
+
+  private focus:
+    | { signature: string; updatedAt: number; focus: WorkerFocus | null }
+    | undefined;
+
+  decideAction(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulationAction | null {
+    const ageAction = getRequiredAgeAction(state);
+    if (ageAction) return ageAction;
+
+    const objective = currentObjective(state);
+    if (objective) {
+      const purchase = objective.purchase(state);
+      if (purchase) return purchase;
+
+      const launch = getRequiredBattleAction(state);
+      if (launch) return launch;
+
+      const costs = objective.costs(state);
+      if (costs.length > 0) {
+        const focus = this.focusFor(state, costs, objective.id, context.gameTime);
+        if (focus) {
+          const reassignment = getWorkerAssignmentAction(state, focus);
+          if (reassignment) return reassignment;
+        }
+        const helper = helperBuildingAction(state, costs);
+        if (helper) return helper;
+        const deficit = largestDeficitResource(state, costs);
+        if (deficit) return { type: "gather", resource: deficit };
+      }
+    }
+
+    const bootstrap = getBootstrapGatherResource(state);
+    if (bootstrap) return { type: "gather", resource: bootstrap };
+    const idle = getCheapestPurchaseCandidate(state);
+    return idle ? withMaxAffordableCount(state, idle) : null;
+  }
+
+  private focusFor(
+    state: CivilizationState,
+    costs: readonly FundingCost[],
+    objectiveId: string,
+    gameTime: number,
+  ): WorkerFocus | null {
+    const signature = JSON.stringify({
+      objective: objectiveId,
+      costs: costs.map(({ resource, base }) => [resource, base.toString()]),
+      buildings: state.builtBuildings,
+      units: Object.fromEntries(
+        Object.entries(state.unitCounts).map(([id, count]) => [id, count.toString()]),
+      ),
+      research: state.boughtResearch,
+      battles: state.defeatedEncounters,
+      enteredAges: state.enteredAges,
+      workforce: state.assignedWorkers + state.availableWorkers,
+    });
+    if (
+      !this.focus ||
+      this.focus.signature !== signature ||
+      gameTime - this.focus.updatedAt >= 30
+    ) {
+      this.focus = {
+        signature,
+        updatedAt: gameTime,
+        focus: getFastestWorkerAllocation(state, costs),
+      };
+    }
+    return this.focus.focus;
+  }
+}
+
+/**
  * Strategy registry for easy access.
  */
 export const strategyRegistry: Record<string, SimulationStrategy> = {
@@ -3743,6 +3813,7 @@ export const strategyRegistry: Record<string, SimulationStrategy> = {
   player: new PlayerStrategy(),
   speedrun: new SpeedrunStrategy(),
   trader: new TradeStrategy(),
+  objective: new ObjectiveStrategy(),
 };
 
 /**
@@ -3766,6 +3837,7 @@ const strategyRegistryNames: Record<string, new () => SimulationStrategy> = {
   player: PlayerStrategy,
   speedrun: SpeedrunStrategy,
   trader: TradeStrategy,
+  objective: ObjectiveStrategy,
 };
 
 /** Get a strategy by name. Always a fresh instance — see the note above. */

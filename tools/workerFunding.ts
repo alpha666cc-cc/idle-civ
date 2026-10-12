@@ -200,18 +200,46 @@ export const getFastestWorkerAllocation = (
 
   const raw = allocationAt(high);
   if (!raw) return null;
+  // Round each resource's share up to a whole worker, then re-fit if that
+  // overshoots the workforce. Flooring (or spreading the leftover round-robin)
+  // starves every multi-resource step: one food citizen needs ~3 workers and one
+  // house ~9, and a 4/1 split finishes neither, so the settlement bounces
+  // between gathering food and wood while the citizen drain eats the surplus.
+  // Rounding up commits whole workers to a resource, which is the only way a
+  // purchase ever becomes affordable.
   const roundedAssignments: Partial<Record<ProductionResourceKey, number>> = {};
   let assigned = 0;
   for (const [resource, workers] of Object.entries(raw)) {
-    const count = Math.floor(workers ?? 0);
+    const count = Math.ceil(workers ?? 0);
     roundedAssignments[resource as ProductionResourceKey] = count;
     assigned += count;
   }
-  const leftover = totalWorkers - assigned;
-  const greedyAssignments = { ...roundedAssignments };
+  // Over budget: peel whole workers off the resource whose share is furthest
+  // above its floor, until we fit. This keeps the split as committed as
+  // possible while never exceeding the workforce we actually have.
   const eligibleRates = rates.filter(
     ({ yieldPerWorker }) => yieldPerWorker > 0,
   );
+  while (assigned > totalWorkers) {
+    let donor: ProductionResourceKey | null = null;
+    let donorFloor = 0;
+    for (const [resource, count] of Object.entries(roundedAssignments)) {
+      const floor = Math.floor(raw[resource as ProductionResourceKey] ?? 0);
+      if ((count ?? 0) > floor && (count ?? 0) > (donor === null ? 0 : 0)) {
+        if (donor === null || (count ?? 0) > donorFloor) {
+          donor = resource as ProductionResourceKey;
+          donorFloor = count ?? 0;
+        }
+      }
+    }
+    if (donor === null) break;
+    roundedAssignments[donor] = (roundedAssignments[donor] ?? 0) - 1;
+    assigned -= 1;
+  }
+  // Remaining workers go to whichever resource has the most work left, so a
+  // single-resource step (a lone food citizen) ends up with the whole workforce
+  // and finishes in one committed burst instead of a fractional dribble.
+  const leftover = totalWorkers - assigned;
   const priority = [...eligibleRates].sort((left, right) => {
     const leftNeed = (left.target - left.current) / left.yieldPerWorker;
     const rightNeed = (right.target - right.current) / right.yieldPerWorker;
@@ -223,7 +251,10 @@ export const getFastestWorkerAllocation = (
     roundedAssignments[resource] = (roundedAssignments[resource] ?? 0) + 1;
   }
 
+  // Greedy refinement: add each remaining worker to whichever resource most
+  // shortens the projected finish. Mirrors age1-policy, the proven-fast variant.
   const roundedSeconds = projectedSecondsAt(roundedAssignments);
+  const greedyAssignments = { ...roundedAssignments };
   for (
     let index = 0;
     index < leftover && eligibleRates.length > 0;

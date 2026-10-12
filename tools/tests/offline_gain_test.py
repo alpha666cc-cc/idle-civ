@@ -11,7 +11,7 @@ from decimal import Decimal
 from pathlib import Path
 
 
-VECTORS = Path(__file__).parents[2] / "src" / "game" / "data" / "offlineGainVectors.json"
+VECTORS = Path(__file__).parent / "offlineGainVectors.json"
 
 
 class OfflineGainContractTest(unittest.TestCase):

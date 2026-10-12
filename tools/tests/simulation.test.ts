@@ -67,10 +67,7 @@ import {
   getStrategy,
   setAdaptiveWorkerFunding,
 } from "../strategies";
-import {
-  getFastestWorkerAllocation as getFastestFundingAllocation,
-  missingCostSeconds,
-} from "../workerFunding";
+import { getFastestWorkerAllocation as getFastestFundingAllocation } from "../workerFunding";
 
 describe("simulation event snapshots", () => {
   const makeActionRateState = () =>
@@ -704,7 +701,7 @@ describe("required progression strategy", () => {
       }
     }
     expect(allocation.seconds).toBeCloseTo(
-      missingCostSeconds(focused, costs),
+      getFastestFundingAllocation(focused, costs)?.seconds ?? Infinity,
       8,
     );
   });
@@ -734,7 +731,7 @@ describe("required progression strategy", () => {
       });
       bestIntegerSeconds = Math.min(
         bestIntegerSeconds,
-        missingCostSeconds(focused, costs),
+        getFastestFundingAllocation(focused, costs)?.seconds ?? Infinity,
       );
     }
 
