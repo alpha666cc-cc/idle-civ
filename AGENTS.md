@@ -123,8 +123,11 @@ production(gold)` units — a tenth of that when buying, the spread. **Both legs
    should be authored as bonuses in the planned model described in §13.
 6. **Respect the TypeScript config invariants** (`verbatimModuleSyntax`,
    `erasableSyntaxOnly`, `noUnusedLocals`, `noUnusedParameters`). Details in §6.
-7. **Preserve user work.** Never commit, reset, stash, checkout, or delete files
-   unless explicitly asked. `temp/` is scratch space.
+7. **The user owns git — see §7 "Version control".** Never commit or `git reset`;
+   `git stash` only if you pop it back; never `git clean`/`checkout --`/discarding
+   `restore`/force flags. Ask the user to commit. Do not destroy files.
+   `temp/` is not a scratch space.
+   `scratch/` is AI scratch space
 8. **Ship original content.** No Civilization-specific names, text, artwork, or other
    protected assets. Broad historical/4X inspiration is fine; copying is not.
 9. **Validate before claiming done.** `npm run build` (which runs `tsc -b && vite build`)
@@ -702,9 +705,20 @@ Remove-Item build_out.txt
 Do not leave scratch artifacts (output files, `dist/`, ad-hoc scripts) behind in the
 tracked tree. `dist/` and `node_modules/` are already gitignored (`*.local` too).
 
-Version control: **do not** `git commit`, `push`, `reset`, `checkout`, `stash`, or delete
-files unless the user explicitly asks. Confirm `git status` is clean of _your_
-accidental additions before you finish. Never commit with `--amend` or force flags.
+Version control — **the user owns git.** Read-only git (`status`, `--no-pager log`,
+`--no-pager diff`, `ls-files`) is fine and expected. Everything that changes the
+repository is the user's call:
+
+- **Never commit anything.** Do not run `git commit` yourself, ever — not to save
+  work, not with a message you were given, not to "finish up". When work is ready,
+  **ask the user to commit it** (and say exactly which files and why).
+- **Never `git reset`** (any form) without explicit permission. If you need to set
+  changes aside, **`git stash` is allowed — but you must `git stash pop` it back**
+  before you finish; do not leave the user's work in a stash.
+- **Never `git clean`, `git checkout --`, `git restore` (discarding), or any
+  force flag** (`--amend`, `--force`, `--hard`). These destroy the user's work.
+- Confirm `git status` shows nothing you introduced by accident before you finish.
+
 **Always run git commands that may page with `--no-pager`** (e.g.
 `git --no-pager log`, `git --no-pager diff`) — a paged command hangs the
 non-interactive shell and aborts the run.
