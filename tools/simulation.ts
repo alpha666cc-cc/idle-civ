@@ -100,6 +100,13 @@ export interface SimulationConfig {
   maxGameTime: number; // maximum simulation time in seconds
   recordSnapshots: boolean;
   /**
+   * An extra stop condition, checked before the configured `objective`. Lets a
+   * run halt the instant an arbitrary engine-exact predicate flips — e.g. an
+   * objective-plan rung's `done()` — without the simulation importing or knowing
+   * anything about the plan that supplied it (which would close an import cycle).
+   */
+  stopWhen?: (state: CivilizationState) => boolean;
+  /**
    * Manufacture the opening house and citizens before the main loop (default
    * true). Set false when the run resumes a save: the prologue exists to bootstrap
    * an empty civilization, and on a mid-game state it would build a redundant
@@ -747,6 +754,11 @@ export class GameSimulation {
    * Check if the simulation objective has been met.
    */
   private checkObjective(): boolean {
+    // A caller-supplied stop predicate (an objective-plan rung's engine-exact
+    // `done()`, for instance) short-circuits the configured objective, so the run
+    // halts the moment that condition flips true.
+    if (this.config.stopWhen?.(this.state)) return true;
+
     const objective = this.config.objective;
 
     switch (objective.type) {

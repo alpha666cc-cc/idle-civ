@@ -45,10 +45,15 @@ import {
 } from "../src/game/buildings.js";
 import type { ResourceKey } from "../src/game/attributes.js";
 import type { FundingCost } from "./workerFunding.js";
-import type { SimulationAction } from "./simulation.js";
+import {
+  createInitialState,
+  GameSimulation,
+  type SimulationAction,
+} from "./simulation.js";
 import {
   getRecommendedBattlePurchase,
   getSimulatorBattlePlan,
+  getStrategy,
 } from "./strategies.js";
 
 /**
@@ -204,16 +209,25 @@ export const growthCosts = (
   if (peoplePerHouse <= 0) return costs;
 
   const houses = state.getBuildingCount("house");
+  // Bonus-aware capacities, not the stored base: a battle victory or enhancer
+  // multiplies a capacity resource, and `getBuildingMax()` is where the engine
+  // applies that. Reading `resources.*Capacity` here misses First Fire's
+  // `townHallCapacity ×2`, so the plan prices zero town halls, funds food only,
+  // and the settlement freezes at its cap waiting for a hall it was never told
+  // to save for. `getBuildingMax()` is the same authority `canBuild()` uses.
   const houseRoom = Math.max(
     0,
-    state.resources.houseCapacity.floor().toNumber() - houses,
+    state.getBuildingMax("house").floor().toNumber() - houses,
   );
   const hallsPer = capacityPer("townHall", "house");
   if (hallsPer <= 0) return costs;
 
-  const townHallCapacity = state.resources.townHallCapacity.floor().toNumber();
+  const townHallCapacity = state.getBuildingMax("townHall").floor().toNumber();
   const townHalls = state.getBuildingCount("townHall");
-  const activeGap = Math.max(0, target - state.resources.peopleCapacity.floor().toNumber());
+  const activeGap = Math.max(
+    0,
+    target - state.maximumPopulation.floor().toNumber(),
+  );
   const housesToReachCap = Math.ceil(activeGap / peoplePerHouse);
   // The town hall is what lifts the *house* cap. A hall adds `hallsPer` house
   // slots, so halls lift the house ceiling in `hallsPer`-house rungs. Price the
@@ -463,4 +477,81 @@ export const currentObjective = (
   state: CivilizationState,
 ): Objective | undefined =>
   age0Objectives.find((objective) => !objective.done(state));
+
+/**
+ * The default ceiling for `advanceToward`, in simulated seconds. Generous on
+ * purpose: a stalled rung returns `reached: false` with its final state rather
+ * than hanging, but this is a safety net, not a pacing gate — the caller decides
+ * what "too slow" means (balance is still moving, so no hard budget here).
+ */
+const DEFAULT_OBJECTIVE_BUDGET_SECONDS = 20_000;
+
+export interface AdvanceTowardOptions {
+  /** Where to start. Omit to begin a fresh civilization (runs the prologue). */
+  from?: CivilizationState;
+  /** Run the from-scratch bootstrap prologue. Defaults to `from === undefined`. */
+  fromScratch?: boolean;
+  /** Safety ceiling in simulated seconds (default 20_000). */
+  maxGameTime?: number;
+  gatherClicksPerAction?: number;
+  actionsPerSecond?: number;
+}
+
+export interface AdvanceTowardResult {
+  state: CivilizationState;
+  gameTime: number;
+  /** Whether the named objective's own `done()` holds on the final state. */
+  reached: boolean;
+}
+
+/**
+ * Play the objective plan up to *and including* a named rung, driven relative to
+ * whatever state you hand it, and stop the instant that rung's `done()` flips.
+ *
+ * This is the per-objective driver: each rung of `age0Objectives` becomes a real,
+ * individually-callable function without freezing the engine beneath it. It never
+ * re-derives a rule — it runs `ObjectiveStrategy`, which asks the engine for every
+ * number at call time (`getBuildingMax`, `canEnterAge`, costs, …). So improving
+ * the engine flows straight through; only the policy constants already living in
+ * `age0Objectives` (`target: 90`, `encounterId`, the order) are pinned, and those
+ * are explicit one-row data, not engine rules.
+ *
+ * Drive the chain live by feeding one rung's output into the next:
+ * `advanceToward("wolf-pack", { from: advanceToward("pop200").state })`. No
+ * fixtures, no snapshots — always the current engine.
+ *
+ * @throws if `objectiveId` is not a rung of the age-0 plan.
+ */
+export const advanceToward = (
+  objectiveId: string,
+  options: AdvanceTowardOptions = {},
+): AdvanceTowardResult => {
+  const objective = age0Objectives.find((entry) => entry.id === objectiveId);
+  if (!objective) {
+    throw new Error(`unknown objective: ${objectiveId}`);
+  }
+
+  const { from, fromScratch = from === undefined } = options;
+  const result = new GameSimulation(from ?? createInitialState(), getStrategy("objective")!, {
+    // The configured objective is only the safety ceiling; `stopWhen` is the real
+    // stop, and it reads the rung's engine-exact `done()` — so the halt condition
+    // can never drift from the rule the engine actually enforces.
+    objective: {
+      type: "timeLimit",
+      seconds: options.maxGameTime ?? DEFAULT_OBJECTIVE_BUDGET_SECONDS,
+    },
+    stopWhen: (state) => objective.done(state),
+    gatherClicksPerAction: options.gatherClicksPerAction ?? 10,
+    actionsPerSecond: options.actionsPerSecond ?? 5,
+    maxGameTime: options.maxGameTime ?? DEFAULT_OBJECTIVE_BUDGET_SECONDS,
+    fromScratch,
+    recordSnapshots: false,
+  }).run();
+
+  return {
+    state: result.finalState,
+    gameTime: result.gameTime,
+    reached: objective.done(result.finalState),
+  };
+};
 

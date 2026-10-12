@@ -3731,6 +3731,12 @@ export class ObjectiveStrategy implements SimulationStrategy {
     | { signature: string; updatedAt: number; focus: WorkerFocus | null }
     | undefined;
 
+  // Once the plan is finished the settlement keeps playing under a generic
+  // strategy rather than freezing on the idle tail. A fresh instance, not the
+  // registry singleton — see the note on `strategyRegistry` about per-run state.
+  private readonly fallback = new BalancedStrategy();
+  private planCompleteAnnounced = false;
+
   decideAction(
     state: CivilizationState,
     context: SimulationContext,
@@ -3739,31 +3745,70 @@ export class ObjectiveStrategy implements SimulationStrategy {
     if (ageAction) return ageAction;
 
     const objective = currentObjective(state);
-    if (objective) {
-      const purchase = objective.purchase(state);
-      if (purchase) return purchase;
+    if (!objective) {
+      // The plan is finished. Hand off to the generic strategy so the
+      // settlement keeps growing, and say so loudly once — everything logged
+      // after this banner is generic play, not the authored objective plan.
+      this.announcePlanComplete();
+      return this.fallback.decideAction(state, context);
+    }
 
-      const launch = getRequiredBattleAction(state);
-      if (launch) return launch;
+    const purchase = objective.purchase(state);
+    if (purchase) return purchase;
 
-      const costs = objective.costs(state);
-      if (costs.length > 0) {
-        const focus = this.focusFor(state, costs, objective.id, context.gameTime);
-        if (focus) {
-          const reassignment = getWorkerAssignmentAction(state, focus);
-          if (reassignment) return reassignment;
-        }
-        const helper = helperBuildingAction(state, costs);
-        if (helper) return helper;
-        const deficit = largestDeficitResource(state, costs);
-        if (deficit) return { type: "gather", resource: deficit };
+    const launch = getRequiredBattleAction(state);
+    if (launch) return launch;
+
+    const costs = objective.costs(state);
+    if (costs.length > 0) {
+      const focus = this.focusFor(state, costs, objective.id, context.gameTime);
+      if (focus) {
+        const reassignment = getWorkerAssignmentAction(state, focus);
+        if (reassignment) return reassignment;
       }
+      const helper = helperBuildingAction(state, costs);
+      if (helper) return helper;
+      const deficit = largestDeficitResource(state, costs);
+      if (deficit) return { type: "gather", resource: deficit };
     }
 
     const bootstrap = getBootstrapGatherResource(state);
     if (bootstrap) return { type: "gather", resource: bootstrap };
     const idle = getCheapestPurchaseCandidate(state);
-    return idle ? withMaxAffordableCount(state, idle) : null;
+    if (!idle) return null;
+    // Affordable: buy it (widened to the most we can pay for). Not yet: gather
+    // toward it instead of emitting a build the engine refuses forever — that
+    // unguarded `count: 1` is the `built 0/1` freeze, spinning on one building
+    // the settlement cannot afford while no gather rung is ever reached.
+    if (isPurchaseAffordable(state, idle)) {
+      return withMaxAffordableCount(state, idle);
+    }
+    const towardIdle = gatherForPurchase(state, idle);
+    return towardIdle
+      ? { type: "gather", resource: towardIdle }
+      : withMaxAffordableCount(state, idle);
+  }
+
+  /**
+   * One loud line marking the end of the authored objective plan. Everything a
+   * run logs after this is generic `balanced` play, so a reader of the log can
+   * tell exactly where the planned work stops and free-form play begins.
+   */
+  private announcePlanComplete(): void {
+    if (this.planCompleteAnnounced) return;
+    this.planCompleteAnnounced = true;
+    console.warn(
+      [
+        "",
+        "########################################################################",
+        "#  END OF OBJECTIVE PLAN — generic `balanced` strategy engaged.",
+        "#  Everything logged AFTER this line is free-form play, NOT part of the",
+        "#  authored age-0 objective plan. This banner marks the boundary of the",
+        "#  current objective work.",
+        "########################################################################",
+        "",
+      ].join("\n"),
+    );
   }
 
   private focusFor(
