@@ -123,7 +123,7 @@ export type SimulationObjective =
 export interface SimulationConfig {
   objective: SimulationObjective;
   gatherClicksPerAction: number; // clicks each gather action models (default 10)
-  actionsPerSecond?: number; // strategy actions per simulated second (default 5)
+  actionsPerSecond?: number; // strategy actions per active second (default 5)
   maxGameTime: number; // maximum simulation time in seconds
   recordSnapshots: boolean;
   /**
@@ -153,6 +153,18 @@ export interface SimulationConfig {
   onEvent?: (event: SimulationEvent) => void;
   onSnapshot?: (snapshot: SimulationSnapshot, index: number) => void;
 }
+
+// Preserve per-second decisions through Age 1; later ages use bounded action bursts.
+const laterAgePacing: Record<
+  number,
+  { actionWindowSeconds: number; maxActions: number; fastForwardSeconds: number }
+> = {
+  2: { actionWindowSeconds: 10, maxActions: 50, fastForwardSeconds: 60 },
+  3: { actionWindowSeconds: 10, maxActions: 50, fastForwardSeconds: 120 },
+  4: { actionWindowSeconds: 10, maxActions: 50, fastForwardSeconds: 300 },
+  5: { actionWindowSeconds: 10, maxActions: 50, fastForwardSeconds: 600 },
+  6: { actionWindowSeconds: 10, maxActions: 50, fastForwardSeconds: 1800 },
+};
 
 /**
  * Simulation result with milestone data.
@@ -584,6 +596,76 @@ export class GameSimulation {
         return this.createResult(true, "Objective reached");
       }
 
+      const currentAge = this.state.getCurrentAge();
+      const ageIndex = currentAge
+        ? Number.parseInt(currentAge.key.slice(-1), 10)
+        : -1;
+      const pacing = laterAgePacing[ageIndex];
+      if (pacing) {
+        const actionWindowEnd = this.gameTime + pacing.actionWindowSeconds;
+        let decisions = 0;
+        let endActionWindow = false;
+
+        while (
+          this.gameTime < actionWindowEnd &&
+          decisions < pacing.maxActions &&
+          this.gameTime < this.config.maxGameTime
+        ) {
+          let remainingActions = actionsPerSecond;
+          while (remainingActions > 0 && decisions < pacing.maxActions) {
+            const decidedAt = performance.now();
+            const action = this.strategy.decideAction(this.state, {
+              gameTime: this.gameTime,
+              snapshots: this.snapshots,
+              timing: this.currentTiming(),
+            });
+            this.recordDecisionTiming(performance.now() - decidedAt);
+            decisions += 1;
+            if (!action) {
+              endActionWindow = true;
+              break;
+            }
+
+            if (action.type === "gather") {
+              endActionWindow = true;
+              break;
+            }
+
+            this.executeAction(action);
+            remainingActions -= 1;
+            if (this.checkObjective()) {
+              return this.createResult(true, "Objective reached");
+            }
+            if (this.gameTime >= this.config.maxGameTime) break;
+          }
+
+          if (
+            this.gameTime >= this.config.maxGameTime ||
+            this.gameTime >= actionWindowEnd ||
+            endActionWindow
+          ) {
+            break;
+          }
+          this.tick();
+          this.checkMilestones();
+          if (this.checkObjective()) {
+            return this.createResult(true, "Objective reached");
+          }
+          if (this.state.getCurrentAge()?.key !== currentAge?.key) break;
+        }
+
+        if (this.gameTime < this.config.maxGameTime) {
+          const nextAgeIndex = Number.parseInt(
+            this.state.getCurrentAge()?.key.slice(-1) ?? "",
+            10,
+          );
+          this.fastForward(
+            (laterAgePacing[nextAgeIndex] ?? pacing).fastForwardSeconds,
+          );
+        }
+        continue;
+      }
+
       // Each simulated second has an action budget. A normal action consumes
       // one slot; gather consumes every remaining slot with that gather action.
       let remainingActions = actionsPerSecond;
@@ -610,6 +692,22 @@ export class GameSimulation {
     }
 
     return this.createResult(false, "Time limit reached");
+  }
+
+  private fastForward(seconds: number): void {
+    let remaining = Math.min(
+      seconds,
+      this.config.maxGameTime - this.gameTime,
+    );
+
+    while (remaining > 0) {
+      this.tick();
+      remaining -= 1;
+      if (this.gameTime % 60 === 0) this.checkMilestones();
+      if (this.checkObjective()) break;
+    }
+
+    this.checkMilestones();
   }
 
   /**

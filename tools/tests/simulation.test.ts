@@ -70,7 +70,7 @@ import {
 import { getFastestWorkerAllocation as getFastestFundingAllocation } from "../workerFunding";
 
 describe("simulation event snapshots", () => {
-  const makeActionRateState = () =>
+  const makeActionRateState = (enteredAges: readonly string[] = []) =>
     new CivilizationState(
       {
         ...emptyResourceAmounts(),
@@ -84,7 +84,7 @@ describe("simulation event snapshots", () => {
       0,
       [],
       [],
-      [],
+      enteredAges,
       [],
       emptyStatistics(),
     );
@@ -515,6 +515,154 @@ describe("simulation event snapshots", () => {
     expect(decisions).toBe(1);
     expect(result.finalState.statistics.productionClicks.toNumber()).toBe(1);
     expect(result.gameTime).toBe(1);
+  });
+
+  it("uses a ten-second action window followed by a one-minute Age 2 skip", () => {
+    const decisionTimes: number[] = [];
+    const strategy: SimulationStrategy = {
+      name: "age-two-pacing",
+      description: "records when decisions are offered",
+      decideAction: (_state, context) => {
+        decisionTimes.push(context.gameTime);
+        return { type: "wait", seconds: 0 };
+      },
+    };
+    const result = new GameSimulation(
+      makeActionRateState(["age0", "age1"]),
+      strategy,
+      {
+        objective: { type: "timeLimit", seconds: 80 },
+        gatherClicksPerAction: 1,
+        maxGameTime: 80,
+        recordSnapshots: false,
+        fromScratch: false,
+      },
+    ).run();
+
+    expect(decisionTimes.slice(0, 50)).toEqual(
+      Array.from({ length: 50 }, (_, index) => Math.floor(index / 5)),
+    );
+    expect(decisionTimes[50]).toBe(70);
+    expect(result.gameTime).toBe(80);
+  });
+
+  it.each([
+    { age: 3, fastForwardSeconds: 120 },
+    { age: 4, fastForwardSeconds: 300 },
+    { age: 5, fastForwardSeconds: 600 },
+    { age: 6, fastForwardSeconds: 1800 },
+  ])(
+    "uses a $fastForwardSeconds-second idle skip in Age $age",
+    ({ age, fastForwardSeconds }) => {
+      const decisionTimes: number[] = [];
+      const strategy: SimulationStrategy = {
+        name: "later-age-pacing",
+        description: "records when decisions are offered",
+        decideAction: (_state, context) => {
+          decisionTimes.push(context.gameTime);
+          return { type: "wait", seconds: 0 };
+        },
+      };
+      const nextActionWindow = 10 + fastForwardSeconds;
+      new GameSimulation(
+        makeActionRateState(
+          Array.from({ length: age }, (_, index) => `age${index}`),
+        ),
+        strategy,
+        {
+          objective: { type: "timeLimit", seconds: nextActionWindow + 10 },
+          gatherClicksPerAction: 1,
+          maxGameTime: nextActionWindow + 10,
+          recordSnapshots: false,
+          fromScratch: false,
+        },
+      ).run();
+
+      expect(decisionTimes[0]).toBe(0);
+      expect(decisionTimes[50]).toBe(nextActionWindow);
+    },
+  );
+
+  it("ends the action window early when the strategy has no action", () => {
+    const decisionTimes: number[] = [];
+    const strategy: SimulationStrategy = {
+      name: "age-two-early-skip",
+      description: "requests an idle skip",
+      decideAction: (_state, context) => {
+        decisionTimes.push(context.gameTime);
+        return null;
+      },
+    };
+    const result = new GameSimulation(
+      makeActionRateState(["age0", "age1"]),
+      strategy,
+      {
+        objective: { type: "timeLimit", seconds: 70 },
+        gatherClicksPerAction: 1,
+        maxGameTime: 70,
+        recordSnapshots: false,
+        fromScratch: false,
+      },
+    ).run();
+
+    expect(decisionTimes).toEqual([0, 60]);
+    expect(result.gameTime).toBe(70);
+  });
+
+  it("does not execute gather decisions from Age 2 onward", () => {
+    let decisions = 0;
+    const strategy: SimulationStrategy = {
+      name: "age-two-no-gather",
+      description: "continues requesting manual gathers",
+      decideAction: () => {
+        decisions += 1;
+        return { type: "gather", resource: "food" };
+      },
+    };
+    const result = new GameSimulation(
+      makeActionRateState(["age0", "age1"]),
+      strategy,
+      {
+        objective: { type: "timeLimit", seconds: 10 },
+        gatherClicksPerAction: 10,
+        maxGameTime: 10,
+        recordSnapshots: false,
+        fromScratch: false,
+      },
+    ).run();
+
+    expect(decisions).toBe(1);
+    expect(result.finalState.statistics.productionClicks.toNumber()).toBe(0);
+    expect(result.gameTime).toBe(10);
+  });
+
+  it("caps the Age 2 action window at 50 decisions", () => {
+    const decisionTimes: number[] = [];
+    const strategy: SimulationStrategy = {
+      name: "age-two-action-cap",
+      description: "records when decisions are offered",
+      decideAction: (_state, context) => {
+        decisionTimes.push(context.gameTime);
+        return { type: "wait", seconds: 0 };
+      },
+    };
+    new GameSimulation(
+      makeActionRateState(["age0", "age1"]),
+      strategy,
+      {
+        objective: { type: "timeLimit", seconds: 75 },
+        gatherClicksPerAction: 1,
+        actionsPerSecond: 10,
+        maxGameTime: 75,
+        recordSnapshots: false,
+        fromScratch: false,
+      },
+    ).run();
+
+    expect(decisionTimes.slice(0, 50)).toEqual(
+      Array.from({ length: 50 }, (_, index) => Math.floor(index / 10)),
+    );
+    expect(decisionTimes[50]).toBe(65);
   });
 
   it("reports the effective capacity after an enhancer purchase", () => {
