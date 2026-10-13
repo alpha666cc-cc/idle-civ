@@ -63,7 +63,20 @@ import TradePanel from "./components/TradePanel";
 import WorkerCountInput from "./components/WorkerCountInput";
 import { type BattleSimulation } from "./game/battle";
 import ResearchPanel from "./components/ResearchPanel";
-import BattleSimulatorPanel from "./components/BattleSimulatorPanel";
+import BattleSimulatorPanel, {
+  type SimulatorPanelState,
+  type SimulatorPanelActions,
+} from "./components/BattleSimulatorPanel";
+import {
+  simulatorCandidates,
+  type SimulatorResult,
+} from "./game/battleSimulator";
+import type {
+  WorkerInput,
+  WorkerOutput,
+  SerializedSimulatorResult,
+} from "./game/battleSimulatorWorker";
+import { researchIdsForBattle } from "./game/research";
 import {
   isBuyableUnit,
   parseUnitStatTarget,
@@ -349,11 +362,11 @@ const buildingPresentation: Record<string, { icon: LucideIcon; tone: string }> =
     people: { icon: Users, tone: "teal" },
     house: { icon: Building2, tone: "teal" },
     farm: { icon: Wheat, tone: "gold" },
-    "lumberYard": { icon: Leaf, tone: "green" },
+    lumberYard: { icon: Leaf, tone: "green" },
     quarry: { icon: Pickaxe, tone: "slate" },
-    "goldMine": { icon: Coins, tone: "amber" },
+    goldMine: { icon: Coins, tone: "amber" },
     market: { icon: Landmark, tone: "red" },
-    "townHall": { icon: Castle, tone: "violet" },
+    townHall: { icon: Castle, tone: "violet" },
     smithy: { icon: Hammer, tone: "orange" },
     barracks: { icon: Shield, tone: "blue" },
     university: { icon: BookOpen, tone: "pink" },
@@ -430,6 +443,19 @@ function App() {
     startTime: number;
   } | null>(null);
   const [battleRoundIndex, setBattleRoundIndex] = useState(0);
+  /** Simulator state — lifted here so it survives Dev Tools tab switches. */
+  const [simBattleId, setSimBattleId] = useState("");
+  const [simSelected, setSimSelected] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
+  const [simRunning, setSimRunning] = useState(false);
+  const [simPhase, setSimPhase] = useState("");
+  const [simArmyKey, setSimArmyKey] = useState("");
+  const [simResult, setSimResult] = useState<
+    import("./game/battleSimulator").SimulatorResult | null
+  >(null);
+  const [simFailed, setSimFailed] = useState(false);
+  const simWorkerRef = useRef<Worker | null>(null);
   const [autosaveIntervalSeconds, setAutosaveIntervalSeconds] =
     useState(loadAutosaveInterval);
   const [saveFormat, setSaveFormat] = useState<SaveFormat>(loadSaveFormat);
@@ -486,6 +512,291 @@ function App() {
     if (sign > 0) return "positive";
     if (sign < 0) return "negative";
     return "flat";
+  };
+
+  // ---------------------------------------------------------------------------
+  // Battle-simulator worker lifecycle
+  // ---------------------------------------------------------------------------
+
+  /** Deserialise a SerializedSimulatorResult back into a SimulatorResult. */
+  const deserializeSimResult = useCallback(
+    (raw: SerializedSimulatorResult, battleId: string): SimulatorResult => {
+      const deserExp = (s: { s: number; m: number; e: number }): ExpNumber =>
+        new ExpNumber(s.s, s.m, s.e);
+      // Recompute research from the main-thread game state (not available in worker)
+      const compositionIds = raw.composition.map(([id]) => id);
+      const ownedIds = gameState.getArmyStacks().map(({ unitId }) => unitId);
+      const newIds = compositionIds.filter((id) => !ownedIds.includes(id));
+      const research =
+        newIds.length > 0
+          ? gameState.getResearchForUnitTypes(newIds)
+          : { ids: [], costs: [] };
+      // Also recompute totalCost with accurate main-thread costs
+      const composition = new Map(raw.composition);
+      const totalCostMap = new Map<ResourceKey, ExpNumber>();
+      for (const [unitId, count] of composition) {
+        for (const { resource, base } of gameState.getUnitCost(unitId, count)) {
+          totalCostMap.set(
+            resource,
+            (totalCostMap.get(resource) ?? ExpNumber.ZERO).add(base),
+          );
+        }
+      }
+      const totalCost = [...totalCostMap.entries()].map(([resource, base]) => ({
+        resource,
+        base,
+      }));
+      // Also recompute military from the accurate cost
+      const military =
+        totalCostMap.get("military" as ResourceKey) ?? ExpNumber.ZERO;
+      void battleId; // used only for staleness key
+      return {
+        composition,
+        totalComposition: new Map(
+          raw.totalComposition.map(([id, n]) => [id, deserExp(n)]),
+        ),
+        military,
+        totalCost,
+        research,
+        formations: new Map(raw.formations),
+        orders: new Map(raw.orders),
+      };
+    },
+    [gameState],
+  );
+
+  const simCurrentArmyKey = [
+    ...gameState
+      .getArmyStacks()
+      .map(({ unitId, count }) => `${unitId}:${count.toString()}`),
+    `research:${gameState.boughtResearch.join(",")}`,
+  ].join("|");
+
+  const simSelectBattle = useCallback(
+    (id: string): void => {
+      const battle = encounterDefinitions.find(({ key }) => key === id);
+      setSimBattleId(id);
+      if (battle) {
+        const candidates = simulatorCandidates(battle.age);
+        const unlocked = candidates
+          .filter((unit) => gameState.isUnitAvailable(unit.key))
+          .map((unit) => unit.key);
+        setSimSelected(new Set(unlocked));
+      } else {
+        setSimSelected(new Set());
+      }
+      setSimResult(null);
+      setSimFailed(false);
+    },
+    [gameState],
+  );
+
+  const simToggleUnit = useCallback((unitId: string): void => {
+    setSimSelected((current) => {
+      const next = new Set(current);
+      if (next.has(unitId)) next.delete(unitId);
+      else next.add(unitId);
+      return next;
+    });
+    setSimResult(null);
+    setSimFailed(false);
+  }, []);
+
+  const simCancel = useCallback((): void => {
+    simWorkerRef.current?.terminate();
+    simWorkerRef.current = null;
+    setSimRunning(false);
+    setSimPhase("");
+  }, []);
+
+  const simReset = useCallback((): void => {
+    simCancel();
+    setSimBattleId("");
+    setSimSelected(new Set());
+    setSimResult(null);
+    setSimFailed(false);
+  }, [simCancel]);
+
+  const simRun = useCallback((): void => {
+    if (simRunning) return;
+    const battle = encounterDefinitions.find(({ key }) => key === simBattleId);
+    if (!battle) return;
+
+    // Kill any previous worker
+    simWorkerRef.current?.terminate();
+
+    const candidates = simulatorCandidates(battle.age).filter((u) =>
+      simSelected.has(u.key),
+    );
+    const ownedArmy = new Map(
+      gameState
+        .getArmyStacks()
+        .map(({ unitId, count }) => [unitId, count] as const),
+    );
+
+    // Pre-compute unit stats (includes research) for every candidate + owned unit
+    const allCandidateIds = [
+      ...new Set([...candidates.map((u) => u.key), ...ownedArmy.keys()]),
+    ];
+    const researchIds = researchIdsForBattle(battle.age, allCandidateIds);
+    const candidateStats: WorkerInput["candidateStats"] = {};
+    for (const unitId of allCandidateIds) {
+      const stats = gameState.getUnitStatsWithResearch(unitId, researchIds);
+      if (!stats) continue;
+      candidateStats[unitId] = {
+        hp: { s: stats.hp.sign, m: stats.hp.mantissa, e: stats.hp.exponent },
+        attack: {
+          s: stats.attack.sign,
+          m: stats.attack.mantissa,
+          e: stats.attack.exponent,
+        },
+        armor: stats.armor,
+        range: stats.range,
+        speed: stats.speed,
+        accuracy: stats.accuracy,
+      };
+    }
+
+    // Serialise enemy stacks
+    const enemyStacks = gameState.getEnemyStacks(battle.key).map((stack) => ({
+      unitId: stack.unitId,
+      count: {
+        s: stack.count.sign,
+        m: stack.count.mantissa,
+        e: stack.count.exponent,
+      },
+      stats: {
+        hp: {
+          s: stack.stats.hp.sign,
+          m: stack.stats.hp.mantissa,
+          e: stack.stats.hp.exponent,
+        },
+        attack: {
+          s: stack.stats.attack.sign,
+          m: stack.stats.attack.mantissa,
+          e: stack.stats.attack.exponent,
+        },
+        armor: stack.stats.armor,
+        range: stack.stats.range,
+        speed: stack.stats.speed,
+        accuracy: stack.stats.accuracy,
+      },
+      formation: stack.formation,
+      order: stack.order,
+    }));
+
+    // Unit cost table (per-unit cost for 1 unit)
+    const candidateCosts: WorkerInput["candidateCosts"] = allCandidateIds.map(
+      (unitId) => [
+        unitId,
+        gameState
+          .getUnitCost(unitId, 1)
+          .map(({ resource, base }) => [
+            resource,
+            { s: base.sign, m: base.mantissa, e: base.exponent },
+          ]),
+      ],
+    );
+
+    const availableFormations = gameState.getAvailableFormations() as string[];
+    const availableOrders = gameState.getAvailableOrders() as string[];
+
+    const input: WorkerInput = {
+      type: "start",
+      battleId: battle.key,
+      battleAge: battle.age,
+      candidateStats,
+      candidateIds: candidates.map((u) => u.key),
+      candidateCosts,
+      ownedArmy: [...ownedArmy.entries()].map(([id, n]) => [
+        id,
+        { s: n.sign, m: n.mantissa, e: n.exponent },
+      ]),
+      enemyStacks,
+      availableFormations:
+        availableFormations as import("./game/formations").FormationId[],
+      availableOrders: availableOrders as import("./game/orders").OrderId[],
+      requireMixed: true,
+      currentFormations: Object.entries(gameState.unitFormations) as [
+        string,
+        import("./game/formations").FormationId,
+      ][],
+      currentOrders: Object.entries(gameState.unitOrders) as [
+        string,
+        import("./game/orders").OrderId,
+      ][],
+    };
+
+    const currentKey = simCurrentArmyKey;
+    const worker = new Worker(
+      new URL("./game/battleSimulatorWorker.ts", import.meta.url),
+      { type: "module" },
+    );
+    simWorkerRef.current = worker;
+    setSimRunning(true);
+    setSimPhase("Starting…");
+    setSimArmyKey(currentKey);
+
+    worker.onmessage = (event: MessageEvent<WorkerOutput>) => {
+      const msg = event.data;
+      if (msg.type === "progress") {
+        setSimPhase(msg.phase);
+        if (msg.result) {
+          setSimResult(deserializeSimResult(msg.result, battle.key));
+          setSimFailed(false);
+        }
+      } else if (msg.type === "done") {
+        setSimRunning(false);
+        setSimPhase("");
+        simWorkerRef.current = null;
+        if (msg.result) {
+          setSimResult(deserializeSimResult(msg.result, battle.key));
+          setSimFailed(false);
+        } else {
+          setSimResult(null);
+          setSimFailed(true);
+        }
+      } else if (msg.type === "error") {
+        console.error("[Battle Simulator Worker]", msg.message);
+        setSimRunning(false);
+        setSimPhase("");
+        simWorkerRef.current = null;
+      }
+    };
+
+    worker.onerror = (err) => {
+      console.error("[Battle Simulator Worker] uncaught error", err);
+      setSimRunning(false);
+      setSimPhase("");
+      simWorkerRef.current = null;
+    };
+
+    worker.postMessage(input);
+  }, [
+    simRunning,
+    simBattleId,
+    simSelected,
+    gameState,
+    simCurrentArmyKey,
+    deserializeSimResult,
+  ]);
+
+  const simPanelState: SimulatorPanelState = {
+    battleId: simBattleId,
+    selected: simSelected,
+    running: simRunning,
+    phase: simPhase,
+    armyKey: simArmyKey,
+    result: simCurrentArmyKey === simArmyKey ? simResult : null,
+    failed: simCurrentArmyKey === simArmyKey && simFailed,
+  };
+
+  const simPanelActions: SimulatorPanelActions = {
+    selectBattle: simSelectBattle,
+    toggleUnit: simToggleUnit,
+    run: simRun,
+    cancel: simCancel,
+    reset: simReset,
   };
 
   const {
@@ -824,9 +1135,7 @@ function App() {
    * cancelled; the caller sets the final notice, since the two callers word it
    * differently.
    */
-  const exportSaveDocument = async (
-    data: SaveData,
-  ): Promise<string | null> => {
+  const exportSaveDocument = async (data: SaveData): Promise<string | null> => {
     const fileName = saveFileName(data, saveFormat);
 
     if (saveFormat === "base64") {
@@ -1707,9 +2016,10 @@ function App() {
                   <p className="dev-tools-copy">
                     Reset discards the run and clears the stored save. Fork
                     keeps the settlement exactly as it is but starts a new save
-                    and run log, so you can try another line without touching the
-                    files you already have. Import loads a save file directly and
-                    ignores the offline-gain pass that a normal import would show.
+                    and run log, so you can try another line without touching
+                    the files you already have. Import loads a save file
+                    directly and ignores the offline-gain pass that a normal
+                    import would show.
                   </p>
                 </div>
                 <div className="dev-tools-controls">
@@ -1755,9 +2065,7 @@ function App() {
                   </div>
                   <div className="dev-tools-control">
                     <span>Log file</span>
-                    <strong>
-                      {devLog ? devLog.fileName : "saves/auto/…"}
-                    </strong>
+                    <strong>{devLog ? devLog.fileName : "saves/auto/…"}</strong>
                   </div>
                   <button
                     type="button"
@@ -1804,7 +2112,13 @@ function App() {
                 </div>
               </section>
 
-              <BattleSimulatorPanel gameState={gameState} setGameState={setGameState} fmt={fmt} />
+              <BattleSimulatorPanel
+                gameState={gameState}
+                setGameState={setGameState}
+                fmt={fmt}
+                simState={simPanelState}
+                simActions={simPanelActions}
+              />
             </>
           )}
 
@@ -2329,10 +2643,12 @@ function App() {
                 Dev mode shows the Dev Tools tab and records a run log: every
                 remarkable event plus a snapshot every{" "}
                 {DEFAULT_DEV_LOG_SNAPSHOT_SECONDS} seconds, written to{" "}
-                <strong>saves/auto</strong> so a real session can be compared with
-                a simulation. It defaults to{" "}
-                {devBuildDefault ? "on for this dev build" : "off for this build"},
-                and the choice is remembered.
+                <strong>saves/auto</strong> so a real session can be compared
+                with a simulation. It defaults to{" "}
+                {devBuildDefault
+                  ? "on for this dev build"
+                  : "off for this build"}
+                , and the choice is remembered.
               </p>
               <div className="dev-tools-controls">
                 <button

@@ -1044,6 +1044,32 @@ button:focus-visible {
 .battle-simulator-apply {
   margin-top: 10px;
 }
+.battle-simulator-warning {
+  margin: 6px 0;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  color: var(--warm);
+  background: rgba(216, 162, 76, 0.1);
+  border: 1px solid rgba(216, 162, 76, 0.3);
+  border-radius: 6px;
+}
+.battle-simulator-progress {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--muted);
+  animation: sim-pulse 1.4s ease-in-out infinite;
+}
+@keyframes sim-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.result-preliminary {
+  opacity: 0.75;
+}
+.result-preliminary h4 {
+  color: var(--muted);
+}
 .format-picker {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));

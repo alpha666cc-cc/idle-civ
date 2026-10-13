@@ -221,7 +221,7 @@ const sumCosts = (
   return [...totals.entries()].map(([resource, base]) => ({ resource, base }));
 };
 
-const compositionCost = (
+export const compositionCost = (
   composition: SimulatorArmy,
   context: BattleSimulatorContext,
 ): ExpNumber => militaryOf(sumCosts(composition, context));
@@ -440,7 +440,7 @@ export const solveMinimumArmy = (
  * tactic set. Owned units are never touched - the caller is only ever charged
  * for additional recruits.
  */
-const trimUnderTactics = (
+export const trimUnderTactics = (
   composition: SimulatorArmy,
   ownedArmy: SimulatorOwnedArmy,
   formations: ReadonlyMap<string, FormationId>,
