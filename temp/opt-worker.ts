@@ -3,8 +3,8 @@
  * and print `name\tindex\ttime` per line. Spawned by the coordinator; one
  * process per core.
  */
-import { GameSimulation, createInitialState } from "../tools/simulation.js";
-import { getStrategy } from "../tools/strategies.js";
+import { GameSimulation, createInitialState } from "../tools/simulation/simulation.js";
+import { getStrategy } from "../tools/simulation/strategies.js";
 
 type R = {
   food: number;

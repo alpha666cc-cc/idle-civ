@@ -16,8 +16,8 @@
 import { ageDefinitions } from "../src/game/ages.js";
 import type { CivilizationState } from "../src/game/civilizationState.js";
 import { researchDefinitions } from "../src/game/research.js";
-import { GameSimulation, createInitialState } from "../tools/simulation.js";
-import { PlayerStrategy } from "../tools/strategies.js";
+import { GameSimulation, createInitialState } from "../tools/simulation/simulation.js";
+import { PlayerStrategy } from "../tools/simulation/strategies.js";
 
 const flag = (name: string, fallback: string): string => {
   const hit = process.argv.find((arg) => arg.startsWith(`--${name}=`));

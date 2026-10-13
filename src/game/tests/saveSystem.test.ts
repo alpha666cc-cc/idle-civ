@@ -48,7 +48,7 @@ import { encounterDefinitions } from "../encounters";
 import { researchDefinitions } from "../research";
 import { unitDefinitions } from "../units";
 import { upgradeDefinitions } from "../upgrades";
-import offlineGainVectors from "../../../tools/tests/offlineGainVectors.json";
+import offlineGainVectors from "../../../tools/simulation/tests/offlineGainVectors.json";
 
 /** A state that exercises every field the save has to carry. */
 const sampleState = (): CivilizationState =>

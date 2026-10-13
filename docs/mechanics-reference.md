@@ -1120,4 +1120,4 @@ This is the rock-paper-scissors surface, and it is where naval balance lives.
 
 ---
 
-Payloads in `src/game/data`: `achievements.json`, `ages.json`, `buildings.json`, `encounters.json`, `offlineGainVectors.json`, `research.json`, `researchLayout.json`, `stats.json`, `units.json`, `upgrades.json`. Anything absent above is absent from the dump, not missing from the game.
+Payloads in `src/game/data`: `achievements.json`, `ages.json`, `buildings.json`, `encounters.json`, `research.json`, `researchLayout.json`, `stats.json`, `units.json`, `upgrades.json`. Offline-gain contract vectors are in `tools/simulation/tests/offlineGainVectors.json`. Anything absent above is absent from the dump, not missing from the game.

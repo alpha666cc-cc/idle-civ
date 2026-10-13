@@ -7,7 +7,7 @@ import {
 import { CivilizationState } from "../src/game/civilizationState";
 import { ExpNumber } from "../src/game/expNumber";
 import { emptyStatistics } from "../src/game/statistics";
-import { getAgeRouteGrowthAction, getStrategy } from "../tools/strategies";
+import { getAgeRouteGrowthAction, getStrategy } from "../tools/simulation/strategies";
 
 const amounts = emptyResourceAmounts();
 for (const [k, v] of Object.entries({ food: 1e6, wood: 1e6, stone: 1e6, gold: 1e6 })) {

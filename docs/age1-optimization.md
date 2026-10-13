@@ -1,7 +1,7 @@
 # Reaching the Iron Age (age1): the optimization problem
 
-> Companion to `tools/age1-policy.ts` (the search space) and
-> `tools/age1-optimize.ts` (the search). The tool finds a good policy; this
+> Companion to `tools/simulation/age1-policy.ts` (the search space) and
+> `tools/simulation/age1-optimize.ts` (the search). The tool finds a good policy; this
 > document states the problem the search is solving, why it is shaped the way it
 > is, and where the current answer sits relative to what is provable.
 
@@ -121,7 +121,7 @@ integrated in closed form between events — a direct-transcription NLP.
 live from $t = 0$, perfect worker allocation, zero action waste — gives $T_{LB}$,
 against which any found $T$ can be compared for headroom.
 
-**Practical search.** What ships in `tools/age1-optimize.ts` is the third option:
+**Practical search.** What ships in `tools/simulation/age1-optimize.ts` is the third option:
 parameterize the policy and let a **cross-entropy method** search it. The
 objective is a step function of simulation time, so there is no gradient; CEM is
 derivative-free, handles the mixed encoding (17 continuous parameters + a build
@@ -344,7 +344,7 @@ sequence — a ~4x spread. But they do not differ *only* in sequence: they also
 carry different worker splits, building priorities and research-timing rules.
 That ~4x was wrongly attributed to order.
 
-`tools/age1-tech-search.ts --factorial` separates the two by running each base
+`tools/simulation/age1-tech-search.ts --factorial` separates the two by running each base
 strategy under both known orders. **Post-fix engine:**
 
 | base strategy | advisor order | `player` order | order effect |
@@ -400,13 +400,13 @@ is seeded, via `--seed`).
 
 ```powershell
 # 1. every strategy at the age-1 objective, plus a CEM search over AgeOnePolicy
-.\tools\node\npx.cmd tsx tools\age1-optimize.ts --iterations=8 --population=12 --elite=3 --horizon=12000 --baseline
+.\tools\node\npx.cmd tsx tools\simulation\age1-optimize.ts --iterations=8 --population=12 --elite=3 --horizon=12000 --baseline
 
 # 2. attribute a strategy's speed to research order vs. base strategy (2x2)
-.\tools\node\npx.cmd tsx tools\age1-tech-search.ts --factorial --horizon=12000
+.\tools\node\npx.cmd tsx tools\simulation\age1-tech-search.ts --factorial --horizon=12000
 
 # 3. sweep the science-worker share x research gate on a player descendant
-.\tools\node\npx.cmd tsx tools\age1-tuned.ts --grid --science=0,0.25,0.5,0.7 --gate=always
+.\tools\node\npx.cmd tsx tools\simulation\age1-tuned.ts --grid --science=0,0.25,0.5,0.7 --gate=always
 ```
 
 `--baseline` uses `getStrategyNames()`, not a hand-written list — an earlier
@@ -449,7 +449,7 @@ are bit-identical, but do not compare numbers across different trees.
 ## 11. Why `speedrun` stays 8th: the ROI weights are a zero-sum dial
 
 `speedrun` reaches age 1 in **6540 s** against `player`'s 2147 s. The obvious
-target is `tools/roi.ts`, and the stall is genuinely there — but fixing it does
+target is `tools/simulation/roi.ts`, and the stall is genuinely there — but fixing it does
 not compose with the other strategies. This section records the measurements so
 the next attempt does not repeat them.
 
@@ -542,9 +542,9 @@ Two things the measurements settled, both now recorded in the code:
 
 The suite is **not** green on this branch, independently of this work. At clean
 `HEAD` (`800cc89`) five files already fail (16 tests); with the working tree it
-is six files (18 tests). The extra two are in `tools/simulation.test.ts` and
+is six files (18 tests). The extra two are in `tools/simulation/tests/simulation.test.ts` and
 come from the **uncommitted dynamic research-order work** already present in
-`tools/strategies.ts` — not from the ROI profile. Verified directly: disabling
+`tools/simulation/strategies.ts` — not from the ROI profile. Verified directly: disabling
 `speedrun`'s profile entirely (`metricWeights = {}`, `militaryMetric =
 "logGain"`) leaves both failures in place.
 
@@ -556,7 +556,7 @@ come from the **uncommitted dynamic research-order work** already present in
 for every strategy except `speedrun` (broken, owns no split). Age 0 keeps its
 own tuned split; only the age-1 window is re-searched.
 
-**Seam already in `tools/strategies.ts`:** `getAgeWorkerRatios()` on
+**Seam already in `tools/simulation/strategies.ts`:** `getAgeWorkerRatios()` on
 `BaseStrategy` (base returns `{}`), routed through `workerRatiosFor(state)`;
 all `assignWorkersByRatio` call sites go through it. A strategy with no entry
 falls back to `getWorkerRatios()`, so tuning age 1 cannot touch age 0.
@@ -656,7 +656,7 @@ two of its rows:
   of a local optimum. `ResearchStrategy.assignWorkersByRatio()` threw away its
   `_ratios` argument and substituted the state-dependent dial, so the age hook could
   never reach it. Fixed by honouring an explicit age override above the dial
-  (`tools/strategies.ts` ~2838); both need re-searching.
+  (`tools/simulation/strategies.ts` ~2838); both need re-searching.
 - `production`'s real round-1 winner is `science=0` at 12545 s (-32.8 %), not the
   `stone=0.25` row above; `fast-age` is 12749 s (-26.2 %) and it is the one winner
   that *keeps* a science share (0.176).
@@ -700,7 +700,7 @@ strategy's own candidate ratios from its own age-1 entry save, independent of th
 base class. The streamed `base`/`r`/`best` numbers are trustworthy.
 
 BUT the earlier military edit put military's winner (0.18/0.126/0.205/0.489)
-into the **base** `getAgeWorkerRatios()` at `tools/strategies.ts:1657`, NOT into
+into the **base** `getAgeWorkerRatios()` at `tools/simulation/strategies.ts:1657`, NOT into
 `MilitaryStrategy`. So the shipped game currently runs that split for EVERY
 strategy in age1 — wrong. The stale JSDoc table (military/balanced/player rows)
 above it was never wired to per-strategy overrides.
@@ -799,7 +799,7 @@ axes (`trade` stays 0 — it is a route dial, not a worker dial).
 | military | 14 299 | 12 128 | **−15.2%** |
 | trader | 20 011 | 19 894 | −0.6% (round 2 running; gold is anti-correlated for it) |
 
-Winning splits are applied in `tools/strategies.ts` as one `getAgeWorkerRatios()`
+Winning splits are applied in `tools/simulation/strategies.ts` as one `getAgeWorkerRatios()`
 per class. **Gold rises in every single winner** (0.10–0.15 shipped → 0.30–0.49
 searched) and **science falls to 0 for the two that shipped it high** — economy
 ships 0.4 science, and its win is `science=0`, which simply rescales the four
@@ -925,9 +925,8 @@ before believing any strategy's result.
 ### Validation
 
 `npm run build` exit 0 · `npm run lint` 2 warnings, 0 errors (both pre-existing
-at HEAD: `tools/run-age2-benchmark.mjs`, `tools/plot-csv-progression.mjs`) ·
+at HEAD: `tools/simulation/run-age2-benchmark.mjs`, `tools/simulation/plot-csv-progression.mjs`) ·
 `npm test` **442 passed, 1 skipped** (23 files) · per-strategy full runs to
 age2, all eight age-1 entry times unchanged.
-
 
 

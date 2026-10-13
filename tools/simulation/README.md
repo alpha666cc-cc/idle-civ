@@ -39,7 +39,7 @@ The simulation system allows you to:
 ### Trade Routes
 
 Trade power is a reserve nothing else spends, so a strategy that never opens a route
-banks it forever. `tools/tradeAdvisor.ts` is how a strategy spends it, through the
+banks it forever. `tools/simulation/tradeAdvisor.ts` is how a strategy spends it, through the
 real `CivilizationState.setTradeRoute()` — the same price, spread and per-tick drain
 rows the Trade tab produces. Its policy: **point the route at the resource whose
 stock has drifted furthest from what the settlement's own production justifies, and
@@ -64,13 +64,13 @@ default, which is why the other seven strategies behave exactly as they did befo
 routes existed. The `trader` strategy opts in with the full reserve. The market
 unlocks in the Iron Age, so every strategy's route is dormant until then, and an
 empty reserve never gets a route at all rather than holding a slot on a dead one.
-`tools/snapshot-csv.ts` records `trade_power`, `trade_power_rate`,
+`tools/simulation/snapshot-csv.ts` records `trade_power`, `trade_power_rate`,
 `trade_routes_active` and one `route.<resource>` cell per snapshot, so a sweep can
 tell "no route was opened" from "a route opened that moved nothing".
 
 ### ROI Evaluation and Speedrun Planning
 
-`tools/roi.ts` is a headless-only evaluator for every buyable kind: buildings,
+`tools/simulation/roi.ts` is a headless-only evaluator for every buyable kind: buildings,
 research, upgrades, and units. It does not duplicate balance data. For each legal
 candidate it applies the real domain transition to a resource-rich immutable probe,
 then measures log-scaled marginal gains in production, capacity, population,
@@ -223,8 +223,8 @@ The simulation can terminate based on:
 You can also use the simulation system programmatically:
 
 ```typescript
-import { getStrategy } from "./tools/strategies.js";
-import { runSimulation } from "./tools/simulationRunner.js";
+import { getStrategy } from "./tools/simulation/strategies.js";
+import { runSimulation } from "./tools/simulation/simulationRunner.js";
 
 const strategy = getStrategy("balanced");
 const result = runSimulation(strategy, {
@@ -249,7 +249,7 @@ import type {
   SimulationAction,
   SimulationContext,
 } from "./simulation.js";
-import { CivilizationState } from "../src/game/civilizationState.js";
+import { CivilizationState } from "../../src/game/civilizationState.js";
 
 class MyCustomStrategy implements SimulationStrategy {
   name = "my-custom";

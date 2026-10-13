@@ -1,6 +1,6 @@
 /** Temporary stall diagnostic for the age-1 policy (scratch; deleted after use). */
-import { GameSimulation, createInitialState } from "../tools/simulation.js";
-import { AgeOnePolicy, defaultPolicy } from "../tools/age1-policy.js";
+import { GameSimulation, createInitialState } from "../tools/simulation/simulation.js";
+import { AgeOnePolicy, defaultPolicy } from "../tools/simulation/age1-policy.js";
 
 const policy = new AgeOnePolicy(defaultPolicy());
 const counts = new Map<string, number>();

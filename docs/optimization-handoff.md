@@ -19,7 +19,7 @@ research's key. Consequences:
 
 - Every research available in an age costs **exactly the same**.
 - Any path that buys all 23 Age-0 techs pays the same total, whatever order.
-  (`tools/age1-tech-search.ts` records the total: 10 131 950 science.)
+  (`tools/simulation/age1-tech-search.ts` records the total: 10 131 950 science.)
 - Therefore **price cannot rank research options.** Dividing a value score by
   price divides by a constant and cancels.
 - Within an age, `canBuyResearch` is true for all unlocked techs or none — so an
@@ -63,7 +63,7 @@ reverted. This is the single most expensive mistake available here.
 
 Rules that follow:
 
-- Every `tools/strategies.ts` edit needs `snapshot-csv.ts` before **and** after,
+- Every `tools/simulation/strategies.ts` edit needs `snapshot-csv.ts` before **and** after,
   same `--horizon` and `--interval`, then `compare-bench.ts`.
 - Optimise, then benchmark. Never ship an optimiser result directly.
 - The simulation is **deterministic and has no seed**. Within a process,
@@ -71,7 +71,7 @@ Rules that follow:
   contention costs wall-clock but never correctness — parallel search is safe.
 - Do not compare numbers across different trees (§9 caveat).
 
-## 4. Current validated worker ratios (`tools/strategies.ts`)
+## 4. Current validated worker ratios (`tools/simulation/strategies.ts`)
 
 Benchmark-confirmed, `--horizon=12000 --interval=60`, vs. the pre-tuning baseline:
 
@@ -153,9 +153,9 @@ the same problem at a higher level.
 
 ## 7. Tooling notes
 
-**`tools/age1-tech-search.ts --factorial`** — the 2×2 order-vs-base attribution.
-Still worth running. **`tools/age1-tuned.ts --grid`** — found the science-share
-optimum. **`tools/age1-optimize.ts`** — superseded, no science/metalwork axis.
+**`tools/simulation/age1-tech-search.ts --factorial`** — the 2×2 order-vs-base attribution.
+Still worth running. **`tools/simulation/age1-tuned.ts --grid`** — found the science-share
+optimum. **`tools/simulation/age1-optimize.ts`** — superseded, no science/metalwork axis.
 
 **Parallel search pattern** (scratch, `temp/`, not committed): a coordinator
 spawning one `node --import tsx` child per core, candidates passed as a JSON

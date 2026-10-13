@@ -153,6 +153,7 @@ idle-civ/
   public/                   favicon.svg (used), icons.svg (currently unused), units/ (79 vendored unit SVGs + ATTRIBUTION.md)
   tools/node/               vendored Node v22.23.2 + npm 10.9.8 (PATH is patched to it)
   tools/gen/                data + icon generators (units.mjs, battles.mjs, techtree.mjs, researchLayout.mjs, icons.mjs + icon-index.txt)
+  tools/simulation/         headless simulator, strategies, benchmarks, optimization tools and their tests
   temp/                     exploratory prototypes: battle.ts, campaign_v2.json, unit100-v3.json
   sim-output/               GITIGNORED simulation output: snapshot CSVs/ODS, balance-plan.*, age_*_analysis.csv
   src/
@@ -726,15 +727,15 @@ non-interactive shell and aborts the run.
 
 Tests: Vitest is installed (`npm test`, e.g. `src/game/saveSystem.test.ts` and
 `src/game/dataIds.test.ts`); the offline-gain contract has a cross-language Python
-check (`npm run test:cross-language`, `tools/tests/offline_gain_test.py`). Roadmap
+check (`npm run test:cross-language`, `tools/simulation/tests/offline_gain_test.py`). Roadmap
 milestones 8 and 10 still need deterministic combat and pacing tests — extend the
 existing Vitest setup rather than adding another framework. Do not install any new
 dependency without explaining why.
 
 ### 7.2 Simulation changes must be benchmarked before and after
 
-> **Rule: any change under `tools/simulation.ts`, `tools/strategies.ts`,
-> `tools/roi.ts`, `tools/tradeAdvisor.ts`, the engine's rate/cost/bonus paths
+> **Rule: any change under `tools/simulation/simulation.ts`, `tools/simulation/strategies.ts`,
+> `tools/simulation/roi.ts`, `tools/simulation/tradeAdvisor.ts`, the engine's rate/cost/bonus paths
 > (`getFactors`,
 > `computeResourceRate`, `getBuildingCost`, `getResearchCostForCount`,
 > `getBuildingEffects`, `activeBonuses`), or any `src/game/data/*.json` payload
@@ -742,7 +743,7 @@ dependency without explaining why.
 > simulation change is only correct if no strategy regresses.**
 
 **Scope — which changes actually need the sweep.** The sweep is mandatory when the
-edit touches **`tools/strategies.ts` (or the other `tools/` strategy layers), the
+edit touches **`tools/simulation/strategies.ts` (or another strategy layer in `tools/simulation/`), the
 main engine** (the rate/cost/bonus paths listed above), or **`age0`** — the
 opening age and the foundation every later age is measured against. A regression
 there compounds through the whole campaign, so it has to be caught by measurement
@@ -762,16 +763,16 @@ pacing. Never ship a tuning change on a green suite alone.
 
 ```powershell
 # 1. Baseline (before the edit) — write to a scratch dir, not over the baseline.
-.\tools\node\npx.cmd tsx tools\snapshot-csv.ts --horizon=7200 --interval=60 --out=sim-output\bench-before
+.\tools\node\npx.cmd tsx tools\simulation\snapshot-csv.ts --horizon=7200 --interval=60 --out=sim-output\bench-before
 
 # 2. Make the change.
 
 # 3. After (identical horizon and interval; differing horizons are not
 #    comparable and the result is meaningless).
-.\tools\node\npx.cmd tsx tools\snapshot-csv.ts --horizon=7200 --interval=60 --out=sim-output\bench-after
+.\tools\node\npx.cmd tsx tools\simulation\snapshot-csv.ts --horizon=7200 --interval=60 --out=sim-output\bench-after
 
 # 4. Compare the headline columns per strategy (the list is just below).
-.\tools\node\npx.cmd tsx tools\compare-bench.ts sim-output\bench-before sim-output\bench-after
+.\tools\node\npx.cmd tsx tools\simulation\compare-bench.ts sim-output\bench-before sim-output\bench-after
 ```
 
 Compare at least: `age`, `population`, `research_bought`, `battles_won`,
@@ -786,15 +787,15 @@ strategy first reaches `age-1`. Two rules for reading the result:
   got worse. A change that helps five strategies and quietly ruins a sixth is
   still a bug, and the summary is where that gets caught.
 
-A single-strategy run is not enough — `tools/snapshot-csv.ts` takes strategy
-names **positionally** (`tsx tools\snapshot-csv.ts balanced production ...`; there
+A single-strategy run is not enough — `tools/simulation/snapshot-csv.ts` takes strategy
+names **positionally** (`tsx tools\simulation\snapshot-csv.ts balanced production ...`; there
 is no `--strategy` flag), and the strategies deliberately compete for the same
 resources, so an economy change that helps one usually costs another. Benchmark
 **all** of them.
 
 Every simulation artifact goes in **`sim-output/`**, which is gitignored — never
-commit a snapshot. It is the default `--out` of `tools/snapshot-csv.ts`, and it is
-where `npm run gen:balance` and `tools/simulate-age0-progression.mjs` write. Use a
+commit a snapshot. It is the default `--out` of `tools/simulation/snapshot-csv.ts`, and it is
+where `npm run gen:balance` and `tools/simulation/simulate-age0-progression.mjs` write. Use a
 fresh dated subdirectory per sweep (`sim-output\bench-before`, `-after`) so runs
 never overwrite each other. `temp/` may contain user-owned files or source prototypes;
 never use it for generated output, scratch work, or cleanup.
@@ -1017,7 +1018,7 @@ A change is done when:
 4. New content is data-driven with stable IDs, uses `ExpNumber` for anything that can
    grow, and needs no per-content branching in the engine.
 5. Numbers reach the player only through `formatNumber`.
-6. **A simulation change to `tools/strategies.ts`, the main engine, or `age0` is
+6. **A simulation change to `tools/simulation/strategies.ts`, the main engine, or `age0` is
    benchmarked before and after against the recorded baseline, and no strategy
    regresses** unless the regression is intentional and stated in the summary — see
    §7.2, which scopes the sweep to those paths (`age1` and beyond are exempt while

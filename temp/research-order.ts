@@ -14,8 +14,8 @@ import {
   GameSimulation,
   createInitialState,
   type SimulationAction,
-} from "../tools/simulation.js";
-import { EconomyStrategy } from "../tools/strategies.js";
+} from "../tools/simulation/simulation.js";
+import { EconomyStrategy } from "../tools/simulation/strategies.js";
 
 class OrderProbe extends PlayerStrategy {
   expose(): readonly string[] {

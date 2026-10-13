@@ -6,7 +6,7 @@
 
 ## 2026-09-30 — Trade routes in the balance simulator
 
-- **Added `tools/tradeAdvisor.ts`:** the policy that decides which market trade
+- **Added `tools/simulation/tradeAdvisor.ts`:** the policy that decides which market trade
   route a strategy should run and at what intensity, driving the real
   `CivilizationState.setTradeRoute()` so a simulated route is the same route the
   Trade tab builds. The route points at the tradable resource whose stock has
@@ -36,7 +36,7 @@
   correctly dormant. Confirmed in the Iron Age too: a 7200-second `cheapest` run
   banks a 2.2e8 reserve and still opens **no** route, which is the inert-by-default
   property working in-sim.
-- **Tests:** `tools/tradeAdvisor.test.ts` (14 cases) covers the policy, the
+- **Tests:** `tools/simulation/tests/tradeAdvisor.test.ts` (14 cases) covers the policy, the
   flow-sizing, the slider-stop intensity, the slot hand-over, and the runner end to
   end.
 
@@ -60,7 +60,7 @@
 ## 2026-09-29 — Strategy repair, benchmark harness, speedrun retune
 
 - **Repaired the interrupted strategy refactor.** The previous session left
-  `tools/simulation.ts` calling `strategy.onBattleVictory()`, a method that was
+  `tools/simulation/simulation.ts` calling `strategy.onBattleVictory()`, a method that was
   never added to the `SimulationStrategy` interface, and deleted the
   `shouldLaunchBattle` bodies from four strategies while replacing them with
   comments claiming they "inherit the optimized" version. Fixed by dropping the
@@ -73,7 +73,7 @@
   includes only `src`; `tsconfig.node.json` only `vite.config.ts`), so a broken
   call in a tool passes the build gate silently. Verified the tools + game layer
   with a temporary tsconfig while repairing.
-- **Added `tools/compare-bench.ts`:** prints the §7.2 headline columns (age,
+- **Added `tools/simulation/compare-bench.ts`:** prints the §7.2 headline columns (age,
   population, buildings, battles, research, army power, and time to `age-1`) for
   two runs, and reports a strategy missing from either side instead of silently
   dropping it.
@@ -81,7 +81,7 @@
   a 2-hour horizon versus 83 s for `cheapest` — the ROI sweep's battle
   evaluation dominates run time. Benchmarks must budget for this.
 - **Speedrun retuned.** Three real stalls, each found by tracing actual decisions
-  (`tools/trace-strategy.ts`) rather than by reading the strategy:
+  (`tools/simulation/trace-strategy.ts`) rather than by reading the strategy:
   1. **Food guard preempted growth.** `food <= 0 -> gather food` ran *first*.
      Every citizen both costs food and drains 1/second, so a settlement worth
      speeding up sits at zero food almost continuously and ten gathered clicks
@@ -102,7 +102,7 @@
      bought, and the ROI sweep (which raises military *income* — barracks 1 -> 10)
      runs *before* the advisor's gather hint, because a per-tick trickle cannot
      outrun a geometric cost curve.
-- **Benchmarked 1h, all 7 strategies, before vs after** (`tools/compare-bench.ts`,
+- **Benchmarked 1h, all 7 strategies, before vs after** (`tools/simulation/compare-bench.ts`,
   HEAD `a9b9605` as the baseline). **No strategy regressed:**
 
   | strategy | population | buildings | battles | research | age |
@@ -147,8 +147,8 @@
 - **Offline progress:** `E_off = 25%` efficiency, capped at 12 hours
   (`OFFLINE_EFFICIENCY`, `MAX_OFFLINE_MS`); a reload/import shows an
   offline-gain panel; Dev Tools import can skip the gain. Shared contract
-  vectors in `src/game/data/offlineGainVectors.json` are asserted by a
-  cross-language test (`tools/tests/offline_gain_test.py`, run with
+  vectors in `tools/simulation/tests/offlineGainVectors.json` are asserted by a
+  cross-language test (`tools/simulation/tests/offline_gain_test.py`, run with
   `npm run test:cross-language`).
 - **Statistics grew time tracking:** `playTimeMs`/`runTimeMs` plus
   `onlineTimeMs`, `offlineTimeMs`, `longestOfflineMs`, `longestActiveMs`,

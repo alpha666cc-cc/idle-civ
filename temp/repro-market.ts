@@ -1,4 +1,4 @@
-import { loadSaveEntry } from "../tools/saveEntry.js";
+import { loadSaveEntry } from "../tools/simulation/saveEntry.js";
 import { buildingDefinitions } from "../src/game/buildings.js";
 
 const entry = loadSaveEntry("saves/bug-but1e-14market.xml");
