@@ -673,12 +673,12 @@
       {
         "resource": "military",
         "base": 2.9e10,
-        "factor": 1.4
+        "factor": 1.3
       },
       {
         "resource": "metalwork",
-        "base": 2.9e10,
-        "factor": 1.4
+        "base": 1e10,
+        "factor": 1.3
       }
     ]
   },
@@ -704,12 +704,12 @@
       {
         "resource": "military",
         "base": 5e10,
-        "factor": 1.4
+        "factor": 1.3
       },
       {
         "resource": "metalwork",
         "base": 1e10,
-        "factor": 1.4
+        "factor": 1.3
       }
     ]
   },
@@ -735,12 +735,12 @@
       {
         "resource": "military",
         "base": 1e11,
-        "factor": 1.6
+        "factor": 1.5
       },
       {
         "resource": "metalwork",
-        "base": 1e10,
-        "factor": 1.6
+        "base": 2e9,
+        "factor": 1.5
       }
     ]
   },
@@ -770,13 +770,13 @@
       },
       {
         "resource": "metalwork",
-        "base": 1e11,
-        "factor": 1.8
+        "base": 1e10,
+        "factor": 1.7
       },
       {
         "resource": "wood",
         "base": 1e13,
-        "factor": 1.8
+        "factor": 1.7
       }
     ]
   },
@@ -802,12 +802,12 @@
       {
         "resource": "military",
         "base": 1e12,
-        "factor": 2
+        "factor": 1.9
       },
       {
         "resource": "metalwork",
         "base": 5e11,
-        "factor": 2
+        "factor": 1.9
       }
     ]
   },
@@ -833,17 +833,17 @@
       {
         "resource": "military",
         "base": 1e15,
-        "factor": 2.5
+        "factor": 2.2
       },
       {
         "resource": "metalwork",
         "base": 1e14,
-        "factor": 2.5
+        "factor": 2.2
       },
       {
         "resource": "wood",
         "base": 1e17,
-        "factor": 2.5
+        "factor": 2.2
       }
     ]
   },
@@ -869,12 +869,12 @@
       {
         "resource": "military",
         "base": 1e17,
-        "factor": 1.5
+        "factor": 1.4
       },
       {
         "resource": "metalwork",
-        "base": 1e16,
-        "factor": 1.5
+        "base": 1e15,
+        "factor": 1.4
       }
     ]
   },
@@ -900,17 +900,17 @@
       {
         "resource": "military",
         "base": 1e20,
-        "factor": 2.5
+        "factor": 2.2
       },
       {
         "resource": "metalwork",
         "base": 1e19,
-        "factor": 2.5
+        "factor": 2.2
       },
       {
         "resource": "wood",
         "base": 1e24,
-        "factor": 2.5
+        "factor": 2.2
       }
     ]
   },
