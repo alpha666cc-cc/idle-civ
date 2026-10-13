@@ -99,3 +99,12 @@ economy	60m	53m	−12%
 
 
 player 2094s ->34m54s
+
+Strategy	Age 2 reached
+player	158 min
+research	258 min
+production	272 min
+fast-age	275 min
+military	275 min
+balanced	286 min
+

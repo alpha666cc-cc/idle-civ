@@ -232,6 +232,13 @@ for now consider only age0 and age1
 
 
 
+Strategy	Age 2 reached
+player	158 min
+research	258 min
+production	272 min
+fast-age	275 min
+military	275 min
+balanced	286 min
 
 
 

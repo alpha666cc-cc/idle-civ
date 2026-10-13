@@ -64,6 +64,7 @@ import {
   getBootstrapGatherResource,
   getRecommendedBattlePurchase,
   getSimulatorBattlePlan,
+  ResearchStrategy,
   getStrategy,
   setAdaptiveWorkerFunding,
 } from "../strategies";
@@ -1509,6 +1510,75 @@ describe("required progression strategy", () => {
     expect(getStrategy("cheapest")?.description).toBe(
       "Always buy the cheapest legal purchase",
     );
+  });
+
+  it("resolves age-specific worker ratios through one state-aware method", () => {
+    class WorkerRatioProbe extends BalancedStrategy {
+      ratios(state?: CivilizationState) {
+        return this.getWorkerRatios(state);
+      }
+    }
+
+    const strategy = new WorkerRatioProbe();
+    const defaultRatios = strategy.ratios();
+    const ageOneRatios = strategy.ratios(
+      makeState({ enteredAges: ["age0"] }),
+    );
+    const ageTwoRatios = strategy.ratios(
+      makeState({ enteredAges: ["age0", "age1"] }),
+    );
+
+    expect(ageOneRatios).toEqual({
+      food: 0.223,
+      wood: 0.278,
+      stone: 0.145,
+      gold: 0.354,
+      military: 0,
+      science: 0,
+      metalwork: 0,
+      trade: 0,
+    });
+    expect(ageTwoRatios).toEqual(defaultRatios);
+    expect(defaultRatios).toEqual({
+      food: 0.248,
+      wood: 0.31,
+      stone: 0.162,
+      gold: 0.08,
+      military: 0,
+      science: 0.2,
+      metalwork: 0,
+      trade: 0,
+    });
+
+    class ResearchRatioProbe extends ResearchStrategy {
+      ratios(state?: CivilizationState) {
+        return this.getWorkerRatios(state);
+      }
+    }
+
+    const researchStrategy = new ResearchRatioProbe();
+    expect(researchStrategy.ratios(makeState())).toEqual({
+      food: 0.3,
+      wood: 0.15,
+      stone: 0.15,
+      gold: 0.05,
+      military: 0.05,
+      science: 0.3,
+      metalwork: 0,
+      trade: 0,
+    });
+    expect(
+      researchStrategy.ratios(makeState({ enteredAges: ["age0"] })),
+    ).toEqual({
+      food: 0.18,
+      wood: 0.08,
+      stone: 0.253,
+      gold: 0.487,
+      military: 0,
+      science: 0,
+      metalwork: 0,
+      trade: 0,
+    });
   });
 
   it("moves a surplus worker to an under-assigned resource", () => {
