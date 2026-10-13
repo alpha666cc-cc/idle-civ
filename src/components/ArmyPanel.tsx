@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { Lock, Swords, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { BookmarkCheck, BookmarkPlus, Lock, Swords, X } from "lucide-react";
 import type { CivilizationState } from "../game/civilizationState";
 import {
   armyPower,
@@ -131,6 +131,26 @@ export default function ArmyPanel({
     activeRef.current = activeBattle;
     roundIndexRef.current = battleRoundIndex;
   }, [activeBattle, battleRoundIndex]);
+
+  /** Saved formation/order snapshot for the Save ↔ Reload toolbar. */
+  const [savedSnapshot, setSavedSnapshot] = useState<{
+    orders: Partial<Record<string, BattleOrder>>;
+    formations: Partial<Record<string, FormationId>>;
+  } | null>(null);
+
+  const saveSnapshot = () => {
+    setSavedSnapshot({
+      orders: { ...gameState.unitOrders },
+      formations: { ...gameState.unitFormations },
+    });
+  };
+
+  const reloadSnapshot = () => {
+    if (!savedSnapshot) return;
+    setGameState((current) =>
+      current.applyFormationSnapshot(savedSnapshot.orders, savedSnapshot.formations),
+    );
+  };
 
   const battle = gameState.getNextBattle();
   const roster = gameState.getRosterUnits();
@@ -268,6 +288,33 @@ export default function ArmyPanel({
     <div className="army-layout">
       <section className="army-column" aria-label="Unit roster">
         <h3 className="army-column-title">Roster</h3>
+        {roster.length > 0 && (
+          <div className="formation-snapshot-bar">
+            <button
+              type="button"
+              className="formation-snapshot-btn"
+              onClick={saveSnapshot}
+              title="Save current orders and formations as a preset"
+            >
+              <BookmarkPlus size={14} strokeWidth={1.8} />
+              Save formation
+            </button>
+            <button
+              type="button"
+              className="formation-snapshot-btn"
+              disabled={savedSnapshot === null}
+              onClick={reloadSnapshot}
+              title={
+                savedSnapshot === null
+                  ? "No formation saved yet"
+                  : "Restore saved orders and formations"
+              }
+            >
+              <BookmarkCheck size={14} strokeWidth={1.8} />
+              Reload
+            </button>
+          </div>
+        )}
         {roster.length === 0 && (
           <p className="army-empty">
             No units available yet — win the first battle to open recruiting.

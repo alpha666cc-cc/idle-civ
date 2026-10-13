@@ -2881,6 +2881,50 @@ export class CivilizationState {
     );
   }
 
+  /**
+   * Bulk-apply a saved formation snapshot (orders + formations). Entries that
+   * name an unknown unit or a currently-locked order/formation are silently
+   * dropped so an old snapshot never forces invalid state after a prestige or
+   * unlock change.
+   */
+  applyFormationSnapshot(
+    savedOrders: Partial<Record<string, BattleOrder>>,
+    savedFormations: Partial<Record<string, FormationId>>,
+  ): CivilizationState {
+    const filteredOrders: Partial<Record<string, BattleOrder>> = {};
+    for (const [unitId, order] of Object.entries(savedOrders)) {
+      if (order !== undefined && findUnitDefinition(unitId) && this.isOrderUnlocked(order)) {
+        filteredOrders[unitId] = order;
+      }
+    }
+    const filteredFormations: Partial<Record<string, FormationId>> = {};
+    for (const [unitId, formation] of Object.entries(savedFormations)) {
+      if (formation !== undefined && findUnitDefinition(unitId) && this.isFormationUnlocked(formation)) {
+        filteredFormations[unitId] = formation;
+      }
+    }
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      filteredOrders,
+      filteredFormations,
+      this.tradeRoutes,
+    );
+  }
+
   getArmyPower(): ExpNumber {
     return armyPower(this.getArmyStacks());
   }

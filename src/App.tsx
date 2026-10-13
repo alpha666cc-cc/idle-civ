@@ -1804,7 +1804,7 @@ function App() {
                 </div>
               </section>
 
-              <BattleSimulatorPanel gameState={gameState} fmt={fmt} />
+              <BattleSimulatorPanel gameState={gameState} setGameState={setGameState} fmt={fmt} />
             </>
           )}
 

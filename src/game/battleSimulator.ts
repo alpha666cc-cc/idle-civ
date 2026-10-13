@@ -242,7 +242,9 @@ export const solveMinimumArmy = (
   battleId: string,
   candidates: readonly UnitDefinition[],
   context: BattleSimulatorContext,
-  requireMixed = false,
+  // Pair seeds the search. It is a no-op for single-unit candidate lists, so
+  // Age 0/1 behaviour is unchanged.
+  requireMixed: boolean = false,
   ownedArmy: SimulatorOwnedArmy = new Map(),
   lockedFormations: ReadonlyMap<string, FormationId> = new Map(),
 ): SimulatorResult | null => {
@@ -432,3 +434,195 @@ export const solveMinimumArmy = (
     orders,
   };
 };
+/**
+ * Drop each recruit count as far as it can go while the merged army (owned
+ * units fixed, recruits variable) still defeats the battle under a fixed
+ * tactic set. Owned units are never touched - the caller is only ever charged
+ * for additional recruits.
+ */
+const trimUnderTactics = (
+  composition: SimulatorArmy,
+  ownedArmy: SimulatorOwnedArmy,
+  formations: ReadonlyMap<string, FormationId>,
+  orders: ReadonlyMap<string, OrderId>,
+  battleId: string,
+  context: BattleSimulatorContext,
+): SimulatorArmy => {
+  const wins = (trial: SimulatorArmy): boolean =>
+    context.winsWithFormationsAndOrders(
+      mergeSimulatorArmy(ownedArmy, trial),
+      formations,
+      orders,
+      battleId,
+    );
+  const trimmed = new Map(composition);
+  for (const [unitId, count] of [...trimmed]) {
+    let lo = 0;
+    let hi = count;
+    while (lo < hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const trial = new Map(trimmed);
+      trial.set(unitId, mid);
+      if (wins(trial)) hi = mid;
+      else lo = mid + 1;
+    }
+    if (lo <= 0) trimmed.delete(unitId);
+    else trimmed.set(unitId, lo);
+  }
+  return trimmed;
+};
+
+/** "warrior×5 slinger×2" — recruits-only army for the debug log. */
+const formatArmy = (army: SimulatorArmy): string =>
+  army.size === 0
+    ? "(none)"
+    : [...army.entries()].map(([unitId, count]) => `${unitId}×${count}`).join(" ");
+
+/** "warrior:frontline slinger:standard" — a tactic assignment map for the log. */
+const formatTactics = (tactics: ReadonlyMap<string, string>): string =>
+  tactics.size === 0
+    ? "standard"
+    : [...tactics.entries()]
+        .map(([unitId, tactic]) => `${unitId}:${tactic}`)
+        .join(" ");
+
+/**
+ * Iterate the two goals against each other: pick the cheapest winning army for
+ * the battle, then the best tactics for that army, then trim the army as far
+ * as it can go under those tactics, then repeat until the counts stop
+ * changing.
+ *
+ * Convergence is guaranteed: a pass only moves when a trim strictly reduces
+ * the army, and a pass can never fail to find a winning tactic set — "standard"
+ * is always one of the available formations/orders, so a winning tactic set
+ * always exists. The loop therefore ends in a fixpoint where the returned army
+ * wins with the returned tactics and no unit can be removed while keeping that
+ * same tactic set.
+ *
+ * Age 0/1: only "standard" is ever available, so this reduces to the old
+ * solver's behaviour exactly (same composition, formations, orders).
+ */
+export const optimizeBattleTactics = (
+  battleId: string,
+  candidates: readonly UnitDefinition[],
+  context: BattleSimulatorContext,
+  requireMixed = false,
+  ownedArmy: SimulatorOwnedArmy = new Map(),
+): SimulatorResult | null => {
+  const solve = solveMinimumArmy(
+    battleId,
+    candidates,
+    context,
+    requireMixed,
+    ownedArmy,
+  );
+  if (!solve) {
+    console.log(
+      `[Battle Optimizer] ${battleId}: no winning army found — candidates cannot beat this battle`,
+    );
+    return null;
+  }
+  let composition = solve.composition;
+  let bestCost = compositionCost(composition, context);
+  const owned =
+    ownedArmy.size === 0
+      ? "(none)"
+      : [...ownedArmy.entries()]
+          .map(([unitId, count]) => `${unitId}×${count.toString()}`)
+          .join(" ");
+
+  const encounter = encounterDefinitions.find(({ key }) => key === battleId);
+  const availableFormations =
+    encounter && encounter.age >= 2 ? formationIds : [DEFAULT_FORMATION];
+  const availableOrders = encounter && encounter.age >= 3 ? orderIds : [DEFAULT_ORDER];
+
+  console.log(
+    `[Battle Optimizer] ${battleId}: one-shot army {${formatArmy(
+      composition,
+    )}} (military ${bestCost.toString()}), owned {${owned}} — starting iteration`,
+  );
+
+  let formations: ReadonlyMap<string, FormationId> = new Map();
+  let orders: ReadonlyMap<string, OrderId> = new Map();
+  let accepted = 0;
+  let iteration = 0;
+  for (;;) {
+    iteration += 1;
+    const total = mergeSimulatorArmy(ownedArmy, composition);
+    formations = findOptimalFormations(
+      total,
+      availableFormations,
+      context,
+      battleId,
+    );
+    orders = findOptimalOrders(
+      total,
+      availableOrders,
+      context,
+      battleId,
+      formations,
+    );
+    const tactics = `formations {${formatTactics(
+      formations,
+    )}} orders {${formatTactics(orders)}}`;
+    const nextComposition = trimUnderTactics(
+      composition,
+      ownedArmy,
+      formations,
+      orders,
+      battleId,
+      context,
+    );
+    const changed =
+      composition.size !== nextComposition.size ||
+      [...composition.entries()].some(
+        ([unitId, count]) => nextComposition.get(unitId) !== count,
+      );
+    if (!changed) {
+      console.log(
+        `[Battle Optimizer] ${battleId} pass ${iteration}: army {${formatArmy(
+          composition,
+        )}} (military ${bestCost.toString()}) ${tactics} → converged, no unit can be removed`,
+      );
+      break;
+    }
+    const nextCost = compositionCost(nextComposition, context);
+    console.log(
+      `[Battle Optimizer] ${battleId} pass ${iteration}: army {${formatArmy(
+        composition,
+      )}} (military ${bestCost.toString()}) ${tactics} → trim to {${formatArmy(
+        nextComposition,
+      )}} (military ${nextCost.toString()}, saved ${bestCost
+        .sub(nextCost)
+        .toString()})`,
+    );
+    composition = nextComposition;
+    bestCost = nextCost;
+    accepted += 1;
+    if (accepted > maximumPasses) {
+      console.log(
+        `[Battle Optimizer] ${battleId}: pass cap (${maximumPasses}) reached, stopping`,
+      );
+      break;
+    }
+  }
+
+  console.log(
+    `[Battle Optimizer] ${battleId}: done after ${iteration} pass(es), final army {${formatArmy(
+      composition,
+    )}} (military ${bestCost.toString()}) formations {${formatTactics(
+      formations,
+    )}} orders {${formatTactics(orders)}}`,
+  );
+
+  return {
+    composition,
+    totalComposition: mergeSimulatorArmy(ownedArmy, composition),
+    military: bestCost,
+    totalCost: sumCosts(composition, context),
+    research: context.getResearch(additionalUnitIds(ownedArmy, composition)),
+    formations,
+    orders,
+  };
+};
+
