@@ -10,13 +10,14 @@ import type {
   BattleSimulatorContext,
   SimulatorTotalArmy,
 } from "../battleSimulator";
+import { calculateCostSeries } from "../buyableCost";
 import type { FormationId } from "../formations";
 
 const savePath = resolve(
   process.cwd(),
   "saves",
-  "bug",
-  "simualtor-bug-formation.xml",
+  "bugs",
+  "simulator battle8.xml",
 );
 
 describe("bug formation analysis", () => {
@@ -61,6 +62,15 @@ describe("bug formation analysis", () => {
       console.log("Owned army size:", ownedArmy.size);
 
       const researchIds = state.boughtResearch;
+      for (const { key: unitId } of candidates) {
+        expect(
+          calculateCostSeries(
+            state.getUnitCostParameters(unitId),
+            state.getUnitCount(unitId),
+            25,
+          ),
+        ).toEqual(state.getUnitCost(unitId, 25));
+      }
       const stacksFor = (
         composition: SimulatorTotalArmy,
         formations?: ReadonlyMap<string, FormationId>,
@@ -80,7 +90,12 @@ describe("bug formation analysis", () => {
           }];
         });
       const context: BattleSimulatorContext = {
-        getCost: (unitId, count) => state.getUnitCost(unitId, count),
+        getCost: (unitId, count) =>
+          calculateCostSeries(
+            state.getUnitCostParameters(unitId),
+            state.getUnitCount(unitId),
+            count,
+          ),
         getResearch: (unitIds) => state.getResearchForUnitTypes(unitIds),
         wins: (composition, battleId) =>
           state.simulateWithStacksOutcome(
@@ -110,6 +125,14 @@ describe("bug formation analysis", () => {
         context,
         true,
         ownedArmy,
+        new Map(
+          Object.entries(state.unitFormations) as [string, FormationId][],
+        ),
+        new Map(
+          Object.entries(state.unitOrders) as [string, BattleOrder][],
+        ),
+        state.getAvailableFormations(),
+        state.getAvailableOrders(),
       );
       console.log("Optimizer result composition:", opt?.composition);
       console.log("Optimizer result formations:", opt?.formations);
@@ -126,5 +149,5 @@ describe("bug formation analysis", () => {
         ).toBe(true);
       }
     }
-  });
+  }, 60_000);
 });

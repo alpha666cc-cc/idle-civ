@@ -685,16 +685,53 @@ function App() {
       order: stack.order,
     }));
 
-    // Unit cost table (per-unit cost for 1 unit)
+    // Send the effective curve so worker-side estimates match live unit prices.
     const candidateCosts: WorkerInput["candidateCosts"] = allCandidateIds.map(
       (unitId) => [
         unitId,
-        gameState
-          .getUnitCost(unitId, 1)
-          .map(({ resource, base }) => [
-            resource,
-            { s: base.sign, m: base.mantissa, e: base.exponent },
-          ]),
+        gameState.getUnitCostParameters(unitId).map(
+          ({ cost, unitBase, unitFactor, reductions }) => ({
+            resource: cost.resource,
+            base: {
+              s: cost.base.sign,
+              m: cost.base.mantissa,
+              e: cost.base.exponent,
+            },
+            factor: cost.factor,
+            unitBase: {
+              s: unitBase.sign,
+              m: unitBase.mantissa,
+              e: unitBase.exponent,
+            },
+            unitFactor: {
+              s: unitFactor.sign,
+              m: unitFactor.mantissa,
+              e: unitFactor.exponent,
+            },
+            reductions: {
+              base: {
+                s: reductions.base.sign,
+                m: reductions.base.mantissa,
+                e: reductions.base.exponent,
+              },
+              factor: {
+                s: reductions.factor.sign,
+                m: reductions.factor.mantissa,
+                e: reductions.factor.exponent,
+              },
+              percent: {
+                s: reductions.percent.sign,
+                m: reductions.percent.mantissa,
+                e: reductions.percent.exponent,
+              },
+              flat: {
+                s: reductions.flat.sign,
+                m: reductions.flat.mantissa,
+                e: reductions.flat.exponent,
+              },
+            },
+          }),
+        ),
       ],
     );
 

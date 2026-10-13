@@ -73,6 +73,10 @@ import {
   type BuildingKey,
 } from "./buildings";
 import {
+  calculateCostSeries,
+  type CostParameters,
+} from "./buyableCost";
+import {
   encounterDefinitions,
   findEncounterDefinition,
   type EncounterDefinition,
@@ -104,18 +108,6 @@ import {
 } from "./units";
 import { upgradeDefinitions } from "./upgrades";
 import { WorkerProduction } from "./workerProduction";
-
-/**
- * One cost entry with its curve inputs rewritten by the §13.1 reduction
- * order: unitBase is the scale B, unitFactor the growth base F of the
- * square-root curve T(n) = B * (F^sqrt(n) - 1) described in §4.4.
- */
-type CostParameters = {
-  cost: BuildingCost;
-  unitBase: ExpNumber;
-  unitFactor: ExpNumber;
-  reductions: CostReductions;
-};
 
 type BuildingCostOverrides = Partial<Record<BuildingKey, BuildingCost[]>>;
 
@@ -187,52 +179,6 @@ const snapToWholeCount = (count: ExpNumber): ExpNumber => {
   return Math.abs(value - nearest) <= tolerance
     ? ExpNumber.fromNumber(nearest)
     : count;
-};
-
-/** How many leading units the flat cost reduction may zero out directly. */
-const flatClampWindow = 256;
-
-/**
- * Slope of the linear early-game price floor, normalized so the standard
- * production factor (25) yields a slope of `unitBase` per unit: unit k costs
- * `unitBase x (1 + (k-1) x factor/25)`. Guarantees unit 1 = base (fixing the
- * old `base x (factor - 1)` first-unit inflation) and floors the factor<e dip
- * so a purchase never gets cheaper (§4.4).
- */
-const linearSlope = (unitBase: ExpNumber, unitFactor: ExpNumber): ExpNumber =>
-  unitBase.mul(unitFactor).div(ExpNumber.fromNumber(25));
-
-/**
- * Corrected cumulative sqrt curve: T(n) = base x factor^(sqrt(n) - 1), so the
- * exponent carries the -1 (not the whole power). T(1) = base exactly.
- */
-const sqrtCurve = (
-  unitBase: ExpNumber,
-  unitFactor: ExpNumber,
-  n: number,
-): ExpNumber => unitBase.mul(unitFactor.pow(Math.sqrt(n) - 1));
-
-/**
- * Crossover unit K — the last unit where the linear floor is still >= the sqrt
- * curve's unit price. Units 1..K price on the linear floor; units past K follow
- * `sqrtCurve`. Unit 1 always sits on the floor (its sqrt price is
- * base x (1 - 1/factor) < base), so K >= 1. A bounded scan finds the first unit
- * where the sqrt price overtakes the rising linear floor.
- */
-const crossoverToSqrt = (
-  unitBase: ExpNumber,
-  unitFactor: ExpNumber,
-): number => {
-  const slope = linearSlope(unitBase, unitFactor);
-  const linear = (k: number): ExpNumber =>
-    unitBase.add(slope.mul(ExpNumber.fromNumber(k - 1)));
-  const sqrtPrice = (k: number): ExpNumber =>
-    sqrtCurve(unitBase, unitFactor, k).sub(
-      sqrtCurve(unitBase, unitFactor, k - 1),
-    );
-  let k = 1;
-  while (k < maximumUnitPurchase && sqrtPrice(k).lte(linear(k))) k += 1;
-  return k - 1;
 };
 
 /**
@@ -1938,66 +1884,7 @@ export class CivilizationState {
     buildingsAlreadyBuilt: ExpNumber,
     count: number,
   ): BuildingCost[] {
-    const owned = buildingsAlreadyBuilt.toNumber();
-    return parameters.map(({ cost, unitBase, unitFactor, reductions }) => {
-      if (count <= 0) return { ...cost, base: ExpNumber.ZERO };
-
-      // Piecewise cumulative (§4.4, corrected first unit): linear floor for the
-      // first K units (unit 1 = base), then T(n) = unitBase * unitFactor^(sqrt(n) - 1).
-      // Buying count units is one subtraction: C(owned + count) - C(owned).
-      const crossover = crossoverToSqrt(unitBase, unitFactor);
-      const slope = linearSlope(unitBase, unitFactor);
-      const linearSum = (n: number): ExpNumber =>
-        unitBase
-          .mul(ExpNumber.fromNumber(n))
-          .add(slope.mul(ExpNumber.fromNumber((n * (n - 1)) / 2)));
-      const cumulative = (n: number): ExpNumber =>
-        n <= crossover
-          ? linearSum(n)
-          : linearSum(crossover).add(
-              sqrtCurve(unitBase, unitFactor, n).sub(
-                sqrtCurve(unitBase, unitFactor, crossover),
-              ),
-            );
-      const unitPrice = (n: number): ExpNumber =>
-        cumulative(n)
-          .sub(cumulative(n - 1))
-          .mul(reductions.percent);
-
-      // Leading units the flat reduction absorbs entirely are free; scan a
-      // bounded window for them.
-      let clamped = 0;
-      if (reductions.flat.gt(ExpNumber.ZERO)) {
-        const window = Math.min(count, flatClampWindow);
-        while (clamped < window) {
-          if (unitPrice(owned + clamped + 1).gt(reductions.flat)) break;
-          clamped += 1;
-        }
-      }
-
-      const remaining = count - clamped;
-      const gross = cumulative(owned + count)
-        .sub(cumulative(owned + clamped))
-        .mul(reductions.percent);
-      const payable = ExpNumber.max(
-        ExpNumber.ZERO,
-        gross.sub(reductions.flat.mul(ExpNumber.fromNumber(remaining))),
-      );
-      // Snap float-subtraction residue below a relative epsilon to the integer
-      // before ceiling: cumulative(owned+count) - cumulative(owned) can land a
-      // few ULP above an exact linear price (14.000000000000004), which .ceil()
-      // would bump up a whole unit. Genuine fractions stay put (their residue
-      // dwarfs the epsilon) and large magnitudes carry zero residue.
-      const floored = payable.floor();
-      const snapped = payable
-        .sub(floored)
-        .lte(
-          ExpNumber.max(payable, ExpNumber.ONE).mul(ExpNumber.fromNumber(1e-9)),
-        )
-        ? floored
-        : payable;
-      return { ...cost, base: snapped.ceil() };
-    });
+    return calculateCostSeries(parameters, buildingsAlreadyBuilt, count);
   }
 
   formatBuildingCost(

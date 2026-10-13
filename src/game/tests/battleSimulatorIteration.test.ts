@@ -3,13 +3,16 @@ import {
   mergeSimulatorArmy,
   optimizeBattleTactics,
   solveMinimumArmy,
+  type BattleSimulatorContext,
   type SimulatorOwnedArmy,
+  type SimulatorCandidate,
   type SimulatorTotalArmy,
 } from "../battleSimulator";
 import { ExpNumber } from "../expNumber";
 import { formationIds, type FormationId } from "../formations";
 import { orderIds, type OrderId } from "../orders";
 import { CivilizationState } from "../civilizationState";
+import { calculateCostSeries } from "../buyableCost";
 import { encounterDefinitions } from "../encounters";
 import { researchIdsForBattle } from "../research";
 import type { ArmyStack } from "../battle";
@@ -133,6 +136,64 @@ const runSolver = (
 };
 
 describe("optimizeBattleTactics iteration", () => {
+  it("re-solves under cheaper tactics and publishes intermediate armies", () => {
+    const candidate: SimulatorCandidate = { key: "warrior" };
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count),
+          factor: 1,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army, formations) => {
+        const count = army.get("warrior") ?? ExpNumber.ZERO;
+        return formations.get("warrior") === "frontline"
+          ? count.gte(ExpNumber.ONE)
+          : count.gte(ExpNumber.fromNumber(2));
+      },
+    };
+    const progress: number[] = [];
+    const result = optimizeBattleTactics(
+      "age2_1_marathon",
+      [candidate],
+      context,
+      false,
+      new Map(),
+      new Map(),
+      new Map(),
+      ["standard", "frontline", "backline"],
+      ["standard"],
+      (intermediate) => {
+        progress.push(intermediate.composition.get("warrior") ?? 0);
+      },
+    );
+
+    expect(result?.composition.get("warrior")).toBe(1);
+    expect(result?.formations.get("warrior")).toBe("frontline");
+    expect(progress).toContain(2);
+    expect(progress).toContain(1);
+  });
+
+  it("prices recruited units with the same cumulative cost curve as the engine", () => {
+    const unitId = "chariot_iron";
+    const count = 1_000;
+    const parameters = state.getUnitCostParameters(unitId);
+    const exact = calculateCostSeries(parameters, ExpNumber.ZERO, count);
+    expect(exact).toEqual(state.getUnitCost(unitId, count));
+    expect(
+      exact.find(({ resource }) => resource === "military")?.base.gt(
+        state
+          .getUnitCost(unitId, 1)
+          .find(({ resource }) => resource === "military")!
+          .base.mul(ExpNumber.fromNumber(count)),
+      ),
+    ).toBe(true);
+  });
+
   it("keeps Age 0/1 results identical to the one-shot solver", () => {
     // Formations and orders only unlock at Age 2/3, so for the opening battle
     // the iteration must reduce to the old solver exactly.

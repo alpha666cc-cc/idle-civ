@@ -42,6 +42,11 @@ export type SimulatorResult = {
   /** Optimal targeting order per unit type for this battle. */
   readonly orders: ReadonlyMap<string, OrderId>;
 };
+export type SimulatorCandidate = Pick<UnitDefinition, "key">;
+export type SimulatorProgress = (
+  result: SimulatorResult,
+  phase: string,
+) => void;
 export type BattleSimulatorContext = {
   getCost: (unitId: string, count: number) => BuildingCost[];
   getResearch: (unitIds: readonly string[]) => SimulatorResearch;
@@ -111,7 +116,7 @@ const militaryOf = (costs: readonly SimulatorCostTotal[]): ExpNumber => {
  * Find optimal formation assignments for a given army composition.
  * Tries all available formations for each unit type and returns the winning combination.
  * Returns empty map if no formation combination wins (falls back to standard).
- * Tries non-standard formations first to find tactical advantages.
+ * Prefers standard when multiple assignments win.
  */
 export const findOptimalFormations = (
   composition: SimulatorTotalArmy,
@@ -122,10 +127,10 @@ export const findOptimalFormations = (
   const unitIds = [...composition.keys()];
   if (unitIds.length === 0) return new Map();
 
-  // Sort formations: try non-standard first, then standard as fallback
+  // A first-match search must not bias toward non-standard tactic labels.
   const sortedFormations = [...availableFormations].sort((a, b) => {
-    if (a === "standard") return 1;
-    if (b === "standard") return -1;
+    if (a === "standard") return -1;
+    if (b === "standard") return 1;
     return a.localeCompare(b);
   });
 
@@ -159,7 +164,7 @@ export const findOptimalFormations = (
  * Find optimal targeting order assignments for a given army composition.
  * Tries all available orders for each unit type and returns the winning combination.
  * Returns empty map if no order combination wins (falls back to standard).
- * Tries non-standard orders first to find tactical advantages.
+ * Prefers standard when multiple assignments win.
  */
 export const findOptimalOrders = (
   composition: SimulatorTotalArmy,
@@ -171,10 +176,10 @@ export const findOptimalOrders = (
   const unitIds = [...composition.keys()];
   if (unitIds.length === 0) return new Map();
 
-  // Sort orders: try non-standard first, then standard as fallback
+  // Prefer standard whenever multiple order assignments win.
   const sortedOrders = [...availableOrders].sort((a, b) => {
-    if (a === "standard") return 1;
-    if (b === "standard") return -1;
+    if (a === "standard") return -1;
+    if (b === "standard") return 1;
     return a.localeCompare(b);
   });
 
@@ -240,20 +245,26 @@ const withCount = (
 /** Cheapest solo recruit per unit, then bounded mixed hill-climb, then trim. */
 export const solveMinimumArmy = (
   battleId: string,
-  candidates: readonly UnitDefinition[],
+  candidates: readonly SimulatorCandidate[],
   context: BattleSimulatorContext,
   // Pair seeds the search. It is a no-op for single-unit candidate lists, so
   // Age 0/1 behaviour is unchanged.
   requireMixed: boolean = false,
   ownedArmy: SimulatorOwnedArmy = new Map(),
   lockedFormations: ReadonlyMap<string, FormationId> = new Map(),
+  lockedOrders: ReadonlyMap<string, OrderId> = new Map(),
 ): SimulatorResult | null => {
   const encounter = encounterDefinitions.find(({ key }) => key === battleId);
   if (!encounter) return null;
   const wins = (composition: SimulatorArmy): boolean => {
     const total = mergeSimulatorArmy(ownedArmy, composition);
-    if (lockedFormations.size > 0) {
-      return context.winsWithFormations(total, lockedFormations, battleId);
+    if (lockedFormations.size > 0 || lockedOrders.size > 0) {
+      return context.winsWithFormationsAndOrders(
+        total,
+        lockedFormations,
+        lockedOrders,
+        battleId,
+      );
     }
     return context.wins(total, battleId);
   };
@@ -272,13 +283,16 @@ export const solveMinimumArmy = (
             context,
             battleId,
           );
-    const orders = findOptimalOrders(
-      totalComposition,
-      availableOrders,
-      context,
-      battleId,
-      formations,
-    );
+    const orders =
+      lockedOrders.size > 0
+        ? lockedOrders
+        : findOptimalOrders(
+            totalComposition,
+            availableOrders,
+            context,
+            battleId,
+            formations,
+          );
     return {
       composition: new Map(),
       totalComposition,
@@ -416,13 +430,16 @@ export const solveMinimumArmy = (
   const availableOrders =
     encounter && encounter.age >= 3 ? orderIds : [DEFAULT_ORDER];
 
-  const orders = findOptimalOrders(
-    totalComposition,
-    availableOrders,
-    context,
-    battleId,
-    formations,
-  );
+  const orders =
+    lockedOrders.size > 0
+      ? lockedOrders
+      : findOptimalOrders(
+          totalComposition,
+          availableOrders,
+          context,
+          battleId,
+          formations,
+        );
 
   return {
     composition: best,
@@ -487,142 +504,223 @@ const formatTactics = (tactics: ReadonlyMap<string, string>): string =>
         .join(" ");
 
 /**
- * Iterate the two goals against each other: pick the cheapest winning army for
- * the battle, then the best tactics for that army, then trim the army as far
- * as it can go under those tactics, then repeat until the counts stop
- * changing.
- *
- * Convergence is guaranteed: a pass only moves when a trim strictly reduces
- * the army, and a pass can never fail to find a winning tactic set — "standard"
- * is always one of the available formations/orders, so a winning tactic set
- * always exists. The loop therefore ends in a fixpoint where the returned army
- * wins with the returned tactics and no unit can be removed while keeping that
- * same tactic set.
- *
- * Age 0/1: only "standard" is ever available, so this reduces to the old
- * solver's behaviour exactly (same composition, formations, orders).
+ * Alternate between finding the minimum army for fixed tactics and testing
+ * recruit formations/orders against progressively larger fractions of it.
+ * Keep tactic changes only when trimming recruits lowers their exact cost, then
+ * re-solve the minimum army under those tactics.
  */
 export const optimizeBattleTactics = (
   battleId: string,
-  candidates: readonly UnitDefinition[],
+  candidates: readonly SimulatorCandidate[],
   context: BattleSimulatorContext,
   requireMixed = false,
   ownedArmy: SimulatorOwnedArmy = new Map(),
+  initialFormations: ReadonlyMap<string, FormationId> = new Map(),
+  initialOrders: ReadonlyMap<string, OrderId> = new Map(),
+  formationChoices?: readonly FormationId[],
+  orderChoices?: readonly OrderId[],
+  onProgress?: SimulatorProgress,
 ): SimulatorResult | null => {
-  const solve = solveMinimumArmy(
+  const encounter = encounterDefinitions.find(({ key }) => key === battleId);
+  if (!encounter) return null;
+  const availableFormations =
+    formationChoices ??
+    (encounter.age >= 2 ? formationIds : [DEFAULT_FORMATION]);
+  const availableOrders =
+    orderChoices ?? (encounter.age >= 3 ? orderIds : [DEFAULT_ORDER]);
+  const allUnitIds = [
+    ...new Set([
+      ...candidates.map(({ key }) => key),
+      ...[...ownedArmy]
+        .filter(([, count]) => count.gt(ExpNumber.ZERO))
+        .map(([unitId]) => unitId),
+    ]),
+  ];
+  const assignDefaults = <T extends string>(
+    choices: readonly T[],
+    requested: ReadonlyMap<string, T>,
+    fallback: T,
+  ): Map<string, T> =>
+    new Map(
+      allUnitIds.map((unitId) => [
+        unitId,
+        choices.includes(requested.get(unitId) ?? fallback)
+          ? (requested.get(unitId) ?? fallback)
+          : fallback,
+      ]),
+    );
+
+  let formations = assignDefaults(
+    availableFormations,
+    initialFormations,
+    DEFAULT_FORMATION,
+  );
+  let orders = assignDefaults(availableOrders, initialOrders, DEFAULT_ORDER);
+  let best = solveMinimumArmy(
     battleId,
     candidates,
     context,
     requireMixed,
     ownedArmy,
+    formations,
+    orders,
   );
-  if (!solve) {
-    console.log(
-      `[Battle Optimizer] ${battleId}: no winning army found — candidates cannot beat this battle`,
-    );
-    return null;
-  }
-  let composition = solve.composition;
-  let bestCost = compositionCost(composition, context);
-  const owned =
-    ownedArmy.size === 0
-      ? "(none)"
-      : [...ownedArmy.entries()]
-          .map(([unitId, count]) => `${unitId}×${count.toString()}`)
-          .join(" ");
-
-  const encounter = encounterDefinitions.find(({ key }) => key === battleId);
-  const availableFormations =
-    encounter && encounter.age >= 2 ? formationIds : [DEFAULT_FORMATION];
-  const availableOrders = encounter && encounter.age >= 3 ? orderIds : [DEFAULT_ORDER];
-
-  console.log(
-    `[Battle Optimizer] ${battleId}: one-shot army {${formatArmy(
-      composition,
-    )}} (military ${bestCost.toString()}), owned {${owned}} — starting iteration`,
-  );
-
-  let formations: ReadonlyMap<string, FormationId> = new Map();
-  let orders: ReadonlyMap<string, OrderId> = new Map();
-  let accepted = 0;
-  let iteration = 0;
-  for (;;) {
-    iteration += 1;
-    const total = mergeSimulatorArmy(ownedArmy, composition);
-    formations = findOptimalFormations(
-      total,
-      availableFormations,
-      context,
+  if (!best) {
+    formations = assignDefaults(availableFormations, new Map(), DEFAULT_FORMATION);
+    orders = assignDefaults(availableOrders, new Map(), DEFAULT_ORDER);
+    best = solveMinimumArmy(
       battleId,
-    );
-    orders = findOptimalOrders(
-      total,
-      availableOrders,
+      candidates,
       context,
-      battleId,
-      formations,
-    );
-    const tactics = `formations {${formatTactics(
-      formations,
-    )}} orders {${formatTactics(orders)}}`;
-    const nextComposition = trimUnderTactics(
-      composition,
+      requireMixed,
       ownedArmy,
       formations,
       orders,
+    );
+  }
+  if (!best) return null;
+
+  const tacticalUnitIds = [...best.composition.keys()];
+  let bestResult = best;
+  let bestCost = compositionCost(bestResult.composition, context);
+  onProgress?.(bestResult, "Minimum army for the current tactics");
+  let attempts = 0;
+  const visitedTactics = new Set<string>();
+  const tacticKey = (
+    currentFormations: ReadonlyMap<string, FormationId>,
+    currentOrders: ReadonlyMap<string, OrderId>,
+  ): string =>
+    `${formatTactics(currentFormations)}|${formatTactics(currentOrders)}`;
+  visitedTactics.add(tacticKey(formations, orders));
+
+  for (;;) {
+    let next:
+      | {
+          readonly composition: SimulatorArmy;
+          readonly formations: ReadonlyMap<string, FormationId>;
+          readonly orders: ReadonlyMap<string, OrderId>;
+          readonly cost: ExpNumber;
+        }
+      | undefined;
+    const consider = (
+      trialFormations: ReadonlyMap<string, FormationId>,
+      trialOrders: ReadonlyMap<string, OrderId>,
+    ): void => {
+      let reachesAtFraction = false;
+      for (const fraction of [0.5, 0.75, 1]) {
+        const probeArmy = new Map<string, ExpNumber>(ownedArmy);
+        for (const [unitId, count] of bestResult.composition) {
+          const probeCount = Math.floor(count * fraction);
+          if (probeCount > 0) {
+            probeArmy.set(
+              unitId,
+              (probeArmy.get(unitId) ?? ExpNumber.ZERO).add(
+                ExpNumber.fromNumber(probeCount),
+              ),
+            );
+          }
+        }
+        reachesAtFraction = context.winsWithFormationsAndOrders(
+          probeArmy,
+          trialFormations,
+          trialOrders,
+          battleId,
+        );
+        if (reachesAtFraction) break;
+      }
+      if (!reachesAtFraction) return;
+
+      const trimmed = trimUnderTactics(
+        bestResult.composition,
+        ownedArmy,
+        trialFormations,
+        trialOrders,
+        battleId,
+        context,
+      );
+      const cost = compositionCost(trimmed, context);
+      if (cost.lt(bestCost) && (!next || cost.lt(next.cost))) {
+        next = {
+          composition: trimmed,
+          formations: trialFormations,
+          orders: trialOrders,
+          cost,
+        };
+      }
+    };
+
+    for (const unitId of tacticalUnitIds) {
+      for (const formation of availableFormations) {
+        if (formations.get(unitId) === formation) continue;
+        const trialFormations = new Map(formations);
+        trialFormations.set(unitId, formation);
+        attempts += 1;
+        consider(trialFormations, orders);
+        onProgress?.(
+          bestResult,
+          `Testing ${unitId}: ${formation} (${attempts})`,
+        );
+      }
+      for (const order of availableOrders) {
+        if (orders.get(unitId) === order) continue;
+        const trialOrders = new Map(orders);
+        trialOrders.set(unitId, order);
+        attempts += 1;
+        consider(formations, trialOrders);
+        onProgress?.(bestResult, `Testing ${unitId}: ${order} (${attempts})`);
+      }
+    }
+    if (!next) break;
+
+    const nextKey = tacticKey(next.formations, next.orders);
+    if (visitedTactics.has(nextKey)) break;
+    visitedTactics.add(nextKey);
+    formations = new Map(next.formations);
+    orders = new Map(next.orders);
+    const reSolved = solveMinimumArmy(
       battleId,
+      candidates,
       context,
+      requireMixed,
+      ownedArmy,
+      formations,
+      orders,
     );
-    const changed =
-      composition.size !== nextComposition.size ||
-      [...composition.entries()].some(
-        ([unitId, count]) => nextComposition.get(unitId) !== count,
-      );
-    if (!changed) {
-      console.log(
-        `[Battle Optimizer] ${battleId} pass ${iteration}: army {${formatArmy(
-          composition,
-        )}} (military ${bestCost.toString()}) ${tactics} → converged, no unit can be removed`,
-      );
-      break;
-    }
-    const nextCost = compositionCost(nextComposition, context);
-    console.log(
-      `[Battle Optimizer] ${battleId} pass ${iteration}: army {${formatArmy(
-        composition,
-      )}} (military ${bestCost.toString()}) ${tactics} → trim to {${formatArmy(
-        nextComposition,
-      )}} (military ${nextCost.toString()}, saved ${bestCost
-        .sub(nextCost)
-        .toString()})`,
+    bestResult =
+      reSolved && compositionCost(reSolved.composition, context).lte(next.cost)
+        ? reSolved
+        : {
+            composition: next.composition,
+            totalComposition: mergeSimulatorArmy(
+              ownedArmy,
+              next.composition,
+            ),
+            military: next.cost,
+            totalCost: sumCosts(next.composition, context),
+            research: context.getResearch(
+              additionalUnitIds(ownedArmy, next.composition),
+            ),
+            formations,
+            orders,
+          };
+    bestCost = compositionCost(bestResult.composition, context);
+    onProgress?.(
+      bestResult,
+      `Re-solved army after tactic change (${attempts})`,
     );
-    composition = nextComposition;
-    bestCost = nextCost;
-    accepted += 1;
-    if (accepted > maximumPasses) {
-      console.log(
-        `[Battle Optimizer] ${battleId}: pass cap (${maximumPasses}) reached, stopping`,
-      );
-      break;
-    }
   }
 
   console.log(
-    `[Battle Optimizer] ${battleId}: done after ${iteration} pass(es), final army {${formatArmy(
-      composition,
-    )}} (military ${bestCost.toString()}) formations {${formatTactics(
+    `[Battle Optimizer] ${battleId}: minimum army {${formatArmy(
+      bestResult.composition,
+    )}} (military ${bestCost.toString()}) with formations {${formatTactics(
       formations,
-    )}} orders {${formatTactics(orders)}}`,
+    )}} orders {${formatTactics(orders)}} after ${attempts} tactic trials`,
   );
-
   return {
-    composition,
-    totalComposition: mergeSimulatorArmy(ownedArmy, composition),
+    ...bestResult,
     military: bestCost,
-    totalCost: sumCosts(composition, context),
-    research: context.getResearch(additionalUnitIds(ownedArmy, composition)),
     formations,
     orders,
   };
 };
-

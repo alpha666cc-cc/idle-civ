@@ -7,23 +7,20 @@
  * domain modules are imported.
  */
 import { ExpNumber } from "./expNumber";
+import { calculateCostSeries, type CostParameters } from "./buyableCost";
 import { simulateBattleOutcome } from "./battle";
-import type { ArmyStack, BattleOutcome } from "./battle";
+import type { ArmyStack } from "./battle";
 import type { FormationId } from "./formations";
 import { DEFAULT_FORMATION } from "./formations";
 import type { OrderId } from "./orders";
 import { DEFAULT_ORDER } from "./orders";
 import {
-  mergeSimulatorArmy,
-  solveMinimumArmy,
-  findOptimalFormations,
-  findOptimalOrders,
-  trimUnderTactics,
-  compositionCost,
+  optimizeBattleTactics,
   type SimulatorArmy,
   type SimulatorOwnedArmy,
   type SimulatorTotalArmy,
   type BattleSimulatorContext,
+  type SimulatorCandidate,
   type SimulatorCostTotal,
 } from "./battleSimulator";
 import type { ResourceKey } from "./attributes";
@@ -43,6 +40,20 @@ export type SerializedUnitStats = {
   accuracy: number;
 };
 
+export type SerializedCostParameters = {
+  resource: ResourceKey;
+  base: SerializedExpNumber;
+  factor: number;
+  unitBase: SerializedExpNumber;
+  unitFactor: SerializedExpNumber;
+  reductions: {
+    base: SerializedExpNumber;
+    factor: SerializedExpNumber;
+    percent: SerializedExpNumber;
+    flat: SerializedExpNumber;
+  };
+};
+
 export type SerializedArmyStack = {
   unitId: string;
   count: SerializedExpNumber;
@@ -59,8 +70,8 @@ export type WorkerInput = {
   candidateStats: Record<string, SerializedUnitStats>;
   /** Candidate unit IDs in the order the solver should try them. */
   candidateIds: string[];
-  /** Candidates with costs: [unitId, [resource, {s,m,e}][]][] */
-  candidateCosts: [string, [string, SerializedExpNumber][]][];
+  /** Candidates with exact unit-cost curve parameters. */
+  candidateCosts: [string, SerializedCostParameters[]][];
   /** Currently owned army counts. */
   ownedArmy: [string, SerializedExpNumber][];
   /** Fully serialised enemy stacks for the battle. */
@@ -170,11 +181,21 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
     }
 
     // Cost lookup table: unitId -> [resource, ExpNumber][]
-    const costTable = new Map<string, Array<{ resource: ResourceKey; base: ExpNumber }>>();
+    const costTable = new Map<string, CostParameters[]>();
     for (const [unitId, pairs] of candidateCosts) {
       costTable.set(
         unitId,
-        pairs.map(([res, n]) => ({ resource: res as ResourceKey, base: deserExp(n) })),
+        pairs.map(({ resource, base, factor, unitBase, unitFactor, reductions }) => ({
+          cost: { resource, base: deserExp(base), factor },
+          unitBase: deserExp(unitBase),
+          unitFactor: deserExp(unitFactor),
+          reductions: {
+            base: deserExp(reductions.base),
+            factor: deserExp(reductions.factor),
+            percent: deserExp(reductions.percent),
+            flat: deserExp(reductions.flat),
+          },
+        })),
       );
     }
 
@@ -208,13 +229,11 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
 
     const context: BattleSimulatorContext = {
       getCost: (unitId, count) => {
-        const rows = costTable.get(unitId) ?? [];
-        // Scale each base cost by count; factor:1 satisfies BuildingCost shape
-        return rows.map(({ resource, base }) => ({
-          resource,
-          base: base.mul(ExpNumber.fromNumber(count)),
-          factor: 1,
-        }));
+        return calculateCostSeries(
+          costTable.get(unitId) ?? [],
+          ownedArmy.get(unitId) ?? ExpNumber.ZERO,
+          count,
+        );
       },
       // The solver already merges owned+additional before calling context.wins,
       // so `composition` here is a SimulatorTotalArmy — pass it directly.
@@ -226,11 +245,9 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
       getResearch: () => ({ ids: [], costs: [] }),
     };
 
-    // Fake unit definitions for solveMinimumArmy (it only reads .key)
-    const candidateDefs = candidateIds.map((key) => ({
+    const candidateDefs: SimulatorCandidate[] = candidateIds.map((key) => ({
       key,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    })) as any[];
+    }));
 
     // Step 0: Check if the player's current army with their CURRENT formations & orders already wins
     const currentFormationsMap = new Map<string, FormationId>(currentFormations ?? []);
@@ -258,147 +275,53 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
       return;
     }
 
-    // Phase 1: solve minimum army ----------------------------------------
-    post({ type: "progress", phase: "Solving minimum army…" });
+    post({ type: "progress", phase: "Solving under current tactics…" });
     await tick();
 
-    const solve = solveMinimumArmy(
+    post({
+      type: "progress",
+      phase: "Optimising formations and re-solving minimum army…",
+    });
+    await tick();
+
+    const result = optimizeBattleTactics(
       battleId,
       candidateDefs,
       context,
       requireMixed,
       ownedArmy,
+      currentFormationsMap,
+      currentOrdersMap,
+      availableFormations,
+      availableOrders,
+      (intermediate, phase) =>
+        post({
+          type: "progress",
+          phase,
+          result: serializeResult(
+            intermediate.composition,
+            intermediate.totalComposition,
+            intermediate.military,
+            intermediate.totalCost,
+            intermediate.formations,
+            intermediate.orders,
+          ),
+        }),
     );
 
-    if (!solve) {
-      post({ type: "done", result: null });
-      return;
-    }
-
-    // Post initial (unoptimised) result
     post({
-      type: "progress",
-      phase: "Optimising formations and orders…",
-      result: serializeResult(
-        solve.composition,
-        solve.totalComposition,
-        solve.military,
-        solve.totalCost,
-        solve.formations,
-        solve.orders,
-      ),
+      type: "done",
+      result: result
+        ? serializeResult(
+            result.composition,
+            result.totalComposition,
+            result.military,
+            result.totalCost,
+            result.formations,
+            result.orders,
+          )
+        : null,
     });
-    await tick();
-
-    // Phase 2: iterative tactic/trim convergence -------------------------
-    const maximumPasses = 3;
-    let composition = solve.composition;
-    let bestCost = compositionCost(composition, context);
-    let accepted = 0;
-
-    for (let iteration = 1; ; iteration += 1) {
-      const total = mergeSimulatorArmy(ownedArmy, composition);
-
-      const formations = findOptimalFormations(
-        total,
-        availableFormations,
-        context,
-        battleId,
-      );
-      await tick();
-
-      const orders = findOptimalOrders(
-        total,
-        availableOrders,
-        context,
-        battleId,
-        formations,
-      );
-      await tick();
-
-      const nextComposition = trimUnderTactics(
-        composition,
-        ownedArmy,
-        formations,
-        orders,
-        battleId,
-        context,
-      );
-      await tick();
-
-      const changed =
-        composition.size !== nextComposition.size ||
-        [...composition.entries()].some(
-          ([unitId, count]) => nextComposition.get(unitId) !== count,
-        );
-
-      if (!changed) {
-        // Converged — emit final result
-        const nextTotal = mergeSimulatorArmy(ownedArmy, nextComposition);
-        post({
-          type: "done",
-          result: serializeResult(
-            nextComposition,
-            nextTotal,
-            bestCost,
-            [],
-            formations,
-            orders,
-          ),
-        });
-        return;
-      }
-
-      const nextCost = compositionCost(nextComposition, context);
-      composition = nextComposition;
-      bestCost = nextCost;
-      accepted += 1;
-
-      // Post intermediate result after each accepted trim
-      const currentTotal = mergeSimulatorArmy(ownedArmy, composition);
-      post({
-        type: "progress",
-        phase: `Pass ${iteration} — trimming army…`,
-        result: serializeResult(
-          composition,
-          currentTotal,
-          bestCost,
-          [],
-          formations,
-          orders,
-        ),
-      });
-      await tick();
-
-      if (accepted > maximumPasses) {
-        const finalTotal = mergeSimulatorArmy(ownedArmy, composition);
-        const finalFormations = findOptimalFormations(
-          finalTotal,
-          availableFormations,
-          context,
-          battleId,
-        );
-        const finalOrders = findOptimalOrders(
-          finalTotal,
-          availableOrders,
-          context,
-          battleId,
-          finalFormations,
-        );
-        post({
-          type: "done",
-          result: serializeResult(
-            composition,
-            finalTotal,
-            bestCost,
-            [],
-            finalFormations,
-            finalOrders,
-          ),
-        });
-        return;
-      }
-    }
   } catch (err) {
     post({ type: "error", message: String(err) });
   }
@@ -433,8 +356,3 @@ function buildStacks(
 function post(msg: WorkerOutput): void {
   (self as unknown as { postMessage: (msg: WorkerOutput) => void }).postMessage(msg);
 }
-
-// Suppress unused-import lint — the BattleOutcome type is used in the
-// simulateBattleOutcome return-value comparison above.
-const _unused: BattleOutcome = "player";
-void _unused;
