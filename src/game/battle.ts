@@ -26,6 +26,15 @@ import {
  * so a million spearmen cost exactly as much to simulate as a stack of one, and
  * a battle always finishes in bounded time.
  *
+ * Contact is latched once per round (front gap ≤ 1 after the movement step), so
+ * a mid-round kill on the front line cannot silently break it. While engaged,
+ * stacks behind their own front advance one position per round, even when their
+ * range already lets them attack. Their effective reach includes that progress,
+ * so backline units can join as they move forward without losing ranged attacks.
+ * Once a stack reaches the front, an empty target list widens its reach one step
+ * at a time until a living, attackable foe is found; this does not change target
+ * priority or the stack's formation-advance timing.
+ *
  * The simulation is pure and deterministic: damage has no random component, so
  * the same armies always produce the same battle, however many times it is
  * replayed. Results are reproducible, testable and cheap to replay in the UI.
@@ -78,6 +87,8 @@ export type BattleAttackLog = {
   readonly targetId: string;
   readonly attackerPosition: number;
   readonly targetPosition: number;
+  /** Cumulative steps from deployment; `position ± attackAdvance` is the strike position. */
+  readonly attackAdvance: number;
   readonly reachableTargets: readonly string[];
   readonly reachableTargetSide: BattleSide;
   readonly attackerCountBefore: ExpNumber;
@@ -278,6 +289,7 @@ const canReach = (
   playerPosition: number,
   enemyPosition: number,
   attackAdvance = 0,
+  extraRange = 0,
 ): boolean => {
   if (!canAttackDomain(attacker, target)) return false;
 
@@ -293,7 +305,7 @@ const canReach = (
     attackerPos + (attacker.side === "player" ? attackAdvance : -attackAdvance);
   const actualDistance = Math.abs(attackPosition - targetPos);
 
-  if (actualDistance > attacker.stats.range) return false;
+  if (actualDistance > attacker.stats.range + extraRange) return false;
   return true;
 };
 
@@ -507,6 +519,16 @@ const simulateBattleInternal = (
       playerPosition += 1;
       enemyPosition -= 1;
     }
+    // Contact is latched for the whole round, *after* the movement step. It is
+    // deliberately not re-evaluated mid-round: a front stack dying to a faster
+    // attacker used to flip this flag live, and the slower stack behind it then
+    // lost its turn without even banking an advance step. Once engaged, both
+    // sides stay engaged until the next round re-measures the gap.
+    const engaged =
+      Math.abs(
+        armyFrontPosition(enemy, enemyPosition) -
+          armyFrontPosition(player, playerPosition),
+      ) <= 1;
     const attacks: BattleAttackLog[] = [];
 
     for (const attacker of order) {
@@ -522,27 +544,41 @@ const simulateBattleInternal = (
           fighter.side === "player" ? playerPosition : enemyPosition,
         );
       const attackerPosition = positionOf(attacker);
-      const foes = livingFoes.filter((fighter) =>
-        canReach(
-          attacker,
-          fighter,
-          playerPosition,
-          enemyPosition,
-          attacker.attackAdvance,
-        ),
-      );
-      if (foes.length === 0) {
-        const isInContact =
-          Math.abs(
-            armyFrontPosition(enemy, enemyPosition) -
-              armyFrontPosition(player, playerPosition),
-          ) <= 1;
-        const hasValidTarget = livingFoes.some((fighter) =>
-          canAttackDomain(attacker, fighter),
+      const ownForces = attacker.side === "player" ? player : enemy;
+      const ownArmyPosition =
+        attacker.side === "player" ? playerPosition : enemyPosition;
+      const ownFrontPosition = armyFrontPosition(ownForces, ownArmyPosition);
+      const distanceToFront =
+        attacker.side === "player"
+          ? ownFrontPosition - attackerPosition
+          : attackerPosition - ownFrontPosition;
+      if (engaged && attacker.attackAdvance < distanceToFront) {
+        attacker.attackAdvance += 1;
+      }
+      const hasReachedFront = attacker.attackAdvance >= distanceToFront;
+      const reachableFoes = (extraRange: number) =>
+        livingFoes.filter((fighter) =>
+          canReach(
+            attacker,
+            fighter,
+            playerPosition,
+            enemyPosition,
+            attacker.attackAdvance,
+            extraRange,
+          ),
         );
-        if (isInContact && hasValidTarget) {
-          attacker.attackAdvance += 1;
-        }
+      let extraRange = 0;
+      let foes = reachableFoes(extraRange);
+      while (
+        foes.length === 0 &&
+        engaged &&
+        hasReachedFront &&
+        livingFoes.some((fighter) => canAttackDomain(attacker, fighter))
+      ) {
+        extraRange += 1;
+        foes = reachableFoes(extraRange);
+      }
+      if (foes.length === 0) {
         continue;
       }
       const melee = attacker.stats.range <= 1;
@@ -605,6 +641,7 @@ const simulateBattleInternal = (
         targetId: target.unitId,
         attackerPosition: attackerPos,
         targetPosition: targetPos,
+        attackAdvance: attacker.attackAdvance,
         reachableTargets: foes.map((foe) => foe.unitId),
         reachableTargetSide: attacker.side === "player" ? "enemy" : "player",
         attackerCountBefore: attackerBefore,
