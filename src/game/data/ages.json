@@ -47,7 +47,7 @@
       {
         "type": "costReductionFactor",
         "destination": "townHall",
-        "value": "1.65"
+        "value": "1.6"
       },
       {
         "type": "costReductionFactor",

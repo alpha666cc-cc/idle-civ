@@ -134,17 +134,17 @@
     "costs": [
       {
         "resource": "food",
-        "base": "4.93981576360875e401",
+        "base": "1e48",
         "factor": 1
       },
       {
         "resource": "wood",
-        "base": "6.58642101814543e400",
+        "base": "2e44",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e30",
         "factor": 1
       }
     ],
@@ -162,12 +162,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "food",
-        "value": 2
+        "value": 200
       },
       {
         "type": "costReductionPercent",
         "destination": "farm",
-        "value": 0.5
+        "value": 0.95
       }
     ]
   },
@@ -498,17 +498,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "6.58642101814543e400",
+        "base": "2e41",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "6.58642101814543e400",
+        "base": "2e41",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e30",
         "factor": 1
       }
     ],
@@ -526,12 +526,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "wood",
-        "value": 2
+        "value": 200
       },
       {
         "type": "costReductionPercent",
         "destination": "lumberYard",
-        "value": 0.5
+        "value": 0.95
       }
     ]
   },
@@ -847,12 +847,12 @@
     "costs": [
       {
         "resource": "stone",
-        "base": "6.58642101814543e400",
+        "base": "3e41",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e30",
         "factor": 1
       }
     ],
@@ -870,12 +870,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "stone",
-        "value": 2
+        "value": 200
       },
       {
         "type": "costReductionPercent",
         "destination": "quarry",
-        "value": 0.5
+        "value": 0.95
       }
     ]
   },
@@ -1186,17 +1186,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "6.58642101814543e400",
+        "base": "4e41",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "6.58642101814543e400",
+        "base": "4e41",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "3e30",
         "factor": 1
       }
     ],
@@ -1214,12 +1214,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "gold",
-        "value": 2
+        "value": 200
       },
       {
         "type": "costReductionPercent",
         "destination": "goldMine",
-        "value": 0.5
+        "value": 0.95
       }
     ]
   },
