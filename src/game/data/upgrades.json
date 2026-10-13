@@ -2840,18 +2840,35 @@
     "name": "The Immortal Legion",
     "description": "A legendary host and its arsenal multiply military production a thousandfold.",
     "building": "barracks",
-    "threshold": 10000,
+    "threshold": 1000,
     "tier": 0,
     "costs": [
-      { "resource": "wood", "base": "1e50", "factor": 1 },
-      { "resource": "stone", "base": "1e50", "factor": 1 },
-      { "resource": "military", "base": "1e40", "factor": 1 }
+      {
+        "resource": "wood",
+        "base": "1e50",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "1e50",
+        "factor": 1
+      },
+      {
+        "resource": "military",
+        "base": "1e40",
+        "factor": 1
+      }
     ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
         "destination": "military",
         "value": 1000
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings",
+        "value": 0.4854
       }
     ]
   },
@@ -2861,18 +2878,35 @@
     "name": "The Great Library of Alexandria",
     "description": "A vast center of learning multiplies science production a thousandfold.",
     "building": "university",
-    "threshold": 10000,
+    "threshold": 4000,
     "tier": 0,
     "costs": [
-      { "resource": "wood", "base": "1e50", "factor": 1 },
-      { "resource": "stone", "base": "1e50", "factor": 1 },
-      { "resource": "science", "base": "1e40", "factor": 1 }
+      {
+        "resource": "wood",
+        "base": "1e50",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "1e50",
+        "factor": 1
+      },
+      {
+        "resource": "science",
+        "base": "1e40",
+        "factor": 1
+      }
     ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
         "destination": "science",
         "value": 1000
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings",
+        "value": 0.8276
       }
     ]
   },
@@ -2885,15 +2919,32 @@
     "threshold": 10000,
     "tier": 0,
     "costs": [
-      { "resource": "wood", "base": "1e50", "factor": 1 },
-      { "resource": "stone", "base": "1e50", "factor": 1 },
-      { "resource": "trade", "base": "1e40", "factor": 1 }
+      {
+        "resource": "wood",
+        "base": "1e50",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "1e50",
+        "factor": 1
+      },
+      {
+        "resource": "trade",
+        "base": "1e40",
+        "factor": 1
+      }
     ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
         "destination": "trade",
         "value": 1000
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings",
+        "value": 0.94
       }
     ]
   },
@@ -2903,18 +2954,35 @@
     "name": "The Colossus Foundry",
     "description": "A monumental forge multiplies metalwork production a thousandfold.",
     "building": "smithy",
-    "threshold": 10000,
+    "threshold": 18000,
     "tier": 0,
     "costs": [
-      { "resource": "wood", "base": "1e50", "factor": 1 },
-      { "resource": "stone", "base": "1e50", "factor": 1 },
-      { "resource": "metalwork", "base": "1e40", "factor": 1 }
+      {
+        "resource": "wood",
+        "base": "1e50",
+        "factor": 1
+      },
+      {
+        "resource": "stone",
+        "base": "1e50",
+        "factor": 1
+      },
+      {
+        "resource": "metalwork",
+        "base": "1e40",
+        "factor": 1
+      }
     ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
         "destination": "metalwork",
         "value": 1000
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings",
+        "value": 0.94
       }
     ]
   }

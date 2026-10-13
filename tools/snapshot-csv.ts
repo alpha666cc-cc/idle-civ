@@ -445,7 +445,13 @@ type Sheet = { name: string; header: string; rows: string[] };
  * is what closes an age in practice, so its timestamp is the end-of-age event —
  * add to this list rather than special-casing an id inline.
  */
-const MILESTONE_UPGRADES = ["wonder0"];
+const MILESTONE_UPGRADES = [
+  "wonder0",
+  "wonder_a2_military",
+  "wonder_a2_science",
+  "wonder_a2_trade",
+  "wonder_a2_metalwork",
+];
 
 /* ---------------------------------------------------- run one strategy */
 

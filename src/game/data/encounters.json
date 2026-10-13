@@ -1,4 +1,4 @@
-﻿[
+[
   {
     "guid": "6ece3cfb-ca38-5396-98d4-b2a3516511d3",
     "key": "age0_1_first_fire",
@@ -357,6 +357,11 @@
         "type": "attributeMultiplier",
         "destination": "metalwork",
         "value": 10
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings",
+        "value": 0.5717
       }
     ],
     "unlocks": []
@@ -416,6 +421,11 @@
         "type": "attributeMultiplier",
         "destination": "stone",
         "value": 10
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings",
+        "value": 0.5381
       }
     ],
     "unlocks": []
@@ -470,6 +480,11 @@
         "type": "attributeMultiplier",
         "destination": "science",
         "value": 5
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings",
+        "value": 0.94
       }
     ],
     "unlocks": []
