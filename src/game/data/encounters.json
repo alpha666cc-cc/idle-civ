@@ -361,7 +361,7 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings",
-        "value": 0.5717
+        "value": 0.8
       }
     ],
     "unlocks": []
@@ -425,7 +425,7 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings",
-        "value": 0.5381
+        "value": 0.8
       }
     ],
     "unlocks": []
@@ -484,7 +484,7 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings",
-        "value": 0.94
+        "value": 0.8
       }
     ],
     "unlocks": []

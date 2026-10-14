@@ -1146,6 +1146,11 @@
         "type": "costReductionFactor",
         "destination": "people",
         "value": "0.9"
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "townHall",
+        "value": "0.95"
       }
     ],
     "unlocks": [],

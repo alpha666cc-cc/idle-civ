@@ -57,7 +57,7 @@
       {
         "type": "costReductionFactor",
         "destination": "advancedProductionBuildings",
-        "value": "1.7"
+        "value": "1.65"
       },
       {
         "type": "attributeMultiplier",
