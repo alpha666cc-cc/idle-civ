@@ -1119,7 +1119,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "buildingCostMultiplier",
-        "value": 0.8
+        "value": 0.3
       }
     ]
   },
@@ -1138,7 +1138,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "buildingCostMultiplier",
-        "value": 0.8333333333333334
+        "value": 0.1
       }
     ]
   },
@@ -1157,7 +1157,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "buildingCostMultiplier",
-        "value": 0.8571428571428572
+        "value": 0.01
       }
     ]
   },
@@ -1176,7 +1176,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "buildingCostMultiplier",
-        "value": 0.875
+        "value": 0.001
       }
     ]
   },

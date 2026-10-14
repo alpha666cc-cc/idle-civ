@@ -489,7 +489,7 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings",
-        "value": 0.8
+        "value": 0.9
       }
     ],
     "unlocks": []
