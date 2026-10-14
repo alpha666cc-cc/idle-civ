@@ -61,7 +61,7 @@
   {
     "id": "turtle",
     "name": "Turtle",
-    "description": "Defensive formation: trade attack and speed for hp.",
+    "description": "Defensive formation: trades attack and speed for hp, and takes 30% less damage from ranged attackers.",
     "unlockAge": 2,
     "unlockType": "research",
     "researchId": "martial_drill",
@@ -74,6 +74,12 @@
       },
       {
         "attribute": "unitAll.attack",
+        "multiplier": 0.7
+      }
+    ],
+    "damageTakenVs": [
+      {
+        "tag": "ranged",
         "multiplier": 0.7
       }
     ]
@@ -97,7 +103,7 @@
   {
     "id": "shield_wall",
     "name": "Shield Wall",
-    "description": "Interlocking shields: enhanced screening and durability.",
+    "description": "Interlocking shields: hold against cavalry charges, taking 30% less damage from them.",
     "unlockAge": 4,
     "unlockType": "research",
     "researchId": "tercio_formations",
@@ -107,6 +113,12 @@
       {
         "attribute": "unitAll.hp",
         "multiplier": 1.3
+      }
+    ],
+    "damageTakenVs": [
+      {
+        "tag": "cavalry",
+        "multiplier": 0.7
       }
     ]
   },
@@ -119,6 +131,16 @@
     "researchId": "tercio_formations",
     "positionOffset": 0,
     "movementSpeed": 0.7,
-    "statBonuses": []
+    "statBonuses": [],
+    "damageDealtVs": [
+      {
+        "tag": "cavalry",
+        "multiplier": 1.5
+      },
+      {
+        "tag": "ranged",
+        "multiplier": 0.8
+      }
+    ]
   }
 ]

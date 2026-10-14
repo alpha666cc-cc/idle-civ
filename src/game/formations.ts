@@ -45,6 +45,20 @@ export type FormationDefinitionData = {
     readonly attribute: string;
     readonly multiplier: number;
   }[];
+
+  // Damage taken from attackers carrying a given tag, as a multiplier on
+  // incoming damage (e.g. Turtle shields against `ranged` fire).
+  readonly damageTakenVs?: readonly {
+    readonly tag: string;
+    readonly multiplier: number;
+  }[];
+
+  // Damage dealt to targets carrying a given tag, as a multiplier on outgoing
+  // damage (e.g. Pike Square spears cavalry).
+  readonly damageDealtVs?: readonly {
+    readonly tag: string;
+    readonly multiplier: number;
+  }[];
 };
 
 class FormationDefinition_ extends GameObject {
@@ -58,6 +72,14 @@ class FormationDefinition_ extends GameObject {
     readonly attribute: string;
     readonly multiplier: number;
   }[];
+  readonly damageTakenVs?: readonly {
+    readonly tag: string;
+    readonly multiplier: number;
+  }[];
+  readonly damageDealtVs?: readonly {
+    readonly tag: string;
+    readonly multiplier: number;
+  }[];
 
   constructor(def: FormationDefinitionData) {
     super(def.id as string, def.description);
@@ -68,6 +90,8 @@ class FormationDefinition_ extends GameObject {
     this.positionOffset = def.positionOffset;
     this.movementSpeed = def.movementSpeed;
     this.statBonuses = def.statBonuses;
+    this.damageTakenVs = def.damageTakenVs;
+    this.damageDealtVs = def.damageDealtVs;
   }
 }
 

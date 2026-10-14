@@ -493,7 +493,9 @@ export const trimUnderTactics = (
 const formatArmy = (army: SimulatorArmy): string =>
   army.size === 0
     ? "(none)"
-    : [...army.entries()].map(([unitId, count]) => `${unitId}×${count}`).join(" ");
+    : [...army.entries()]
+        .map(([unitId, count]) => `${unitId}×${count}`)
+        .join(" ");
 
 /** "warrior:frontline slinger:standard" — a tactic assignment map for the log. */
 const formatTactics = (tactics: ReadonlyMap<string, string>): string =>
@@ -566,7 +568,11 @@ export const optimizeBattleTactics = (
     orders,
   );
   if (!best) {
-    formations = assignDefaults(availableFormations, new Map(), DEFAULT_FORMATION);
+    formations = assignDefaults(
+      availableFormations,
+      new Map(),
+      DEFAULT_FORMATION,
+    );
     orders = assignDefaults(availableOrders, new Map(), DEFAULT_ORDER);
     best = solveMinimumArmy(
       battleId,
@@ -691,10 +697,7 @@ export const optimizeBattleTactics = (
         ? reSolved
         : {
             composition: next.composition,
-            totalComposition: mergeSimulatorArmy(
-              ownedArmy,
-              next.composition,
-            ),
+            totalComposition: mergeSimulatorArmy(ownedArmy, next.composition),
             military: next.cost,
             totalCost: sumCosts(next.composition, context),
             research: context.getResearch(

@@ -246,6 +246,11 @@ makes naval viable at all.
 The naval term is **scaling, not flat**: a longer-ranged ship hits ground
 harder. That is the sharpest available lever on the naval balance question.
 
+Two **formation-based** multipliers also apply, read from each formation's
+data: a formation may declare `damageDealtVs` (e.g. `pike_square` deals ×1.5 vs
+`cavalry`, ×0.8 vs `ranged`) and/or `damageTakenVs` (e.g. `turtle` takes ×0.7
+from any `ranged` attacker — missile-fire resistance).
+
 ### Target selection — the eight orders
 
 > ### ⚠ There are NO selectable orders in Age 0 or Age 1

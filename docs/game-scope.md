@@ -310,9 +310,9 @@ Master Builder rewards target the derived `buildingCostMultiplier` stat (base ×
   - Backline: offset +2, speed 0.8, +10% damage at max range, cannot be screened
 - **Research unlocks:** Rush, Turtle, Skirmish, Shield Wall, Pike Square (age-specific)
   - Rush: offset -1, speed 1.5, -20% hp, +20% attack (aggressive)
-  - Turtle: offset 0, speed 0.5, +50% hp, -30% attack (defensive)
+  - Turtle: offset 0, speed 0.5, +50% hp, -30% attack, takes 30% less damage from ranged attackers (defensive)
   - Skirmish: offset +1, speed 1.2, +25% accuracy at max range, cannot be targeted under range 5
-  - Shield Wall: offset -1, speed 0.8, +100% screening share, +30% hp
+  - Shield Wall: offset -1, speed 0.8, +30% hp, takes 30% less damage from cavalry (holds vs charges)
   - Pike Square: offset 0, speed 0.7, +50% damage vs cavalry, -20% vs ranged
 
 ### Targeting orders (who to shoot)

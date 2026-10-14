@@ -321,9 +321,19 @@ const canAttackDomain = (attacker: Fighter, target: Fighter): boolean =>
 /** Contextual damage multipliers, kept identical to the prototype's rules. */
 const matchupMultiplier = (attacker: Fighter, target: Fighter): number => {
   let multiplier = 1;
-  if (attacker.formation === "pike_square") {
-    if (target.tags.includes("cavalry")) multiplier *= 1.5;
-    if (target.tags.includes("ranged")) multiplier *= 0.8;
+  // A formation may declare damage dealt to tagged targets (e.g. Pike Square
+  // spears cavalry).
+  const damageDealtVs =
+    findFormationDefinition(attacker.formation)?.damageDealtVs ?? [];
+  for (const rule of damageDealtVs) {
+    if (target.tags.includes(rule.tag)) multiplier *= rule.multiplier;
+  }
+  // A formation may declare damage taken from tagged attackers (e.g. Turtle
+  // shields against `ranged` fire).
+  const damageTakenVs =
+    findFormationDefinition(target.formation)?.damageTakenVs ?? [];
+  for (const rule of damageTakenVs) {
+    if (attacker.tags.includes(rule.tag)) multiplier *= rule.multiplier;
   }
   if (attacker.bonusVs.some((tag) => target.tags.includes(tag))) {
     multiplier *= bonusVsMultiplier;
