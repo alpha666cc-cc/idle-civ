@@ -275,6 +275,8 @@ export const migrateSaveData = (data: SaveData): SaveData => {
     return { ...data, version: SAVE_VERSION, unitFormations: {} };
   }
   // v5 → v6: trade routes did not exist, so every old document starts with none.
+  // Later versions save all configured routes (enabled and disabled) to preserve
+  // intensity settings when routes are toggled.
   if (data.version === 5) {
     return { ...data, version: SAVE_VERSION, tradeRoutes: {} };
   }
@@ -923,13 +925,18 @@ export const createSaveData = (
       (entry): entry is [string, FormationId] => entry[1] !== undefined,
     ),
   ),
-  // Only enabled routes are written; an absent resource means "not routed", so
-  // a route turned back off leaves no trace in the save.
+  // All configured routes are written (enabled and disabled), so intensity
+  // settings persist when a route is toggled off and back on. An absent resource
+  // means "never configured", so the UI shows the default (disabled, 0%, sell).
   tradeRoutes: Object.fromEntries(
-    Object.entries(state.tradeRoutes).filter(
-      (entry): entry is [string, SerializedTradeRoute] =>
-        entry[1]?.enabled === true,
-    ),
+    Object.entries(state.tradeRoutes).map(([key, route]) => [
+      key,
+      {
+        enabled: route.enabled,
+        mode: route.mode,
+        intensity: route.intensity,
+      },
+    ]),
   ),
   devProductionMultiplier: state.devProductionMultiplier.toString(),
   freeBuildings: state.freeBuildings,
@@ -993,14 +1000,12 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
   const tradeRoutes: TradeRouteMap = {};
   for (const [key, route] of Object.entries(data.tradeRoutes ?? {})) {
     // A save may name a resource this build no longer trades, or a mode this
-    // build does not know; either falls back rather than throwing. Only enabled
-    // routes are written, so anything else is dropped.
+    // build does not know; either falls back rather than throwing.
     if (!tradeableResourceKeys.includes(key as TradeResourceKey)) continue;
-    if (route?.enabled !== true) continue;
     tradeRoutes[key as TradeResourceKey] = {
-      enabled: true,
-      mode: isTradeMode(route.mode) ? route.mode : "sell",
-      intensity: clampTradeIntensity(Number(route.intensity)),
+      enabled: route?.enabled === true,
+      mode: isTradeMode(route?.mode) ? route.mode : "sell",
+      intensity: clampTradeIntensity(Number(route?.intensity ?? 0)),
     };
   }
 

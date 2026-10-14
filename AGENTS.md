@@ -83,12 +83,12 @@ production(gold)` units — a tenth of that when buying, the spread. **Both legs
   row. Values are recomputed from the state on every read, so a drain is replaced
   each tick and never stacked, and the normal tick applies them like any other
   production or upkeep — no separate trade step. Routes live on the state
-  (`tradeRoutes`, only enabled ones written, persisted in `SAVE_VERSION = 6`), the
-  cap on how many run at once is the `tradeRoutes` stat (base 1, so an
-  `attributeFlat` bonus opens a further route). Each card shows the whole chain —
-  `<n> trade power → +X food −Y gold per second`, computed even while the route is
-  off — and the header states the value (1 trade power = 1 gold). The gold card and
-  the old trade-power conversion are gone.
+  (`tradeRoutes`, all configured routes written including disabled ones to preserve
+  intensity settings, persisted in `SAVE_VERSION = 6`), the cap on how many run at
+  once is the `tradeRoutes` stat (base 1, so an `attributeFlat` bonus opens a further
+  route). Each card shows the whole chain — `<n> trade power → +X food −Y gold per
+  second`, computed even while the route is off — and the header states the value
+  (1 trade power = 1 gold). The gold card and the old trade-power conversion are gone.
   **Not yet implemented:** saves, ages, research,
   offline progress (trade routes do not run offline), `attributeDrain`/`costReductionFlat` bonus data, unit
   retirement (old units stay owned and counted in army power), more than one
