@@ -273,3 +273,63 @@ describe("resources spent", () => {
     expect(deserializeStatistics(legacy).resourcesSpent).toEqual({});
   });
 });
+
+describe("the building cost multiplier attribution", () => {
+  // The Master Builder chain targets the derived `buildingCostMultiplier` stat
+  // rather than a buyable directly, so its bonuses fold into every base cost
+  // through `globalMultiplier` and never enter the per-buyable `sources` list.
+  // `multiplierSources` exists so the Gamepedia can still attribute the
+  // aggregate to its sources (Master Builder I, IV, ...).
+  const withMasterBuilders = (tiers: string[]): CivilizationState =>
+    new CivilizationState(
+      { ...emptyResourceAmounts() },
+      emptyWorkerAssignments(),
+      {},
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      tiers,
+      emptyStatistics(),
+      {},
+      ExpNumber.ONE,
+      false,
+      false,
+      false,
+      [],
+    );
+
+  it("attributes the global multiplier to its sources", () => {
+    const state = withMasterBuilders(["masterBuilder1", "masterBuilder4"]);
+    const { sources, multiplierSources, globalMultiplier } =
+      state.getBuildingCostModifiers("farm");
+    expect(multiplierSources.map(([id]) => id)).toEqual([
+      "masterBuilder1",
+      "masterBuilder4",
+    ]);
+    expect(multiplierSources.map(([, bonus]) => bonus.value.toNumber())).toEqual(
+      [0.5, 0.3],
+    );
+    // ×0.5 (tier 1) and ×0.3 (tier 4) compound to ×0.15.
+    expect(globalMultiplier.toNumber()).toBeCloseTo(0.15, 10);
+    // The attribution rows are stat bonuses, not cost-reduction rows: the
+    // folded `sources` list stays free of them.
+    expect(
+      sources.every(([, bonus]) => bonus.type.startsWith("costReduction")),
+    ).toBe(true);
+  });
+
+  it("never reaches research", () => {
+    const state = withMasterBuilders(["masterBuilder1"]);
+    expect(state.getResearchCostModifiers().globalMultiplier.toNumber()).toBe(
+      1,
+    );
+    expect(
+      state.getResearchCostModifiers().sources.every(
+        ([id]) => !id.startsWith("masterBuilder"),
+      ),
+    ).toBe(true);
+  });
+});
