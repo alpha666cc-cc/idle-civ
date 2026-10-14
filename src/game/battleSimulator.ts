@@ -256,7 +256,7 @@ export const solveMinimumArmy = (
 ): SimulatorResult | null => {
   const encounter = encounterDefinitions.find(({ key }) => key === battleId);
   if (!encounter) return null;
-  const wins = (composition: SimulatorArmy): boolean => {
+  const winsRaw = (composition: SimulatorArmy): boolean => {
     const total = mergeSimulatorArmy(ownedArmy, composition);
     if (lockedFormations.size > 0 || lockedOrders.size > 0) {
       return context.winsWithFormationsAndOrders(
@@ -267,6 +267,22 @@ export const solveMinimumArmy = (
       );
     }
     return context.wins(total, battleId);
+  };
+  // Tactics are fixed for the whole solve, so the composition alone identifies a
+  // battle test. The multi-start climb below re-tests many identical armies
+  // (across seeds, passes and the final trim) and a battle simulation is by far
+  // the most expensive thing this module does, so memoise it.
+  const winCache = new Map<string, boolean>();
+  const wins = (composition: SimulatorArmy): boolean => {
+    const key = [...composition.entries()]
+      .map(([unitId, count]) => `${unitId}:${count}`)
+      .sort()
+      .join("|");
+    const cached = winCache.get(key);
+    if (cached !== undefined) return cached;
+    const outcome = winsRaw(composition);
+    winCache.set(key, outcome);
+    return outcome;
   };
   if (wins(new Map())) {
     const totalComposition = mergeSimulatorArmy(ownedArmy, new Map());
@@ -303,8 +319,13 @@ export const solveMinimumArmy = (
       orders,
     };
   }
-  let best: SimulatorArmy | null = null;
-  let bestCost = ExpNumber.INFINITY;
+  // Every unit that can win on its own is a seed, not just the cheapest one.
+  // The hill-climb below only ever halves a stack, so the local optimum it
+  // settles in is decided by its starting point — and which unit is cheapest
+  // changes when the player ticks one more box. Seeding from all of them makes
+  // the result monotone in the candidate set: an extra candidate can only add a
+  // seed, so it can never make the answer dearer than it already was.
+  const seeds: SimulatorArmy[] = [];
   for (const unit of candidates) {
     if (!findUnitDefinition(unit.key)) continue;
     let lo = 1;
@@ -319,17 +340,12 @@ export const solveMinimumArmy = (
       if (wins(new Map([[unit.key, mid]]))) hi = mid;
       else lo = mid + 1;
     }
-    const composition = new Map([[unit.key, lo]]);
-    const cost = compositionCost(composition, context);
-    if (cost.lt(bestCost)) {
-      best = composition;
-      bestCost = cost;
-    }
+    seeds.push(new Map([[unit.key, lo]]));
   }
   // Some battles require complementary roles: neither the siege unit nor the
   // naval unit can win alone, but their combination can. Seed the hill-climb
   // with bounded power-of-two pair searches so those armies are discoverable.
-  if (requireMixed && !best) {
+  if (requireMixed && seeds.length === 0) {
     const powers = Array.from({ length: 24 }, (_, index) => 2 ** index);
     for (let leftIndex = 0; leftIndex < candidates.length; leftIndex += 1) {
       for (
@@ -345,57 +361,87 @@ export const solveMinimumArmy = (
               [left.key, leftCount],
               [right.key, rightCount],
             ]);
-            if (!wins(composition)) continue;
-            const cost = compositionCost(composition, context);
-            if (cost.lt(bestCost)) {
-              best = composition;
-              bestCost = cost;
+            if (wins(composition)) seeds.push(composition);
+          }
+        }
+      }
+    }
+  }
+  if (seeds.length === 0) return null;
+  const ids = candidates.map((unit) => unit.key);
+
+  /**
+   * Bounded hill-climb from one seed: halve a stack and pay for the cheapest
+   * amount of another unit that still wins. Halving alone cannot escape a stack
+   * that should not be there at all — `Math.ceil(count / 2)` stalls at 1, so a
+   * single leftover unit could never be removed — so also try dropping the
+   * stack outright.
+   *
+   * Deliberately independent of the other seeds: the incumbent a move must beat
+   * is this climb's own, never a shared one. Sharing it would make the answer
+   * depend on which seed happened to be climbed first, which is the very bug
+   * this multi-start search exists to remove.
+   */
+  const climb = (seed: SimulatorArmy): SimulatorArmy => {
+    let current = seed;
+    let currentCost = compositionCost(current, context);
+    let improved = true;
+    let passes = 0;
+    while (improved && passes < maximumPasses) {
+      improved = false;
+      passes += 1;
+      for (const [unitId, count] of [...current]) {
+        const bases = [
+          withCount(current, unitId, Math.ceil(count / 2)),
+          withCount(current, unitId, 0),
+        ];
+        for (const base of bases) {
+          for (const other of ids) {
+            if (other === unitId) continue;
+            let add = 1;
+            let found = false;
+            while (add <= maximumProbe) {
+              const trial = withCount(base, other, (base.get(other) ?? 0) + add);
+              if (wins(trial)) {
+                found = true;
+                break;
+              }
+              add *= 2;
+            }
+            if (!found) continue;
+            let lo = 1;
+            let hi = add;
+            while (lo < hi) {
+              const mid = Math.floor((lo + hi) / 2);
+              const trial = withCount(base, other, (base.get(other) ?? 0) + mid);
+              if (wins(trial)) hi = mid;
+              else lo = mid + 1;
+            }
+            const next = withCount(base, other, (base.get(other) ?? 0) + lo);
+            const cost = compositionCost(next, context);
+            if (cost.lt(currentCost) && wins(next)) {
+              current = next;
+              currentCost = cost;
+              improved = true;
             }
           }
         }
       }
     }
-  }
-  if (!best) return null;
-  const ids = candidates.map((unit) => unit.key);
-  let improved = true;
-  let passes = 0;
-  while (improved && passes < maximumPasses) {
-    improved = false;
-    passes += 1;
-    for (const [unitId, count] of [...best]) {
-      for (const other of ids) {
-        if (other === unitId) continue;
-        const base = withCount(best, unitId, Math.ceil(count / 2));
-        let add = 1;
-        let found = false;
-        while (add <= maximumProbe) {
-          const trial = withCount(base, other, (base.get(other) ?? 0) + add);
-          if (wins(trial)) {
-            found = true;
-            break;
-          }
-          add *= 2;
-        }
-        if (!found) continue;
-        let lo = 1;
-        let hi = add;
-        while (lo < hi) {
-          const mid = Math.floor((lo + hi) / 2);
-          const trial = withCount(base, other, (base.get(other) ?? 0) + mid);
-          if (wins(trial)) hi = mid;
-          else lo = mid + 1;
-        }
-        const next = withCount(base, other, (base.get(other) ?? 0) + lo);
-        const cost = compositionCost(next, context);
-        if (cost.lt(bestCost) && wins(next)) {
-          best = next;
-          bestCost = cost;
-          improved = true;
-        }
-      }
+    return current;
+  };
+
+  let best: SimulatorArmy | null = null;
+  let bestCost = ExpNumber.INFINITY;
+  for (const seed of seeds) {
+    const climbed = climb(seed);
+    const cost = compositionCost(climbed, context);
+    if (cost.lt(bestCost)) {
+      best = climbed;
+      bestCost = cost;
     }
   }
+  if (!best) return null;
   for (const [unitId, count] of [...best]) {
     let lo = 0;
     let hi = count;

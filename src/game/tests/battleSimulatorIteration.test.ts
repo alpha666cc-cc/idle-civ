@@ -15,6 +15,7 @@ import { CivilizationState } from "../civilizationState";
 import { calculateCostSeries } from "../buyableCost";
 import { encounterDefinitions } from "../encounters";
 import { researchIdsForBattle } from "../research";
+import { unitDefinitions } from "../units";
 import type { ArmyStack } from "../battle";
 
 /**
@@ -33,6 +34,22 @@ import type { ArmyStack } from "../battle";
  */
 
 const firstFire = "age0_1_first_fire";
+const marathon = "age2_1_marathon";
+/** Every buyable Age 1/2 unit except Hoplite, for the monotonicity regression. */
+const ageTwoUnits = [
+  "spearman_iron",
+  "swordsman_iron",
+  "chariot_iron",
+  "cavalry_iron",
+  "war_galley_iron",
+  "elephant_iron",
+  "ballista",
+  "quinquereme",
+  "berserker",
+  "legionary",
+  "companion",
+  "archer_classical",
+];
 
 const state = new CivilizationState();
 
@@ -79,6 +96,19 @@ const simulatorCandidatesFor = (battleAge: number) =>
         unit.age >= battleAge - 1 &&
         unit.age <= battleAge,
     );
+
+/**
+ * Buyable units of the battle's age and the previous age, ignoring unlocks.
+ * The monotonicity regression needs a fixed candidate set that does not depend
+ * on how far a fresh state has progressed, so it names its units directly.
+ */
+const candidatesFor = (battleAge: number) =>
+  unitDefinitions.filter(
+    (unit) =>
+      unit.costs.length > 0 &&
+      unit.age >= battleAge - 1 &&
+      unit.age <= battleAge,
+  );
 
 /** Cost of the additional recruits only, the number the iteration minimises. */
 const recruitMilitary = (
@@ -132,6 +162,24 @@ const runSolver = (
     contextFor(battleId),
     true,
     owned,
+  );
+};
+
+/** Like `runSolver`, but over an explicit candidate set ignoring unlocks. */
+const runSolverOver = (
+  battleId: string,
+  unitIds: readonly string[],
+): ReturnType<typeof optimizeBattleTactics> => {
+  const encounter = encounterDefinitions.find(({ key }) => key === battleId);
+  if (!encounter) throw new Error(`Missing encounter: ${battleId}`);
+  const candidates = candidatesFor(encounter.age).filter(({ key }) =>
+    unitIds.includes(key),
+  );
+  return optimizeBattleTactics(
+    battleId,
+    candidates,
+    contextFor(battleId),
+    true,
   );
 };
 
@@ -260,6 +308,26 @@ describe("optimizeBattleTactics iteration", () => {
     expect(second.composition.size).toBe(0);
     expect(second.totalComposition).toEqual(owned);
   });
+
+  it("never costs more when a unit is added to the candidate set", () => {
+    // Regression: the climb used to be seeded from the single cheapest solo
+    // winner, and which unit that was depended on the candidate list. Ticking
+    // one more box could therefore strand the search in a local optimum and
+    // report a far dearer army — on Marathon, adding Hoplite turned a 1.87e30
+    // answer into 17.56e33. Every unit must instead get its own seed, so an
+    // extra candidate can only help. The solver is allowed to ignore the new
+    // unit entirely, which is what "at worst it is unused" means here.
+    const encounter = encounterDefinitions.find(({ key }) => key === marathon);
+    if (!encounter) throw new Error("The Marathon encounter is missing.");
+    const withoutHoplite = runSolverOver(marathon, ageTwoUnits);
+    const withHoplite = runSolverOver(marathon, [...ageTwoUnits, "hoplite"]);
+
+    expect(withoutHoplite).not.toBeNull();
+    expect(withHoplite).not.toBeNull();
+    expect(withHoplite?.military.lte(withoutHoplite?.military ?? ExpNumber.ZERO)).toBe(
+      true,
+    );
+  }, 120_000);
 
   it("is deterministic for identical inputs", () => {
     const first = runSolver(firstFire, ["warrior", "slinger"]);

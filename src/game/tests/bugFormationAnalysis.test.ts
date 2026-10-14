@@ -149,5 +149,7 @@ describe("bug formation analysis", () => {
         ).toBe(true);
       }
     }
-  }, 60_000);
+  // Multi-start makes the solver deliberately try more armies, so this
+  // diagnostic run needs a longer budget than the single-seed search did.
+  }, 300_000);
 });
