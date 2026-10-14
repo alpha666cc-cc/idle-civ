@@ -150,5 +150,8 @@ const battleDebugWriter = (): Plugin => ({
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Relative base so one build serves both the GitHub Pages subpath
+  // (https://<user>.github.io/idle-civ/) and a root-served LAN preview.
+  base: "./",
   plugins: [react(), devLogWriter(), battleDebugWriter()],
 });
