@@ -10,7 +10,7 @@ import {
   type StackSnapshot,
 } from "../game/battle";
 import { findFormationDefinition, type FormationId } from "../game/formations";
-import { ExpNumber } from "../game/expNumber";
+import type { ExpNumber } from "../game/expNumber";
 import {
   findUnitDefinition,
   unitStatKeys,
@@ -204,47 +204,6 @@ export default function ArmyPanel({
           error,
         );
       });
-    console.groupCollapsed(`[battle debug] ${battle.key}: ${result.outcome}`);
-    for (const round of result.rounds) {
-      console.groupCollapsed(
-        `Round ${round.round} · distance ${round.distance}`,
-      );
-      console.table(
-        round.attacks.map((attack) => ({
-          attacker: `${attack.attackerSide.toUpperCase()} · ${attack.attackerId}`,
-          attackerPosition: attack.attackerPosition,
-          reachable: attack.reachableTargets
-            .map(
-              (unitId) =>
-                `${attack.reachableTargetSide.toUpperCase()} · ${unitId}`,
-            )
-            .join(", "),
-          target: `${attack.targetSide.toUpperCase()} · ${attack.targetId}`,
-          targetPosition: attack.targetPosition,
-          damagedUnits: [
-            ...(attack.targetDamage.gt(ExpNumber.fromNumber(0))
-              ? [
-                  {
-                    side: attack.targetSide.toUpperCase(),
-                    unit: attack.targetId,
-                    countToAlive: `${attack.targetAliveBefore} → ${attack.targetAliveAfter}`,
-                    damage: `${attack.targetDamage}`,
-                  },
-                ]
-              : []),
-            ...attack.screening.map((screen) => ({
-              side: screen.side.toUpperCase(),
-              unit: screen.unitId,
-              countToAlive: `${screen.aliveBefore} → ${screen.aliveAfter}`,
-              damage: `${screen.damage}`,
-            })),
-          ],
-          intendedDamage: `${attack.intendedDamage}`,
-        })),
-      );
-      console.groupEnd();
-    }
-    console.groupEnd();
     // oxlint-disable-next-line react/purity
     const startTime = Date.now();
     roundIndexRef.current = 0;

@@ -32,9 +32,30 @@ const crossoverToSqrt = (
     sqrtCurve(unitBase, unitFactor, k).sub(
       sqrtCurve(unitBase, unitFactor, k - 1),
     );
-  let k = 1;
-  while (k < maximumUnitPurchase && sqrtPrice(k).lte(linear(k))) k += 1;
-  return k - 1;
+  const staysOnLinearFloor = (k: number): boolean =>
+    sqrtPrice(k).lte(linear(k));
+
+  let low = 0;
+  let high = 1;
+  // The marginal curve crosses the linear floor once; bracket it before
+  // binary-searching rather than rescanning the prefix for every price probe.
+  while (high < maximumUnitPurchase && staysOnLinearFloor(high)) {
+    low = high;
+    high = Math.min(high * 2, maximumUnitPurchase);
+  }
+  if (high === maximumUnitPurchase && staysOnLinearFloor(high)) {
+    return maximumUnitPurchase - 1;
+  }
+
+  while (low + 1 < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (staysOnLinearFloor(middle)) {
+      low = middle;
+    } else {
+      high = middle;
+    }
+  }
+  return low;
 };
 
 /**
