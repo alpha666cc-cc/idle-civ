@@ -234,6 +234,10 @@ function printSummaryBlock(data) {
     .map(([key, value]) => `${key}: ${formatExpoNumber(value)}`)
     .join(", ");
   console.log(`  Resources: { ${resourceList || "none"} }`);
+  const workerList = Object.entries(data.workers ?? {})
+    .map(([key, value]) => `${key}: ${formatExpoNumber(value)}`)
+    .join(", ");
+  console.log(`  Workers: { ${workerList || "none"} }`);
   const productionList = Object.entries(data.productionRates ?? {})
     .map(([key, value]) => `${key}: ${formatExpoNumber(value)}/s`)
     .join(", ");

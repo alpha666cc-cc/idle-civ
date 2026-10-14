@@ -72,10 +72,7 @@ import {
   type BuildingEffects,
   type BuildingKey,
 } from "./buildings";
-import {
-  calculateCostSeries,
-  type CostParameters,
-} from "./buyableCost";
+import { calculateCostSeries, type CostParameters } from "./buyableCost";
 import {
   encounterDefinitions,
   findEncounterDefinition,
@@ -223,6 +220,42 @@ const activeBonusByDestinationCaches = new WeakMap<
     WeakMap<
       readonly string[],
       WeakMap<readonly string[], WeakMap<readonly string[], BonusMap>>
+    >
+  >
+>();
+
+/** Cached getUnitStats(), keyed by the same identity tuple as activeBonuses plus unit id.
+ * Unit stats depend on bonuses, so they share the same invalidation criteria. */
+const unitStatsCaches = new WeakMap<
+  readonly string[],
+  WeakMap<
+    readonly string[],
+    WeakMap<
+      readonly string[],
+      WeakMap<
+        readonly string[],
+        WeakMap<readonly string[], Map<string, UnitStats>>
+      >
+    >
+  >
+>();
+
+/** Cached costReductionsFor(), keyed by the same identity tuple as activeBonuses plus buyable id.
+ * Cost reductions depend on bonuses, so they share the same invalidation criteria. */
+type CostReductionResult = {
+  sources: [sourceId: string, bonus: Bonus][];
+  reductions: CostReductions;
+};
+const costReductionCaches = new WeakMap<
+  readonly string[],
+  WeakMap<
+    readonly string[],
+    WeakMap<
+      readonly string[],
+      WeakMap<
+        readonly string[],
+        WeakMap<readonly string[], Map<string, CostReductionResult>>
+      >
     >
   >
 >();
@@ -1627,7 +1660,56 @@ export class CivilizationState {
   }
 
   /** Cost-reduction bonuses targeting one buyable, folded the §13.1 way. */
-  private costReductionsFor(buyableId: string) {
+  private costReductionsFor(buyableId: string): CostReductionResult {
+    // Check cache
+    let byUpgrades = costReductionCaches.get(this.boughtUpgrades);
+    if (!byUpgrades) {
+      byUpgrades = new WeakMap<
+        readonly string[],
+        WeakMap<
+          readonly string[],
+          WeakMap<
+            readonly string[],
+            WeakMap<readonly string[], Map<string, CostReductionResult>>
+          >
+        >
+      >();
+      costReductionCaches.set(this.boughtUpgrades, byUpgrades);
+    }
+    let byEncounters = byUpgrades.get(this.defeatedEncounters);
+    if (!byEncounters) {
+      byEncounters = new WeakMap<
+        readonly string[],
+        WeakMap<
+          readonly string[],
+          WeakMap<readonly string[], Map<string, CostReductionResult>>
+        >
+      >();
+      byUpgrades.set(this.defeatedEncounters, byEncounters);
+    }
+    let byAchievements = byEncounters.get(this.earnedAchievements);
+    if (!byAchievements) {
+      byAchievements = new WeakMap<
+        readonly string[],
+        WeakMap<readonly string[], Map<string, CostReductionResult>>
+      >();
+      byEncounters.set(this.earnedAchievements, byAchievements);
+    }
+    let byResearch = byAchievements.get(this.boughtResearch);
+    if (!byResearch) {
+      byResearch = new WeakMap<
+        readonly string[],
+        Map<string, CostReductionResult>
+      >();
+      byAchievements.set(this.boughtResearch, byResearch);
+    }
+    const cached = byResearch.get(this.enteredAges);
+    if (cached) {
+      const cachedReductions = cached.get(buyableId);
+      if (cachedReductions) return cachedReductions;
+    }
+
+    // Compute
     const isBuilding = buildingDefinitions.some(({ key }) => key === buyableId);
     const isResearch = buyableId === "research"; // Virtual building for research
     const unit = findUnitDefinition(buyableId);
@@ -1683,10 +1765,19 @@ export class CivilizationState {
         targetMatches(String(bonus.destination)) &&
         bonus.type.startsWith("costReduction"),
     );
-    return {
+    const result = {
       sources,
       reductions: collectCostReductions(sources.map(([, bonus]) => bonus)),
     };
+
+    // Cache
+    if (!cached) {
+      byResearch.set(this.enteredAges, new Map([[buyableId, result]]));
+    } else {
+      cached.set(buyableId, result);
+    }
+
+    return result;
   }
 
   getBuildingCostModifiers(buildingKey: string) {
@@ -2780,13 +2871,21 @@ export class CivilizationState {
   ): CivilizationState {
     const filteredOrders: Partial<Record<string, BattleOrder>> = {};
     for (const [unitId, order] of Object.entries(savedOrders)) {
-      if (order !== undefined && findUnitDefinition(unitId) && this.isOrderUnlocked(order)) {
+      if (
+        order !== undefined &&
+        findUnitDefinition(unitId) &&
+        this.isOrderUnlocked(order)
+      ) {
         filteredOrders[unitId] = order;
       }
     }
     const filteredFormations: Partial<Record<string, FormationId>> = {};
     for (const [unitId, formation] of Object.entries(savedFormations)) {
-      if (formation !== undefined && findUnitDefinition(unitId) && this.isFormationUnlocked(formation)) {
+      if (
+        formation !== undefined &&
+        findUnitDefinition(unitId) &&
+        this.isFormationUnlocked(formation)
+      ) {
         filteredFormations[unitId] = formation;
       }
     }
@@ -2818,7 +2917,61 @@ export class CivilizationState {
 
   /** Effective stats of one unit, with every active bonus applied. */
   getUnitStats(unitId: string): UnitStats | undefined {
-    return this.getUnitStatsWithResearch(unitId, []);
+    // Use the cached version for the common case (no additional research)
+    let byUpgrades = unitStatsCaches.get(this.boughtUpgrades);
+    if (!byUpgrades) {
+      byUpgrades = new WeakMap<
+        readonly string[],
+        WeakMap<
+          readonly string[],
+          WeakMap<
+            readonly string[],
+            WeakMap<readonly string[], Map<string, UnitStats>>
+          >
+        >
+      >();
+      unitStatsCaches.set(this.boughtUpgrades, byUpgrades);
+    }
+    let byEncounters = byUpgrades.get(this.defeatedEncounters);
+    if (!byEncounters) {
+      byEncounters = new WeakMap<
+        readonly string[],
+        WeakMap<
+          readonly string[],
+          WeakMap<readonly string[], Map<string, UnitStats>>
+        >
+      >();
+      byUpgrades.set(this.defeatedEncounters, byEncounters);
+    }
+    let byAchievements = byEncounters.get(this.earnedAchievements);
+    if (!byAchievements) {
+      byAchievements = new WeakMap<
+        readonly string[],
+        WeakMap<readonly string[], Map<string, UnitStats>>
+      >();
+      byEncounters.set(this.earnedAchievements, byAchievements);
+    }
+    let byResearch = byAchievements.get(this.boughtResearch);
+    if (!byResearch) {
+      byResearch = new WeakMap<readonly string[], Map<string, UnitStats>>();
+      byAchievements.set(this.boughtResearch, byResearch);
+    }
+    const cached = byResearch.get(this.enteredAges);
+    if (cached) {
+      const cachedStats = cached.get(unitId);
+      if (cachedStats) return cachedStats;
+    }
+
+    // Compute and cache
+    const stats = this.getUnitStatsWithResearch(unitId, []);
+    if (stats) {
+      if (!cached) {
+        byResearch.set(this.enteredAges, new Map([[unitId, stats]]));
+      } else {
+        cached.set(unitId, stats);
+      }
+    }
+    return stats;
   }
 
   getUnitStatsWithResearch(

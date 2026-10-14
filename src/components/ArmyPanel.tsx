@@ -148,7 +148,10 @@ export default function ArmyPanel({
   const reloadSnapshot = () => {
     if (!savedSnapshot) return;
     setGameState((current) =>
-      current.applyFormationSnapshot(savedSnapshot.orders, savedSnapshot.formations),
+      current.applyFormationSnapshot(
+        savedSnapshot.orders,
+        savedSnapshot.formations,
+      ),
     );
   };
 
@@ -430,9 +433,25 @@ export default function ArmyPanel({
                     <Lock size={13} strokeWidth={1.8} /> Locked
                   </>
                 ) : (
-                  `Recruit ${wanted > 1 ? `${wanted} ` : ""}· ${cost
-                    .map(({ resource, base }) => `${fmt(base)} ${resource}`)
-                    .join(", ")}`
+                  <>
+                    <span>
+                      Recruit {wanted > 1 ? `${wanted} ` : ""}·{" "}
+                      {cost.length > 0
+                        ? `${fmt(cost[0].base)} ${cost[0].resource}`
+                        : ""}
+                    </span>
+                    <span>
+                      {cost.length > 1
+                        ? cost
+                            .slice(1)
+                            .map(
+                              ({ resource, base }) =>
+                                `${fmt(base)} ${resource}`,
+                            )
+                            .join(", ")
+                        : "\u00A0"}
+                    </span>
+                  </>
                 )}
               </button>
               {gameState.getUnitStats(unit.key) && (

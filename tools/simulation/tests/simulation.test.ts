@@ -64,6 +64,7 @@ import {
   getBootstrapGatherResource,
   getRecommendedBattlePurchase,
   getSimulatorBattlePlan,
+  PlayerStrategy,
   ResearchStrategy,
   getStrategy,
   setAdaptiveWorkerFunding,
@@ -124,6 +125,49 @@ describe("simulation event snapshots", () => {
     expect(minute.snapshots.length).toBeGreaterThanOrEqual(4);
     const fiveMinutes = run(300);
     expect(fiveMinutes.snapshots.length).toBeLessThan(minute.snapshots.length);
+  });
+
+  it("includes the assigned worker allocation in snapshots", () => {
+    const workers = {
+      ...emptyWorkerAssignments(),
+      food: ExpNumber.fromNumber(7),
+      wood: ExpNumber.fromNumber(3),
+    };
+    const state = new CivilizationState(
+      emptyResourceAmounts(),
+      workers,
+      {},
+      emptyResourceFactors(),
+      {},
+      0,
+      [],
+      [],
+      [],
+      [],
+      emptyStatistics(),
+    );
+    const noop: SimulationStrategy = {
+      name: "noop",
+      description: "does nothing",
+      decideAction: () => null,
+    };
+    const result = new GameSimulation(state, noop, {
+      objective: { type: "timeLimit", seconds: 60 },
+      gatherClicksPerAction: 1,
+      maxGameTime: 60,
+      recordSnapshots: true,
+    }).run();
+
+    expect(result.snapshots.at(-1)?.workers).toEqual({
+      food: ExpNumber.fromNumber(7).toString(),
+      wood: ExpNumber.fromNumber(3).toString(),
+      stone: ExpNumber.ZERO.toString(),
+      gold: ExpNumber.ZERO.toString(),
+      military: ExpNumber.ZERO.toString(),
+      science: ExpNumber.ZERO.toString(),
+      metalwork: ExpNumber.ZERO.toString(),
+      trade: ExpNumber.ZERO.toString(),
+    });
   });
 
   it("records tick and strategy-decision timing", () => {
@@ -1170,6 +1214,112 @@ describe("required progression strategy", () => {
     ).toBe("launchBattle");
   });
 
+  it("prioritizes Age-2 production upgrades ahead of battle preparation", () => {
+    const priorAgeBattles = encounterDefinitions
+      .filter(({ age }) => age < 2)
+      .map(({ key }) => key);
+    const state = makeState({
+      people: 10_000,
+      buildings: { farm: 9, university: 1, market: 1 },
+      resources: { ...simulatorResources, peopleCapacity: 20_000 },
+      defeatedEncounters: priorAgeBattles,
+      enteredAges: ["age0", "age1"],
+    });
+
+    expect(
+      new PlayerStrategy().decideAction(state, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      }),
+    ).toEqual({ type: "buyUpgrade", upgradeId: "farmEnhancer9" });
+
+    class PlayerRatioProbe extends PlayerStrategy {
+      ratios(ratioState: CivilizationState) {
+        return this.getWorkerRatios(ratioState);
+      }
+    }
+    expect(new PlayerRatioProbe().ratios(state)).toEqual({
+      food: 0.6,
+      wood: 0.2,
+      stone: 0.1,
+      gold: 0.1,
+      military: 0,
+      science: 0,
+      metalwork: 0,
+      trade: 0,
+    });
+  });
+
+  it("buys the next production upgrade at the 9,800-count milestone", () => {
+    const priorAgeBattles = encounterDefinitions
+      .filter(({ age }) => age < 2)
+      .map(({ key }) => key);
+    const state = makeState({
+      people: 10_000,
+      buildings: { farm: 9800, university: 1, market: 1 },
+      resources: {
+        food: 1e60,
+        wood: 1e60,
+        stone: 1e60,
+        gold: 1e60,
+        science: 1e60,
+        military: 1e60,
+        metalwork: 1e60,
+        trade: 1e60,
+        peopleCapacity: 20_000,
+      },
+      workers: { food: 6000, wood: 2000, stone: 1000, gold: 1000 },
+      defeatedEncounters: priorAgeBattles,
+      boughtUpgrades: [
+        "farmEnhancer9",
+        "farmEnhancer98",
+        "farmEnhancer980",
+      ],
+      enteredAges: ["age0", "age1"],
+    });
+
+    expect(
+      new PlayerStrategy().decideAction(state, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      }),
+    ).toEqual({ type: "buyUpgrade", upgradeId: "farmEnhancer9800" });
+  });
+
+  it("builds a university and market during the Age-2 economy phase", () => {
+    const priorAgeBattles = encounterDefinitions
+      .filter(({ age }) => age < 2)
+      .map(({ key }) => key);
+    const state = makeState({
+      people: 10_000,
+      buildings: { farm: 9 },
+      resources: { ...simulatorResources, peopleCapacity: 20_000 },
+      defeatedEncounters: priorAgeBattles,
+      enteredAges: ["age0", "age1"],
+    });
+    const context = {
+      gameTime: 0,
+      snapshots: [],
+      timing: zeroTiming,
+    };
+    const strategy = new PlayerStrategy();
+
+    expect(strategy.decideAction(state, context)).toEqual({
+      type: "build",
+      building: "university",
+      count: 1,
+    });
+
+    const withUniversity = state.build("university", 1);
+    expect(strategy.decideAction(withUniversity, context)).toEqual({
+      type: "build",
+      building: "market",
+      count: 1,
+    });
+  });
+
   it("does not miss a housing cap with fractional capacity precision", () => {
     const state = makeState({
       people: 999,
@@ -1557,13 +1707,30 @@ describe("required progression strategy", () => {
     }
 
     const researchStrategy = new ResearchRatioProbe();
-    expect(researchStrategy.ratios(makeState())).toEqual({
+    const dynamicResearchRatios = {
       food: 0.3,
       wood: 0.15,
       stone: 0.15,
       gold: 0.05,
       military: 0.05,
       science: 0.3,
+      metalwork: 0,
+      trade: 0,
+    };
+    expect(researchStrategy.ratios(makeState())).toEqual(
+      dynamicResearchRatios,
+    );
+    expect(
+      researchStrategy.ratios(
+        makeState({ enteredAges: ["age0", "age1"] }),
+      ),
+    ).toEqual({
+      food: 0.6,
+      wood: 0.2,
+      stone: 0.1,
+      gold: 0.1,
+      military: 0,
+      science: 0,
       metalwork: 0,
       trade: 0,
     });

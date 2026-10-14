@@ -63,6 +63,7 @@ export interface SimulationStateSummary {
   age: string;
   population: number;
   resources: Record<string, string>; // ExpNumber as string for serialization
+  workers: Record<string, string>; // assigned workers per resource
   researches: string[];
   buildings: { building: BuildingKey; count: number }[];
   units: { unit: string; count: string }[]; // ExpNumber counts as strings
@@ -430,6 +431,12 @@ export class GameSimulation {
       age: currentAge?.key || "unknown",
       population: this.state.population.toNumber(),
       resources: this.resourceSnapshot(),
+      workers: Object.fromEntries(
+        Object.entries(this.state.workers).map(([key, count]) => [
+          key,
+          count.toString(),
+        ]),
+      ),
       researches: [...this.state.boughtResearch],
       buildings: Object.entries(this.state.builtBuildings).map(
         ([building, count]) => ({

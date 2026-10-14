@@ -136,6 +136,21 @@ type BuildingPriority = {
   targetCount?: number;
 }[];
 
+const ageTwoProductionTargets: readonly BuildingKey[] = [
+  "farm",
+  "lumberYard",
+  "quarry",
+  "goldMine",
+];
+const ageTwoProductionTargetCount = 9800;
+const ageTwoInfrastructureTargets: readonly {
+  building: BuildingKey;
+  targetCount: number;
+}[] = [
+  { building: "university", targetCount: 1 },
+  { building: "market", targetCount: 1 },
+];
+
 /**
  * The first unwon encounter in the current age. Encounter order is the
  * progression data; this helper only exposes it to simulation strategies.
@@ -2859,10 +2874,8 @@ export class ResearchStrategy extends BaseStrategy {
   /**
    * Age-1 split, searched on the `entered age1 -> entered age2` window.
    *
-   * The dial above keeps re-shaping workers all the way through age 1, so this
-   * only pins the *starting* share — which is what the search measured, since
-   * the dial immediately overrides it once the age-1 tech line is under way.
-   * The gain is therefore the part of the window before the dial engages.
+   * The age-aware getter pins this split for age 1 and uses the dynamic
+   * research dial in other ages.
    *
    * Measured from the age-1 entry save, 25 000 s cap: 15 740 s -> 12 147 s
    * (-22.8 %), reproduced exactly in an independent process. Gold rises from
@@ -2872,11 +2885,8 @@ export class ResearchStrategy extends BaseStrategy {
     // Searched on the `entered age1 -> entered age2` window from this
     // strategy's own shipped split (15740 s -> 12147 s, -22.8 %).
     //
-    // Reaching this method at all needed a seam fix: `assignWorkersByRatio`
-    // below discards its `_ratios` argument and substitutes a state-dependent
-    // dial, so an age override silently did nothing (all 27 first-round
-    // candidates returned the identical time, which is how it was caught). The
-    // dial now starts from the resolved age ratios instead of the raw argument.
+    // Keep the searched age-1 starting split in the same state-aware resolver
+    // as the research dial used in other ages.
     if (state?.getCurrentAge()?.key === "age1") {
       return {
         food: 0.18,
@@ -3020,6 +3030,21 @@ export class PlayerStrategy extends ResearchStrategy {
         trade: 0,
       };
     }
+    if (
+      state?.getCurrentAge()?.key === "age2" &&
+      !this.hasCompletedAgeTwoProductionTargets(state)
+    ) {
+      return {
+        food: 0.6,
+        wood: 0.2,
+        stone: 0.1,
+        gold: 0.1,
+        military: 0,
+        science: 0,
+        metalwork: 0,
+        trade: 0,
+      };
+    }
     return super.getWorkerRatios(state);
   }
 
@@ -3114,7 +3139,7 @@ export class PlayerStrategy extends ResearchStrategy {
     return action.type === "gather"
       ? (this.assignWorkersByRatio(
           state,
-          this.getResearchWorkerRatios(state),
+          this.getWorkerRatios(state),
         ) ?? action)
       : action;
   }
@@ -3180,6 +3205,116 @@ export class PlayerStrategy extends ResearchStrategy {
       { type: "gather", resource: missing.resource as ProductionResourceKey },
       context,
     );
+  }
+
+  private hasCompletedAgeTwoProductionTargets(
+    state: CivilizationState,
+  ): boolean {
+    return ageTwoProductionTargets.every((building) => {
+      const targetUpgrade = upgradeDefinitions.find(
+        ({ unlock }) =>
+          unlock.building === building &&
+          unlock.threshold === ageTwoProductionTargetCount,
+      );
+      return (
+        state.getBuildingCount(building) >= ageTwoProductionTargetCount &&
+        (!targetUpgrade || state.isUpgradeBought(targetUpgrade.key))
+      );
+    });
+  }
+
+  private getProductionUpgradeAction(
+    state: CivilizationState,
+    building: BuildingKey,
+    context: SimulationContext,
+  ): SimulationAction | null {
+    const buildingCount = state.getBuildingCount(building);
+    const nextUpgrade = upgradeDefinitions.find(
+      ({ key, unlock }) =>
+        unlock.building === building &&
+        unlock.threshold <= ageTwoProductionTargetCount &&
+        unlock.threshold <= buildingCount &&
+        !state.isUpgradeBought(key),
+    );
+    if (!nextUpgrade) return null;
+
+    const failure = state.getUpgradeFailureReason(nextUpgrade.key);
+    if (failure === "locked") return null;
+    if (failure === null) {
+      return { type: "buyUpgrade", upgradeId: nextUpgrade.key };
+    }
+
+    const missing = state
+      .getUpgradeCost(nextUpgrade.key)
+      .filter(({ resource, base }) => state.resources[resource].lt(base))
+      .filter(
+        ({ resource }) =>
+          producerResourceKeys.includes(resource as ProductionResourceKey) &&
+          isResourceGatherable(state, resource),
+      )
+      .sort((left, right) => {
+        const leftDeficit = left.base.sub(state.resources[left.resource]);
+        const rightDeficit = right.base.sub(state.resources[right.resource]);
+        return rightDeficit.compareTo(leftDeficit);
+      })[0];
+    return missing
+      ? this.focusWorkersForGather(
+          state,
+          {
+            type: "gather",
+            resource: missing.resource as ProductionResourceKey,
+          },
+          context,
+        )
+      : null;
+  }
+
+  private getAgeTwoProductionAction(
+    state: CivilizationState,
+    context: SimulationContext,
+  ): SimulationAction | null {
+    if (state.getCurrentAge()?.key !== "age2") return null;
+
+    const housingAction = getAgeRouteGrowthAction(state);
+    if (housingAction) {
+      return this.focusWorkersForGather(state, housingAction, context);
+    }
+
+    for (const { building, targetCount } of ageTwoInfrastructureTargets) {
+      const infrastructureAction = this.getBuildingTargetAction(
+        state,
+        building,
+        targetCount,
+        context,
+      );
+      if (infrastructureAction) return infrastructureAction;
+    }
+
+    for (const building of ageTwoProductionTargets) {
+      const upgradeAction = this.getProductionUpgradeAction(
+        state,
+        building,
+        context,
+      );
+      if (upgradeAction) return upgradeAction;
+
+      if (state.getBuildingCount(building) < ageTwoProductionTargetCount) {
+        const buildingAction = this.getBuildingTargetAction(
+          state,
+          building,
+          ageTwoProductionTargetCount,
+          context,
+        );
+        if (buildingAction) return buildingAction;
+      }
+    }
+    return this.hasCompletedAgeTwoProductionTargets(state)
+      ? null
+      : this.focusWorkersForGather(
+          state,
+          { type: "gather", resource: "food" },
+          context,
+        );
   }
 
   private getBattleTwoInfrastructureAction(
@@ -3267,10 +3402,16 @@ export class PlayerStrategy extends ResearchStrategy {
     if (hasCompletedPlayerResearch(state)) {
       const workerAction = this.assignWorkersByRatio(
         state,
-        this.getResearchWorkerRatios(state),
+        this.getWorkerRatios(state),
       );
       if (workerAction) return workerAction;
     }
+
+    const ageTwoProductionAction = this.getAgeTwoProductionAction(
+      state,
+      context,
+    );
+    if (ageTwoProductionAction) return ageTwoProductionAction;
 
     const ageAction = this.getAgeTransitionAction(state);
     if (ageAction) return ageAction;

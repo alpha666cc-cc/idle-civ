@@ -47,10 +47,10 @@ const fingerprint = (result: ReturnType<typeof run>) => {
   });
 };
 
-// Each test below runs one or more real simulations, which take 5-75 s. Vitest's
+// Each test below runs one or more real simulations, which take 5–60 s. Vitest's
 // default 5 s timeout fails them all as "timed out" â€” an infrastructure failure
 // that reads exactly like a correctness failure, so the timeouts are explicit.
-const SLOW = 75_000;
+const SLOW = 60_000;
 const VERY_SLOW = 180_000;
 
 describe("strategy runs are deterministic", () => {
