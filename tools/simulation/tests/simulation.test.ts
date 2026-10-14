@@ -797,6 +797,7 @@ describe("required progression strategy", () => {
     unitCounts = {},
     defeatedEncounters = [],
     boughtUpgrades = [],
+    boughtResearch = [],
     enteredAges = [],
   }: {
     people?: number;
@@ -806,6 +807,7 @@ describe("required progression strategy", () => {
     unitCounts?: Record<string, number>;
     defeatedEncounters?: string[];
     boughtUpgrades?: string[];
+    boughtResearch?: string[];
     enteredAges?: string[];
   } = {}): CivilizationState => {
     const amounts = emptyResourceAmounts();
@@ -835,6 +837,11 @@ describe("required progression strategy", () => {
       [],
       emptyStatistics(),
       counts,
+      ExpNumber.ONE,
+      false,
+      false,
+      false,
+      boughtResearch,
     );
   };
 
@@ -1220,8 +1227,21 @@ describe("required progression strategy", () => {
       .map(({ key }) => key);
     const state = makeState({
       people: 10_000,
-      buildings: { farm: 9, university: 1, market: 1 },
-      resources: { ...simulatorResources, peopleCapacity: 20_000 },
+      buildings: {
+        farm: 9,
+        townHall: 500,
+        university: 510,
+        market: 430,
+      },
+      resources: {
+        ...simulatorResources,
+        food: 1e60,
+        wood: 1e60,
+        stone: 1e60,
+        gold: 1e60,
+        peopleCapacity: 20_000,
+      },
+      workers: { food: 6000, wood: 2000, stone: 1000, gold: 1000 },
       defeatedEncounters: priorAgeBattles,
       enteredAges: ["age0", "age1"],
     });
@@ -1251,13 +1271,18 @@ describe("required progression strategy", () => {
     });
   });
 
-  it("buys the next production upgrade at the 9,800-count milestone", () => {
+  it("continues the production ramp past the 980-count upgrade tier", () => {
     const priorAgeBattles = encounterDefinitions
       .filter(({ age }) => age < 2)
       .map(({ key }) => key);
     const state = makeState({
       people: 10_000,
-      buildings: { farm: 9800, university: 1, market: 1 },
+      buildings: {
+        farm: 980,
+        townHall: 120,
+        university: 510,
+        market: 430,
+      },
       resources: {
         food: 1e60,
         wood: 1e60,
@@ -1285,18 +1310,97 @@ describe("required progression strategy", () => {
         snapshots: [],
         timing: zeroTiming,
       }),
-    ).toEqual({ type: "buyUpgrade", upgradeId: "farmEnhancer9800" });
+    ).toEqual({ type: "build", building: "farm", count: 1420 });
   });
 
-  it("builds a university and market during the Age-2 economy phase", () => {
+  it("lets other production buildings progress when a target is unaffordable", () => {
     const priorAgeBattles = encounterDefinitions
       .filter(({ age }) => age < 2)
       .map(({ key }) => key);
     const state = makeState({
       people: 10_000,
-      buildings: { farm: 9 },
-      resources: { ...simulatorResources, peopleCapacity: 20_000 },
+      buildings: {
+        farm: 2399,
+        lumberYard: 10,
+        quarry: 2400,
+        goldMine: 2400,
+        townHall: 120,
+        university: 510,
+        market: 430,
+      },
+      resources: {
+        food: 0,
+        wood: 1e12,
+        stone: 1e12,
+        gold: 1e12,
+        military: 1e12,
+        science: 1e12,
+        metalwork: 1e12,
+        trade: 1e12,
+        peopleCapacity: 20_000,
+      },
+      workers: { food: 6000, wood: 2000, stone: 1000, gold: 1000 },
       defeatedEncounters: priorAgeBattles,
+      boughtUpgrades: [
+        "farmEnhancer9",
+        "farmEnhancer98",
+        "farmEnhancer980",
+        "lumberYardEnhancer9",
+        "lumberYardEnhancer98",
+        "lumberYardEnhancer980",
+      ],
+      enteredAges: ["age0", "age1"],
+    });
+
+    expect(
+      new PlayerStrategy().decideAction(state, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      }),
+    ).toMatchObject({ type: "build", building: "lumberYard" });
+  });
+
+  it("builds universities and markets to their Age-2 economy targets", () => {
+    const priorAgeBattles = encounterDefinitions
+      .filter(({ age }) => age < 2)
+      .map(({ key }) => key);
+    const state = makeState({
+      people: 10_000,
+      buildings: {
+        farm: 2400,
+        lumberYard: 2400,
+        quarry: 2400,
+        goldMine: 2400,
+        townHall: 119,
+        university: 509,
+        market: 429,
+      },
+      resources: {
+        ...simulatorResources,
+        food: 1e60,
+        wood: 1e60,
+        stone: 1e60,
+        gold: 1e60,
+        peopleCapacity: 20_000,
+      },
+      workers: { food: 6000, wood: 2000, stone: 1000, gold: 1000 },
+      boughtResearch: ["mathematics", "trade_routes"],
+      defeatedEncounters: priorAgeBattles,
+      boughtUpgrades: [
+        "farmEnhancer9",
+        "farmEnhancer98",
+        "farmEnhancer980",
+        "lumberYardEnhancer9",
+        "lumberYardEnhancer98",
+        "lumberYardEnhancer980",
+        "quarryEnhancer9",
+        "quarryEnhancer98",
+        "quarryEnhancer980",
+        "goldMineEnhancer9",
+        "goldMineEnhancer98",
+        "goldMineEnhancer980",
+      ],
       enteredAges: ["age0", "age1"],
     });
     const context = {
@@ -1308,16 +1412,75 @@ describe("required progression strategy", () => {
 
     expect(strategy.decideAction(state, context)).toEqual({
       type: "build",
+      building: "townHall",
+      count: 1,
+    });
+
+    const withTownHall = state.build("townHall", 1);
+    expect(strategy.decideAction(withTownHall, context)).toEqual({
+      type: "build",
       building: "university",
       count: 1,
     });
 
-    const withUniversity = state.build("university", 1);
+    const withUniversity = withTownHall.build("university", 1);
     expect(strategy.decideAction(withUniversity, context)).toEqual({
       type: "build",
       building: "market",
       count: 1,
     });
+  });
+
+  it("does not let an unaffordable market target block the Age-2 exit", () => {
+    const priorAgeBattles = encounterDefinitions
+      .filter(({ age }) => age < 2)
+      .map(({ key }) => key);
+    const state = makeState({
+      people: 20_000,
+      buildings: {
+        farm: 2400,
+        lumberYard: 2400,
+        quarry: 2400,
+        goldMine: 2400,
+        townHall: 120,
+        university: 510,
+        market: 419,
+      },
+      resources: { peopleCapacity: 20_000 },
+      workers: { food: 12_000, wood: 4000, stone: 2000, gold: 2000 },
+      defeatedEncounters: priorAgeBattles,
+      boughtUpgrades: [
+        "farmEnhancer9",
+        "farmEnhancer98",
+        "farmEnhancer980",
+        "lumberYardEnhancer9",
+        "lumberYardEnhancer98",
+        "lumberYardEnhancer980",
+        "quarryEnhancer9",
+        "quarryEnhancer98",
+        "quarryEnhancer980",
+        "goldMineEnhancer9",
+        "goldMineEnhancer98",
+        "goldMineEnhancer980",
+      ],
+      enteredAges: ["age0", "age1"],
+    });
+    class PlayerEconomyProbe extends PlayerStrategy {
+      economyAction(
+        economyState: CivilizationState,
+        context: SimulationContext,
+      ) {
+        return this.getAgeTwoProductionAction(economyState, context);
+      }
+    }
+
+    expect(
+      new PlayerEconomyProbe().economyAction(state, {
+        gameTime: 0,
+        snapshots: [],
+        timing: zeroTiming,
+      }),
+    ).toBeNull();
   });
 
   it("does not miss a housing cap with fractional capacity precision", () => {

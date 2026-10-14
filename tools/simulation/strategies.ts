@@ -142,13 +142,26 @@ const ageTwoProductionTargets: readonly BuildingKey[] = [
   "quarry",
   "goldMine",
 ];
-const ageTwoProductionTargetCount = 9800;
-const ageTwoInfrastructureTargets: readonly {
+const ageTwoProductionTargetCount = 2400;
+const ageTwoTownHallTarget: { building: BuildingKey; targetCount: number } = {
+  building: "townHall",
+  targetCount: 120,
+};
+const ageTwoRequiredInfrastructureTargets: readonly {
   building: BuildingKey;
   targetCount: number;
 }[] = [
-  { building: "university", targetCount: 1 },
-  { building: "market", targetCount: 1 },
+  { building: "university", targetCount: 510 },
+];
+const ageTwoOptionalInfrastructureTargets: readonly {
+  building: BuildingKey;
+  targetCount: number;
+}[] = [
+  { building: "market", targetCount: 430 },
+];
+const ageTwoInfrastructureTargets = [
+  ...ageTwoRequiredInfrastructureTargets,
+  ...ageTwoOptionalInfrastructureTargets,
 ];
 
 /**
@@ -3032,7 +3045,7 @@ export class PlayerStrategy extends ResearchStrategy {
     }
     if (
       state?.getCurrentAge()?.key === "age2" &&
-      !this.hasCompletedAgeTwoProductionTargets(state)
+      !this.hasCompletedAgeTwoEconomyTargets(state)
     ) {
       return {
         food: 0.6,
@@ -3207,10 +3220,10 @@ export class PlayerStrategy extends ResearchStrategy {
     );
   }
 
-  private hasCompletedAgeTwoProductionTargets(
+  private hasCompletedAgeTwoEconomyTargets(
     state: CivilizationState,
   ): boolean {
-    return ageTwoProductionTargets.every((building) => {
+    const productionComplete = ageTwoProductionTargets.every((building) => {
       const targetUpgrade = upgradeDefinitions.find(
         ({ unlock }) =>
           unlock.building === building &&
@@ -3221,6 +3234,14 @@ export class PlayerStrategy extends ResearchStrategy {
         (!targetUpgrade || state.isUpgradeBought(targetUpgrade.key))
       );
     });
+    const infrastructureComplete =
+      state.getBuildingCount(ageTwoTownHallTarget.building) >=
+        ageTwoTownHallTarget.targetCount &&
+      ageTwoRequiredInfrastructureTargets.every(
+        ({ building, targetCount }) =>
+          state.getBuildingCount(building) >= targetCount,
+      );
+    return productionComplete && infrastructureComplete;
   }
 
   private getProductionUpgradeAction(
@@ -3269,7 +3290,7 @@ export class PlayerStrategy extends ResearchStrategy {
       : null;
   }
 
-  private getAgeTwoProductionAction(
+  protected getAgeTwoProductionAction(
     state: CivilizationState,
     context: SimulationContext,
   ): SimulationAction | null {
@@ -3280,14 +3301,16 @@ export class PlayerStrategy extends ResearchStrategy {
       return this.focusWorkersForGather(state, housingAction, context);
     }
 
-    for (const { building, targetCount } of ageTwoInfrastructureTargets) {
-      const infrastructureAction = this.getBuildingTargetAction(
-        state,
-        building,
-        targetCount,
-        context,
-      );
-      if (infrastructureAction) return infrastructureAction;
+    let deferredEconomyAction: SimulationAction | null = null;
+    const townHallAction = this.getBuildingTargetAction(
+      state,
+      ageTwoTownHallTarget.building,
+      ageTwoTownHallTarget.targetCount,
+      context,
+    );
+    if (townHallAction) {
+      if (townHallAction.type === "build") return townHallAction;
+      deferredEconomyAction = townHallAction;
     }
 
     for (const building of ageTwoProductionTargets) {
@@ -3296,7 +3319,10 @@ export class PlayerStrategy extends ResearchStrategy {
         building,
         context,
       );
-      if (upgradeAction) return upgradeAction;
+      if (upgradeAction) {
+        if (upgradeAction.type === "buyUpgrade") return upgradeAction;
+        deferredEconomyAction ??= upgradeAction;
+      }
 
       if (state.getBuildingCount(building) < ageTwoProductionTargetCount) {
         const buildingAction = this.getBuildingTargetAction(
@@ -3305,16 +3331,35 @@ export class PlayerStrategy extends ResearchStrategy {
           ageTwoProductionTargetCount,
           context,
         );
-        if (buildingAction) return buildingAction;
+        if (buildingAction) {
+          if (buildingAction.type === "build") return buildingAction;
+          deferredEconomyAction ??= buildingAction;
+        }
       }
     }
-    return this.hasCompletedAgeTwoProductionTargets(state)
-      ? null
-      : this.focusWorkersForGather(
-          state,
-          { type: "gather", resource: "food" },
-          context,
-        );
+
+    for (const { building, targetCount } of ageTwoInfrastructureTargets) {
+      const infrastructureAction = this.getBuildingTargetAction(
+        state,
+        building,
+        targetCount,
+        context,
+      );
+      if (infrastructureAction) {
+        if (infrastructureAction.type === "build") return infrastructureAction;
+        deferredEconomyAction ??= infrastructureAction;
+      }
+    }
+
+    if (this.hasCompletedAgeTwoEconomyTargets(state)) return null;
+    return (
+      deferredEconomyAction ??
+      this.focusWorkersForGather(
+        state,
+        { type: "gather", resource: "food" },
+        context,
+      )
+    );
   }
 
   private getBattleTwoInfrastructureAction(

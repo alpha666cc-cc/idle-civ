@@ -108,3 +108,9 @@ fast-age	275 min
 military	275 min
 balanced	286 min
 
+
+
+swap order of wonders : trade first then military, metalcraft -> science  ( university 980 too strong)
+battle 8 too strong, wonder mili too strong, age2 boss too strong
+
+military tabis lagging, 

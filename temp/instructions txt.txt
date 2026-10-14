@@ -122,73 +122,9 @@ if I have 500 trade pwoer, I can trade 500 gold to equivalent)
 
 
 
-simulation
-stat from scratch first ( we wil make snapshot at the end of each age)
-assume 10 click or 1 action/second ( action, but something, add or remove workers, launch battle) for first age 
-then do actions( buy all, change workers) then skip one minute then continue
-record productions/#buildings at the end of each battle and age ( battle are submilestone, especially the first one)
-launch with an objective ( N of one particular building, reach a particular age or battle)
-the simulator will need to have mutilple strategies ( please advice )
-add a vs target to launch simulator
-
--> optional can we launch several thread to simulate diffrent strategy : start launch X thread with  X strategy, after one hour equivalent game, see which worked best 
-( record the best, so next time it is one of the strategy used for this part as well), take the best strategy results and relaucnh X threads etc
-
-
  
 
 
-
-
-
-
-encoutner, remove ennemy specific bonus
-verify, on a battle ( and battle simulation), ennemy should have 
-- all bonus from all previous ages technologies
--  bonus from technology to reach the unit it has access to
-- if it is the boss, all bonus of currant age technologies
-
-
-
-
-
-
-
-
-simulation : 
-- improve research dynamic algo
- -check why dynamic research diverge from player research 
- - delay military research ( if no prod boost) until battle resources are colllected
-- better worker assignment:
-  -> solve worker assignment reverting it self to often
-  -> try a 100% worker assignment 
-- objective simulation : 
-  -> defines objectives/ sub objective to better do the optimization of worker/research
-  
-  
-balance :
-- ship are too strong :
-  -> ideas
-   - default battle order so that archer are more protected?
-   - anti naval boost for some units?
-   - additional age1 ground unit : berserker more powerful , spammable
-   - cavalery>infantery>archer/siege>naval>cavalery
-   
-- boost torsion_physics
-
-others:
-
-
-- put your knowledge in a file to feed other models
-- resume all mecanics /boosts to feed another ai for opimizati
-
-
-
-back to the plan: what to do first?
-- improve research dynamic algo
-- better worker assignment
-- objective simulation
-- balance
 
 
 objective simulation:
@@ -226,25 +162,147 @@ what do you think of it?
 for now consider only age0 and age1
 
 
+how to make trade power total stay in the same order as gold production?
+
+simulator bug : 
+D:\work\dev\idle-civ\saves\bugs\simulator-bug2.xml
+do simualtion with : all units + compagnion cavalery + composite archer -> 
+Missing units for Marathon
+Recruit these units
+
+Composite Archer ×10.37e3
+Legionary ×65.74e3
+Ballista ×1.99e3
+Berserker ×1
+Minimum winning army
+
+Iron Spearman ×1.18e3
+Iron Swordsman ×1.16e3
+Iron Chariot ×650
+Iron Cavalry ×792
+War Galley ×419
+War Elephant ×415
+Ballista ×2.4e3
+Quinquereme ×418
+Composite Archer ×10.37e3
+Legionary ×65.74e3
+Berserker ×1
+Additional resource cost
+
+military: 1.87e30
+metalwork: 579.11e27
+wood: 33.55e27
+Research needed for new unit types
+
+Civil Service
+Crop Rotation
+Recurve Archery
+Additional research cost (science): 74.96e24
+
+Additional military (optimized): 1.87e30
+
+Recommended formations
+
+Iron Spearman: Standard
+Iron Swordsman: Standard
+Iron Chariot: Standard
+Iron Cavalry: Standard
+War Galley: Standard
+War Elephant: Standard
+Ballista: Backline
+Quinquereme: Standard
+Berserker: Standard
+Legionary: Backline
+Companion Cavalry: Standard
+Composite Archer: Standard
+Recommended targeting orders
+
+Iron Spearman: Standard
+Iron Swordsman: Standard
+Iron Chariot: Standard
+Iron Cavalry: Standard
+War Galley: Standard
+War Elephant: Standard
+Ballista: Standard
+Quinquereme: Standard
+Berserker: Standard
+Legionary: Standard
+Companion Cavalry: Standard
+Composite Archer: Standard
 
 
 
+add hoplite : 
+
+Missing units for Marathon
+Recruit these units
+
+Hoplite ×70.88e3
+Ballista ×2.2e3
+Legionary ×93.37e3
+Companion Cavalry ×16.8e3
+Berserker ×1
+Minimum winning army
+
+Iron Spearman ×1.18e3
+Iron Swordsman ×1.16e3
+Iron Chariot ×650
+Iron Cavalry ×792
+War Galley ×419
+War Elephant ×415
+Ballista ×2.6e3
+Quinquereme ×418
+Hoplite ×70.88e3
+Legionary ×93.37e3
+Companion Cavalry ×16.8e3
+Berserker ×1
+Additional resource cost
+
+military: 17.56e33
+metalwork: 6.05e33
+Research needed for new unit types
+
+Civil Service
+Crop Rotation
+Phalanx Doctrine
+Shock Cavalry
+Additional research cost (science): 345.77e24
+
+Additional military (optimized): 17.56e33
+
+Recommended formations
+
+Iron Spearman: Standard
+Iron Swordsman: Standard
+Iron Chariot: Standard
+Iron Cavalry: Standard
+War Galley: Standard
+War Elephant: Standard
+Ballista: Backline
+Quinquereme: Standard
+Berserker: Standard
+Legionary: Standard
+Hoplite: Standard
+Companion Cavalry: Standard
+Composite Archer: Standard
+Recommended targeting orders
+
+Iron Spearman: Standard
+Iron Swordsman: Standard
+Iron Chariot: Standard
+Iron Cavalry: Standard
+War Galley: Standard
+War Elephant: Standard
+Ballista: Standard
+Quinquereme: Standard
+Berserker: Standard
+Legionary: Standard
+Hoplite: Standard
+Companion Cavalry: Standard
+Composite Archer: Standard
 
 
-
-Strategy	Age 2 reached
-player	158 min
-research	258 min
-production	272 min
-fast-age	275 min
-military	275 min
-balanced	286 min
-
-
-
-
-
-
+military with hoplite should be inferior, at worst we don't use hoplite!
 
 
 
