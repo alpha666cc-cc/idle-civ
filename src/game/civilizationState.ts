@@ -1786,8 +1786,19 @@ export class CivilizationState {
       ExpNumber.ZERO,
       this.getAttributeValue("buildingCostMultiplier"),
     );
+    // The stat's own contributors (the Master Builder chain, wonders, ...) fold
+    // into every base cost through `globalMultiplier`, so expose them with their
+    // source ids: the Gamepedia building page lists them under the aggregate
+    // line the same way the stat page lists its composition.
+    const multiplierSources = this.activeBonuses().filter(
+      ([, bonus]) =>
+        bonus.destination === "buildingCostMultiplier" &&
+        (bonus.type === "attributeFlat" ||
+          bonus.type === "attributeMultiplier"),
+    );
     return {
       sources,
+      multiplierSources,
       globalMultiplier,
       reductions: {
         ...reductions,

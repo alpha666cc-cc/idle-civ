@@ -332,7 +332,7 @@ export default function GamepediaModal({
     const effects = gameState.getBuildingEffects(building.key);
     const totalEffects = gameState.getBuildingEffects(building.key, count);
     const parameters = gameState.getBuildingCostParameters(building.key);
-    const { sources, reductions, globalMultiplier } =
+    const { sources, multiplierSources, reductions, globalMultiplier } =
       gameState.getBuildingCostModifiers(building.key);
 
     return (
@@ -395,6 +395,12 @@ export default function GamepediaModal({
             {renderReference("buildingCostMultiplier")}: ×
             {formatNumber(globalMultiplier, numberFormat)}
           </p>
+          {multiplierSources.map(([source, bonus], index) => (
+            <p key={`stat-${source}-${index}`}>
+              {renderReference(source)} — {bonusEffectLabel(bonus)}:{" "}
+              {bonusValueText(bonus, numberFormat)}
+            </p>
+          ))}
           {sources.length === 0 && globalMultiplier.eq(ExpNumber.ONE) && (
             <p>No active cost reductions.</p>
           )}
