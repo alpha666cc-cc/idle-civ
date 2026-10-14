@@ -47,17 +47,17 @@
       {
         "type": "attributeMultiplier",
         "destination": "marketPower",
-        "value": 2.1
+        "value": 2
       },
       {
         "type": "costReductionFactor",
         "destination": "townHall",
-        "value": "1.6"
+        "value": "1.58"
       },
       {
         "type": "costReductionFactor",
         "destination": "advancedProductionBuildings",
-        "value": "1.65"
+        "value": "1.60"
       },
       {
         "type": "attributeMultiplier",

@@ -144,7 +144,7 @@
       },
       {
         "resource": "metalwork",
-        "base": "1e30",
+        "base": "1e39",
         "factor": 1
       }
     ],
@@ -498,17 +498,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "2e41",
+        "base": "5e43",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "2e41",
+        "base": "5e43",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e30",
+        "base": "1e38",
         "factor": 1
       }
     ],
@@ -847,12 +847,12 @@
     "costs": [
       {
         "resource": "stone",
-        "base": "3e41",
+        "base": "1e44",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e30",
+        "base": "1e38",
         "factor": 1
       }
     ],
@@ -1186,17 +1186,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "4e41",
+        "base": "4e44",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "4e41",
+        "base": "1e44",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "3e30",
+        "base": "3e38",
         "factor": 1
       }
     ],
@@ -1502,22 +1502,22 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "5.442595509414944e42",
+        "base": "5e42",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "5.442595509414944e42",
+        "base": "4e41",
         "factor": 1
       },
       {
         "resource": "food",
-        "base": "5.442595509414944e42",
+        "base": "1e47",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "4e32",
         "factor": 1
       }
     ],
@@ -1550,22 +1550,22 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "6.58642101814543e400",
+        "base": "5e60",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "6.58642101814543e400",
+        "base": "5e60",
         "factor": 1
       },
       {
         "resource": "food",
-        "base": "6.58642101814543e400",
+        "base": "6e62",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e52",
         "factor": 1
       }
     ],
@@ -1866,22 +1866,22 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "5.442595509414944e42",
+        "base": "20e42",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "5.442595509414944e42",
+        "base": "2e42",
         "factor": 1
       },
       {
         "resource": "gold",
-        "base": "5.442595509414944e42",
+        "base": "100e39",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e33",
         "factor": 1
       }
     ],
@@ -1889,7 +1889,7 @@
       {
         "type": "attributeFlat",
         "destination": "universityPower",
-        "value": 1
+        "value": 0.1
       },
       {
         "type": "attributeMultiplier",
@@ -1914,22 +1914,22 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "6.58642101814543e400",
+        "base": "2e61",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "6.58642101814543e400",
+        "base": "1e61",
         "factor": 1
       },
       {
         "resource": "gold",
-        "base": "6.58642101814543e400",
+        "base": "2e58",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "2e53",
         "factor": 1
       }
     ],
@@ -1947,7 +1947,7 @@
       {
         "type": "costReductionPercent",
         "destination": "university",
-        "value": 0.5
+        "value": 0.75
       }
     ]
   },
@@ -2220,17 +2220,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "5.442595509414944e42",
+        "base": "5e42",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "5.442595509414944e42",
+        "base": "500e39",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "2e29",
         "factor": 1
       }
     ],
@@ -2263,17 +2263,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "6.58642101814543e400",
+        "base": "3e60",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "6.58642101814543e400",
+        "base": "3e60",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e47",
         "factor": 1
       }
     ],
@@ -2291,7 +2291,7 @@
       {
         "type": "costReductionPercent",
         "destination": "smithy",
-        "value": 0.5
+        "value": 0.75
       }
     ]
   },
@@ -2544,17 +2544,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "5.442595509414944e42",
+        "base": "1e44",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "5.442595509414944e42",
+        "base": "1e43",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "5e33",
         "factor": 1
       }
     ],
@@ -2562,7 +2562,7 @@
       {
         "type": "attributeFlat",
         "destination": "marketPower",
-        "value": 1
+        "value": 0.5
       },
       {
         "type": "attributeMultiplier",
@@ -2587,17 +2587,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "6.58642101814543e400",
+        "base": "4e62",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "6.58642101814543e400",
+        "base": "4e62",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e54",
         "factor": 1
       }
     ],
@@ -2605,7 +2605,7 @@
       {
         "type": "attributeFlat",
         "destination": "marketPower",
-        "value": 1
+        "value": 0.5
       },
       {
         "type": "attributeMultiplier",
@@ -2883,17 +2883,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "1e50",
+        "base": "1e55",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "1e50",
+        "base": "1e55",
         "factor": 1
       },
       {
         "resource": "trade",
-        "base": "1e40",
+        "base": "1e60",
         "factor": 1
       }
     ],
@@ -2906,7 +2906,7 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings",
-        "value": 0.72
+        "value": 0.8
       }
     ]
   },
@@ -2916,22 +2916,22 @@
     "name": "The Colossus Foundry",
     "description": "A monumental forge multiplies metalwork production a thousandfold.",
     "building": "smithy",
-    "threshold": 10000,
+    "threshold": 7000,
     "tier": 0,
     "costs": [
       {
         "resource": "wood",
-        "base": "1e50",
+        "base": "1e59",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "1e50",
+        "base": "5e58",
         "factor": 1
       },
       {
         "resource": "military",
-        "base": "1e40",
+        "base": "10e45",
         "factor": 1
       }
     ],
@@ -2944,7 +2944,7 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings",
-        "value": 0.94
+        "value": 0.8
       }
     ]
   },
@@ -2954,22 +2954,22 @@
     "name": "The Great Library of Alexandria",
     "description": "A vast center of learning multiplies science production a thousandfold.",
     "building": "university",
-    "threshold": 18000,
+    "threshold": 12500,
     "tier": 0,
     "costs": [
       {
         "resource": "wood",
-        "base": "1e50",
+        "base": "20e60",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "1e50",
+        "base": "20e60",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "1e40",
+        "base": "2e54",
         "factor": 1
       }
     ],
@@ -2982,6 +2982,11 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings",
+        "value": 0.8276
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allUnits",
         "value": 0.8276
       }
     ]

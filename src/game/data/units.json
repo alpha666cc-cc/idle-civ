@@ -766,17 +766,17 @@
       {
         "resource": "military",
         "base": 3e11,
-        "factor": 1.8
+        "factor": 1.6
       },
       {
         "resource": "metalwork",
         "base": 1e10,
-        "factor": 1.7
+        "factor": 1.6
       },
       {
         "resource": "wood",
         "base": 1e13,
-        "factor": 1.7
+        "factor": 1.6
       }
     ]
   },

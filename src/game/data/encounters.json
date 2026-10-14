@@ -362,6 +362,11 @@
         "type": "costReductionFactor",
         "destination": "allBuildings",
         "value": 0.8
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "market",
+        "value": 1
       }
     ],
     "unlocks": []
@@ -390,8 +395,8 @@
       },
       {
         "unitId": "archer_classical",
-        "count": 500000,
-        "label": "500k archers",
+        "count": 1000000,
+        "label": "1M archers",
         "formation": "backline"
       },
       {
@@ -466,8 +471,8 @@
       },
       {
         "unitId": "trader_classical",
-        "count": 300000,
-        "label": "300k trade galleys"
+        "count": 100000,
+        "label": "100k trade galleys"
       }
     ],
     "bonuses": [

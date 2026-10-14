@@ -70,7 +70,7 @@
     "statBonuses": [
       {
         "attribute": "unitAll.hp",
-        "multiplier": 1.5
+        "multiplier": 2
       },
       {
         "attribute": "unitAll.attack",
@@ -80,7 +80,7 @@
     "damageTakenVs": [
       {
         "tag": "ranged",
-        "multiplier": 0.7
+        "multiplier": 0.5
       }
     ]
   },
