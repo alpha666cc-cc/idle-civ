@@ -2855,7 +2855,7 @@
       },
       {
         "resource": "trade",
-        "base": "1e40",
+        "base": "1e50",
         "factor": 1
       }
     ],
