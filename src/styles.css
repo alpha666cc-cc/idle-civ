@@ -473,6 +473,12 @@ button:focus-visible {
   color: #56635a;
   text-transform: none;
 }
+.build-stamp {
+  margin-left: 8px;
+  color: #56635a;
+  text-transform: none;
+  white-space: nowrap;
+}
 .pulse {
   width: 6px;
   height: 6px;

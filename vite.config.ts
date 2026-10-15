@@ -1,4 +1,5 @@
 import react from "@vitejs/plugin-react";
+import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import type { IncomingMessage } from "node:http";
 import path from "node:path";
@@ -148,10 +149,39 @@ const battleDebugWriter = (): Plugin => ({
   },
 });
 
+const runGit = (args: readonly string[]): string | null => {
+  try {
+    return execFileSync("git", args, {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    // Not a git checkout (CI tarball, zip download): the UI shows "dev".
+    return null;
+  }
+};
+
+/**
+ * Build version stamped into the app via `define`: `git describe` when tags
+ * exist, otherwise the short SHA (with a `-dirty` suffix when the tree is
+ * modified), e.g. `v0.3.0-4-g989c077` or `989c077-dirty`. Start tagging
+ * releases (`git tag v0.1.0`) and the version numbers itself from then on.
+ */
+const appVersion =
+  runGit(["describe", "--tags", "--always", "--dirty"]) ?? "dev";
+const appCommitDate = runGit(["log", "-1", "--format=%cs"]) ?? "";
+
 // https://vite.dev/config/
 export default defineConfig({
   // Relative base so one build serves both the GitHub Pages subpath
   // (https://<user>.github.io/idle-civ/) and a root-served LAN preview.
   base: "./",
+  define: {
+    __APP_BUILD_INFO__: JSON.stringify({
+      version: appVersion,
+      commitDate: appCommitDate,
+    }),
+  },
   plugins: [react(), devLogWriter(), battleDebugWriter()],
 });

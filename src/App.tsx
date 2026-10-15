@@ -112,6 +112,7 @@ import {
   saveTextToFile,
 } from "./components/saveFileIo";
 import { resolveEntryId } from "./game/dataIds";
+import { appBuildInfo } from "./buildInfo";
 import {
   DEFAULT_DEV_LOG_SNAPSHOT_SECONDS,
   appendDevLogEvent,
@@ -1839,6 +1840,9 @@ function App() {
 
         <div className="sidebar-footer">
           <span className="pulse" /> Autosaving <span>just now</span>
+          <span className="build-stamp" title={appBuildInfo.commitDate}>
+            v{appBuildInfo.version}
+          </span>
         </div>
       </aside>
 
@@ -2769,6 +2773,25 @@ function App() {
                   Import
                 </button>
               </div>
+
+              <div className="workbench-heading settings-section-heading">
+                <div>
+                  <p className="eyebrow">About</p>
+                  <h3>Build</h3>
+                </div>
+                <span>v{appBuildInfo.version}</span>
+              </div>
+              <p className="dev-tools-copy">
+                Built from commit{" "}
+                <strong>
+                  {appBuildInfo.version}
+                  {appBuildInfo.commitDate
+                    ? ` (${appBuildInfo.commitDate})`
+                    : ""}
+                </strong>
+                . Check this number matches before reporting a bug or
+                comparing two phones.
+              </p>
             </section>
           )}
         </div>
