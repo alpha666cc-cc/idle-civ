@@ -1550,12 +1550,12 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "5e60",
+        "base": "4e60",
         "factor": 1
       },
       {
         "resource": "stone",
-        "base": "5e60",
+        "base": "2e60",
         "factor": 1
       },
       {
@@ -2268,7 +2268,7 @@
       },
       {
         "resource": "stone",
-        "base": "3e60",
+        "base": "2e60",
         "factor": 1
       },
       {
@@ -2893,7 +2893,7 @@
       },
       {
         "resource": "trade",
-        "base": "1e60",
+        "base": "2e57",
         "factor": 1
       }
     ],
@@ -2926,17 +2926,17 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "1e59",
-        "factor": 1
-      },
-      {
-        "resource": "stone",
         "base": "5e58",
         "factor": 1
       },
       {
+        "resource": "stone",
+        "base": "2.5e58",
+        "factor": 1
+      },
+      {
         "resource": "military",
-        "base": "10e45",
+        "base": "8e45",
         "factor": 1
       }
     ],
@@ -2964,7 +2964,7 @@
     "name": "The Great Library of Alexandria",
     "description": "A vast center of learning multiplies science production a thousandfold.",
     "building": "university",
-    "threshold": 12500,
+    "threshold": 12000,
     "tier": 0,
     "costs": [
       {
@@ -2974,12 +2974,12 @@
       },
       {
         "resource": "stone",
-        "base": "20e60",
+        "base": "10e60",
         "factor": 1
       },
       {
         "resource": "metalwork",
-        "base": "2e54",
+        "base": "5e53",
         "factor": 1
       }
     ],
@@ -2992,12 +2992,17 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings",
-        "value": 0.8276
+        "value": 0.85
       },
       {
         "type": "costReductionFactor",
         "destination": "allUnits",
         "value": 0.9
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "food",
+        "value": 400
       }
     ]
   }

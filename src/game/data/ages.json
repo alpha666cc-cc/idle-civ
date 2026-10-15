@@ -6,7 +6,7 @@
     "description": "The first settlements rise from scattered families into a village. Fire, bronze, and the first walls.",
     "buildingThreshold": 0,
     "unlocks": [],
-    "research": { "base": 200, "factor": 12 },
+    "research": { "base": 200, "factor": 12, "exponent": 0.5 },
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -32,7 +32,7 @@
     "description": "Iron replaces bronze. Empires rise on chariots and disciplined spearmen.",
     "buildingThreshold": 1500,
     "unlocks": [],
-    "research": { "base": "1e9", "factor": 230 },
+    "research": { "base": "1e9", "factor": 230, "exponent": 0.5 },
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -83,7 +83,7 @@
     "description": "City-states and legions. The old units fall, and a new order takes the field.",
     "buildingThreshold": 15000,
     "unlocks": [],
-    "research": { "base": "1e21", "factor": 2000 },
+    "research": { "base": "1e21", "factor": 2000, "exponent": 0.5 },
     "bonuses": []
   },
   {
@@ -93,7 +93,7 @@
     "description": "Knights and castles. Feudal lords gather wealth across continents.",
     "buildingThreshold": 1.5e6,
     "unlocks": [],
-    "research": { "base": "1e21", "factor": 20000 },
+    "research": { "base": "1e21", "factor": 20000, "exponent": 0.5 },
     "bonuses": []
   },
   {
@@ -103,7 +103,7 @@
     "description": "Artillery and exploration. The world grows smaller as empires reach across the sea.",
     "buildingThreshold": 1.5e8,
     "unlocks": [],
-    "research": { "base": "1e27", "factor": 200000 },
+    "research": { "base": "1e27", "factor": 200000, "exponent": 0.5 },
     "bonuses": []
   },
   {
@@ -113,7 +113,7 @@
     "description": "Railways, factories, and mass armies. The scale of war changes forever.",
     "buildingThreshold": 1.5e9,
     "unlocks": [],
-    "research": { "base": "1e33", "factor": 2000000 },
+    "research": { "base": "1e33", "factor": 2000000, "exponent": 0.5 },
     "bonuses": []
   },
   {
@@ -123,7 +123,7 @@
     "description": "Tanks, aircraft, and orbital weapons. The final age before the stars.",
     "buildingThreshold": 1.5e10,
     "unlocks": [],
-    "research": { "base": "1e39", "factor": 20000000 },
+    "research": { "base": "1e39", "factor": 20000000, "exponent": 0.5 },
     "bonuses": []
   }
 ]
