@@ -140,9 +140,10 @@ The Age-0 rebalance adds these bands:
 | Bronze Axeman (`axeman_bronze`)     | military 300,000; metalwork 20,000 | 3      |
 
 All other buyable units use factor 5. The 172 research definitions carry no individual
-price: each age owns a `research: { base, factor }` schedule (`age0` 1,000/10, `age1`
-1e9/200, then ×1e6 base and ×10 factor per age) and prices purchase `n` of that age at
-`base × factor^(√n − 1)`. The counter `n` counts only research bought in the current age,
+price: each age owns a `research: { base, factor, exponent }` schedule (`age0` 1,000/10, `age1`
+1e9/200, then ×1e6 base and ×10 factor per age; exponent 0.5 everywhere — the
+square-root curve) and prices purchase `n` of that age at
+`base × factor^((n^exponent) − 1)`. The counter `n` counts only research bought in the current age,
 so it restarts at 0 on every age change, and buying a tech from an earlier age costs the
 current price without advancing it.
 

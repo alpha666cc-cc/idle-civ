@@ -286,8 +286,9 @@ type BuildingEffects = {
   and smithy/market 12. The Age-0 unit generator likewise uses factor 5 except the
   Tribesman (4) and Bronze Spearman/Axeman (3); their base costs are explicit in
   `tools/gen/units.mjs`. Research is **priced by the age the player is in**, not
-  globally: each age carries a `research: { base, factor }` in `ages.json` and
-  prices purchase `n` of that age at `base × factor^(√n − 1)`, where `n` counts
+  globally: each age carries a `research: { base, factor, exponent }` in `ages.json` and
+  prices purchase `n` of that age at `base × factor^((n^exponent) − 1)`
+  (`exponent` 0.5 = the square-root curve), where `n` counts
   only research bought _in that age_. The pricing age is `getCurrentAge()` — the age
   the player has advanced **into** by _completing_ the previous one (its battles +
   its building target) and taking that age's completion reward. Age bonuses in

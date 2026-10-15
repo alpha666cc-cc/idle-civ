@@ -812,9 +812,10 @@ export class CivilizationState {
 
   /**
    * The cost of `count` sequential research purchases after the current bought
-   * count. Priced by the **current** age's schedule (`base × factor^(√n − 1)`),
-   * so a tech bought from an earlier age costs this same price and simply does
-   * not advance the curve. Cost-reduction bonuses still apply on top.
+   * count. Priced by the **current** age's schedule
+   * (`base × factor^((n^exponent) − 1)`, 0.5 = the square-root curve), so a tech
+   * bought from an earlier age costs this same price and simply does not
+   * advance the curve. Cost-reduction bonuses still apply on top.
    */
   getResearchCostForCount(count: number): BuildingCost[] {
     const purchases = Number.isFinite(count)
@@ -824,7 +825,11 @@ export class CivilizationState {
 
     const schedule =
       this.getCurrentAge()?.research ??
-      ({ base: ExpNumber.fromNumber(100), factor: 10 } as const);
+      ({
+        base: ExpNumber.fromNumber(100),
+        factor: 10,
+        exponent: 0.5,
+      } as const);
     const bought = this.getResearchCount();
 
     // Research is a buyable like buildings and units, so it takes the same four
@@ -841,13 +846,14 @@ export class CivilizationState {
       ExpNumber.fromNumber(schedule.factor).pow(reductions.factor),
     );
 
-    // Unit n costs base × factor^(√n − 1), where n is the purchase ordinal
-    // within this age — so the first tech of an age costs exactly its base.
+    // Unit n costs base × factor^((n^exponent) − 1), where n is the purchase
+    // ordinal within this age — so the first tech of an age costs exactly its
+    // base, and exponent 0.5 reproduces the old square-root curve bit-for-bit.
     let total = ExpNumber.ZERO;
     for (let offset = 0; offset < purchases; offset += 1) {
       const purchaseNumber = bought + offset + 1;
       const unitPrice = unitBase
-        .mul(unitFactor.pow(Math.sqrt(purchaseNumber) - 1))
+        .mul(unitFactor.pow(Math.pow(purchaseNumber, schedule.exponent) - 1))
         .mul(reductions.percent);
       total = total.add(
         ExpNumber.max(ExpNumber.ZERO, unitPrice.sub(reductions.flat)),

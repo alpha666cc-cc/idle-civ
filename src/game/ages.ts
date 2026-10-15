@@ -17,13 +17,16 @@ export type ResourceCostMultiplier = {
 };
 
 /**
- * The price schedule an age uses for research: `base × factor^(√n − 1)`,
+ * The price schedule an age uses for research: `base × factor^((n^exponent) − 1)`,
  * where `n` is the number of research bought *in that age*. `base` is what the
- * age's first tech costs and `factor` how fast the curve climbs within it.
+ * age's first tech costs, `factor` how fast the curve climbs within it, and
+ * `exponent` how fast the climb itself accelerates (`0.5` reproduces the old
+ * square-root curve exactly: the first tech still costs precisely `base`).
  */
 export type AgeResearchCost = {
   base: ExpNumber;
   factor: number;
+  exponent: number;
 };
 
 /** One ordered campaign age with its building target and optional entry bonuses. */
@@ -51,7 +54,11 @@ export class AgeDefinition extends GameObject {
     unlocks: readonly string[] = [],
     bonuses: readonly Bonus[] = [],
     costMultipliers: readonly ResourceCostMultiplier[] = [],
-    research: AgeResearchCost = { base: ExpNumber.fromNumber(100), factor: 10 },
+    research: AgeResearchCost = {
+      base: ExpNumber.fromNumber(100),
+      factor: 10,
+      exponent: 0.5,
+    },
   ) {
     super(key, description);
     this.key = key;
@@ -77,7 +84,7 @@ type AgeData = {
     value: number | string;
   }[];
   costMultipliers?: { resource: string; factor: number | string }[];
-  research?: { base: number | string; factor: number };
+  research?: { base: number | string; factor: number; exponent?: number };
 };
 
 const toAgeDefinition = (data: AgeData): AgeDefinition => {
@@ -106,6 +113,7 @@ const toAgeDefinition = (data: AgeData): AgeDefinition => {
       ? {
           base: ExpNumber.from(data.research.base),
           factor: data.research.factor,
+          exponent: data.research.exponent ?? 0.5,
         }
       : undefined,
   );

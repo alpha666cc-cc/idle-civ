@@ -120,6 +120,15 @@ const buyPrerequisiteClosure = (
 };
 
 describe("research data integrity", () => {
+  it("keeps every age on the 0.5 square-root research exponent", () => {
+    // The exponent knob is live data now, but no rebalance has shipped: every
+    // age still prices on the old sqrt curve, so a non-0.5 value in ages.json
+    // must be a deliberate balance decision, not drift.
+    for (const age of ageDefinitions) {
+      expect(age.research.exponent, `${age.key} research exponent`).toBe(0.5);
+    }
+  });
+
   it("builds battle research from prior ages and unit prerequisites", () => {
     const ids = researchIdsForBattle(1, ["spearman_bronze"]);
     expect(ids).toContain("agriculture");
@@ -172,12 +181,15 @@ describe("research data integrity", () => {
  *  particular factor value. */
 const age0Schedule = findAgeDefinition("age0")!.research;
 const age0Price = (n: number): number =>
-  age0Schedule.base.toNumber() * age0Schedule.factor ** (Math.sqrt(n) - 1);
+  age0Schedule.base.toNumber() *
+  age0Schedule.factor ** (n ** age0Schedule.exponent - 1);
 
 /** The age1 first-tech price, also read from data. */
 const age1FirstPrice = (): number => {
   const schedule = findAgeDefinition("age1")!.research;
-  return schedule.base.toNumber() * schedule.factor ** (Math.sqrt(1) - 1);
+  return (
+    schedule.base.toNumber() * schedule.factor ** (1 ** schedule.exponent - 1)
+  );
 };
 
 /**
@@ -294,7 +306,7 @@ describe("research buying", () => {
 
   /**
    * Research is a buyable like buildings and units, priced on the current age's own
-   * `base × factor^(√n − 1)` schedule. Only a bonus naming `"research"` may discount
+   * `base × factor^((n^exponent) − 1)` schedule. Only a bonus naming `"research"` may discount
    * it — never the blanket `allBuildings` reductions nor `buildingCostMultiplier`.
    */
   describe("research cost pipeline", () => {
@@ -304,7 +316,7 @@ describe("research buying", () => {
       expect(firstCost).toBeCloseTo(age0Schedule.base.toNumber(), 9);
     });
 
-    it("scales with purchase count using sqrt curve", () => {
+    it("scales with purchase count using the age's exponent curve", () => {
       const state = stateWith(1e30);
       const costs = state.getResearchCostForCount(3);
       expect(costs).toHaveLength(1);
@@ -389,7 +401,7 @@ describe("research buying", () => {
 
     it("sums the per-unit price across a multi-tech purchase", () => {
       // getResearchCostForCount(n) must be the sum of n consecutive unit prices,
-      // not one price scaled by n — each unit walks the sqrt curve.
+      // not one price scaled by n — each unit walks the age's exponent curve.
       const state = stateWith(1e30);
       expect(state.getResearchCostForCount(3)[0].base.toNumber()).toBeCloseTo(
         age0Price(1) + age0Price(2) + age0Price(3),
@@ -423,7 +435,7 @@ describe("research buying", () => {
     it("keeps the first research of age1 at exactly 1e9", () => {
       // Guards the specific number: with no "research"-targeted discount the
       // first Iron Age tech must equal the age1 base to the last bit, i.e. the
-      // curve term factor^(sqrt(1) - 1) resolves to exactly 1.
+      // curve term factor^((1^exponent) - 1) resolves to exactly 1.
       const state = stateWith(1e30, ["age0"]);
       const cost = state.getResearchNextCost()[0].base;
       expect(cost.eq(ExpNumber.fromNumber(1e9))).toBe(true);
