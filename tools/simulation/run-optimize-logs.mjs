@@ -2,7 +2,6 @@ import { optimizeBattleTactics } from "../../src/game/battleSimulator.js";
 import { CivilizationState } from "../../src/game/civilizationState.js";
 import { encounterDefinitions } from "../../src/game/encounters.js";
 import { researchIdsForBattle } from "../../src/game/research.js";
-import { ExpNumber } from "../../src/game/expNumber.js";
 
 // Dev-only smoke run: exercise optimizeBattleTactics on the campaign battles
 // and print the iteration logs. Run: node --experimental-strip-types tools/simulation/run-optimize-logs.mjs

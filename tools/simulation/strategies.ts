@@ -251,7 +251,9 @@ const hasReachedResearchAge = (
  * Recorded `player` research buy order, one array per age. The Age-0 order is
  * the buy order of the fastest run to clear it. Age 1 starts with the fastest
  * Age-2 run's recorded order, filtered by age and hand-tuned to buy cheap,
- * available technologies earlier. Later ages fall back to the dynamic heuristic.
+ * available technologies earlier. Age 2 is the verbatim buy order of the first
+ * manual run to clear it (`saves/manuallogs/first runage3.json`, dev-logged
+ * 2026-10-09). Ages 3 and later fall back to the dynamic heuristic.
  *
  */
 const playerResearchOrderByAge: readonly (readonly string[])[] = [
@@ -305,6 +307,32 @@ const playerResearchOrderByAge: readonly (readonly string[])[] = [
     "coastal_forts",
     "howdah_mounting",
     "berserker_warbands",
+  ],
+  [
+    "logic",
+    "scholasticism",
+    "crop_rotation",
+    "civil_service",
+    "legion_discipline",
+    "recurve_archery",
+    "shock_cavalry",
+    "phalanx_doctrine",
+    "drama_poetry",
+    "surveying",
+    "currency_standard",
+    "lumber_mills",
+    "architecture",
+    "aqueducts",
+    "banking_concepts",
+    "martial_drill",
+    "aesthetics",
+    "armor_layering",
+    "subterfuge",
+    "naval_ramming",
+    "armed_merchant_navies",
+    "siege_logistics",
+    "heavy_counterweights",
+    "incendiary_weapons",
   ],
 ];
 

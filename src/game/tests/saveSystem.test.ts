@@ -353,7 +353,7 @@ describe("trade routes in the save", () => {
     });
   });
 
-  it("writes only the routes that are actually running", () => {
+  it("writes configured routes on and off, keeping their settings", () => {
     const idle = sampleState().setTradeRoute("food", {
       enabled: true,
       intensity: 0.4,
@@ -362,9 +362,12 @@ describe("trade routes in the save", () => {
     expect(createSaveData(idle, "routes", 1).tradeRoutes).toEqual({
       food: { enabled: true, mode: "sell", intensity: 0.4 },
     });
-    // Turning the route back off leaves no trace in the document.
+    // Turning the route off keeps it in the document so its intensity survives
+    // the toggle; absence now means "never configured", not "not running".
     const off = idle.setTradeRoute("food", { enabled: false });
-    expect(createSaveData(off, "routes", 1).tradeRoutes).toEqual({});
+    expect(createSaveData(off, "routes", 1).tradeRoutes).toEqual({
+      food: { enabled: false, mode: "sell", intensity: 0.4 },
+    });
   });
 
   it("drops routes the market no longer trades and repairs the rest", () => {
@@ -381,7 +384,9 @@ describe("trade routes in the save", () => {
     // `in`, not a property read: gold is not a tradeable resource, so the key
     // cannot even be named on `TradeRouteMap` — that is the point of the test.
     expect("gold" in routes).toBe(false);
-    expect("stone" in routes).toBe(false);
+    // A disabled route on a tradeable resource survives the load, so its mode
+    // and intensity still round-trip when the route is toggled back on.
+    expect(routes.stone).toEqual({ enabled: false, mode: "sell", intensity: 1 });
     expect(routes.wood).toEqual({ enabled: true, mode: "sell", intensity: 1 });
   });
 
