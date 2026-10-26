@@ -83,7 +83,7 @@
     "description": "City-states and legions. The old units fall, and a new order takes the field.",
     "buildingThreshold": 15000,
     "unlocks": [],
-    "research": { "base": "1e21", "factor": 2000, "exponent": 0.5 },
+    "research": { "base": "1e21", "factor": 41, "exponent": 0.75 },
     "bonuses": []
   },
   {

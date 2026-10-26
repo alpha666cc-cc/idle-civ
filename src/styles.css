@@ -2423,7 +2423,7 @@ button:focus-visible {
   }
   .buildings-panel {
     grid-column: 1 / -1;
-    padding: 27px 22px;
+    padding: 27px 22px 96px;
   }
   .building-grid {
     grid-template-columns: 1fr;
@@ -2483,7 +2483,7 @@ button:focus-visible {
     padding: 27px 18px 22px;
   }
   .buildings-panel {
-    padding: 24px 16px 20px;
+    padding: 24px 16px 100px;
   }
   .building-grid {
     grid-template-columns: 1fr;
