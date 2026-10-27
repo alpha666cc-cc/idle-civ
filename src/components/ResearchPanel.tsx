@@ -8,7 +8,7 @@ import { researchDefinitions, type ResearchDefinition } from "../game/research";
 import { unitDefinitions } from "../game/units";
 import { findFormationDefinition } from "../game/formations";
 import { ExpNumber } from "../game/expNumber";
-import type { Bonus } from "../game/bonus";
+import { describeBonus } from "./researchBonusDescription";
 import {
   AGE_CARD_ROWS,
   AGE_HEADER_H,
@@ -258,167 +258,10 @@ const formationNames = new Map<string, string>(
   ].map((id) => [id, findFormationDefinition(id)?.name ?? id]),
 );
 
-/** Unit-stat bonus destinations in player words. */
-const unitStatLabels: Record<string, string> = {
-  "tag.infantry.hp": "infantry health",
-  "tag.ranged.attack": "ranged attack",
-  "tag.armored.attack": "cavalry attack",
-  "tag.armored.speed": "cavalry speed",
-  "tag.naval.attack": "ship attack",
-  "tag.naval.hp": "ship hulls",
-  "unitAll.hp": "all unit health",
-  "unitAll.attack": "all unit attack",
-};
-
-  const resourceLabels: Record<string, string> = {
-    food: "food",
-    wood: "wood",
-    stone: "stone",
-    gold: "gold",
-    population: "population",
-    science: "science",
-    military: "military",
-    metalwork: "metalwork",
-    trade: "trade",
-  };
-
-  /** Friendly names for derived-stat bonus destinations. */
-  const derivedStatLabels: Record<string, string> = {
-    clickPower: "click power",
-    autoClickRate: "auto-click rate",
-    tradeRoutes: "trade routes",
-    advancedProductionPerWorker: "advanced production per worker",
-  };
-
-  /** Scope part of a cost-target destination: <scope>.costs.<resource>[.field] */
-  const costScopeLabels: Record<string, string> = {
-    allBuildings: "all building",
-    allUnits: "all unit",
-  };
-
-  /** Unit-tag part of a cost-target destination: tag.<tag>.costs.* */
-  const tagLabels: Record<string, string> = {
-    infantry: "infantry",
-    cavalry: "cavalry",
-    ranged: "ranged",
-    armored: "armored",
-    naval: "naval",
-    siege: "siege",
-  };
-
-  /** Domain part of a cost-target destination: domain.<domain>.costs.* */
-  const domainLabels: Record<string, string> = {
-    ground: "ground units",
-  };
-
   /**
-   * Label for a buyable cost-target destination, e.g.
-   * `allBuildings.costs.all` → "all building costs",
-   * `tag.infantry.costs.all` → "infantry costs",
-   * `house.costs.all.factor` → "house cost growth".
+   * Render an attribute multiplier as a percentage when it is a modest boost
+   * (below ×2), e.g. ×1.25 → +25%. Anything ≥ ×2 keeps the × notation.
    */
-  const costTargetLabel = (destination: string): string => {
-    const parts = destination.split(".");
-    // parts[0] = scope, parts[1] = "costs", parts[2] = resource, parts[3] = field?
-    const scope = parts[0];
-    const resource = parts[2];
-    const isFactor = parts.length > 3 && parts[3] === "factor";
-
-    let scopeLabel: string;
-    if (costScopeLabels[scope]) {
-      scopeLabel = costScopeLabels[scope];
-    } else if (scope.startsWith("tag.")) {
-      scopeLabel = tagLabels[scope.slice(4)] ?? scope.slice(4);
-    } else if (scope.startsWith("domain.")) {
-      scopeLabel = domainLabels[scope.slice(7)] ?? scope.slice(7);
-    } else {
-      scopeLabel = buildingNames.get(scope as BuildingKey) ?? scope;
-    }
-
-    if (resource === "all") {
-      return isFactor ? `${scopeLabel} cost growth` : `${scopeLabel} costs`;
-    }
-    return isFactor
-      ? `${scopeLabel} ${resource} cost growth`
-      : `${scopeLabel} ${resource} costs`;
-  };
-
-  const destinationLabel = (destination: string): string => {
-    // Buyable cost targets have their own labeler.
-    if (destination.includes(".costs.")) return costTargetLabel(destination);
-    if (destination === "allProduction") return "all production";
-    if (destination === "advancedProductionPerWorker")
-      return "advanced production per worker";
-    // PascalCase building capacities: "House.capacity" → "house capacity".
-    const capMatch = destination.match(/^([A-Z][a-zA-Z]+)\.capacity$/);
-    if (capMatch) {
-      const key = capMatch[1].toLowerCase();
-      const name = buildingNames.get(key as BuildingKey) ?? capMatch[1];
-      return `${name} capacity`;
-    }
-    if (destination.endsWith("Capacity")) {
-      return `${buildingNames.get(destination.slice(0, -8) as BuildingKey) ?? destination.slice(0, -8)} capacity`;
-    }
-    const named =
-      buildingNames.get(destination as BuildingKey) ?? unitNames.get(destination);
-    if (named) return named;
-    if (resourceLabels[destination]) return resourceLabels[destination];
-    if (derivedStatLabels[destination]) return derivedStatLabels[destination];
-    return destination;
-  };
-
-  const describeBonus = (bonus: Bonus, fmt: Props["fmt"]): string => {
-    const destination = String(bonus.destination);
-    const stat = unitStatLabels[destination];
-    const value = fmt(bonus.value);
-    if (stat) {
-      return bonus.type === "attributeMultiplier"
-        ? multiplierLabel(bonus.value, stat, fmt)
-        : `+${value} ${stat}`;
-    }
-    const label = destinationLabel(destination);
-    switch (bonus.type) {
-      case "attributeMultiplier":
-        return multiplierLabel(bonus.value, label, fmt);
-      case "attributeFlat":
-        return `+${value} ${label}`;
-      case "costReductionPercent": {
-        const percent = fmt(bonus.value.mul(ExpNumber.fromNumber(100)));
-        return `${percent}% cheaper ${label}`;
-      }
-      case "costReductionFactor":
-        return `${label} cost growth ^${value}`;
-      case "costReductionBase":
-        return `${label} base cost ×${value}`;
-      case "costReductionFlat":
-        return `${label} cost −${value}`;
-      case "attributeDrain":
-        return `${label} upkeep −${value}/s`;
-      case "removeDrain":
-        return `${label} upkeep removed`;
-      default:
-        return `${bonus.type} ${label}`;
-    }
-  };
-
-  /**
-   * Render an attribute multiplier as a percentage when it is a modest boost,
-   * e.g. ×1.25 → +25%. Large multipliers keep the × notation.
-   */
-  const multiplierLabel = (
-    value: ExpNumber,
-    label: string,
-    fmt: Props["fmt"],
-  ): string => {
-    const num = value.toNumber();
-    if (Number.isFinite(num) && num >= 1 && num < 10) {
-      return `+${Math.round((num - 1) * 100)}% ${label}`;
-    }
-    if (Number.isFinite(num) && num > 0 && num < 1) {
-      return `−${Math.round((1 - num) * 100)}% ${label}`;
-    }
-    return `×${fmt(value)} ${label}`;
-  };
 const describeEffects = (
   research: ResearchDefinition,
   fmt: Props["fmt"],

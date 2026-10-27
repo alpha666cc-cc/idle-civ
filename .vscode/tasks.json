@@ -8,6 +8,11 @@
       "dependsOrder": "sequence",
       "command": "${workspaceFolder}\\tools\\node\\npm.cmd",
       "args": ["run", "dev", "--", "--host", "127.0.0.1"],
+      "options": {
+        "env": {
+          "PATH": "${workspaceFolder}\\tools\\node;${env:PATH}"
+        }
+      },
       "isBackground": true,
       "runOptions": {
         "instanceLimit": 1
@@ -46,6 +51,11 @@
       "type": "shell",
       "command": "${workspaceFolder}\\tools\\node\\npm.cmd",
       "args": ["run", "build"],
+      "options": {
+        "env": {
+          "PATH": "${workspaceFolder}\\tools\\node;${env:PATH}"
+        }
+      },
       "problemMatcher": "$tsc",
       "group": {
         "kind": "build",
