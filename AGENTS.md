@@ -1090,6 +1090,10 @@ type Bonus = {
 };
 ```
 
+Building effects may carry explicit tags in JSON. The `nopower` tag is currently
+supported only on `capacityProvided` effects; it keeps that capacity grant
+independent of the source building's power. Do not add tags to bonus entries.
+
 | Bonus type             | Destination                            | Meaning                                                                                                                     | Nearest existing equivalent              |
 | ---------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
 | `attributeFlat`        | attribute (resource, capacity or stat) | adds a flat amount to the attribute's accrual                                                                               | `ResourceFactors.additional`             |

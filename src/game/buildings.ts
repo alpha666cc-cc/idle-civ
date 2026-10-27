@@ -26,11 +26,18 @@ export type BuildingCost = {
 export const DEFAULT_COST_EXPONENT = 0.5;
 
 export type BuildingEffectEntry<T extends object> = T[];
+export type BuildingEffectTag = "nopower";
+
+export const hasBuildingEffectTag = (
+  effect: { readonly tags?: readonly BuildingEffectTag[] },
+  tag: BuildingEffectTag,
+): boolean => effect.tags?.includes(tag) ?? false;
 
 export type BuildingEffects = {
   capacityProvided?: BuildingEffectEntry<{
     building: BuildingKey;
     perBuilding: ExpNumber;
+    tags?: readonly BuildingEffectTag[];
   }>;
   additiveMultiplier?: BuildingEffectEntry<{
     resource: ResourceKey;
@@ -111,8 +118,16 @@ type BuildingData = {
   maxCount?: number;
   effects?: {
     capacityProvided?:
-      | { building: BuildingKey; perBuilding: number }
-      | { building: BuildingKey; perBuilding: number }[];
+      | {
+          building: BuildingKey;
+          perBuilding: number;
+          tags?: string[];
+        }
+      | {
+          building: BuildingKey;
+          perBuilding: number;
+          tags?: string[];
+        }[];
     additiveMultiplier?:
       | { resource: ResourceKey; perBuilding: number }
       | { resource: ResourceKey; perBuilding: number }[];
@@ -135,6 +150,16 @@ const normalizeBuildingEffects = <T extends object>(
   return Array.isArray(value) ? value : [value];
 };
 
+const parseBuildingEffectTags = (
+  tags: string[] | undefined,
+): readonly BuildingEffectTag[] | undefined => {
+  if (tags === undefined) return undefined;
+  return tags.map((tag): BuildingEffectTag => {
+    if (tag === "nopower") return tag;
+    throw new Error(`Unknown building effect tag: ${tag}`);
+  });
+};
+
 const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
   const effects = data.effects;
   return new BuildingDefinition(
@@ -153,9 +178,10 @@ const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
       ? {
           capacityProvided: normalizeBuildingEffects(
             effects.capacityProvided,
-          )?.map(({ building, perBuilding }) => ({
+          )?.map(({ building, perBuilding, tags }) => ({
             building,
             perBuilding: ExpNumber.fromNumber(perBuilding),
+            tags: parseBuildingEffectTags(tags),
           })),
           additiveMultiplier: normalizeBuildingEffects(
             effects.additiveMultiplier,

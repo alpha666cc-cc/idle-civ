@@ -85,6 +85,8 @@ const categoryTabs: CategoryTab[] = [
   { category: "research", label: "Research", icon: BookOpen },
   { category: "age", label: "Ages", icon: Sparkles },
   { category: "combat", label: "Battles", icon: Swords },
+  { category: "formation", label: "Formations", icon: Swords },
+  { category: "order", label: "Orders", icon: Swords },
 ];
 
 const categoryLabels: Record<GamepediaCategory, string> = {
@@ -98,6 +100,8 @@ const categoryLabels: Record<GamepediaCategory, string> = {
   research: "Research",
   age: "Ages",
   combat: "Battles",
+  formation: "Formations",
+  order: "Orders",
 };
 
 const factorTabLabels: Record<FactorTab, string> = {
@@ -110,6 +114,13 @@ const factorTabLabels: Record<FactorTab, string> = {
 const displayName = (object: { id: string }): string => {
   const definition = object as { id: string; name?: string; label?: string };
   return definition.name ?? definition.label ?? definition.id;
+};
+
+/** Strip the formation: or order: namespace prefix for display */
+const stripNamespace = (id: string): string => {
+  if (id.startsWith("formation:")) return id.slice("formation:".length);
+  if (id.startsWith("order:")) return id.slice("order:".length);
+  return id;
 };
 
 const capacityLabel = (buildingKey: string): string => {
@@ -170,7 +181,7 @@ const bonusDestinationName = (destination: string): string => {
       costTarget.resource === "all"
         ? "all resources"
         : resourceEntry
-            ? displayName(resourceEntry.object)
+          ? displayName(resourceEntry.object)
           : costTarget.resource;
     const field = costTarget.field ? ` ${costTarget.field}` : "";
     return `${owner} ${resource} cost${field}`;
@@ -339,7 +350,7 @@ export default function GamepediaModal({
               title={`Open ${displayName(object)}`}
             >
               <span>{displayName(object)}</span>
-              <small>{object.id}</small>
+              <small>{stripNamespace(object.id)}</small>
             </button>
           ))}
         </div>
@@ -361,7 +372,9 @@ export default function GamepediaModal({
         <p className="eyebrow">{categoryLabels[entry.category]}</p>
         <h3>{displayName(entry.object)}</h3>
       </div>
-      <span className="gamepedia-detail-id">{entry.object.id}</span>
+      <span className="gamepedia-detail-id">
+        {stripNamespace(entry.object.id)}
+      </span>
     </div>
   );
 
@@ -1198,8 +1211,8 @@ export default function GamepediaModal({
             <div className="gamepedia-recap">
               <p>
                 Owned: {formatCount(owned)}. Per unit: base → growth →
-                percentage → flat, on a base × growth^(n^exponent − 1) curve.
-                A zero growth factor disables that cost row until it is raised
+                percentage → flat, on a base × growth^(n^exponent − 1) curve. A
+                zero growth factor disables that cost row until it is raised
                 above zero.
               </p>
               <p>Base multiplier: ×{formatAmount(reductions.base)}</p>
@@ -1292,6 +1305,130 @@ export default function GamepediaModal({
     );
   };
 
+  const renderFormationDetail = (entry: GamepediaEntry) => {
+    const formation = entry.object as unknown as {
+      id: string;
+      name: string;
+      description: string;
+      unlockAge: number;
+      unlockType: string;
+      researchId?: string;
+      positionOffset: number;
+      movementSpeed: number;
+      statBonuses?: readonly { attribute: string; multiplier: number }[];
+      damageTakenVs?: readonly { tag: string; multiplier: number }[];
+      damageDealtVs?: readonly { tag: string; multiplier: number }[];
+    };
+    return (
+      <div className="gamepedia-detail">
+        {renderDetailHeader(entry)}
+        <p className="gamepedia-detail-description">{formation.description}</p>
+        <div className="gamepedia-stats">
+          <div className="gamepedia-stat">
+            <span>Unlock age</span>
+            <strong>{formation.unlockAge}</strong>
+          </div>
+          <div className="gamepedia-stat">
+            <span>Unlock type</span>
+            <strong>{formation.unlockType}</strong>
+          </div>
+          {formation.researchId && (
+            <div className="gamepedia-stat">
+              <span>Research</span>
+              <strong>{renderReference(formation.researchId)}</strong>
+            </div>
+          )}
+          <div className="gamepedia-stat">
+            <span>Position offset</span>
+            <strong>{formation.positionOffset}</strong>
+          </div>
+          <div className="gamepedia-stat">
+            <span>Movement speed</span>
+            <strong>
+              ×{formatNumber(formation.movementSpeed, numberFormat)}
+            </strong>
+          </div>
+        </div>
+        {formation.statBonuses && formation.statBonuses.length > 0 && (
+          <>
+            <p className="gamepedia-category">Stat bonuses</p>
+            <div className="gamepedia-effect-list">
+              {formation.statBonuses.map((bonus, index) => (
+                <div className="gamepedia-effect-row" key={`stat-${index}`}>
+                  <div className="gamepedia-effect-copy">
+                    <span className="gamepedia-effect-meta">
+                      {bonus.attribute}
+                    </span>
+                  </div>
+                  <strong className="gamepedia-effect-total">
+                    ×{formatNumber(bonus.multiplier, numberFormat)}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        {formation.damageTakenVs && formation.damageTakenVs.length > 0 && (
+          <>
+            <p className="gamepedia-category">Damage taken from tags</p>
+            <div className="gamepedia-effect-list">
+              {formation.damageTakenVs.map((rule, index) => (
+                <div className="gamepedia-effect-row" key={`taken-${index}`}>
+                  <div className="gamepedia-effect-copy">
+                    <span className="gamepedia-effect-meta">{rule.tag}</span>
+                  </div>
+                  <strong className="gamepedia-effect-total">
+                    ×{formatNumber(rule.multiplier, numberFormat)}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        {formation.damageDealtVs && formation.damageDealtVs.length > 0 && (
+          <>
+            <p className="gamepedia-category">Damage dealt to tags</p>
+            <div className="gamepedia-effect-list">
+              {formation.damageDealtVs.map((rule, index) => (
+                <div className="gamepedia-effect-row" key={`dealt-${index}`}>
+                  <div className="gamepedia-effect-copy">
+                    <span className="gamepedia-effect-meta">{rule.tag}</span>
+                  </div>
+                  <strong className="gamepedia-effect-total">
+                    ×{formatNumber(rule.multiplier, numberFormat)}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        {renderRelated(entry)}
+      </div>
+    );
+  };
+
+  const renderOrderDetail = (entry: GamepediaEntry) => {
+    const order = entry.object as unknown as {
+      id: string;
+      name: string;
+      description: string;
+      unlockAge: number;
+    };
+    return (
+      <div className="gamepedia-detail">
+        {renderDetailHeader(entry)}
+        <p className="gamepedia-detail-description">{order.description}</p>
+        <div className="gamepedia-stats">
+          <div className="gamepedia-stat">
+            <span>Unlock age</span>
+            <strong>{order.unlockAge}</strong>
+          </div>
+        </div>
+        {renderRelated(entry)}
+      </div>
+    );
+  };
+
   const renderDetail = (entry: GamepediaEntry) => {
     if (entry.category === "unit") return renderUnitDetail(entry);
     if (entry.category === "combat") return renderBattleDetail(entry);
@@ -1303,6 +1440,8 @@ export default function GamepediaModal({
     if (entry.category === "research") return renderResearchDetail(entry);
     if (entry.category === "achievement") return renderAchievementDetail(entry);
     if (entry.category === "stat") return renderStatDetail(entry);
+    if (entry.category === "formation") return renderFormationDetail(entry);
+    if (entry.category === "order") return renderOrderDetail(entry);
     return renderGenericDetail(entry);
   };
 
@@ -1327,7 +1466,9 @@ export default function GamepediaModal({
             onClick={() => openEntry(object.id)}
             title={`Open ${displayName(object)}`}
           >
-            <span className="gamepedia-row-id">{object.id}</span>
+            <span className="gamepedia-row-id">
+              {stripNamespace(object.id)}
+            </span>
             <strong>{displayName(object)}</strong>
             <small>{object.description}</small>
           </button>

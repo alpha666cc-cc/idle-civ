@@ -1,3 +1,4 @@
+import { GameObject } from "./gameObject";
 import ordersJson from "./data/orders.json";
 
 export type OrderId =
@@ -15,17 +16,34 @@ export type OrderDefinitionData = {
   readonly unlockAge: number;
 };
 
-export const orderDefinitions: readonly OrderDefinitionData[] = ordersJson as OrderDefinitionData[];
+class OrderDefinition_ extends GameObject {
+  readonly name: string;
+  readonly unlockAge: number;
 
-export const findOrderDefinition = (id: string): OrderDefinitionData | undefined =>
+  constructor(def: OrderDefinitionData) {
+    super(def.id as string, def.description);
+    this.name = def.name;
+    this.unlockAge = def.unlockAge;
+  }
+}
+
+export const orderDefinitions = ordersJson.map(
+  (def) => new OrderDefinition_(def as OrderDefinitionData),
+) as readonly OrderDefinition_[];
+
+export const findOrderDefinition = (id: string): OrderDefinition_ | undefined =>
   orderDefinitions.find((def) => def.id === id);
 
 export const ordersForAge = (ageIndex: number): readonly OrderId[] => {
   return orderDefinitions
     .filter((def) => def.unlockAge <= ageIndex)
-    .map((def) => def.id);
+    .map((def) => def.id as OrderId);
 };
 
 export const DEFAULT_ORDER: OrderId = "standard";
 
-export const orderIds: readonly OrderId[] = orderDefinitions.map((def) => def.id);
+export const orderIds: readonly OrderId[] = orderDefinitions.map(
+  (def) => def.id as OrderId,
+);
+
+export type OrderDefinition = OrderDefinition_;

@@ -6,6 +6,10 @@ import {
   parseBonus,
   parseCostParameterTarget,
 } from "../bonus";
+import {
+  buildingDefinitions,
+  hasBuildingEffectTag,
+} from "../buildings";
 
 describe("bonus destination paths", () => {
   it("normalizes the requested target families to stable ids", () => {
@@ -80,6 +84,18 @@ describe("bonus destination paths", () => {
     expect(() =>
       parseBonus("costParameterAdd", "Market.costs.all", 1),
     ).toThrow("Cost parameter bonuses require a cost field target");
+  });
+
+  it("marks capacity-providing building effects as independent of power", () => {
+    const capacityEffects = buildingDefinitions.flatMap(
+      ({ effects }) => effects?.capacityProvided ?? [],
+    );
+    expect(capacityEffects).toHaveLength(6);
+    expect(
+      capacityEffects.every((effect) =>
+        hasBuildingEffectTag(effect, "nopower"),
+      ),
+    ).toBe(true);
   });
 
   it("matches the cost resource and buyable scope", () => {

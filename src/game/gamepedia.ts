@@ -16,10 +16,9 @@ import {
   populationDefinition,
   type AttributeDefinition,
 } from "./attributes";
-import {
-  normalizeBonusDestination,
-  parseCostParameterTarget,
-} from "./bonus";
+import { normalizeBonusDestination, parseCostParameterTarget } from "./bonus";
+import { formationDefinitions } from "./formations";
+import { orderDefinitions } from "./orders";
 
 export type GamepediaCategory =
   | "resource"
@@ -31,7 +30,9 @@ export type GamepediaCategory =
   | "stat"
   | "research"
   | "age"
-  | "combat";
+  | "combat"
+  | "formation"
+  | "order";
 
 export type GamepediaEntry = {
   object: GameObject;
@@ -56,8 +57,7 @@ const achievementRelatedIds = (
         ? [populationDefinition.id]
         : requirement.type === "buildingCount"
           ? [requirement.building]
-          : requirement.type === "encounter" ||
-              requirement.type === "battle"
+          : requirement.type === "encounter" || requirement.type === "battle"
             ? [requirement.encounterId]
             : []),
     ...achievement.bonuses.flatMap(({ destination }) =>
@@ -73,8 +73,7 @@ const bonusDestinationRelatedIds = (destination: string): string[] => {
     if (normalized === "civilBuildings") return ["house", "townHall"];
     if (normalized === "allBuildings")
       return buildingDefinitions.map(({ key }) => key);
-    if (normalized === "allUnits")
-      return unitDefinitions.map(({ key }) => key);
+    if (normalized === "allUnits") return unitDefinitions.map(({ key }) => key);
     if (normalized === "basicProductionBuildings")
       return ["farm", "lumberYard", "quarry", "goldMine"];
     if (normalized === "advancedProductionBuildings")
@@ -112,15 +111,11 @@ const bonusDestinationRelatedIds = (destination: string): string[] => {
                       ? unitDefinitions
                           .filter(
                             ({ domain }) =>
-                              domain ===
-                              target.buyable.slice("domain.".length),
+                              domain === target.buyable.slice("domain.".length),
                           )
                           .map(({ key }) => key)
                       : [target.buyable];
-  return [
-    ...owners,
-    ...(target.resource === "all" ? [] : [target.resource]),
-  ];
+  return [...owners, ...(target.resource === "all" ? [] : [target.resource])];
 };
 
 export class Gamepedia {
@@ -288,8 +283,8 @@ for (const building of buildingDefinitions) {
 for (const upgrade of upgradeDefinitions) {
   const relatedIds = [
     ...upgrade.costs.map(({ resource }) => resource),
-    ...upgrade.bonuses.flatMap(
-      ({ destination }) => bonusDestinationRelatedIds(String(destination)),
+    ...upgrade.bonuses.flatMap(({ destination }) =>
+      bonusDestinationRelatedIds(String(destination)),
     ),
   ];
   // seen stays false at registration: upgrades are revealed when their
@@ -365,6 +360,75 @@ for (const achievement of achievementDefinitions) {
     object: achievement,
     category: "achievement",
     relatedIds: [...new Set(achievementRelatedIds(achievement))],
+  });
+}
+
+for (const formation of formationDefinitions) {
+  const relatedIds: string[] = [];
+  if (formation.researchId) {
+    relatedIds.push(formation.researchId);
+  }
+  // Formations are revealed when they are unlocked (age entry or research)
+  formation.seen = formation.unlockAge === 0;
+  // Namespace the id to avoid collisions with orders (both have "standard")
+  const namespacedId = `formation:${formation.id}`;
+  const formationProxy = new (class extends GameObject {
+    name: string;
+    unlockAge: number;
+    unlockType: string;
+    researchId?: string;
+    positionOffset: number;
+    movementSpeed: number;
+    statBonuses?: readonly { attribute: string; multiplier: number }[];
+    damageTakenVs?: readonly { tag: string; multiplier: number }[];
+    damageDealtVs?: readonly { tag: string; multiplier: number }[];
+
+    constructor() {
+      super(namespacedId, formation.description);
+      this.name = formation.name;
+      this.unlockAge = formation.unlockAge;
+      this.unlockType = formation.unlockType;
+      this.researchId = formation.researchId;
+      this.positionOffset = formation.positionOffset;
+      this.movementSpeed = formation.movementSpeed;
+      this.statBonuses = formation.statBonuses;
+      this.damageTakenVs = formation.damageTakenVs;
+      this.damageDealtVs = formation.damageDealtVs;
+    }
+  })();
+  gamepedia.register({
+    object: formationProxy,
+    category: "formation",
+    relatedIds: [...new Set(relatedIds)],
+  });
+  // Link the research back to this formation
+  if (formation.researchId) {
+    const researchEntry = gamepedia.get(formation.researchId);
+    if (researchEntry && !researchEntry.relatedIds.includes(namespacedId)) {
+      researchEntry.relatedIds.push(namespacedId);
+    }
+  }
+}
+
+for (const order of orderDefinitions) {
+  // Orders are revealed when their age unlocks
+  order.seen = order.unlockAge === 0;
+  // Namespace the id to avoid collisions with formations (both have "standard")
+  const namespacedId = `order:${order.id}`;
+  const orderProxy = new (class extends GameObject {
+    name: string;
+    unlockAge: number;
+
+    constructor() {
+      super(namespacedId, order.description);
+      this.name = order.name;
+      this.unlockAge = order.unlockAge;
+    }
+  })();
+  gamepedia.register({
+    object: orderProxy,
+    category: "order",
+    relatedIds: [],
   });
 }
 

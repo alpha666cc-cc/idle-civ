@@ -127,6 +127,8 @@ import {
   serializeDevLog,
   type DevLogDocument,
 } from "./game/devLog";
+import { formationsForUnlocks } from "./game/formations";
+import { ordersForAge } from "./game/orders";
 
 type Tab =
   | "Production"
@@ -690,8 +692,9 @@ function App() {
     const candidateCosts: WorkerInput["candidateCosts"] = allCandidateIds.map(
       (unitId) => [
         unitId,
-        gameState.getUnitCostParameters(unitId).map(
-          ({ cost, unitBase, unitFactor, reductions }) => ({
+        gameState
+          .getUnitCostParameters(unitId)
+          .map(({ cost, unitBase, unitFactor, reductions }) => ({
             resource: cost.resource,
             base: {
               s: cost.base.sign,
@@ -732,8 +735,7 @@ function App() {
                 e: reductions.flat.exponent,
               },
             },
-          }),
-        ),
+          })),
       ],
     );
 
@@ -957,6 +959,20 @@ function App() {
       const definition = findAchievementDefinition(achievementId);
       if (definition) gamepedia.ensureAchievementEntry(definition);
       gamepedia.reveal(achievementId);
+    }
+    // Reveal formations when their age unlocks or research is bought
+    const currentAgeIndex = gameState.enteredAges.length;
+    const availableFormations = formationsForUnlocks(
+      currentAgeIndex,
+      gameState.boughtResearch,
+    );
+    for (const formationId of availableFormations) {
+      gamepedia.reveal(`formation:${formationId}`);
+    }
+    // Reveal orders when their age unlocks
+    const availableOrders = ordersForAge(currentAgeIndex);
+    for (const orderId of availableOrders) {
+      gamepedia.reveal(`order:${orderId}`);
     }
   }, [gameState]);
 
@@ -2790,8 +2806,8 @@ function App() {
                     ? ` (${appBuildInfo.commitDate})`
                     : ""}
                 </strong>
-                . Check this number matches before reporting a bug or
-                comparing two phones.
+                . Check this number matches before reporting a bug or comparing
+                two phones.
               </p>
             </section>
           )}

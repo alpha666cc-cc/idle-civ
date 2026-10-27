@@ -45,7 +45,8 @@
     "effects": {
       "capacityProvided": {
         "building": "people",
-        "perBuilding": 10
+        "perBuilding": 10,
+        "tags": ["nopower"]
       }
     }
   },
@@ -190,23 +191,28 @@
       "capacityProvided": [
         {
           "building": "house",
-          "perBuilding": 10
+          "perBuilding": 10,
+          "tags": ["nopower"]
         },
         {
           "building": "barracks",
-          "perBuilding": 1
+          "perBuilding": 1,
+          "tags": ["nopower"]
         },
         {
           "building": "university",
-          "perBuilding": 1
+          "perBuilding": 1,
+          "tags": ["nopower"]
         },
         {
           "building": "smithy",
-          "perBuilding": 1
+          "perBuilding": 1,
+          "tags": ["nopower"]
         },
         {
           "building": "market",
-          "perBuilding": 1
+          "perBuilding": 1,
+          "tags": ["nopower"]
         }
       ]
     }

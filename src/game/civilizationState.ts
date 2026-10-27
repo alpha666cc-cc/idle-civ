@@ -70,6 +70,7 @@ import {
 } from "./trade";
 import {
   buildingDefinitions,
+  hasBuildingEffectTag,
   type BuildingCost,
   type BuildingEffects,
   type BuildingKey,
@@ -488,12 +489,10 @@ export class CivilizationState {
     const townHallCount = this.buildingCount("townHall");
     if (townHallCount > 0) {
       const defaults = emptyResourceAmounts();
-      const count = ExpNumber.fromNumber(townHallCount);
-      for (const effect of buildingDefinitions.find(
-        ({ key }) => key === "townHall",
-      )?.effects.capacityProvided ?? []) {
+      for (const effect of this.getBuildingEffects("townHall", townHallCount)
+        .capacityProvided ?? []) {
         const targetKey = capacityKey(effect.building);
-        const required = defaults[targetKey].add(effect.perBuilding.mul(count));
+        const required = defaults[targetKey].add(effect.perBuilding);
         if (this.resources[targetKey].lt(required)) {
           this.resources[targetKey] = required;
         }
@@ -1701,7 +1700,13 @@ export class CivilizationState {
       capacityProvided:
         effects.capacityProvided?.map((effect) => ({
           ...effect,
-          perBuilding: effect.perBuilding.mul(quantity),
+          perBuilding: effect.perBuilding
+            .mul(quantity)
+            .mul(
+              hasBuildingEffectTag(effect, "nopower")
+                ? ExpNumber.ONE
+                : power,
+            ),
         })) ?? undefined,
     };
   }
@@ -2385,6 +2390,10 @@ export class CivilizationState {
     if (wholeCount <= 0 || !Number.isFinite(wholeCount)) return this;
     count = wholeCount;
     if (!this.canBuild(buildingKey, count)) return this;
+    const definition = buildingDefinitions.find(
+      ({ key }) => key === buildingKey,
+    );
+    if (!definition) return this;
     const builtCount = this.buildingCount(buildingKey);
     const cost = this.freeBuildings
       ? []
@@ -2400,13 +2409,10 @@ export class CivilizationState {
         ExpNumber.fromNumber(count),
       );
     }
-    for (const effect of buildingDefinitions.find(
-      ({ key }) => key === buildingKey,
-    )?.effects.capacityProvided ?? []) {
+    for (const effect of this.getBuildingEffects(definition.key, count)
+      .capacityProvided ?? []) {
       const targetKey = capacityKey(effect.building);
-      resources[targetKey] = resources[targetKey].add(
-        effect.perBuilding.mul(ExpNumber.fromNumber(count)),
-      );
+      resources[targetKey] = resources[targetKey].add(effect.perBuilding);
     }
 
     const newBuildings = { ...this.builtBuildings };

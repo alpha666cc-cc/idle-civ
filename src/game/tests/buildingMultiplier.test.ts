@@ -165,6 +165,23 @@ describe("building resource bonuses", () => {
     expect(bought.getAttributeValue("farmCapacity").toNumber()).toBe(10);
   });
 
+  it("does not apply production building power to house or townHall capacity", () => {
+    const base = stateWith({ townHall: 1 });
+    const aged = base.enterAge("age0");
+
+    // age0 grants TownHall.capacity ×5 alongside global production-building
+    // power ×1.2. Capacity grants remain independent of that power multiplier.
+    expect(aged.getAttributeValue("buildingPower").toNumber()).toBe(1.2);
+    expect(aged.getBuildingMax("house")).toEqual(base.getBuildingMax("house"));
+    expect(aged.getBuildingMax("townHall").toNumber()).toBe(5);
+    expect(
+      aged
+        .getBuildingEffects("townHall")
+        .capacityProvided?.find(({ building }) => building === "house")
+        ?.perBuilding.toNumber(),
+    ).toBe(10);
+  });
+
   it("keeps fractional capacity grants internal to whole build limits", () => {
     const state = richState({ farm: 9 }).upgradeBuildingLimit("farm", 0.75);
 

@@ -61,7 +61,7 @@
   {
     "id": "turtle",
     "name": "Turtle",
-    "description": "Defensive formation: trades attack and speed for hp, and takes 30% less damage from ranged attackers.",
+    "description": "Defensive formation: trades attack and speed for hp, and takes 50% less damage from ranged attackers.",
     "unlockAge": 2,
     "unlockType": "research",
     "researchId": "martial_drill",
