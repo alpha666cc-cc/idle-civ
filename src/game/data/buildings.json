@@ -32,6 +32,12 @@
         "base": 10,
         "factor": 12,
         "exponent": 0.5
+      },
+      {
+        "resource": "stone",
+        "base": 100,
+        "factor": 0,
+        "exponent": 0.5
       }
     ],
     "available": true,

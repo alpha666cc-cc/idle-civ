@@ -23,12 +23,12 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "townHallCapacity",
+        "destination": "TownHall.capacity",
         "value": 2
       },
       {
         "type": "attributeMultiplier",
-        "destination": "barracksCapacity",
+        "destination": "Barracks.capacity",
         "value": 2
       }
     ],
@@ -63,7 +63,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "townHallCapacity",
+        "destination": "TownHall.capacity",
         "value": 5
       },
       {
@@ -113,7 +113,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "smithyCapacity",
+        "destination": "Smithy.capacity",
         "value": 2
       }
     ],
@@ -163,7 +163,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "universityCapacity",
+        "destination": "University.capacity",
         "value": 2
       }
     ],
@@ -203,7 +203,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "barracksCapacity",
+        "destination": "Barracks.capacity",
         "value": 2
       }
     ],
@@ -248,7 +248,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "marketCapacity",
+        "destination": "Market.capacity",
         "value": 2
       }
     ],
@@ -345,7 +345,7 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "townHallCapacity",
+        "destination": "TownHall.capacity",
         "value": 5
       },
       {
@@ -360,12 +360,12 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "allBuildings",
+        "destination": "allBuildings.costs.all.factor",
         "value": 0.8
       },
       {
         "type": "costReductionFactor",
-        "destination": "market",
+        "destination": "market.costs.all.factor",
         "value": 1
       }
     ],
@@ -429,7 +429,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "allBuildings",
+        "destination": "allBuildings.costs.all.factor",
         "value": 0.8
       }
     ],
@@ -488,7 +488,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "allBuildings",
+        "destination": "allBuildings.costs.all.factor",
         "value": 0.9
       }
     ],

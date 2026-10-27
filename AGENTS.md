@@ -1048,7 +1048,7 @@ A change is done when:
 > `getBuildingCost()` (`costReductionPercent`/`costReductionFactor` are used by the
 > enhancer tiers), the `UpgradeDefinition` registry with the 32 production-enhancer
 > tiers (`src/game/upgrades.ts`), the Upgrades tab, and the building unlock gates.
-> Still design-only: `attributeDrain` and `costReductionFlat` data, research/units, and
+> Still design-only: some `attributeDrain`/`costReductionFlat` data, research/units, and
 > all prestige semantics (`attributeFlat` ships via the hoarder chains,
 > `costReductionBase` via the Master Builder chain). Check the
 > engine before assuming a symbol exists, and §13.7 for what is decided versus
@@ -1078,9 +1078,10 @@ type BonusType =
   | "costReductionFlat" // destination cost −N (absolute)
   | "costReductionPercent" // destination cost × (1 − N)
   | "costReductionBase" // base term ×N — <1 reduces, >1 augments
-  | "costReductionFactor"; // destination cost's growth factor raised to the power N
+  | "costReductionFactor" // destination cost's growth factor raised to the power N
+  | "costParameterAdd"; // adds to a cost row's base, factor or exponent
 
-type BonusDestination = AttributeKey | BuyableId;
+type BonusDestination = AttributeKey | BuyableId | CostTargetPath;
 
 type Bonus = {
   type: BonusType;
@@ -1098,11 +1099,39 @@ type Bonus = {
 | `costReductionPercent` | buyable                                | lowers every cost entry by a percentage                                                                                     | **none** (new)                           |
 | `costReductionBase`    | buyable                                | multiplies the base term: Π(N) compounding, `< 1` discounts and `> 1` augments (absorbs the old `costMultiplier`)           | `buildingCostOverrides` precursor        |
 | `costReductionFactor`  | buyable                                | raises the growth factor to the power `N`, scaling the log-growth exponent by exactly N on every building (floored at 1.01) | crude precursor: `buildingCostOverrides` |
+| `costParameterAdd`     | cost target path                       | adds to the named cost field (`base`, `factor` or `exponent`) before the normal cost-reduction pipeline                    | **none** (new)                           |
 
 The first three map exactly onto today's factor model, so they can reuse
 `ResourceFactors` and `computeResourceRate()` (`(Σ flat) × (Π mult) − (Σ drain)`) and the
-existing `addFactor()` seam. The four cost types are new: their decided order of
-application and clamping are in §13.1, and the decision list is in §13.7.
+existing `addFactor()` seam. Four cost-reduction types and the cost-parameter addition
+type operate on buyables. Parameter additions apply to the selected raw cost field before
+the four per-unit reductions.
+
+Cost targets are dot-separated, case-insensitive paths normalized to stable IDs:
+`Market.costs.all` selects all market cost rows, `Farm.costs.wood` selects only the
+farm's wood row, `allunits.costs.wood.factor` selects the wood growth factor on every
+unit, and `all.costs.all.exponent` selects every buyable cost exponent. A field suffix is
+required for `costParameterAdd`. `Civilbuildings` selects `house` and `townHall`;
+`Market.power` selects `marketPower`; `Wood.worker` and
+`Wood.worker.efficiency` select `woodProductionPerWorker`; `productionBuilding.power`
+selects the shared `buildingPower` multiplier.
+
+Keep the path namespaces distinct: `.power` selects a building-power attribute.
+`factor` and `exponent` are cost fields only when scoped beneath
+`.costs.<resource>` (for example, `Market.costs.wood.factor`); bare
+`Market.factor` and `Market.exponent` are invalid targets.
+`.capacity` selects a building capacity attribute, and production-worker efficiency
+groups use paths such as `allProduction.worker.efficiency` and
+`advancedProduction.worker.efficiency`.
+Cost paths may also scope unit discounts, for example
+`tag.cavalry.costs.all` and `domain.ground.costs.all.factor`.
+
+`costParameterAdd` is applied to the selected raw field before the four cost
+reductions. A cost row whose growth `factor` is zero is disabled (its cost is zero)
+until a positive factor addition activates the row; after activation, the factor retains
+its normal role as the curve's growth factor. This supports an authored future cost such
+as `house.costs.stone` with base 100 and factor 0, later activated by an age bonus adding
+12 to `house.costs.stone.factor`.
 
 **Stacking (decided).** Attribute bonuses stack exactly as `computeResourceRate()` already
 does — **option A** (§13.7): every `attributeMultiplier` source multiplies with the others,
@@ -1294,7 +1323,7 @@ Two pieces of state-management guidance:
   finite JSON; never reset `seen` for them.
 
 > Resolved: **a buyable's bonus never unlocks an upgrade.** There is no `grantUpgrade`
-> bonus type — the list stays at the seven types in §13.1, which only _modify_ resources /
+> bonus type — bonuses only _modify_ resources /
 > capacities or _reduce the cost_ of buyables. Unlocks come exclusively from the unlock
 > sources described above. An upgrade's bonuses may still **target** buyables, which is
 > what lets an upgrade reduce building or unit costs.
@@ -1388,7 +1417,6 @@ unlock gates). The remaining seams to reuse instead of adding parallel machinery
 | 8   | Unlock carriers                                        | **The source carries the list**: an **age** on arrival, a **research** on completion (purchase), an **encounter** on victory. **Achievements do not carry unlock lists** (they never reset, so they cannot drive relocking) — this supersedes an earlier draft that put the lists on the achievement |
 | 8   | Why not let achievements carry the unlocks?            | Because prestige returns to the early ages, so unlocks must **relock and re-unlock each loop**; a permanent record cannot express that. The first arrival at an age still fires an achievement, but only as a permanent historical record                                                            |
 | 9   | Is `seen` ever reset?                                  | **Never** — not on prestige, not on a new colony loop. Relocking affects `unlocked` only, so a relocked upgrade stays in the Gamepedia                                                                                                                                                               |
-| 1   | How resource bonuses stack                             | **Option A** (rationale below): multipliers multiply, flats and drains **sum equally**, fixed type order, **no tiers/groups**                                                                                                                                                                        |
 | 2   | Where click power / automated click power live         | **Derived attributes** in the attribute registry, own `stat` Gamepedia category, plus an in-game **stats tab** whose values open the Gamepedia page via `focusId` (§13.2)                                                                                                                            |
 | 3   | Who owns building-count unlocks                        | **The building definition**, with an explicit `unlocks` list + count threshold. All unlocks are **explicit id lists**, never a generic condition/rule engine                                                                                                                                         |
 | 4   | Prestige: what resets                                  | **`bought` resets every loop.** Permanent: **achievements**, **prestige bonuses** (to be defined) and `seen`                                                                                                                                                                                         |

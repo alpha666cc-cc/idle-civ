@@ -1,8 +1,11 @@
 import researchData from "./data/research.json";
-import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 import { findFormationDefinition } from "./formations";
-import { parseBonusType, type Bonus, isValidBonusDestination } from "./bonus";
+import {
+  parseBonus,
+  type Bonus,
+  isValidBonusDestination,
+} from "./bonus";
 import { findUnitDefinition } from "./units";
 
 /**
@@ -105,11 +108,9 @@ const toResearchDefinition = (data: ResearchData): ResearchDefinition =>
     data.age,
     data.category,
     [...(data.prerequisites ?? [])],
-    (data.bonuses ?? []).map(({ type, destination, value }) => ({
-      type: parseBonusType(type),
-      destination,
-      value: ExpNumber.from(value),
-    })),
+    (data.bonuses ?? []).map(({ type, destination, value }) =>
+      parseBonus(type, destination, value),
+    ),
     [...(data.unlocks ?? [])],
     [...(data.unlocksFormations ?? [])],
     (data.conversions ?? []).map(({ from, to, ratio }) => ({

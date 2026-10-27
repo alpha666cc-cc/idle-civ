@@ -48,7 +48,9 @@ import {
 } from "./battle";
 import { ordersForAge } from "./orders";
 import {
+  costTargetMatchesBuyable,
   collectCostReductions,
+  parseCostParameterTarget,
   type Bonus,
   type CostReductions,
 } from "./bonus";
@@ -245,6 +247,12 @@ const unitStatsCaches = new WeakMap<
 type CostReductionResult = {
   sources: [sourceId: string, bonus: Bonus][];
   reductions: CostReductions;
+  parameterSources: [sourceId: string, bonus: Bonus][];
+  parameterAdjustments: {
+    base: ExpNumber;
+    factor: ExpNumber;
+    exponent: ExpNumber;
+  };
 };
 const costReductionCaches = new WeakMap<
   readonly string[],
@@ -691,7 +699,17 @@ export class CivilizationState {
   }
 
   getUpgradeCost(upgradeId: string): BuildingCost[] {
-    return upgradeDefinitions.find(({ key }) => key === upgradeId)?.costs ?? [];
+    const upgrade = upgradeDefinitions.find(({ key }) => key === upgradeId);
+    if (!upgrade) return [];
+    return this.costParameters(upgradeId, upgrade.costs).map(
+      ({ cost, unitBase, reductions }) => ({
+        ...cost,
+        base: ExpNumber.max(
+          ExpNumber.ZERO,
+          unitBase.mul(reductions.percent).sub(reductions.flat),
+        ),
+      }),
+    );
   }
 
   hasResourcesForUpgrade(upgradeId: string): boolean {
@@ -729,7 +747,7 @@ export class CivilizationState {
     const upgrade = upgradeDefinitions.find(({ key }) => key === upgradeId);
     if (!upgrade) return this;
     const resources = { ...this.resources };
-    const cost = this.freeUpgrades ? [] : upgrade.costs;
+    const cost = this.freeUpgrades ? [] : this.getUpgradeCost(upgradeId);
     for (const { resource, base } of cost) {
       resources[resource] = resources[resource].sub(base);
     }
@@ -832,19 +850,35 @@ export class CivilizationState {
       } as const);
     const bought = this.getResearchCount();
 
-    // Research is a buyable like buildings and units, so it takes the same four
-    // cost reductions — but only ones naming "research" (it is not a building, so
-    // `allBuildings` never reaches it). They fold per unit in the §13.1 order:
-    // base → factor → percent → flat, clamped at zero.
-    const { reductions } = this.getResearchCostModifiers();
-    const unitBase = ExpNumber.max(
-      ExpNumber.ZERO,
-      schedule.base.mul(reductions.base),
+    // Research is a buyable, so explicit research targets and universal `all`
+    // cost paths apply; `allBuildings` still does not reach it.
+    const adjustments = this.costParameterAdjustmentsFor(
+      "research",
+      "science",
     );
+    const adjustedFactor = ExpNumber.max(
+      ExpNumber.ZERO,
+      ExpNumber.fromNumber(schedule.factor).add(adjustments.factor),
+    ).toNumber();
+    const adjustedExponent = ExpNumber.fromNumber(schedule.exponent)
+      .add(adjustments.exponent)
+      .toNumber();
+    if (!Number.isFinite(adjustedFactor) || !Number.isFinite(adjustedExponent)) {
+      throw new Error("Non-finite research cost parameter");
+    }
+    const { reductions } = this.costReductionsFor("research", "science");
+    const unitBase =
+      adjustedFactor === 0
+        ? ExpNumber.ZERO
+        : ExpNumber.max(
+            ExpNumber.ZERO,
+            schedule.base.add(adjustments.base).mul(reductions.base),
+          );
     const unitFactor = ExpNumber.max(
       ExpNumber.fromNumber(1.01),
-      ExpNumber.fromNumber(schedule.factor).pow(reductions.factor),
+      ExpNumber.fromNumber(adjustedFactor).pow(reductions.factor),
     );
+    const exponent = Math.max(0.01, adjustedExponent);
 
     // Unit n costs base × factor^((n^exponent) − 1), where n is the purchase
     // ordinal within this age — so the first tech of an age costs exactly its
@@ -853,7 +887,7 @@ export class CivilizationState {
     for (let offset = 0; offset < purchases; offset += 1) {
       const purchaseNumber = bought + offset + 1;
       const unitPrice = unitBase
-        .mul(unitFactor.pow(Math.pow(purchaseNumber, schedule.exponent) - 1))
+        .mul(unitFactor.pow(Math.pow(purchaseNumber, exponent) - 1))
         .mul(reductions.percent);
       total = total.add(
         ExpNumber.max(ExpNumber.ZERO, unitPrice.sub(reductions.flat)),
@@ -865,7 +899,7 @@ export class CivilizationState {
         resource: "science",
         base: total,
         factor: 1,
-        exponent: schedule.exponent,
+        exponent,
       },
     ];
   }
@@ -1673,7 +1707,10 @@ export class CivilizationState {
   }
 
   /** Cost-reduction bonuses targeting one buyable, folded the §13.1 way. */
-  private costReductionsFor(buyableId: string): CostReductionResult {
+  private costReductionsFor(
+    buyableId: string,
+    resource?: ResourceKey,
+  ): CostReductionResult {
     // Check cache
     let byUpgrades = costReductionCaches.get(this.boughtUpgrades);
     if (!byUpgrades) {
@@ -1716,9 +1753,10 @@ export class CivilizationState {
       >();
       byAchievements.set(this.boughtResearch, byResearch);
     }
+    const cacheKey = `${buyableId}:${resource ?? "*"}`;
     const cached = byResearch.get(this.enteredAges);
     if (cached) {
-      const cachedReductions = cached.get(buyableId);
+      const cachedReductions = cached.get(cacheKey);
       if (cachedReductions) return cachedReductions;
     }
 
@@ -1726,13 +1764,40 @@ export class CivilizationState {
     const isBuilding = buildingDefinitions.some(({ key }) => key === buyableId);
     const isResearch = buyableId === "research"; // Virtual building for research
     const unit = findUnitDefinition(buyableId);
-    const targetMatches = (destination: string): boolean => {
+    const isUpgrade = upgradeDefinitions.some(({ key }) => key === buyableId);
+    const targetMatches = (
+      destination: string,
+      bonusType: Bonus["type"],
+    ): boolean => {
+      const costTarget = parseCostParameterTarget(destination);
+      if (costTarget) {
+        if (
+          !costTargetMatchesBuyable(costTarget, buyableId) ||
+          (resource !== undefined &&
+            costTarget.resource !== "all" &&
+            costTarget.resource !== resource)
+        ) {
+          return false;
+        }
+        if (costTarget.field === "base")
+          return bonusType === "costReductionBase";
+        if (costTarget.field === "factor")
+          return bonusType === "costReductionFactor";
+        if (costTarget.field === "exponent") return false;
+        return true;
+      }
       if (destination === buyableId) return true;
       // Research is not a building, so the blanket `allBuildings` discounts do
       // not reach it — only a bonus that names "research" explicitly does.
-      if (isResearch) return false;
+      if (isResearch || isUpgrade)
+        return destination === "research" && isResearch;
       if (isBuilding) {
         if (destination === "allBuildings") return true;
+        if (
+          destination === "civilBuildings" &&
+          (buyableId === "house" || buyableId === "townHall")
+        )
+          return true;
         // Building cost group targets
         const basicProductionBuildings = [
           "farm",
@@ -1773,21 +1838,48 @@ export class CivilizationState {
         unit.tags.includes(destination.slice(4))
       );
     };
-    const sources = this.activeBonuses().filter(
-      ([, bonus]) =>
-        targetMatches(String(bonus.destination)) &&
-        bonus.type.startsWith("costReduction"),
-    );
+    const sources: [sourceId: string, bonus: Bonus][] = [];
+    const parameterSources: [sourceId: string, bonus: Bonus][] = [];
+    const parameterAdjustments = {
+      base: ExpNumber.ZERO,
+      factor: ExpNumber.ZERO,
+      exponent: ExpNumber.ZERO,
+    };
+    for (const [sourceId, bonus] of this.activeBonuses()) {
+      if (bonus.type === "costParameterAdd") {
+        const target = parseCostParameterTarget(String(bonus.destination));
+        if (
+          !target?.field ||
+          !costTargetMatchesBuyable(target, buyableId) ||
+          (resource !== undefined &&
+            target.resource !== "all" &&
+            target.resource !== resource)
+        ) {
+          continue;
+        }
+        parameterAdjustments[target.field] = parameterAdjustments[
+          target.field
+        ].add(bonus.value);
+        parameterSources.push([sourceId, bonus]);
+      } else if (
+        bonus.type.startsWith("costReduction") &&
+        targetMatches(String(bonus.destination), bonus.type)
+      ) {
+        sources.push([sourceId, bonus]);
+      }
+    }
     const result = {
       sources,
       reductions: collectCostReductions(sources.map(([, bonus]) => bonus)),
+      parameterSources,
+      parameterAdjustments,
     };
 
     // Cache
     if (!cached) {
-      byResearch.set(this.enteredAges, new Map([[buyableId, result]]));
+      byResearch.set(this.enteredAges, new Map([[cacheKey, result]]));
     } else {
-      cached.set(buyableId, result);
+      cached.set(cacheKey, result);
     }
 
     return result;
@@ -1822,18 +1914,32 @@ export class CivilizationState {
 
   /**
    * Research cost reductions. Research is not a building and not a unit, so it
-   * takes **only** bonuses that name `"research"` explicitly: the blanket
-   * `allBuildings` discounts and the global `buildingCostMultiplier` stat do not
-   * apply to it. `globalMultiplier` is therefore always ×1 here.
+   * takes bonuses naming `"research"` and matching universal cost paths. The
+   * `allBuildings` reductions and `buildingCostMultiplier` stat do not apply.
+   * `globalMultiplier` is therefore always ×1 here.
    */
   getResearchCostModifiers() {
-    const { sources, reductions } = this.costReductionsFor("research");
+    const { sources, reductions } = this.costReductionsFor(
+      "research",
+      "science",
+    );
     return { sources, globalMultiplier: ExpNumber.ONE, reductions };
   }
 
   /** Units are buyables (§13.3), so they take the same four cost-reduction types. */
   getUnitCostModifiers(unitId: string) {
     return this.costReductionsFor(unitId);
+  }
+
+  private costParameterAdjustmentsFor(
+    buyableId: string,
+    resource: ResourceKey,
+  ): CostReductionResult["parameterAdjustments"] {
+    return this.costReductionsFor(buyableId, resource).parameterAdjustments;
+  }
+
+  getCostParameterSources(buyableId: string) {
+    return this.costReductionsFor(buyableId).parameterSources;
   }
 
   /**
@@ -1843,33 +1949,85 @@ export class CivilizationState {
    * power scales the log-growth exponent by exactly that power on every factor.
    */
   private costParameters(
+    buyableId: string,
     costs: BuildingCost[],
-    reductions: CostReductions,
   ): CostParameters[] {
-    return costs.map((cost) => ({
-      cost,
-      unitBase: ExpNumber.max(ExpNumber.ZERO, cost.base.mul(reductions.base)),
-      unitFactor: ExpNumber.max(
-        ExpNumber.fromNumber(1.01),
-        ExpNumber.fromNumber(cost.factor).pow(reductions.factor),
-      ),
-      reductions,
-    }));
+    return costs.map((cost) => {
+      const adjustments = this.costParameterAdjustmentsFor(
+        buyableId,
+        cost.resource,
+      );
+      const adjustedFactor = ExpNumber.max(
+        ExpNumber.ZERO,
+        ExpNumber.fromNumber(cost.factor).add(adjustments.factor),
+      ).toNumber();
+      const adjustedExponent = ExpNumber.fromNumber(cost.exponent)
+        .add(adjustments.exponent)
+        .toNumber();
+      if (!Number.isFinite(adjustedFactor)) {
+        throw new Error(
+          `Non-finite cost factor for ${buyableId}.${cost.resource}`,
+        );
+      }
+      if (!Number.isFinite(adjustedExponent)) {
+        throw new Error(
+          `Non-finite cost exponent for ${buyableId}.${cost.resource}`,
+        );
+      }
+      const adjustedCost: BuildingCost = {
+        ...cost,
+        base: ExpNumber.max(ExpNumber.ZERO, cost.base.add(adjustments.base)),
+        factor: adjustedFactor,
+        exponent: Math.max(0.01, adjustedExponent),
+      };
+      const { reductions } = this.costReductionsFor(
+        buyableId,
+        adjustedCost.resource,
+      );
+      const isBuilding = buildingDefinitions.some(
+        ({ key }) => key === buyableId,
+      );
+      const globalMultiplier = isBuilding
+        ? ExpNumber.max(
+            ExpNumber.ZERO,
+            this.getAttributeValue("buildingCostMultiplier"),
+          )
+        : ExpNumber.ONE;
+      const effectiveReductions: CostReductions = {
+        ...reductions,
+        base: reductions.base.mul(globalMultiplier),
+      };
+      return {
+        cost: adjustedCost,
+        unitBase:
+          adjustedCost.factor === 0
+            ? ExpNumber.ZERO
+            : ExpNumber.max(
+                ExpNumber.ZERO,
+                adjustedCost.base.mul(effectiveReductions.base),
+              ),
+        unitFactor: ExpNumber.max(
+          ExpNumber.fromNumber(1.01),
+          ExpNumber.fromNumber(adjustedCost.factor).pow(
+            effectiveReductions.factor,
+          ),
+        ),
+        reductions: effectiveReductions,
+      };
+    });
   }
 
   getBuildingCostParameters(buildingKey: string): CostParameters[] {
     const building = buildingDefinitions.find(({ key }) => key === buildingKey);
     if (!building) return [];
     const costs = this.buildingCostOverrides[building.key] ?? building.costs;
-    const { reductions } = this.getBuildingCostModifiers(buildingKey);
-    return this.costParameters(costs, reductions);
+    return this.costParameters(buildingKey, costs);
   }
 
   getUnitCostParameters(unitId: string): CostParameters[] {
     const unit = findUnitDefinition(unitId);
     if (!unit) return [];
-    const { reductions } = this.getUnitCostModifiers(unitId);
-    return this.costParameters(unit.costs, reductions);
+    return this.costParameters(unitId, unit.costs);
   }
 
   getBuildingCost(

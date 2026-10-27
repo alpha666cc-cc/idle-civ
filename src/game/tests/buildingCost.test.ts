@@ -14,7 +14,10 @@ import { deserializeStatistics, serializeStatistics } from "../saveSystem";
 
 
 /** A fresh age0 state with the same pile of food and wood. */
-const stateWith = (stock = 1e12): CivilizationState =>
+const stateWith = (
+  stock = 1e12,
+  enteredAges: string[] = [],
+): CivilizationState =>
   new CivilizationState(
     {
       ...emptyResourceAmounts(),
@@ -28,7 +31,7 @@ const stateWith = (stock = 1e12): CivilizationState =>
     0,
     [],
     [],
-    [],
+    enteredAges,
     [],
     emptyStatistics(),
     {},
@@ -146,6 +149,30 @@ describe("the parameterized building cost curve", () => {
     expect(farmCost(customCurve, 0, 10)).toBeGreaterThan(
       farmCost(defaultCurve, 0, 10),
     );
+  });
+
+  it("keeps the house stone cost disabled until its age bonus raises the factor", () => {
+    const inactive = stateWith();
+    const inactiveStone = inactive
+      .getBuildingCostParameters("house")
+      .find(({ cost }) => cost.resource === "stone");
+
+    expect(inactiveStone?.cost.base.toNumber()).toBe(100);
+    expect(inactiveStone?.cost.factor).toBe(0);
+    expect(
+      inactive.getBuildingCost("house", 0)[1].base.toNumber(),
+    ).toBe(0);
+
+    const active = stateWith(1e12, ["age0", "age1", "age2", "age3"]);
+    const activeStone = active
+      .getBuildingCostParameters("house")
+      .find(({ cost }) => cost.resource === "stone");
+
+    expect(activeStone?.cost.factor).toBe(12);
+    expect(
+      active.getBuildingCost("house", 0).find(({ resource }) => resource === "stone")
+        ?.base.toNumber(),
+    ).toBe(100);
   });
 });
 

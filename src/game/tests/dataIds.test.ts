@@ -125,7 +125,8 @@ describe("static content guids", () => {
         .map((unit) => [unit.key, new Set(unit.costs.map(({ factor }) => factor))]),
     );
 
-    expect(buildingFactors).toEqual(new Set([2.5, 8, 10, 12, 15]));
+    // House stone cost starts disabled until its Age 3 factor bonus activates it.
+    expect(buildingFactors).toEqual(new Set([0, 2.5, 8, 10, 12, 15]));
     expect(ageZeroUnitFactors.get("warrior")).toEqual(new Set([3.5]));
     expect(ageZeroUnitFactors.get("spearman_bronze")).toEqual(new Set([2.5]));
     expect(ageZeroUnitFactors.get("axeman_bronze")).toEqual(new Set([2.5]));

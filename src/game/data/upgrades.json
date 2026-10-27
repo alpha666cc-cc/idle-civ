@@ -24,12 +24,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "farmPower",
+        "destination": "Farm.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "farmCapacity",
+        "destination": "Farm.capacity",
         "value": 10
       },
       {
@@ -64,12 +64,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "farmPower",
+        "destination": "Farm.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "farmCapacity",
+        "destination": "Farm.capacity",
         "value": 10
       },
       {
@@ -110,12 +110,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "farmPower",
+        "destination": "Farm.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "farmCapacity",
+        "destination": "Farm.capacity",
         "value": 10
       },
       {
@@ -125,7 +125,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "farm",
+        "destination": "farm.costs.all",
         "value": 0.5
       }
     ]
@@ -161,12 +161,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "farmPower",
+        "destination": "Farm.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "farmCapacity",
+        "destination": "Farm.capacity",
         "value": 10
       },
       {
@@ -176,7 +176,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "farm",
+        "destination": "farm.costs.all",
         "value": 0.95
       }
     ]
@@ -212,12 +212,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "farmPower",
+        "destination": "Farm.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "farmCapacity",
+        "destination": "Farm.capacity",
         "value": 10
       },
       {
@@ -227,7 +227,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "farm",
+        "destination": "farm.costs.all",
         "value": 0.5
       }
     ]
@@ -263,12 +263,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "farmPower",
+        "destination": "Farm.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "farmCapacity",
+        "destination": "Farm.capacity",
         "value": 10
       },
       {
@@ -278,7 +278,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "farm",
+        "destination": "farm.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -314,12 +314,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "farmPower",
+        "destination": "Farm.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "farmCapacity",
+        "destination": "Farm.capacity",
         "value": 10
       },
       {
@@ -329,7 +329,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "farm",
+        "destination": "farm.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -365,12 +365,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "farmPower",
+        "destination": "Farm.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "farmCapacity",
+        "destination": "Farm.capacity",
         "value": 10
       },
       {
@@ -380,7 +380,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "farm",
+        "destination": "farm.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -410,12 +410,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumberYardPower",
+        "destination": "LumberYard.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "lumberYardCapacity",
+        "destination": "LumberYard.capacity",
         "value": 10
       },
       {
@@ -450,12 +450,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumberYardPower",
+        "destination": "LumberYard.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "lumberYardCapacity",
+        "destination": "LumberYard.capacity",
         "value": 10
       },
       {
@@ -496,12 +496,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumberYardPower",
+        "destination": "LumberYard.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "lumberYardCapacity",
+        "destination": "LumberYard.capacity",
         "value": 10
       },
       {
@@ -511,7 +511,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "lumberYard",
+        "destination": "lumberYard.costs.all",
         "value": 0.5
       }
     ]
@@ -547,12 +547,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumberYardPower",
+        "destination": "LumberYard.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "lumberYardCapacity",
+        "destination": "LumberYard.capacity",
         "value": 10
       },
       {
@@ -562,7 +562,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "lumberYard",
+        "destination": "lumberYard.costs.all",
         "value": 0.95
       }
     ]
@@ -598,12 +598,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumberYardPower",
+        "destination": "LumberYard.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "lumberYardCapacity",
+        "destination": "LumberYard.capacity",
         "value": 10
       },
       {
@@ -613,7 +613,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "lumberYard",
+        "destination": "lumberYard.costs.all",
         "value": 0.5
       }
     ]
@@ -649,12 +649,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumberYardPower",
+        "destination": "LumberYard.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "lumberYardCapacity",
+        "destination": "LumberYard.capacity",
         "value": 10
       },
       {
@@ -664,7 +664,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "lumberYard",
+        "destination": "lumberYard.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -700,12 +700,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumberYardPower",
+        "destination": "LumberYard.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "lumberYardCapacity",
+        "destination": "LumberYard.capacity",
         "value": 10
       },
       {
@@ -715,7 +715,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "lumberYard",
+        "destination": "lumberYard.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -751,12 +751,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "lumberYardPower",
+        "destination": "LumberYard.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "lumberYardCapacity",
+        "destination": "LumberYard.capacity",
         "value": 10
       },
       {
@@ -766,7 +766,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "lumberYard",
+        "destination": "lumberYard.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -790,12 +790,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "quarryPower",
+        "destination": "Quarry.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "quarryCapacity",
+        "destination": "Quarry.capacity",
         "value": 10
       },
       {
@@ -824,12 +824,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "quarryPower",
+        "destination": "Quarry.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "quarryCapacity",
+        "destination": "Quarry.capacity",
         "value": 10
       },
       {
@@ -864,12 +864,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "quarryPower",
+        "destination": "Quarry.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "quarryCapacity",
+        "destination": "Quarry.capacity",
         "value": 10
       },
       {
@@ -879,7 +879,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "quarry",
+        "destination": "quarry.costs.all",
         "value": 0.5
       }
     ]
@@ -909,12 +909,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "quarryPower",
+        "destination": "Quarry.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "quarryCapacity",
+        "destination": "Quarry.capacity",
         "value": 10
       },
       {
@@ -924,7 +924,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "quarry",
+        "destination": "quarry.costs.all",
         "value": 0.95
       }
     ]
@@ -954,12 +954,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "quarryPower",
+        "destination": "Quarry.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "quarryCapacity",
+        "destination": "Quarry.capacity",
         "value": 10
       },
       {
@@ -969,7 +969,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "quarry",
+        "destination": "quarry.costs.all",
         "value": 0.5
       }
     ]
@@ -999,12 +999,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "quarryPower",
+        "destination": "Quarry.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "quarryCapacity",
+        "destination": "Quarry.capacity",
         "value": 10
       },
       {
@@ -1014,7 +1014,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "quarry",
+        "destination": "quarry.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -1044,12 +1044,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "quarryPower",
+        "destination": "Quarry.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "quarryCapacity",
+        "destination": "Quarry.capacity",
         "value": 10
       },
       {
@@ -1059,7 +1059,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "quarry",
+        "destination": "quarry.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -1089,12 +1089,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "quarryPower",
+        "destination": "Quarry.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "quarryCapacity",
+        "destination": "Quarry.capacity",
         "value": 10
       },
       {
@@ -1104,7 +1104,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "quarry",
+        "destination": "quarry.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -1134,12 +1134,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "goldMinePower",
+        "destination": "GoldMine.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "goldMineCapacity",
+        "destination": "GoldMine.capacity",
         "value": 10
       },
       {
@@ -1174,12 +1174,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "goldMinePower",
+        "destination": "GoldMine.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "goldMineCapacity",
+        "destination": "GoldMine.capacity",
         "value": 10
       },
       {
@@ -1220,12 +1220,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "goldMinePower",
+        "destination": "GoldMine.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "goldMineCapacity",
+        "destination": "GoldMine.capacity",
         "value": 10
       },
       {
@@ -1235,7 +1235,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "goldMine",
+        "destination": "goldMine.costs.all",
         "value": 0.5
       }
     ]
@@ -1271,12 +1271,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "goldMinePower",
+        "destination": "GoldMine.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "goldMineCapacity",
+        "destination": "GoldMine.capacity",
         "value": 10
       },
       {
@@ -1286,7 +1286,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "goldMine",
+        "destination": "goldMine.costs.all",
         "value": 0.95
       }
     ]
@@ -1322,12 +1322,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "goldMinePower",
+        "destination": "GoldMine.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "goldMineCapacity",
+        "destination": "GoldMine.capacity",
         "value": 10
       },
       {
@@ -1337,7 +1337,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "goldMine",
+        "destination": "goldMine.costs.all",
         "value": 0.5
       }
     ]
@@ -1373,12 +1373,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "goldMinePower",
+        "destination": "GoldMine.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "goldMineCapacity",
+        "destination": "GoldMine.capacity",
         "value": 10
       },
       {
@@ -1388,7 +1388,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "goldMine",
+        "destination": "goldMine.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -1424,12 +1424,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "goldMinePower",
+        "destination": "GoldMine.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "goldMineCapacity",
+        "destination": "GoldMine.capacity",
         "value": 10
       },
       {
@@ -1439,7 +1439,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "goldMine",
+        "destination": "goldMine.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -1475,12 +1475,12 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "goldMinePower",
+        "destination": "GoldMine.power",
         "value": 1
       },
       {
         "type": "attributeMultiplier",
-        "destination": "goldMineCapacity",
+        "destination": "GoldMine.capacity",
         "value": 10
       },
       {
@@ -1490,7 +1490,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "goldMine",
+        "destination": "goldMine.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -1526,7 +1526,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "barracksPower",
+        "destination": "Barracks.power",
         "value": 1
       },
       {
@@ -1567,7 +1567,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "barracksPower",
+        "destination": "Barracks.power",
         "value": 1
       },
       {
@@ -1614,7 +1614,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "barracksPower",
+        "destination": "Barracks.power",
         "value": 1
       },
       {
@@ -1624,7 +1624,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "barracks",
+        "destination": "barracks.costs.all",
         "value": 0.5
       }
     ]
@@ -1666,7 +1666,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "barracksPower",
+        "destination": "Barracks.power",
         "value": 1
       },
       {
@@ -1676,7 +1676,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "barracks",
+        "destination": "barracks.costs.all",
         "value": 0.5
       }
     ]
@@ -1718,7 +1718,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "barracksPower",
+        "destination": "Barracks.power",
         "value": 1
       },
       {
@@ -1728,7 +1728,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "barracks",
+        "destination": "barracks.costs.all",
         "value": 0.5
       }
     ]
@@ -1770,7 +1770,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "barracksPower",
+        "destination": "Barracks.power",
         "value": 1
       },
       {
@@ -1780,7 +1780,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "barracks",
+        "destination": "barracks.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -1822,7 +1822,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "barracksPower",
+        "destination": "Barracks.power",
         "value": 1
       },
       {
@@ -1832,7 +1832,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "barracks",
+        "destination": "barracks.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -1874,7 +1874,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "barracksPower",
+        "destination": "Barracks.power",
         "value": 1
       },
       {
@@ -1884,7 +1884,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "barracks",
+        "destination": "barracks.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -1920,7 +1920,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "universityPower",
+        "destination": "University.power",
         "value": 1
       },
       {
@@ -1961,7 +1961,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "universityPower",
+        "destination": "University.power",
         "value": 1
       },
       {
@@ -2008,7 +2008,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "universityPower",
+        "destination": "University.power",
         "value": 0.1
       },
       {
@@ -2018,7 +2018,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "university",
+        "destination": "university.costs.all",
         "value": 0.5
       }
     ]
@@ -2060,7 +2060,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "universityPower",
+        "destination": "University.power",
         "value": 1
       },
       {
@@ -2070,7 +2070,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "university",
+        "destination": "university.costs.all",
         "value": 0.75
       }
     ]
@@ -2112,7 +2112,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "universityPower",
+        "destination": "University.power",
         "value": 1
       },
       {
@@ -2122,7 +2122,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "university",
+        "destination": "university.costs.all",
         "value": 0.5
       }
     ]
@@ -2164,7 +2164,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "universityPower",
+        "destination": "University.power",
         "value": 1
       },
       {
@@ -2174,7 +2174,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "university",
+        "destination": "university.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -2216,7 +2216,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "universityPower",
+        "destination": "University.power",
         "value": 1
       },
       {
@@ -2226,7 +2226,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "university",
+        "destination": "university.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -2268,7 +2268,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "universityPower",
+        "destination": "University.power",
         "value": 1
       },
       {
@@ -2278,7 +2278,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "university",
+        "destination": "university.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -2308,7 +2308,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "smithyPower",
+        "destination": "Smithy.power",
         "value": 1
       },
       {
@@ -2343,7 +2343,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "smithyPower",
+        "destination": "Smithy.power",
         "value": 1
       },
       {
@@ -2384,7 +2384,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "smithyPower",
+        "destination": "Smithy.power",
         "value": 1
       },
       {
@@ -2394,7 +2394,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "smithy",
+        "destination": "smithy.costs.all",
         "value": 0.5
       }
     ]
@@ -2430,7 +2430,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "smithyPower",
+        "destination": "Smithy.power",
         "value": 1
       },
       {
@@ -2440,7 +2440,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "smithy",
+        "destination": "smithy.costs.all",
         "value": 0.75
       }
     ]
@@ -2476,7 +2476,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "smithyPower",
+        "destination": "Smithy.power",
         "value": 1
       },
       {
@@ -2486,7 +2486,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "smithy",
+        "destination": "smithy.costs.all",
         "value": 0.5
       }
     ]
@@ -2522,7 +2522,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "smithyPower",
+        "destination": "Smithy.power",
         "value": 1
       },
       {
@@ -2532,7 +2532,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "smithy",
+        "destination": "smithy.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -2568,7 +2568,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "smithyPower",
+        "destination": "Smithy.power",
         "value": 1
       },
       {
@@ -2578,7 +2578,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "smithy",
+        "destination": "smithy.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -2614,7 +2614,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "smithyPower",
+        "destination": "Smithy.power",
         "value": 1
       },
       {
@@ -2624,7 +2624,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "smithy",
+        "destination": "smithy.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -2654,7 +2654,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "marketPower",
+        "destination": "Market.power",
         "value": 1
       },
       {
@@ -2689,7 +2689,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "marketPower",
+        "destination": "Market.power",
         "value": 1
       },
       {
@@ -2730,7 +2730,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "marketPower",
+        "destination": "Market.power",
         "value": 0.5
       },
       {
@@ -2740,7 +2740,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "market",
+        "destination": "market.costs.all",
         "value": 0.5
       }
     ]
@@ -2776,7 +2776,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "marketPower",
+        "destination": "Market.power",
         "value": 0.5
       },
       {
@@ -2786,7 +2786,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "market",
+        "destination": "market.costs.all",
         "value": 0.5
       }
     ]
@@ -2822,7 +2822,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "marketPower",
+        "destination": "Market.power",
         "value": 1
       },
       {
@@ -2832,7 +2832,7 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "market",
+        "destination": "market.costs.all",
         "value": 0.5
       }
     ]
@@ -2868,7 +2868,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "marketPower",
+        "destination": "Market.power",
         "value": 1
       },
       {
@@ -2878,7 +2878,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "market",
+        "destination": "market.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -2914,7 +2914,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "marketPower",
+        "destination": "Market.power",
         "value": 1
       },
       {
@@ -2924,7 +2924,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "market",
+        "destination": "market.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -2960,7 +2960,7 @@
     "bonuses": [
       {
         "type": "attributeFlat",
-        "destination": "marketPower",
+        "destination": "Market.power",
         "value": 1
       },
       {
@@ -2970,7 +2970,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "market",
+        "destination": "market.costs.all.factor",
         "value": 0.99
       }
     ]
@@ -3006,17 +3006,17 @@
     "bonuses": [
       {
         "type": "costReductionFactor",
-        "destination": "allBuildings",
+        "destination": "allBuildings.costs.all.factor",
         "value": 0.9
       },
       {
         "type": "costReductionFactor",
-        "destination": "allUnits",
+        "destination": "allUnits.costs.all.factor",
         "value": 0.8
       },
       {
         "type": "costReductionFactor",
-        "destination": "people",
+        "destination": "people.costs.all.factor",
         "value": 0.95
       }
     ]
@@ -3057,7 +3057,7 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "allBuildings",
+        "destination": "allBuildings.costs.all.factor",
         "value": 0.94
       }
     ]
@@ -3098,12 +3098,12 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "allBuildings",
+        "destination": "allBuildings.costs.all.factor",
         "value": 0.8
       },
       {
         "type": "costReductionFactor",
-        "destination": "allUnits",
+        "destination": "allUnits.costs.all.factor",
         "value": 0.9
       }
     ]
@@ -3144,12 +3144,12 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "allBuildings",
+        "destination": "allBuildings.costs.all.factor",
         "value": 0.8
       },
       {
         "type": "costReductionFactor",
-        "destination": "allUnits",
+        "destination": "allUnits.costs.all.factor",
         "value": 0.9
       }
     ]
@@ -3190,12 +3190,12 @@
       },
       {
         "type": "costReductionFactor",
-        "destination": "allBuildings",
+        "destination": "allBuildings.costs.all.factor",
         "value": 0.83
       },
       {
         "type": "costReductionFactor",
-        "destination": "allUnits",
+        "destination": "allUnits.costs.all.factor",
         "value": 0.9
       },
       {

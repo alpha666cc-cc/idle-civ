@@ -399,6 +399,52 @@ describe("research buying", () => {
       expect(huge.getResearchNextCost()[0].base.toNumber()).toBe(0);
     });
 
+    it("adds a cost reduction to only the named resource on a building", () => {
+      const state = buildCostState({
+        type: "costReductionPercent",
+        destination: "Farm.costs.wood",
+        value: 0.5,
+      });
+      const costs = state.getBuildingCost("farm", 0);
+      expect(costs.find(({ resource }) => resource === "food")?.base.toNumber())
+        .toBe(10);
+      expect(costs.find(({ resource }) => resource === "wood")?.base.toNumber())
+        .toBe(5);
+    });
+
+    it("applies a factor-only cost addition to every matching unit resource", () => {
+      const state = buildCostState({
+        type: "costParameterAdd",
+        destination: "allunits.costs.food.factor",
+        value: 12,
+      });
+      const costs = state.getUnitCostParameters("warrior");
+      expect(
+        costs.find(({ cost }) => cost.resource === "food")?.cost.factor,
+      ).toBeCloseTo(15.5, 12);
+      expect(
+        costs.find(({ cost }) => cost.resource === "military")?.cost.factor,
+      ).toBe(3.5);
+    });
+
+    it("applies global exponent additions to buildings, units, upgrades, and research", () => {
+      const state = buildCostState({
+        type: "costParameterAdd",
+        destination: "all.costs.all.exponent",
+        value: 0.01,
+      });
+      expect(
+        state.getBuildingCostParameters("farm")[0].cost.exponent,
+      ).toBeCloseTo(0.51);
+      expect(
+        state.getUnitCostParameters("warrior")[0].cost.exponent,
+      ).toBeCloseTo(0.51);
+      expect(state.getUpgradeCost("farmEnhancer9")[0].exponent).toBeCloseTo(
+        0.51,
+      );
+      expect(state.getResearchNextCost()[0].exponent).toBeCloseTo(0.51);
+    });
+
     it("sums the per-unit price across a multi-tech purchase", () => {
       // getResearchCostForCount(n) must be the sum of n consecutive unit prices,
       // not one price scaled by n — each unit walks the age's exponent curve.
@@ -673,10 +719,10 @@ describe("research buying", () => {
       shielding?.bonuses.some(
         (bonus) =>
           bonus.type === "costReductionFactor" &&
-          String(bonus.destination) === "domain.ground" &&
+          String(bonus.destination) === "domain.ground.costs.all.factor" &&
           bonus.value.eq(ExpNumber.fromNumber(0.9)),
       ),
-      "iron_shielding should carry a costReductionFactor of 0.9 on domain.ground",
+      "iron_shielding should carry a costReductionFactor of 0.9 on ground unit costs",
     ).toBe(true);
 
     const state = buyPrerequisiteClosure(

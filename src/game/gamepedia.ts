@@ -16,6 +16,10 @@ import {
   populationDefinition,
   type AttributeDefinition,
 } from "./attributes";
+import {
+  normalizeBonusDestination,
+  parseCostParameterTarget,
+} from "./bonus";
 
 export type GamepediaCategory =
   | "resource"
@@ -56,9 +60,66 @@ const achievementRelatedIds = (
               requirement.type === "battle"
             ? [requirement.encounterId]
             : []),
-    ...achievement.bonuses.map(
-      ({ destination }) => String(destination).split(".")[0],
+    ...achievement.bonuses.flatMap(({ destination }) =>
+      bonusDestinationRelatedIds(String(destination)),
     ),
+  ];
+};
+
+const bonusDestinationRelatedIds = (destination: string): string[] => {
+  const normalized = normalizeBonusDestination(destination);
+  const target = parseCostParameterTarget(normalized);
+  if (!target) {
+    if (normalized === "civilBuildings") return ["house", "townHall"];
+    if (normalized === "allBuildings")
+      return buildingDefinitions.map(({ key }) => key);
+    if (normalized === "allUnits")
+      return unitDefinitions.map(({ key }) => key);
+    if (normalized === "basicProductionBuildings")
+      return ["farm", "lumberYard", "quarry", "goldMine"];
+    if (normalized === "advancedProductionBuildings")
+      return ["barracks", "university", "smithy", "market"];
+    return [normalized.split(".")[0]];
+  }
+
+  const owners =
+    target.buyable === "all"
+      ? [
+          ...buildingDefinitions.map(({ key }) => key),
+          ...unitDefinitions.map(({ key }) => key),
+          ...upgradeDefinitions.map(({ key }) => key),
+          ...researchDefinitions.map(({ key }) => key),
+        ]
+      : target.buyable === "allBuildings"
+        ? buildingDefinitions.map(({ key }) => key)
+        : target.buyable === "allUnits"
+          ? unitDefinitions.map(({ key }) => key)
+          : target.buyable === "civilBuildings"
+            ? ["house", "townHall"]
+            : target.buyable === "basicProductionBuildings"
+              ? ["farm", "lumberYard", "quarry", "goldMine"]
+              : target.buyable === "advancedProductionBuildings"
+                ? ["barracks", "university", "smithy", "market"]
+                : target.buyable === "research"
+                  ? researchDefinitions.map(({ key }) => key)
+                  : target.buyable.startsWith("tag.")
+                    ? unitDefinitions
+                        .filter(({ tags }) =>
+                          tags.includes(target.buyable.slice("tag.".length)),
+                        )
+                        .map(({ key }) => key)
+                    : target.buyable.startsWith("domain.")
+                      ? unitDefinitions
+                          .filter(
+                            ({ domain }) =>
+                              domain ===
+                              target.buyable.slice("domain.".length),
+                          )
+                          .map(({ key }) => key)
+                      : [target.buyable];
+  return [
+    ...owners,
+    ...(target.resource === "all" ? [] : [target.resource]),
   ];
 };
 
@@ -227,8 +288,8 @@ for (const building of buildingDefinitions) {
 for (const upgrade of upgradeDefinitions) {
   const relatedIds = [
     ...upgrade.costs.map(({ resource }) => resource),
-    ...upgrade.bonuses.map(
-      ({ destination }) => String(destination).split(".")[0],
+    ...upgrade.bonuses.flatMap(
+      ({ destination }) => bonusDestinationRelatedIds(String(destination)),
     ),
   ];
   // seen stays false at registration: upgrades are revealed when their
@@ -242,7 +303,9 @@ for (const upgrade of upgradeDefinitions) {
 
 for (const encounter of encounterDefinitions) {
   const relatedIds = [
-    ...encounter.bonuses.map(({ destination }) => String(destination)),
+    ...encounter.bonuses.flatMap(({ destination }) =>
+      bonusDestinationRelatedIds(String(destination)),
+    ),
     // Battles link to every unit in the opposing army; buildRelations() makes
     // the reverse unit → battle link.
     ...encounter.enemyArmy.map(({ unitId }) => unitId),
@@ -260,7 +323,9 @@ for (const age of ageDefinitions) {
     category: "age",
     relatedIds: [
       ...age.unlocks,
-      ...age.bonuses.map(({ destination }) => String(destination).split(".")[0]),
+      ...age.bonuses.flatMap(({ destination }) =>
+        bonusDestinationRelatedIds(String(destination)),
+      ),
     ],
   });
 }
@@ -268,8 +333,8 @@ for (const age of ageDefinitions) {
 for (const research of researchDefinitions) {
   const relatedIds = [
     ...research.prerequisites,
-    ...research.bonuses.map(
-      ({ destination }) => String(destination).split(".")[0],
+    ...research.bonuses.flatMap(({ destination }) =>
+      bonusDestinationRelatedIds(String(destination)),
     ),
     ...research.unlocks,
   ];

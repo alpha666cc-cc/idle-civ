@@ -10,17 +10,17 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "townHallCapacity",
+        "destination": "TownHall.capacity",
         "value": "5"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "buildingPower",
+        "destination": "productionBuilding.power",
         "value": 1.2
       },
       {
         "type": "costReductionFactor",
-        "destination": "townHall",
+        "destination": "TownHall.costs.all.factor",
         "value": "1.9128"
       }
     ]
@@ -36,27 +36,27 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "townHallCapacity",
+        "destination": "TownHall.capacity",
         "value": "10"
       },
       {
         "type": "attributeMultiplier",
-        "destination": "buildingPower",
+        "destination": "productionBuilding.power",
         "value": 1.5
       },
       {
         "type": "attributeMultiplier",
-        "destination": "marketPower",
+        "destination": "Market.power",
         "value": 2
       },
       {
         "type": "costReductionFactor",
-        "destination": "townHall",
+        "destination": "TownHall.costs.all.factor",
         "value": "1.58"
       },
       {
         "type": "costReductionFactor",
-        "destination": "advancedProductionBuildings",
+        "destination": "advancedProductionBuildings.costs.all.factor",
         "value": "1.60"
       },
       {
@@ -66,12 +66,12 @@
       },
       {
         "type": "attributeMultiplier",
-        "destination": "allProductionPerWorker",
+        "destination": "allProduction.worker.efficiency",
         "value": 2.0
       },
       {
         "type": "attributeMultiplier",
-        "destination": "advancedProductionPerWorker",
+        "destination": "advancedProduction.worker.efficiency",
         "value": 5.0
       }
     ]
@@ -94,7 +94,13 @@
     "buildingThreshold": 1.5e6,
     "unlocks": [],
     "research": { "base": "1e21", "factor": 20000, "exponent": 0.5 },
-    "bonuses": []
+    "bonuses": [
+      {
+        "type": "costParameterAdd",
+        "destination": "house.costs.stone.factor",
+        "value": 12
+      }
+    ]
   },
   {
     "guid": "dffc22da-5653-5989-8c2a-8373473a01de",

@@ -29,7 +29,11 @@ import {
   type UnitStatKey,
 } from "../game/units";
 import type { AchievementDefinition } from "../game/achievements";
-import type { Bonus } from "../game/bonus";
+import {
+  normalizeBonusDestination,
+  parseCostParameterTarget,
+  type Bonus,
+} from "../game/bonus";
 import type { UpgradeDefinition } from "../game/upgrades";
 import { researchDefinitions, type ResearchDefinition } from "../game/research";
 import type { CivilizationState } from "../game/civilizationState";
@@ -142,20 +146,49 @@ const factorSourceId = (source: ResourceFactor[0]): string | undefined =>
 
 /** Display name of a bonus destination (resource, capacity, building or stat id). */
 const bonusDestinationName = (destination: string): string => {
-  const entry = gamepedia.get(destination);
+  const normalized = normalizeBonusDestination(destination);
+  const costTarget = parseCostParameterTarget(normalized);
+  if (costTarget) {
+    const ownerEntry = gamepedia.get(costTarget.buyable);
+    const resourceEntry =
+      costTarget.resource === "all"
+        ? undefined
+        : gamepedia.get(costTarget.resource);
+    const owner =
+      costTarget.buyable === "all"
+        ? "Every buyable"
+        : costTarget.buyable === "allBuildings"
+          ? "Every building"
+          : costTarget.buyable === "allUnits"
+            ? "Every unit"
+            : costTarget.buyable === "civilBuildings"
+              ? "Civil buildings"
+              : ownerEntry
+                ? displayName(ownerEntry.object)
+                : costTarget.buyable;
+    const resource =
+      costTarget.resource === "all"
+        ? "all resources"
+        : resourceEntry
+            ? displayName(resourceEntry.object)
+          : costTarget.resource;
+    const field = costTarget.field ? ` ${costTarget.field}` : "";
+    return `${owner} ${resource} cost${field}`;
+  }
+  const entry = gamepedia.get(normalized);
   if (entry) return displayName(entry.object);
-  return groupDestinationLabel(destination) ?? destination;
+  return groupDestinationLabel(normalized) ?? normalized;
 };
 
 /**
- * Label for a destination that names a *group* rather than a Gamepedia entry:
- * the `allUnits` / `allBuildings` buyable blankets, a `tag.<t>` unit-tag scope
- * and a `domain.<d>` battlefield-domain scope. Undefined for a real id, so the
- * caller falls back to the raw destination.
+ * Label for a destination that names a group rather than a Gamepedia entry.
  */
 const groupDestinationLabel = (destination: string): string | undefined => {
   if (destination === "allUnits") return "Every unit";
   if (destination === "allBuildings") return "Every building";
+  if (destination === "civilBuildings") return "Civil buildings";
+  if (destination === "productionBuilding.power")
+    return "Production building power";
   const tag = /^tag\.([a-z-]+)$/.exec(destination);
   if (tag) return `${tag[1]} units`;
   const domain = /^domain\.([a-z]+)$/.exec(destination);
@@ -187,6 +220,8 @@ const bonusEffectLabel = (bonus: Bonus): string => {
       return `${target} cost`;
     case "costReductionBase":
       return `${target} base cost`;
+    case "costParameterAdd":
+      return `${target} parameter`;
     default:
       return target;
   }
@@ -208,6 +243,11 @@ const bonusValueText = (bonus: Bonus, format: NumberFormat): string => {
       return `^${formatNumber(bonus.value, format)}`;
     case "costReductionFlat":
       return `−${formatNumber(bonus.value, format)}`;
+    case "costParameterAdd":
+      return `${bonus.value.isNegative ? "" : "+"}${formatNumber(
+        bonus.value,
+        format,
+      )}`;
     case "attributeFlat":
       return `+${formatNumber(bonus.value, format)}`;
     case "attributeDrain":
@@ -334,6 +374,7 @@ export default function GamepediaModal({
     const parameters = gameState.getBuildingCostParameters(building.key);
     const { sources, multiplierSources, reductions, globalMultiplier } =
       gameState.getBuildingCostModifiers(building.key);
+    const parameterSources = gameState.getCostParameterSources(building.key);
 
     return (
       <div className="gamepedia-detail">
@@ -343,16 +384,23 @@ export default function GamepediaModal({
         <p className="gamepedia-category">Price</p>
         <div className="gamepedia-cost-list">
           {costs.map(({ resource, base }) => {
-            const factor = parameters.find(
+            const parameter = parameters.find(
               ({ cost }) => cost.resource === resource,
-            )?.unitFactor;
+            );
             return (
               <div className="gamepedia-cost-row" key={resource}>
                 <div className="gamepedia-cost-copy">
                   {renderReference(resource)}
-                  {factor && (
+                  {parameter && (
                     <span className="gamepedia-cost-meta">
-                      growth ×{formatAmount(factor)}^√n (effective)
+                      {parameter.cost.factor === 0
+                        ? "disabled (factor 0)"
+                        : `growth ×${formatAmount(
+                            parameter.unitFactor,
+                          )}^(n^${formatNumber(
+                            parameter.cost.exponent,
+                            numberFormat,
+                          )}) (effective)`}
                     </span>
                   )}
                 </div>
@@ -364,11 +412,12 @@ export default function GamepediaModal({
           })}
         </div>
 
-        <p className="gamepedia-category">Cost reductions</p>
+        <p className="gamepedia-category">Cost modifiers</p>
         <div className="gamepedia-recap">
           <p>
-            Per unit: base → growth → percentage → flat, on a base × growth^√n
-            curve. Costs floor at 0; growth floors at 1.01.
+            Per unit: base → growth → percentage → flat, on a base ×
+            growth^(n^exponent − 1) curve. A zero growth factor disables that
+            cost row until it is raised above zero.
           </p>
           <p>Base multiplier: ×{formatAmount(reductions.base)}</p>
           <p>Growth power: ^{formatAmount(reductions.factor)}</p>
@@ -401,11 +450,19 @@ export default function GamepediaModal({
               {bonusValueText(bonus, numberFormat)}
             </p>
           ))}
-          {sources.length === 0 && globalMultiplier.eq(ExpNumber.ONE) && (
-            <p>No active cost reductions.</p>
-          )}
+          {sources.length === 0 &&
+            parameterSources.length === 0 &&
+            globalMultiplier.eq(ExpNumber.ONE) && (
+              <p>No active cost modifiers.</p>
+            )}
           {sources.map(([source, bonus], index) => (
             <p key={`${source}-${index}`}>
+              {renderReference(source)} — {bonusEffectLabel(bonus)}:{" "}
+              {bonusValueText(bonus, numberFormat)}
+            </p>
+          ))}
+          {parameterSources.map(([source, bonus], index) => (
+            <p key={`parameter-${source}-${index}`}>
               {renderReference(source)} — {bonusEffectLabel(bonus)}:{" "}
               {bonusValueText(bonus, numberFormat)}
             </p>
@@ -1075,6 +1132,7 @@ export default function GamepediaModal({
     const unitCosts = gameState.getUnitCost(unit.key);
     const costParameters = gameState.getUnitCostParameters(unit.key);
     const { sources, reductions } = gameState.getUnitCostModifiers(unit.key);
+    const parameterSources = gameState.getCostParameterSources(unit.key);
     const owned = gameState.getUnitCount(unit.key);
     return (
       <div className="gamepedia-detail">
@@ -1105,16 +1163,23 @@ export default function GamepediaModal({
             <p className="gamepedia-category">Price (next unit)</p>
             <div className="gamepedia-cost-list">
               {unitCosts.map(({ resource, base }) => {
-                const factor = costParameters.find(
+                const parameter = costParameters.find(
                   ({ cost }) => cost.resource === resource,
-                )?.unitFactor;
+                );
                 return (
                   <div className="gamepedia-cost-row" key={resource}>
                     <div className="gamepedia-cost-copy">
                       {renderReference(resource)}
-                      {factor && (
+                      {parameter && (
                         <span className="gamepedia-cost-meta">
-                          growth ×{formatAmount(factor)}^√n (effective)
+                          {parameter.cost.factor === 0
+                            ? "disabled (factor 0)"
+                            : `growth ×${formatAmount(
+                                parameter.unitFactor,
+                              )}^(n^${formatNumber(
+                                parameter.cost.exponent,
+                                numberFormat,
+                              )}) (effective)`}
                         </span>
                       )}
                     </div>
@@ -1125,12 +1190,13 @@ export default function GamepediaModal({
                 );
               })}
             </div>
-            <p className="gamepedia-category">Cost reductions</p>
+            <p className="gamepedia-category">Cost modifiers</p>
             <div className="gamepedia-recap">
               <p>
                 Owned: {formatCount(owned)}. Per unit: base → growth →
-                percentage → flat, on a base × growth^√n curve. Costs floor at
-                0; growth floors at 1.01.
+                percentage → flat, on a base × growth^(n^exponent − 1) curve.
+                A zero growth factor disables that cost row until it is raised
+                above zero.
               </p>
               <p>Base multiplier: ×{formatAmount(reductions.base)}</p>
               <p>Growth power: ^{formatAmount(reductions.factor)}</p>
@@ -1157,9 +1223,17 @@ export default function GamepediaModal({
                   </p>
                 </div>
               ))}
-              {sources.length === 0 && <p>No active cost reductions.</p>}
+              {sources.length === 0 && parameterSources.length === 0 && (
+                <p>No active cost modifiers.</p>
+              )}
               {sources.map(([source, bonus], index) => (
                 <p key={`${source}-${index}`}>
+                  {renderReference(source)} — {bonusEffectLabel(bonus)}:{" "}
+                  {bonusValueText(bonus, numberFormat)}
+                </p>
+              ))}
+              {parameterSources.map(([source, bonus], index) => (
+                <p key={`parameter-${source}-${index}`}>
                   {renderReference(source)} — {bonusEffectLabel(bonus)}:{" "}
                   {bonusValueText(bonus, numberFormat)}
                 </p>

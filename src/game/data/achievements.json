@@ -102,7 +102,7 @@
     "bonuses": [
       {
         "type": "costReductionFactor",
-        "destination": "allBuildings",
+        "destination": "allBuildings.costs.all.factor",
         "value": 0.98
       }
     ]

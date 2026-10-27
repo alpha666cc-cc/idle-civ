@@ -7,7 +7,11 @@ import {
   type BuildingCost,
   type BuildingKey,
 } from "./buildings";
-import { parseBonusType, type Bonus, isValidBonusDestination } from "./bonus";
+import {
+  parseBonus,
+  type Bonus,
+  isValidBonusDestination,
+} from "./bonus";
 import type { ResourceKey } from "./attributes";
 
 /** Unlock conditions for upgrades (AGENTS.md §13.4). Sources own their id lists. */
@@ -80,11 +84,7 @@ const toUpgradeDefinition = (data: UpgradeData): UpgradeDefinition =>
           `Unknown upgrade bonus destination: ${data.key} → ${dest}`,
         );
       }
-      return {
-        type: parseBonusType(type),
-        destination,
-        value: ExpNumber.fromNumber(value),
-      };
+      return parseBonus(type, destination, value);
     }),
     {
       source: "buildingCount",
