@@ -699,6 +699,7 @@ function App() {
               e: cost.base.exponent,
             },
             factor: cost.factor,
+            exponent: cost.exponent,
             unitBase: {
               s: unitBase.sign,
               m: unitBase.mantissa,

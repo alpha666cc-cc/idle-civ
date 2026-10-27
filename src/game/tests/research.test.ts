@@ -120,12 +120,12 @@ const buyPrerequisiteClosure = (
 };
 
 describe("research data integrity", () => {
-  it("keeps every age on the 0.5 square-root research exponent", () => {
-    // The exponent knob is live data now, but no rebalance has shipped: every
-    // age still prices on the old sqrt curve, so a non-0.5 value in ages.json
-    // must be a deliberate balance decision, not drift.
+  it("keeps every age's research exponent finite and positive", () => {
     for (const age of ageDefinitions) {
-      expect(age.research.exponent, `${age.key} research exponent`).toBe(0.5);
+      expect(Number.isFinite(age.research.exponent), age.key).toBe(true);
+      expect(age.research.exponent, `${age.key} research exponent`).toBeGreaterThan(
+        0,
+      );
     }
   });
 

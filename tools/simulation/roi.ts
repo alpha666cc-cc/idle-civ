@@ -10,6 +10,7 @@ import { ExpNumber } from "../../src/game/expNumber.js";
 import { ageDefinitions } from "../../src/game/ages.js";
 import {
   buildingDefinitions,
+  DEFAULT_COST_EXPONENT,
   type BuildingCost,
   type BuildingKey,
 } from "../../src/game/buildings.js";
@@ -356,8 +357,17 @@ const uncachedEvaluateBattle = (
   // Science is added to the probe so the plan's research is buyable, but it is
   // deliberately kept out of the cost list the player actually pays.
   let armed = makeProbeState(state, [
-    ...plan.costs.map((cost) => ({ ...cost, factor: 1 })),
-    { resource: "science", base: ExpNumber.ZERO, factor: 1 },
+    ...plan.costs.map((cost) => ({
+      ...cost,
+      factor: 1,
+      exponent: DEFAULT_COST_EXPONENT,
+    })),
+    {
+      resource: "science",
+      base: ExpNumber.ZERO,
+      factor: 1,
+      exponent: DEFAULT_COST_EXPONENT,
+    },
   ]);
   for (const researchId of researchClosure(plan.research)) {
     if (armed.isResearchBought(researchId)) continue;
@@ -833,10 +843,12 @@ const campaignTimeSavings = (
       const beforeCosts = beforePlan.costs.map((cost) => ({
         ...cost,
         factor: 1,
+        exponent: DEFAULT_COST_EXPONENT,
       }));
       const afterCosts = afterPlan.costs.map((cost) => ({
         ...cost,
         factor: 1,
+        exponent: DEFAULT_COST_EXPONENT,
       }));
       const beforeWait = waitForCosts(
         state,
@@ -940,6 +952,7 @@ export const getBuyableRoi = (
     const totalCost: readonly BuildingCost[] = plan.costs.map((cost) => ({
       ...cost,
       factor: 1,
+      exponent: DEFAULT_COST_EXPONENT,
     }));
     const winnable = state.simulateEncounterOutcome(buyable.id) === "player";
     // A battle that can already be fought costs nothing to launch; otherwise the

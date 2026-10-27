@@ -8,7 +8,10 @@ import {
   type ResourceFactors,
   type ResourceKey,
 } from "./attributes";
-import type { BuildingCost } from "./buildings";
+import {
+  DEFAULT_COST_EXPONENT,
+  type BuildingCost,
+} from "./buildings";
 import { type BattleOrder } from "./battle";
 import { snapshotGuids } from "./dataIds";
 import { orderIds } from "./orders";
@@ -73,6 +76,7 @@ export type SerializedBuildingCost = {
   readonly resource: ResourceKey;
   readonly base: string;
   readonly factor: number;
+  readonly exponent?: number;
 };
 
 /** `[sourceLabel, value]` pairs, the serialized form of `ResourceFactor`. */
@@ -839,12 +843,14 @@ const serializeCost = (cost: BuildingCost): SerializedBuildingCost => ({
   resource: cost.resource,
   base: cost.base.toString(),
   factor: cost.factor,
+  exponent: cost.exponent,
 });
 
 const deserializeCost = (cost: SerializedBuildingCost): BuildingCost => ({
   resource: cost.resource,
   base: ExpNumber.from(cost.base),
   factor: cost.factor,
+  exponent: cost.exponent ?? DEFAULT_COST_EXPONENT,
 });
 /** Every content id the save names, for the `referencedGuids` snapshot. */
 export const collectReferencedIds = (state: CivilizationState): string[] => {

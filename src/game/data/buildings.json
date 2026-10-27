@@ -8,7 +8,8 @@
       {
         "resource": "food",
         "base": 10,
-        "factor": 2.5
+        "factor": 2.5,
+        "exponent": 0.5
       }
     ],
     "available": true,
@@ -29,7 +30,8 @@
       {
         "resource": "wood",
         "base": 10,
-        "factor": 12
+        "factor": 12,
+        "exponent": 0.5
       }
     ],
     "available": true,
@@ -50,12 +52,14 @@
       {
         "resource": "food",
         "base": 10,
-        "factor": 8
+        "factor": 8,
+        "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": 10,
-        "factor": 8
+        "factor": 8,
+        "exponent": 0.5
       }
     ],
     "available": true,
@@ -77,12 +81,14 @@
       {
         "resource": "wood",
         "base": 10,
-        "factor": 8
+        "factor": 8,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": 5,
-        "factor": 8
+        "factor": 8,
+        "exponent": 0.5
       }
     ],
     "available": true,
@@ -104,7 +110,8 @@
       {
         "resource": "stone",
         "base": 20,
-        "factor": 8
+        "factor": 8,
+        "exponent": 0.5
       }
     ],
     "available": true,
@@ -126,12 +133,14 @@
       {
         "resource": "wood",
         "base": 100,
-        "factor": 8
+        "factor": 8,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": 50,
-        "factor": 8
+        "factor": 8,
+        "exponent": 0.5
       }
     ],
     "available": true,
@@ -153,17 +162,20 @@
       {
         "resource": "wood",
         "base": 10000,
-        "factor": 15
+        "factor": 15,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": 7500,
-        "factor": 15
+        "factor": 15,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": 12500,
-        "factor": 15
+        "factor": 15,
+        "exponent": 0.5
       }
     ],
     "available": true,
@@ -202,17 +214,20 @@
       {
         "resource": "wood",
         "base": 10000,
-        "factor": 10
+        "factor": 10,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": 1000,
-        "factor": 12
+        "factor": 12,
+        "exponent": 0.5
       },
       {
         "resource": "food",
         "base": 5000,
-        "factor": 10
+        "factor": 10,
+        "exponent": 0.5
       }
     ],
     "available": true,
@@ -243,17 +258,20 @@
       {
         "resource": "wood",
         "base": 10000,
-        "factor": 10
+        "factor": 10,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": 10000,
-        "factor": 12
+        "factor": 12,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": 7500,
-        "factor": 10
+        "factor": 10,
+        "exponent": 0.5
       }
     ],
     "available": true,
@@ -283,12 +301,14 @@
       {
         "resource": "wood",
         "base": 1000000,
-        "factor": 12
+        "factor": 12,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": 1000000,
-        "factor": 12
+        "factor": 12,
+        "exponent": 0.5
       }
     ],
     "available": true,
@@ -320,17 +340,20 @@
       {
         "resource": "wood",
         "base": 25000000,
-        "factor": 12
+        "factor": 12,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": 25000000,
-        "factor": 12
+        "factor": 12,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": 10000000,
-        "factor": 12
+        "factor": 12,
+        "exponent": 0.5
       }
     ],
     "available": true,

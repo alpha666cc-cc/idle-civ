@@ -24,6 +24,7 @@ const context = () => ({
       resource: "military" as const,
       base: ExpNumber.fromNumber(count * 20),
       factor: 1,
+      exponent: 0.5,
     },
   ],
   getResearch: () => ({ ids: [], costs: [] }),
@@ -133,7 +134,12 @@ describe("battle simulator current army", () => {
         getResearch: (unitIds) => ({
           ids: unitIds,
           costs: [
-            { resource: "science", base: ExpNumber.fromNumber(100), factor: 1 },
+            {
+              resource: "science",
+              base: ExpNumber.fromNumber(100),
+              factor: 1,
+              exponent: 0.5,
+            },
           ],
         }),
         winsWithFormations: (total: SimulatorTotalArmy) =>

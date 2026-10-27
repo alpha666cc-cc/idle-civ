@@ -1,6 +1,6 @@
 import unitData from "./data/units.json";
 import type { ResourceKey } from "./attributes";
-import type { BuildingCost } from "./buildings";
+import { DEFAULT_COST_EXPONENT, type BuildingCost } from "./buildings";
 import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 
@@ -128,7 +128,12 @@ type UnitData = {
   speed: number;
   accuracy: number;
   available: boolean;
-  costs: { resource: ResourceKey; base: number | string; factor: number }[];
+  costs: {
+    resource: ResourceKey;
+    base: number | string;
+    factor: number;
+    exponent?: number;
+  }[];
 };
 
 const toUnitDefinition = (data: UnitData): UnitDefinition =>
@@ -143,10 +148,11 @@ const toUnitDefinition = (data: UnitData): UnitDefinition =>
     data.canHit,
     data.bonusVs ?? [],
     data.available,
-    data.costs?.map(({ resource, base, factor }) => ({
+    data.costs?.map(({ resource, base, factor, exponent }) => ({
       resource,
       base: ExpNumber.from(base),
       factor,
+      exponent: exponent ?? DEFAULT_COST_EXPONENT,
     })) ?? [],
     {
       hp: ExpNumber.fromNumber(data.hp).mul(

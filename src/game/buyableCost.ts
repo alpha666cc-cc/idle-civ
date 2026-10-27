@@ -15,25 +15,27 @@ const flatClampWindow = 256;
 const linearSlope = (unitBase: ExpNumber, unitFactor: ExpNumber): ExpNumber =>
   unitBase.mul(unitFactor).div(ExpNumber.fromNumber(25));
 
-const sqrtCurve = (
+const exponentCurve = (
   unitBase: ExpNumber,
   unitFactor: ExpNumber,
   n: number,
-): ExpNumber => unitBase.mul(unitFactor.pow(Math.sqrt(n) - 1));
+  exponent: number,
+): ExpNumber => unitBase.mul(unitFactor.pow(Math.pow(n, exponent) - 1));
 
-const crossoverToSqrt = (
+const crossoverToExponentCurve = (
   unitBase: ExpNumber,
   unitFactor: ExpNumber,
+  exponent: number,
 ): number => {
   const slope = linearSlope(unitBase, unitFactor);
   const linear = (k: number): ExpNumber =>
     unitBase.add(slope.mul(ExpNumber.fromNumber(k - 1)));
-  const sqrtPrice = (k: number): ExpNumber =>
-    sqrtCurve(unitBase, unitFactor, k).sub(
-      sqrtCurve(unitBase, unitFactor, k - 1),
+  const curvePrice = (k: number): ExpNumber =>
+    exponentCurve(unitBase, unitFactor, k, exponent).sub(
+      exponentCurve(unitBase, unitFactor, k - 1, exponent),
     );
   const staysOnLinearFloor = (k: number): boolean =>
-    sqrtPrice(k).lte(linear(k));
+    curvePrice(k).lte(linear(k));
 
   let low = 0;
   let high = 1;
@@ -69,8 +71,13 @@ export const calculateCostSeries = (
 ): BuildingCost[] => {
   const owned = alreadyBuilt.toNumber();
   return parameters.map(({ cost, unitBase, unitFactor, reductions }) => {
+    const exponent = cost.exponent;
     if (count <= 0) return { ...cost, base: ExpNumber.ZERO };
-    const crossover = crossoverToSqrt(unitBase, unitFactor);
+    const crossover = crossoverToExponentCurve(
+      unitBase,
+      unitFactor,
+      exponent,
+    );
     const slope = linearSlope(unitBase, unitFactor);
     const linearSum = (n: number): ExpNumber =>
       unitBase
@@ -80,8 +87,8 @@ export const calculateCostSeries = (
       n <= crossover
         ? linearSum(n)
         : linearSum(crossover).add(
-            sqrtCurve(unitBase, unitFactor, n).sub(
-              sqrtCurve(unitBase, unitFactor, crossover),
+            exponentCurve(unitBase, unitFactor, n, exponent).sub(
+              exponentCurve(unitBase, unitFactor, crossover, exponent),
             ),
           );
     const unitPrice = (n: number): ExpNumber =>

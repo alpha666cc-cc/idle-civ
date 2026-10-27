@@ -86,6 +86,40 @@ describe("save document identity", () => {
   });
 
   describe("save round-trips", () => {
+    it("preserves cost exponents and defaults them in legacy overrides", () => {
+      const state = sampleState().upgradeBuildingCosts("farm", [
+        {
+          resource: "food",
+          base: ExpNumber.fromNumber(10),
+          factor: 8,
+          exponent: 0.75,
+        },
+      ]);
+      const data = createSaveData(state, "cost-exponent", 1);
+      const restored = loadSaveData(data);
+
+      expect(
+        restored.getBuildingCostParameters("farm")[0].cost.exponent,
+      ).toBe(0.75);
+
+      const legacyData = {
+        ...data,
+        buildingCostOverrides: {
+          ...data.buildingCostOverrides,
+          farm: [
+            {
+              ...data.buildingCostOverrides.farm[0],
+              exponent: undefined,
+            },
+          ],
+        },
+      };
+      expect(
+        loadSaveData(legacyData).getBuildingCostParameters("farm")[0].cost
+          .exponent,
+      ).toBe(0.5);
+    });
+
     it("survives JSON unchanged", () => {
       const data = sampleSave();
       expect(saveFromJson(saveToJson(data))).toEqual(data);

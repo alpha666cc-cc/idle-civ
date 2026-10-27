@@ -192,6 +192,7 @@ describe("optimizeBattleTactics iteration", () => {
           resource: "military",
           base: ExpNumber.fromNumber(count),
           factor: 1,
+          exponent: 0.5,
         },
       ],
       getResearch: () => ({ ids: [], costs: [] }),

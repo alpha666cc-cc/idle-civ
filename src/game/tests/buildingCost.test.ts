@@ -60,7 +60,7 @@ const citizenCost = (
  * the -1 sits in the exponent, so the first unit costs exactly `base`. One unit
  * costs the difference of two consecutive C values (AGENTS.md 4.4).
  */
-describe("the square-root building cost curve", () => {
+describe("the parameterized building cost curve", () => {
   it("charges nothing for zero units", () => {
     expect(farmCost(stateWith(), 0, 0)).toBe(0);
   });
@@ -116,9 +116,36 @@ describe("the square-root building cost curve", () => {
 
   it("turns a zero-cost override into a free building", () => {
     const state = stateWith().upgradeBuildingCosts("farm", [
-      { resource: "food", base: ExpNumber.ZERO, factor: 2.5 },
+      {
+        resource: "food",
+        base: ExpNumber.ZERO,
+        factor: 2.5,
+        exponent: 0.5,
+      },
     ]);
     expect(farmCost(state, 0, 3)).toBe(0);
+  });
+
+  it("uses a cost-specific exponent and defaults older cost data to sqrt", () => {
+    const defaultCurve = stateWith();
+    const customCurve = defaultCurve.upgradeBuildingCosts("farm", [
+      {
+        resource: "food",
+        base: ExpNumber.fromNumber(10),
+        factor: 8,
+        exponent: 1,
+      },
+    ]);
+
+    expect(
+      defaultCurve.getBuildingCostParameters("farm")[0].cost.exponent,
+    ).toBe(0.5);
+    expect(
+      customCurve.getBuildingCostParameters("farm")[0].cost.exponent,
+    ).toBe(1);
+    expect(farmCost(customCurve, 0, 10)).toBeGreaterThan(
+      farmCost(defaultCurve, 0, 10),
+    );
   });
 });
 

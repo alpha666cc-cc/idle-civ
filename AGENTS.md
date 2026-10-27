@@ -265,7 +265,12 @@ building keys are Gamepedia ids, the Gamepedia modal turns factor sources into l
 ### 4.4 Buildings and cost scaling (`src/game/buildings.ts`)
 
 ```ts
-type BuildingCost = { resource: ResourceKey; base: ExpNumber; factor: number };
+type BuildingCost = {
+  resource: ResourceKey;
+  base: ExpNumber;
+  factor: number;
+  exponent: number;
+};
 type BuildingEffects = {
   capacityProvided?: { building: BuildingKey; perBuilding: ExpNumber };
   additiveMultiplier?: { resource: ResourceKey; perBuilding: ExpNumber };
@@ -303,10 +308,13 @@ type BuildingEffects = {
   reaches it; the blanket `allBuildings` reductions and the global
   `buildingCostMultiplier` stat do not (`getResearchCostModifiers()` enforces this).
 
-- Cumulative curve: `T(n) = base × (factor^√n − 1)` is the total spent owning `n`
-  units, so unit `n` costs `T(n) − T(n−1)` and buying `count` more from `alreadyBuilt` is
-  one subtraction, `T(alreadyBuilt + count) − T(alreadyBuilt)`, rounded up. `costAt()` and
-  `formatCost()` on the definition were removed with the geometric series.
+- Cumulative curve: `T(n) = base × factor^(n^exponent − 1)` is the total spent
+  owning `n` units, so unit `n` costs `T(n) − T(n−1)` and buying `count` more from
+  `alreadyBuilt` is one subtraction, `T(alreadyBuilt + count) − T(alreadyBuilt)`,
+  rounded up. Cost entries default to exponent `0.5`; ages already set this for
+  research schedules. The engine keeps the existing linear early-cost floor before
+  switching to the exponent curve. `costAt()` and `formatCost()` on the definition
+  were removed with the geometric series.
 - `maxCount` is **not** the live limit: the live limit is the building's capacity
   resource (also 10 by default), raised via `CivilizationState.upgradeBuildingLimit()`.
   Treat `maxCount` as decorative metadata, not authority.

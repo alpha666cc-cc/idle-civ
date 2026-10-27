@@ -11,12 +11,14 @@
       {
         "resource": "food",
         "base": "2085.5",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": "5.570000000000000e2",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -49,12 +51,14 @@
       {
         "resource": "food",
         "base": "5e10",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": "1.0e9",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -87,17 +91,20 @@
       {
         "resource": "food",
         "base": "1.0e+24",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": "500e18",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e18",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -135,17 +142,20 @@
       {
         "resource": "food",
         "base": "1e48",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": "2e44",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e39",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -183,17 +193,20 @@
       {
         "resource": "food",
         "base": "6.49942720156444e3979",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -231,17 +244,20 @@
       {
         "resource": "food",
         "base": "1.97355140436919e39758",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -279,17 +295,20 @@
       {
         "resource": "food",
         "base": "2.56869223394204e397540",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -327,17 +346,20 @@
       {
         "resource": "food",
         "base": "6.99968361806327e3975358",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -375,12 +397,14 @@
       {
         "resource": "wood",
         "base": "5.570000000000000e2",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "5.570000000000000e2",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -413,12 +437,14 @@
       {
         "resource": "wood",
         "base": "1.0e9",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1.0e9",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -451,17 +477,20 @@
       {
         "resource": "wood",
         "base": "1e21",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1e21",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e18",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -499,17 +528,20 @@
       {
         "resource": "wood",
         "base": "5e43",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "5e43",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e38",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -547,17 +579,20 @@
       {
         "resource": "wood",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -595,17 +630,20 @@
       {
         "resource": "wood",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -643,17 +681,20 @@
       {
         "resource": "wood",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -691,17 +732,20 @@
       {
         "resource": "wood",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -739,7 +783,8 @@
       {
         "resource": "stone",
         "base": "5.570000000000000e2",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -772,7 +817,8 @@
       {
         "resource": "stone",
         "base": "1.0e9",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -805,12 +851,14 @@
       {
         "resource": "stone",
         "base": "1e21",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e18",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -848,12 +896,14 @@
       {
         "resource": "stone",
         "base": "1e44",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e38",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -891,12 +941,14 @@
       {
         "resource": "stone",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -934,12 +986,14 @@
       {
         "resource": "stone",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -977,12 +1031,14 @@
       {
         "resource": "stone",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1020,12 +1076,14 @@
       {
         "resource": "stone",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1063,12 +1121,14 @@
       {
         "resource": "wood",
         "base": "5.570000000000000e2",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "5.570000000000000e2",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1101,12 +1161,14 @@
       {
         "resource": "wood",
         "base": "1.0e9",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1.0e9",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1139,17 +1201,20 @@
       {
         "resource": "wood",
         "base": "1e22",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1e22",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e18",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1187,17 +1252,20 @@
       {
         "resource": "wood",
         "base": "4e44",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1e44",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "3e38",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1235,17 +1303,20 @@
       {
         "resource": "wood",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1283,17 +1354,20 @@
       {
         "resource": "wood",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1331,17 +1405,20 @@
       {
         "resource": "wood",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1379,17 +1456,20 @@
       {
         "resource": "wood",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1427,17 +1507,20 @@
       {
         "resource": "wood",
         "base": "300000",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "500000",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "food",
         "base": "1000000",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1465,17 +1548,20 @@
       {
         "resource": "wood",
         "base": "4e14",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1e14",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "food",
         "base": "4.535182000000000e15",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1503,22 +1589,26 @@
       {
         "resource": "wood",
         "base": "5e42",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "4e41",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "food",
         "base": "1e47",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "4e32",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1551,22 +1641,26 @@
       {
         "resource": "wood",
         "base": "4e60",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2e60",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "food",
         "base": "6e62",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e52",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1599,22 +1693,26 @@
       {
         "resource": "wood",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "food",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1647,22 +1745,26 @@
       {
         "resource": "wood",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "food",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1695,22 +1797,26 @@
       {
         "resource": "wood",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "food",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1743,22 +1849,26 @@
       {
         "resource": "wood",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "food",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1791,17 +1901,20 @@
       {
         "resource": "wood",
         "base": "6e5",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1e6",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": "4e5",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1829,17 +1942,20 @@
       {
         "resource": "wood",
         "base": "1e15",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "4e14",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": "1e14",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1867,22 +1983,26 @@
       {
         "resource": "wood",
         "base": "20e42",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2e42",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": "100e39",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e33",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1915,22 +2035,26 @@
       {
         "resource": "wood",
         "base": "2e61",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1e61",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": "2e58",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "2e53",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -1963,22 +2087,26 @@
       {
         "resource": "wood",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2011,22 +2139,26 @@
       {
         "resource": "wood",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2059,22 +2191,26 @@
       {
         "resource": "wood",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2107,22 +2243,26 @@
       {
         "resource": "wood",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "gold",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2155,12 +2295,14 @@
       {
         "resource": "wood",
         "base": "5.570000000000000e2",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "5.570000000000000e2",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2188,12 +2330,14 @@
       {
         "resource": "wood",
         "base": "2.535182000000000e16",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2.535182000000000e16",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2221,17 +2365,20 @@
       {
         "resource": "wood",
         "base": "5e42",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "500e39",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "2e29",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2264,17 +2411,20 @@
       {
         "resource": "wood",
         "base": "3e60",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2e60",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e47",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2307,17 +2457,20 @@
       {
         "resource": "wood",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2350,17 +2503,20 @@
       {
         "resource": "wood",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2393,17 +2549,20 @@
       {
         "resource": "wood",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2436,17 +2595,20 @@
       {
         "resource": "wood",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2479,12 +2641,14 @@
       {
         "resource": "wood",
         "base": "5.570000000000000e2",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "5.570000000000000e2",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2512,12 +2676,14 @@
       {
         "resource": "wood",
         "base": "4.535182000000000e16",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "4.535182000000000e16",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2545,17 +2711,20 @@
       {
         "resource": "wood",
         "base": "1e44",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1e43",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "5e33",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2588,17 +2757,20 @@
       {
         "resource": "wood",
         "base": "4e62",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "4e62",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e54",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2631,17 +2803,20 @@
       {
         "resource": "wood",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "8.66590293541983e3978",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2674,17 +2849,20 @@
       {
         "resource": "wood",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2.63140187246763e39757",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2717,17 +2895,20 @@
       {
         "resource": "wood",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "3.42492297861471e397539",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2760,17 +2941,20 @@
       {
         "resource": "wood",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "9.33291149207092e3975357",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "1e3",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2803,17 +2987,20 @@
       {
         "resource": "gold",
         "base": "1e18",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": "5e17",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "5e18",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2846,17 +3033,20 @@
       {
         "resource": "wood",
         "base": "1e50",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1e50",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "trade",
         "base": "1e50",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2884,17 +3074,20 @@
       {
         "resource": "wood",
         "base": "1e55",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "1e55",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "trade",
         "base": "2e57",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2927,17 +3120,20 @@
       {
         "resource": "wood",
         "base": "5e58",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "2.5e58",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "military",
         "base": "8e45",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [
@@ -2970,17 +3166,20 @@
       {
         "resource": "wood",
         "base": "20e60",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "stone",
         "base": "10e60",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": "5e53",
-        "factor": 1
+        "factor": 1,
+        "exponent": 0.5
       }
     ],
     "bonuses": [

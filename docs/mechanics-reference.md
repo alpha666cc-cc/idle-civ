@@ -139,12 +139,13 @@ candidates across cores in parallel is safe and only costs wall-clock.
 
 ## 1.4 Costs
 
-- **Buildings and units** use a cumulative series `T(n) = base × (factor^√n − 1)`,
-  so the *n*-th unit costs `T(n) − T(n−1)`: cost per unit rises, but far
-  slower than linearly.
+- **Buildings and units** use a cumulative series
+  `T(n) = base × factor^(n^exponent − 1)`. Cost entries default to exponent
+  `0.5`, preserving the square-root curve; the engine also keeps a linear
+  early-cost floor. The *n*-th unit costs `T(n) − T(n−1)`.
 - **Research is priced by ordinal, not identity.** `getResearchCostForCount(n)`
   prices the *n*-th tech bought in the **current age** at
-  `base × factor^(√n − 1)`, keyed on the age, never on which tech it is
+  `base × factor^(n^exponent − 1)`, keyed on the age, never on which tech it is
   (Ancient: `200 · 12^(√n − 1)` science). Therefore:
   - every tech available in an age costs **exactly the same**;
   - any path buying all 23 Age-0 techs costs the same total (10 131 950

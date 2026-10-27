@@ -322,6 +322,7 @@ const hasMeaningfulRouteImprovement = (
 export const getFastestFundingRoute = (
   state: CivilizationState,
   costs: readonly FundingCost[],
+  researchCosts: readonly FundingCost[] = [],
 ): FundingRoute => {
   const directFocus = getFastestWorkerAllocation(state, costs);
   const directTime = missingCostSeconds(
@@ -331,7 +332,7 @@ export const getFastestFundingRoute = (
   let bestRoute: FundingRoute = {
     building: null,
     focus: directFocus,
-    costs: [...costs],
+    costs: [...costs, ...researchCosts],
     seconds: directTime,
   };
   const missingResources = new Set(
@@ -339,6 +340,10 @@ export const getFastestFundingRoute = (
       .filter(({ resource, base }) => state.resources[resource].lt(base))
       .map(({ resource }) => resource),
   );
+  // Research costs are included in the same vector so workers can fund them in
+  // parallel with buildings: a research that multiplies food (like irrigation
+  // ×100) is a resource shortcut, and its gold cost belongs in the same target
+  // as the food it accelerates.
 
   for (const building of buildingDefinitions) {
     if (

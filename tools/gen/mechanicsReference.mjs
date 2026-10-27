@@ -209,12 +209,13 @@ p();
 
 p("## 1.4 Costs");
 p();
-p("- **Buildings and units** use a cumulative series `T(n) = base × (factor^√n − 1)`,");
+p("- **Buildings and units** use a cumulative series `T(n) = base × factor^(n^exponent − 1)`;");
+p("  the default exponent is `0.5`, which preserves the square-root curve.");
 p("  so the *n*-th unit costs `T(n) − T(n−1)`: cost per unit rises, but far");
 p("  slower than linearly.");
 p("- **Research is priced by ordinal, not identity.** `getResearchCostForCount(n)`");
 p("  prices the *n*-th tech bought in the **current age** at");
-p("  `base × factor^(√n − 1)`, keyed on the age, never on which tech it is");
+p("  `base × factor^(n^exponent − 1)`, keyed on the age, never on which tech it is");
 p("  (Ancient: `200 · 12^(√n − 1)` science). Therefore:");
 p("  - every tech available in an age costs **exactly the same**;");
 p("  - any path buying all 23 Age-0 techs costs the same total (10 131 950");
@@ -431,6 +432,7 @@ p();
   for (const a of agesForCost) {
     const base = Number(a.research?.base ?? 100);
     const factor = Number(a.research?.factor ?? 10);
+    const exponent = a.research?.exponent ?? 0.5;
     const count = list(read("research.json")).filter(
       (r) => r.age === agesForCost.indexOf(a),
     ).length;
@@ -442,7 +444,7 @@ p();
     let cumulative = 0;
     let prevMarginal = 0;
     for (let n = 1; n <= Math.min(count, 10); n += 1) {
-      const marginal = base * factor ** (Math.sqrt(n) - 1);
+      const marginal = base * factor ** (n ** exponent - 1);
       cumulative += marginal;
       p(
         `| ${n} | ${num(marginal)} | ${num(cumulative)} | ` +
@@ -451,10 +453,10 @@ p();
       prevMarginal = marginal;
     }
     if (count > 10) {
-      // Closed form: sum_{k=1..count} base * factor^(sqrt(k)-1) has no elementary
+      // Closed form: sum_{k=1..count} base * factor^(k^exponent-1) has no elementary
       // sum, so the row below is only the *final marginal* price. Reporting a
       // cumulative there needs the actual sum, which is walked instead.
-      const last = base * factor ** (Math.sqrt(count) - 1);
+      const last = base * factor ** (count ** exponent - 1);
       p(`| … | | | |`);
       p(`| ${count} | ${num(last)} | see below | |`);
     }
@@ -462,12 +464,12 @@ p();
     // Walk the whole ladder for the true cumulative total.
     let total = 0;
     for (let n = 1; n <= count; n += 1) {
-      total += base * factor ** (Math.sqrt(n) - 1);
+      total += base * factor ** (n ** exponent - 1);
     }
     p(
       `All ${count}: **${num(total)}** science in total. The last tech alone costs ` +
-        `**${num(base * factor ** (Math.sqrt(count) - 1))}** — ` +
-        `${((base * factor ** (Math.sqrt(count) - 1) / total) * 100).toFixed(1)}% ` +
+        `**${num(base * factor ** (count ** exponent - 1))}** — ` +
+        `${((base * factor ** (count ** exponent - 1) / total) * 100).toFixed(1)}% ` +
         `of everything that age spends on research.`,
     );
     p();
@@ -752,9 +754,6 @@ p(
 
 writeFileSync("docs/mechanics-reference.md", out.join("\n"));
 console.log(`wrote docs/mechanics-reference.md (${out.length} lines)`);
-
-
-
 
 
 

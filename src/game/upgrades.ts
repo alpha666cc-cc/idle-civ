@@ -3,6 +3,7 @@ import { ExpNumber } from "./expNumber";
 import { GameObject } from "./gameObject";
 import {
   buildingDefinitions,
+  DEFAULT_COST_EXPONENT,
   type BuildingCost,
   type BuildingKey,
 } from "./buildings";
@@ -48,7 +49,12 @@ type UpgradeData = {
   building: BuildingKey;
   threshold: number;
   tier: number;
-  costs: { resource: ResourceKey; base: number | string; factor: number }[];
+  costs: {
+    resource: ResourceKey;
+    base: number | string;
+    factor: number;
+    exponent?: number;
+  }[];
   bonuses: {
     type: string;
     destination: string;
@@ -61,10 +67,11 @@ const toUpgradeDefinition = (data: UpgradeData): UpgradeDefinition =>
     data.key,
     data.name,
     data.description,
-    data.costs.map(({ resource, base, factor }) => ({
+    data.costs.map(({ resource, base, factor, exponent }) => ({
       resource,
       base: ExpNumber.from(base),
       factor,
+      exponent: exponent ?? DEFAULT_COST_EXPONENT,
     })),
     data.bonuses.map(({ type, destination, value }) => {
       const dest = String(destination);

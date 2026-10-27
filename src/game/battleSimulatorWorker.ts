@@ -44,6 +44,7 @@ export type SerializedCostParameters = {
   resource: ResourceKey;
   base: SerializedExpNumber;
   factor: number;
+  exponent: number;
   unitBase: SerializedExpNumber;
   unitFactor: SerializedExpNumber;
   reductions: {
@@ -185,17 +186,27 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
     for (const [unitId, pairs] of candidateCosts) {
       costTable.set(
         unitId,
-        pairs.map(({ resource, base, factor, unitBase, unitFactor, reductions }) => ({
-          cost: { resource, base: deserExp(base), factor },
-          unitBase: deserExp(unitBase),
-          unitFactor: deserExp(unitFactor),
-          reductions: {
-            base: deserExp(reductions.base),
-            factor: deserExp(reductions.factor),
-            percent: deserExp(reductions.percent),
-            flat: deserExp(reductions.flat),
-          },
-        })),
+        pairs.map(
+          ({
+            resource,
+            base,
+            factor,
+            exponent,
+            unitBase,
+            unitFactor,
+            reductions,
+          }) => ({
+            cost: { resource, base: deserExp(base), factor, exponent },
+            unitBase: deserExp(unitBase),
+            unitFactor: deserExp(unitFactor),
+            reductions: {
+              base: deserExp(reductions.base),
+              factor: deserExp(reductions.factor),
+              percent: deserExp(reductions.percent),
+              flat: deserExp(reductions.flat),
+            },
+          }),
+        ),
       );
     }
 

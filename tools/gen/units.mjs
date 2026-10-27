@@ -168,6 +168,7 @@ const normalized = units.map((unit) => {
       resource,
       base,
       factor: factorFor(unit),
+      exponent: 0.5,
     })),
   };
 });

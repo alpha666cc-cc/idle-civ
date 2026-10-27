@@ -69,8 +69,10 @@ UI (`count / capacity` per card), not in the sidebar.
 
 ## 3. Buildings (11)
 
-Cost curve per entry: the total for `n` units is `T(n) = base × (factor^√n − 1)`, so
-unit `n` costs `T(n) − T(n−1)` and a bulk buy is one subtraction `T(n + k) − T(n)`.
+Cost curve per entry: the total for `n` units is `T(n) = base × factor^(n^exponent − 1)`,
+so unit `n` costs `T(n) − T(n−1)` and a bulk buy is one subtraction
+`T(n + k) − T(n)`. Cost entries default to exponent `0.5`, preserving the existing
+square-root curve; the engine retains its linear early-cost floor.
 Building costs are per-entry data: citizens use factor 2.5, primary production buildings
 use 8, barracks/university wood and food use 10 (stone remains 12), town halls use 15,
 and smithy/market use 12. The first buys never get cheaper (the early dip is clamped
@@ -129,7 +131,8 @@ hardcoded `available` flag (roadmap Milestone 2).
 
 ## 4. Units (79; 77 buyable)
 
-Buyable units share the square-root buyable curve. The default growth factor is 5.
+Buyable units use the parameterized exponent curve, defaulting to `0.5` for the
+square-root schedule. The default growth factor is 5.
 The Age-0 rebalance adds these bands:
 
 | Unit                                | Base costs (all entries)           | Factor |
@@ -141,8 +144,8 @@ The Age-0 rebalance adds these bands:
 
 All other buyable units use factor 5. The 172 research definitions carry no individual
 price: each age owns a `research: { base, factor, exponent }` schedule (`age0` 1,000/10, `age1`
-1e9/200, then ×1e6 base and ×10 factor per age; exponent 0.5 everywhere — the
-square-root curve) and prices purchase `n` of that age at
+1e9/200, then ×1e6 base and ×10 factor per age; exponent is age-specific, with
+`0.5` reproducing the square-root curve) and prices purchase `n` of that age at
 `base × factor^((n^exponent) − 1)`. The counter `n` counts only research bought in the current age,
 so it restarts at 0 on every age change, and buying a tech from an earlier age costs the
 current price without advancing it.

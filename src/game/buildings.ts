@@ -20,7 +20,10 @@ export type BuildingCost = {
   resource: ResourceKey;
   base: ExpNumber;
   factor: number;
+  exponent: number;
 };
+
+export const DEFAULT_COST_EXPONENT = 0.5;
 
 export type BuildingEffectEntry<T extends object> = T[];
 
@@ -98,7 +101,12 @@ type BuildingData = {
   key: BuildingKey;
   name: string;
   description: string;
-  costs: { resource: ResourceKey; base: number; factor: number }[];
+  costs: {
+    resource: ResourceKey;
+    base: number;
+    factor: number;
+    exponent?: number;
+  }[];
   available: boolean;
   maxCount?: number;
   effects?: {
@@ -133,10 +141,11 @@ const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
     data.key,
     data.name,
     data.description,
-    data.costs.map(({ resource, base, factor }) => ({
+    data.costs.map(({ resource, base, factor, exponent }) => ({
       resource,
       base: ExpNumber.fromNumber(base),
       factor,
+      exponent: exponent ?? DEFAULT_COST_EXPONENT,
     })),
     data.available,
     data.maxCount,

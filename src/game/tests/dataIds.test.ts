@@ -41,6 +41,20 @@ import { emptyStatistics } from "../statistics";
  * guid registry cannot be resolved from an older save at all.
  */
 describe("static content guids", () => {
+  it("normalizes every authored buyable cost to a positive exponent", () => {
+    const costs = [
+      ...buildingDefinitions.flatMap(({ costs }) => costs),
+      ...unitDefinitions.flatMap(({ costs }) => costs),
+      ...upgradeDefinitions.flatMap(({ costs }) => costs),
+    ];
+
+    expect(costs.length).toBeGreaterThan(0);
+    for (const cost of costs) {
+      expect(Number.isFinite(cost.exponent)).toBe(true);
+      expect(cost.exponent).toBeGreaterThan(0);
+    }
+  });
+
   it("covers every data file", () => {
     expect(dataFileKeys.length).toBe(8);
     for (const file of dataFileKeys) {

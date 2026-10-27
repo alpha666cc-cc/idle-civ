@@ -136,6 +136,12 @@ const helperBuildings = [
   "goldMine",
 ] as const satisfies readonly BuildingKey[];
 
+// const foodResearchKeys = new Set<string>([
+//   "wheel_axle",
+//   "agriculture",
+//   "irrigation",
+// ]);
+
 /**
  * Buy a production building whose resource the current objective is short of.
  *
@@ -192,6 +198,7 @@ export const helperBuildingAction = (
 export const growthCosts = (
   state: CivilizationState,
   target: number,
+  researchCosts: readonly FundingCost[] = [],
 ): FundingCost[] => {
   if (state.freeBuildings) return [];
   const missing = target - populationOf(state);
@@ -203,7 +210,9 @@ export const growthCosts = (
   };
 
   // Citizens themselves: the thing we are trying to reach.
-  add(state.getBuildingCost("people", state.getBuildingCount("people"), missing));
+  add(
+    state.getBuildingCost("people", state.getBuildingCount("people"), missing),
+  );
 
   const peoplePerHouse = capacityPer("house", "people");
   if (peoplePerHouse <= 0) return costs;
@@ -257,6 +266,21 @@ export const growthCosts = (
   const housesPriced = Math.min(housesToReachCap, houseCeiling);
   if (housesPriced > 0) {
     add(state.getBuildingCost("house", houses, housesPriced));
+  }
+
+  // Research costs ride along in the same vector, so the worker solver can fund\
+  // food-multipliers (like irrigation ×100 food) in parallel with buildings
+
+  // instead of rejecting them as a separate priority that the current split
+
+  // cannot reach.
+  for (const researchCost of researchCosts) {
+    const spend = state.resources[researchCost.resource].gt(researchCost.base)
+      ? researchCost.base
+      : state.resources[researchCost.resource];
+    if (spend.gt(ExpNumber.ZERO)) {
+      costs.push({ ...researchCost, base: spend });
+    }
   }
 
   return costs;
@@ -321,7 +345,8 @@ const populationObjective = (
     // cap that vector is food-only and the wood for the next house never
     // arrives — so reach at least one housing rung (`peoplePerHouse`) past it.
     const peoplePerHouse = capacityPer("house", "people");
-    const nextRung = peoplePerHouse > 0 ? capacity + peoplePerHouse : capacity + 1;
+    const nextRung =
+      peoplePerHouse > 0 ? capacity + peoplePerHouse : capacity + 1;
     const stepTarget = Math.min(target, Math.max(nextRung, owned + 1));
     return growthCosts(state, stepTarget);
   },
@@ -353,7 +378,10 @@ const battleObjective = (
     const plan = getSimulatorBattlePlan(state);
     if (!plan) return [];
     const totals = new Map<ResourceKey, ExpNumber>();
-    for (const { resource, base } of [...plan.totalCost, ...plan.research.costs]) {
+    for (const { resource, base } of [
+      ...plan.totalCost,
+      ...plan.research.costs,
+    ]) {
       totals.set(resource, (totals.get(resource) ?? ExpNumber.ZERO).add(base));
     }
     return [...totals].map(([resource, base]) => ({ resource, base }));
@@ -419,7 +447,8 @@ const productionBootstrapObjective: Objective = {
       .slice(0, 2)
       .every(
         (building) =>
-          state.getBuildingCount(building) > 0 || !state.isBuildingAvailable(building),
+          state.getBuildingCount(building) > 0 ||
+          !state.isBuildingAvailable(building),
       ),
   costs: (state) => {
     const costs: FundingCost[] = [];
@@ -532,21 +561,25 @@ export const advanceToward = (
   }
 
   const { from, fromScratch = from === undefined } = options;
-  const result = new GameSimulation(from ?? createInitialState(), getStrategy("objective")!, {
-    // The configured objective is only the safety ceiling; `stopWhen` is the real
-    // stop, and it reads the rung's engine-exact `done()` — so the halt condition
-    // can never drift from the rule the engine actually enforces.
-    objective: {
-      type: "timeLimit",
-      seconds: options.maxGameTime ?? DEFAULT_OBJECTIVE_BUDGET_SECONDS,
+  const result = new GameSimulation(
+    from ?? createInitialState(),
+    getStrategy("objective")!,
+    {
+      // The configured objective is only the safety ceiling; `stopWhen` is the real
+      // stop, and it reads the rung's engine-exact `done()` — so the halt condition
+      // can never drift from the rule the engine actually enforces.
+      objective: {
+        type: "timeLimit",
+        seconds: options.maxGameTime ?? DEFAULT_OBJECTIVE_BUDGET_SECONDS,
+      },
+      stopWhen: (state) => objective.done(state),
+      gatherClicksPerAction: options.gatherClicksPerAction ?? 10,
+      actionsPerSecond: options.actionsPerSecond ?? 5,
+      maxGameTime: options.maxGameTime ?? DEFAULT_OBJECTIVE_BUDGET_SECONDS,
+      fromScratch,
+      recordSnapshots: false,
     },
-    stopWhen: (state) => objective.done(state),
-    gatherClicksPerAction: options.gatherClicksPerAction ?? 10,
-    actionsPerSecond: options.actionsPerSecond ?? 5,
-    maxGameTime: options.maxGameTime ?? DEFAULT_OBJECTIVE_BUDGET_SECONDS,
-    fromScratch,
-    recordSnapshots: false,
-  }).run();
+  ).run();
 
   return {
     state: result.finalState,
@@ -554,4 +587,3 @@ export const advanceToward = (
     reached: objective.done(result.finalState),
   };
 };
-

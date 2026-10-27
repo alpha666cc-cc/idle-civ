@@ -860,7 +860,14 @@ export class CivilizationState {
       );
     }
 
-    return [{ resource: "science", base: total, factor: 1 }];
+    return [
+      {
+        resource: "science",
+        base: total,
+        factor: 1,
+        exponent: schedule.exponent,
+      },
+    ];
   }
 
   /**
@@ -1984,8 +1991,8 @@ export class CivilizationState {
    * Cumulative cost of `count` units starting at `alreadyBuilt` (§4.4): unit n
    * costs C(n) - C(n-1), so one purchase is C(owned + count) - C(owned) — one
    * O(1) evaluator for buy-N and buy-MAX. C is a linear floor for the first K
-   * units (unit 1 = base) then the corrected sqrt curve, so a unit never costs
-   * less than the one before it.
+   * units (unit 1 = base) then the exponent curve, so a unit never costs less
+   * than the one before it.
    */
   private costSeries(
     parameters: readonly CostParameters[],

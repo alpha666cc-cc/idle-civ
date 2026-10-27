@@ -15,8 +15,9 @@
  *     probe state built to a target shape reports its own production with no
  *     ticks. `describeEconomy()` is therefore exact, not an approximation.
  *  2. The cumulative cost of owning `n` of a buyable is a closed form,
- *     `T(n) = base x factor^(sqrt(n) - 1)` (§4.4), which inverts in closed form
- *     to `n = (1 + log(T/base)/log(factor))^2`. Cost is never integrated.
+ *     `T(n) = base x factor^(n^exponent - 1)` (§4.4), which inverts in closed
+ *     form to `n = (1 + log(T/base)/log(factor))^(1/exponent)`. Cost is never
+ *     integrated.
  *  3. The bonus stack a settlement of a given scale runs under is derivable from
  *     that scale — ages from total buildings, research from the prerequisite DAG,
  *     enhancers from building counts (`contextForScale`).
@@ -266,8 +267,8 @@ const cumulativeCost = (
 
 /**
  * Inverts the cumulative cost curve in closed form (§4.4):
- * `T(n) = base x factor^(sqrt(n) - 1)` gives
- * `n = (1 + log(T/base)/log(factor))^2`.
+ * `T(n) = base x factor^(n^exponent - 1)` gives
+ * `n = (1 + log(T/base)/log(factor))^(1/exponent)`.
  *
  * Answers "how many does this budget buy" with no search loop. It is exact for
  * the sqrt branch that dominates at scale; the engine's linear early-game floor
@@ -284,7 +285,7 @@ export const countAffordableBy = (
   if (!leg || !(budget > 0)) return 0;
   const base = toNumber(leg.base);
   const inverted = 1 + Math.log(budget / base) / Math.log(leg.factor);
-  return inverted <= 1 ? 0 : inverted * inverted;
+  return inverted <= 1 ? 0 : inverted ** (1 / leg.exponent);
 };
 /**
  * Builds a hypothetical settlement at `shape` with every idle worker assigned.
