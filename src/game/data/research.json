@@ -600,7 +600,7 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "science",
+        "destination": "trade",
         "value": "10"
       },
       {
@@ -698,7 +698,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "trade",
-        "value": "100"
+        "value": "10"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": "10"
       },
       {
         "type": "attributeMultiplier",
