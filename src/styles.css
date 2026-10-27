@@ -2927,7 +2927,7 @@ button:focus-visible {
   flex-direction: column;
   gap: 2px;
   height: 100%;
-  padding: 7px 8px;
+  padding: 6px 8px;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--paper);
