@@ -40,9 +40,7 @@ export type BonusType =
   // confusing sign: a value above 1 is now a price *increase*, not a discount.
   | "costReductionBase"
   // destination cost's growth factor raised to the power N (floored at 1.01)
-  | "costReductionFactor"
-  // adds to one numeric field on a cost row
-  | "costParameterAdd";
+  | "costReductionFactor";
 
 /** A bonus targets an attribute (resource, capacity or stat) or a buyable id. */
 export type BuyableCostTarget =
@@ -98,8 +96,7 @@ export const costReductionBonus = (
     | "costReductionFlat"
     | "costReductionPercent"
     | "costReductionBase"
-    | "costReductionFactor"
-    | "costParameterAdd",
+    | "costReductionFactor",
   buyableId: string,
   value: number | ExpNumber,
 ): Bonus => ({ type, destination: buyableId, value: ExpNumber.from(value) });
@@ -113,7 +110,6 @@ const bonusTypes: readonly BonusType[] = [
   "costReductionPercent",
   "costReductionBase",
   "costReductionFactor",
-  "costParameterAdd",
 ];
 
 /**
@@ -382,12 +378,9 @@ export const parseBonus = (
   const parsedType = parseBonusType(type);
   const normalizedDestination = normalizeBonusDestination(destination);
   const costTarget = parseCostParameterTarget(normalizedDestination);
-  if (
-    parsedType === "costParameterAdd" &&
-    (!costTarget || !costTarget.field)
-  ) {
+  if (parsedType === "attributeFlat" && costTarget && !costTarget.field) {
     throw new Error(
-      `Cost parameter bonuses require a cost field target: ${destination}`,
+      `Flat cost bonuses require a cost field target: ${destination}`,
     );
   }
   return {

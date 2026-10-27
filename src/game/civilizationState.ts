@@ -1851,7 +1851,7 @@ export class CivilizationState {
       exponent: ExpNumber.ZERO,
     };
     for (const [sourceId, bonus] of this.activeBonuses()) {
-      if (bonus.type === "costParameterAdd") {
+      if (bonus.type === "attributeFlat") {
         const target = parseCostParameterTarget(String(bonus.destination));
         if (
           !target?.field ||

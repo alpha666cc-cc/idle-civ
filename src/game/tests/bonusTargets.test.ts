@@ -5,6 +5,7 @@ import {
   normalizeBonusDestination,
   parseBonus,
   parseCostParameterTarget,
+  parseBonusType,
 } from "../bonus";
 import {
   buildingDefinitions,
@@ -76,14 +77,17 @@ describe("bonus destination paths", () => {
     );
     expect(
       parseBonus(
-        "costParameterAdd",
+        "attributeFlat",
         "all.costs.all.exponent",
         0.01,
       ).destination,
     ).toBe("all.costs.all.exponent");
     expect(() =>
-      parseBonus("costParameterAdd", "Market.costs.all", 1),
-    ).toThrow("Cost parameter bonuses require a cost field target");
+      parseBonus("attributeFlat", "Market.costs.all", 1),
+    ).toThrow("Flat cost bonuses require a cost field target");
+    expect(() =>
+      parseBonusType("costParameterAdd"),
+    ).toThrow("Unknown bonus type: costParameterAdd");
   });
 
   it("marks capacity-providing building effects as independent of power", () => {

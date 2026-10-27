@@ -414,7 +414,7 @@ describe("research buying", () => {
 
     it("applies a factor-only cost addition to every matching unit resource", () => {
       const state = buildCostState({
-        type: "costParameterAdd",
+        type: "attributeFlat",
         destination: "allunits.costs.food.factor",
         value: 12,
       });
@@ -429,7 +429,7 @@ describe("research buying", () => {
 
     it("applies global exponent additions to buildings, units, upgrades, and research", () => {
       const state = buildCostState({
-        type: "costParameterAdd",
+        type: "attributeFlat",
         destination: "all.costs.all.exponent",
         value: 0.01,
       });

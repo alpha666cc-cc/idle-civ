@@ -231,8 +231,6 @@ const bonusEffectLabel = (bonus: Bonus): string => {
       return `${target} cost`;
     case "costReductionBase":
       return `${target} base cost`;
-    case "costParameterAdd":
-      return `${target} parameter`;
     default:
       return target;
   }
@@ -254,11 +252,6 @@ const bonusValueText = (bonus: Bonus, format: NumberFormat): string => {
       return `^${formatNumber(bonus.value, format)}`;
     case "costReductionFlat":
       return `−${formatNumber(bonus.value, format)}`;
-    case "costParameterAdd":
-      return `${bonus.value.isNegative ? "" : "+"}${formatNumber(
-        bonus.value,
-        format,
-      )}`;
     case "attributeFlat":
       return `+${formatNumber(bonus.value, format)}`;
     case "attributeDrain":

@@ -1078,8 +1078,7 @@ type BonusType =
   | "costReductionFlat" // destination cost −N (absolute)
   | "costReductionPercent" // destination cost × (1 − N)
   | "costReductionBase" // base term ×N — <1 reduces, >1 augments
-  | "costReductionFactor" // destination cost's growth factor raised to the power N
-  | "costParameterAdd"; // adds to a cost row's base, factor or exponent
+  | "costReductionFactor"; // destination cost's growth factor raised to the power N
 
 type BonusDestination = AttributeKey | BuyableId | CostTargetPath;
 
@@ -1103,19 +1102,18 @@ independent of the source building's power. Do not add tags to bonus entries.
 | `costReductionPercent` | buyable                                | lowers every cost entry by a percentage                                                                                     | **none** (new)                           |
 | `costReductionBase`    | buyable                                | multiplies the base term: Π(N) compounding, `< 1` discounts and `> 1` augments (absorbs the old `costMultiplier`)           | `buildingCostOverrides` precursor        |
 | `costReductionFactor`  | buyable                                | raises the growth factor to the power `N`, scaling the log-growth exponent by exactly N on every building (floored at 1.01) | crude precursor: `buildingCostOverrides` |
-| `costParameterAdd`     | cost target path                       | adds to the named cost field (`base`, `factor` or `exponent`) before the normal cost-reduction pipeline                    | **none** (new)                           |
 
 The first three map exactly onto today's factor model, so they can reuse
 `ResourceFactors` and `computeResourceRate()` (`(Σ flat) × (Π mult) − (Σ drain)`) and the
-existing `addFactor()` seam. Four cost-reduction types and the cost-parameter addition
-type operate on buyables. Parameter additions apply to the selected raw cost field before
-the four per-unit reductions.
+existing `addFactor()` seam. Four cost-reduction types operate on buyables. `attributeFlat`
+also adds to a selected raw cost field before the four per-unit reductions, so additive
+bonuses use one type across production, capacity, unit stats and cost parameters.
 
 Cost targets are dot-separated, case-insensitive paths normalized to stable IDs:
 `Market.costs.all` selects all market cost rows, `Farm.costs.wood` selects only the
 farm's wood row, `allunits.costs.wood.factor` selects the wood growth factor on every
-unit, and `all.costs.all.exponent` selects every buyable cost exponent. A field suffix is
-required for `costParameterAdd`. `Civilbuildings` selects `house` and `townHall`;
+unit, and `all.costs.all.exponent` selects every buyable cost exponent. A field suffix (`base`, `factor` or `exponent`) is required when `attributeFlat` targets a
+cost path. `Civilbuildings` selects `house` and `townHall`;
 `Market.power` selects `marketPower`; `Wood.worker` and
 `Wood.worker.efficiency` select `woodProductionPerWorker`; `productionBuilding.power`
 selects the shared `buildingPower` multiplier.
@@ -1130,8 +1128,8 @@ groups use paths such as `allProduction.worker.efficiency` and
 Cost paths may also scope unit discounts, for example
 `tag.cavalry.costs.all` and `domain.ground.costs.all.factor`.
 
-`costParameterAdd` is applied to the selected raw field before the four cost
-reductions. A cost row whose growth `factor` is zero is disabled (its cost is zero)
+`attributeFlat` on a cost-field path is applied to the selected raw field before the
+four cost reductions. A cost row whose growth `factor` is zero is disabled (its cost is zero)
 until a positive factor addition activates the row; after activation, the factor retains
 its normal role as the curve's growth factor. This supports an authored future cost such
 as `house.costs.stone` with base 100 and factor 0, later activated by an age bonus adding

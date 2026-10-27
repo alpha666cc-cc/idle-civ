@@ -73,6 +73,11 @@
         "type": "attributeMultiplier",
         "destination": "advancedProduction.worker.efficiency",
         "value": 5.0
+      },
+      {
+        "type": "attributeFlat",
+        "destination": "house.costs.stone.factor",
+        "value": 12
       }
     ]
   },
@@ -94,13 +99,7 @@
     "buildingThreshold": 1.5e6,
     "unlocks": [],
     "research": { "base": "1e21", "factor": 20000, "exponent": 0.5 },
-    "bonuses": [
-      {
-        "type": "costParameterAdd",
-        "destination": "house.costs.stone.factor",
-        "value": 12
-      }
-    ]
+    "bonuses": []
   },
   {
     "guid": "dffc22da-5653-5989-8c2a-8373473a01de",
