@@ -2872,25 +2872,27 @@ function App() {
                                 &times;{fmtCount(maxAffordable)}{" "}
                               </span>
                             )}
-                            {costs.map(({ resource, base }, index) => {
-                              const lacking =
-                                !gameState.freeBuildings &&
-                                resourceAmounts[resource].lt(base);
-                              return (
-                                <span key={resource}>
-                                  {index > 0 && " + "}
-                                  <span
-                                    className={
-                                      lacking
-                                        ? "building-cost-lacking"
-                                        : undefined
-                                    }
-                                  >
-                                    {fmt(base)} {resource}
+                            {costs
+                              .filter(({ base }) => !base.isZero)
+                              .map(({ resource, base }, index) => {
+                                const lacking =
+                                  !gameState.freeBuildings &&
+                                  resourceAmounts[resource].lt(base);
+                                return (
+                                  <span key={resource}>
+                                    {index > 0 && " + "}
+                                    <span
+                                      className={
+                                        lacking
+                                          ? "building-cost-lacking"
+                                          : undefined
+                                      }
+                                    >
+                                      {fmt(base)} {resource}
+                                    </span>
                                   </span>
-                                </span>
-                              );
-                            })}
+                                );
+                              })}
                           </>
                         );
                       })()}

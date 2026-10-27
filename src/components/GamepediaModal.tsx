@@ -383,33 +383,35 @@ export default function GamepediaModal({
 
         <p className="gamepedia-category">Price</p>
         <div className="gamepedia-cost-list">
-          {costs.map(({ resource, base }) => {
-            const parameter = parameters.find(
-              ({ cost }) => cost.resource === resource,
-            );
-            return (
-              <div className="gamepedia-cost-row" key={resource}>
-                <div className="gamepedia-cost-copy">
-                  {renderReference(resource)}
-                  {parameter && (
-                    <span className="gamepedia-cost-meta">
-                      {parameter.cost.factor === 0
-                        ? "disabled (factor 0)"
-                        : `growth ×${formatAmount(
-                            parameter.unitFactor,
-                          )}^(n^${formatNumber(
-                            parameter.cost.exponent,
-                            numberFormat,
-                          )}) (effective)`}
-                    </span>
-                  )}
+          {costs
+            .filter(({ base }) => !base.isZero)
+            .map(({ resource, base }) => {
+              const parameter = parameters.find(
+                ({ cost }) => cost.resource === resource,
+              );
+              return (
+                <div className="gamepedia-cost-row" key={resource}>
+                  <div className="gamepedia-cost-copy">
+                    {renderReference(resource)}
+                    {parameter && (
+                      <span className="gamepedia-cost-meta">
+                        {parameter.cost.factor === 0
+                          ? "disabled (factor 0)"
+                          : `growth ×${formatAmount(
+                              parameter.unitFactor,
+                            )}^(n^${formatNumber(
+                              parameter.cost.exponent,
+                              numberFormat,
+                            )}) (effective)`}
+                      </span>
+                    )}
+                  </div>
+                  <strong className="gamepedia-cost-next">
+                    {formatAmount(base)} next
+                  </strong>
                 </div>
-                <strong className="gamepedia-cost-next">
-                  {formatAmount(base)} next
-                </strong>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
 
         <p className="gamepedia-category">Cost modifiers</p>
@@ -1162,33 +1164,35 @@ export default function GamepediaModal({
           <>
             <p className="gamepedia-category">Price (next unit)</p>
             <div className="gamepedia-cost-list">
-              {unitCosts.map(({ resource, base }) => {
-                const parameter = costParameters.find(
-                  ({ cost }) => cost.resource === resource,
-                );
-                return (
-                  <div className="gamepedia-cost-row" key={resource}>
-                    <div className="gamepedia-cost-copy">
-                      {renderReference(resource)}
-                      {parameter && (
-                        <span className="gamepedia-cost-meta">
-                          {parameter.cost.factor === 0
-                            ? "disabled (factor 0)"
-                            : `growth ×${formatAmount(
-                                parameter.unitFactor,
-                              )}^(n^${formatNumber(
-                                parameter.cost.exponent,
-                                numberFormat,
-                              )}) (effective)`}
-                        </span>
-                      )}
+              {unitCosts
+                .filter(({ base }) => !base.isZero)
+                .map(({ resource, base }) => {
+                  const parameter = costParameters.find(
+                    ({ cost }) => cost.resource === resource,
+                  );
+                  return (
+                    <div className="gamepedia-cost-row" key={resource}>
+                      <div className="gamepedia-cost-copy">
+                        {renderReference(resource)}
+                        {parameter && (
+                          <span className="gamepedia-cost-meta">
+                            {parameter.cost.factor === 0
+                              ? "disabled (factor 0)"
+                              : `growth ×${formatAmount(
+                                  parameter.unitFactor,
+                                )}^(n^${formatNumber(
+                                  parameter.cost.exponent,
+                                  numberFormat,
+                                )}) (effective)`}
+                          </span>
+                        )}
+                      </div>
+                      <strong className="gamepedia-cost-next">
+                        {formatAmount(base)} next
+                      </strong>
                     </div>
-                    <strong className="gamepedia-cost-next">
-                      {formatAmount(base)} next
-                    </strong>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
             <p className="gamepedia-category">Cost modifiers</p>
             <div className="gamepedia-recap">
