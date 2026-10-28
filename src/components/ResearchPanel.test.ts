@@ -48,6 +48,12 @@ describe("research bonus descriptions", () => {
     ],
     [
       "attributeMultiplier",
+      "unitAll.attack",
+      1.5,
+      "+50% unit attack",
+    ],
+    [
+      "attributeMultiplier",
       "advancedProductionPerWorker",
       3,
       "×3 advanced production worker efficiency",

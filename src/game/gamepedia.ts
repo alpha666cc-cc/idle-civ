@@ -10,7 +10,11 @@ import { ageDefinitions } from "./ages";
 import { GameObject } from "./gameObject";
 import { upgradeDefinitions } from "./upgrades";
 import { researchDefinitions } from "./research";
-import { unitDefinitions } from "./units";
+import {
+  parseUnitStatTarget,
+  unitDefinitions,
+  unitMatchesStatTarget,
+} from "./units";
 import {
   attributeDefinitions,
   populationDefinition,
@@ -70,6 +74,12 @@ const bonusDestinationRelatedIds = (destination: string): string[] => {
   const normalized = normalizeBonusDestination(destination);
   const target = parseCostParameterTarget(normalized);
   if (!target) {
+    const unitStatTarget = parseUnitStatTarget(normalized);
+    if (unitStatTarget) {
+      return unitDefinitions
+        .filter((unit) => unitMatchesStatTarget(unit, unitStatTarget))
+        .map(({ key }) => key);
+    }
     if (normalized === "civilBuildings") return ["house", "townHall"];
     if (normalized === "allBuildings")
       return buildingDefinitions.map(({ key }) => key);

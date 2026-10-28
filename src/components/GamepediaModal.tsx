@@ -21,19 +21,13 @@ import type { BuildingDefinition } from "../game/buildings";
 import type { EncounterDefinition } from "../game/encounters";
 import type { AgeDefinition } from "../game/ages";
 import {
-  unitDomainLabels,
   unitStatKeys,
   unitStatLabels,
   type UnitDefinition,
-  type UnitDomain,
   type UnitStatKey,
 } from "../game/units";
 import type { AchievementDefinition } from "../game/achievements";
-import {
-  normalizeBonusDestination,
-  parseCostParameterTarget,
-  type Bonus,
-} from "../game/bonus";
+import type { Bonus } from "../game/bonus";
 import type { UpgradeDefinition } from "../game/upgrades";
 import { researchDefinitions, type ResearchDefinition } from "../game/research";
 import type { CivilizationState } from "../game/civilizationState";
@@ -55,6 +49,10 @@ import {
   formatWholeNumber,
   type NumberFormat,
 } from "../game/numberFormat";
+import {
+  bonusEffectLabel,
+  bonusValueText,
+} from "./gamepediaBonusDescription";
 
 type GamepediaModalProps = {
   gameState: CivilizationState;
@@ -154,112 +152,6 @@ const factorSourceLabel = (source: ResourceFactor[0]): string =>
 
 const factorSourceId = (source: ResourceFactor[0]): string | undefined =>
   typeof source === "string" ? source : undefined;
-
-/** Display name of a bonus destination (resource, capacity, building or stat id). */
-const bonusDestinationName = (destination: string): string => {
-  const normalized = normalizeBonusDestination(destination);
-  const costTarget = parseCostParameterTarget(normalized);
-  if (costTarget) {
-    const ownerEntry = gamepedia.get(costTarget.buyable);
-    const resourceEntry =
-      costTarget.resource === "all"
-        ? undefined
-        : gamepedia.get(costTarget.resource);
-    const owner =
-      costTarget.buyable === "all"
-        ? "Every buyable"
-        : costTarget.buyable === "allBuildings"
-          ? "Every building"
-          : costTarget.buyable === "allUnits"
-            ? "Every unit"
-            : costTarget.buyable === "civilBuildings"
-              ? "Civil buildings"
-              : ownerEntry
-                ? displayName(ownerEntry.object)
-                : costTarget.buyable;
-    const resource =
-      costTarget.resource === "all"
-        ? "all resources"
-        : resourceEntry
-          ? displayName(resourceEntry.object)
-          : costTarget.resource;
-    const field = costTarget.field ? ` ${costTarget.field}` : "";
-    return `${owner} ${resource} cost${field}`;
-  }
-  const entry = gamepedia.get(normalized);
-  if (entry) return displayName(entry.object);
-  return groupDestinationLabel(normalized) ?? normalized;
-};
-
-/**
- * Label for a destination that names a group rather than a Gamepedia entry.
- */
-const groupDestinationLabel = (destination: string): string | undefined => {
-  if (destination === "allUnits") return "Every unit";
-  if (destination === "allBuildings") return "Every building";
-  if (destination === "civilBuildings") return "Civil buildings";
-  if (destination === "productionBuilding.power")
-    return "Production building power";
-  const tag = /^tag\.([a-z-]+)$/.exec(destination);
-  if (tag) return `${tag[1]} units`;
-  const domain = /^domain\.([a-z]+)$/.exec(destination);
-  if (domain && domain[1] in unitDomainLabels)
-    return `${unitDomainLabels[domain[1] as UnitDomain]} units`;
-  return undefined;
-};
-
-/** What a bonus modifies, e.g. "Food production" or "Click power". */
-const bonusEffectLabel = (bonus: Bonus): string => {
-  const destinationId = String(bonus.destination);
-  const target = bonusDestinationName(destinationId);
-  // A stat is a value in its own right, so its name alone reads best.
-  if (gamepedia.get(destinationId)?.category === "stat") return target;
-  switch (bonus.type) {
-    case "attributeMultiplier":
-      return `${target} production`;
-    case "attributeFlat":
-      return `${target} gain`;
-    case "attributeDrain":
-      return `${target} drain`;
-    case "removeDrain":
-      return `${target} upkeep removed`;
-    case "costReductionPercent":
-      return `${target} cost`;
-    case "costReductionFactor":
-      return `${target} growth factor`;
-    case "costReductionFlat":
-      return `${target} cost`;
-    case "costReductionBase":
-      return `${target} base cost`;
-    default:
-      return target;
-  }
-};
-
-/** The signed size of a bonus, e.g. "×1.25", "−50%" or "+2". */
-const bonusValueText = (bonus: Bonus, format: NumberFormat): string => {
-  switch (bonus.type) {
-    case "attributeMultiplier":
-      return `×${formatNumber(bonus.value, format)}`;
-    case "costReductionPercent":
-      return `−${formatNumber(
-        bonus.value.mul(ExpNumber.fromNumber(100)),
-        format,
-      )}%`;
-    case "costReductionBase":
-      return `×${formatNumber(bonus.value, format)}`;
-    case "costReductionFactor":
-      return `^${formatNumber(bonus.value, format)}`;
-    case "costReductionFlat":
-      return `−${formatNumber(bonus.value, format)}`;
-    case "attributeFlat":
-      return `+${formatNumber(bonus.value, format)}`;
-    case "attributeDrain":
-      return `−${formatNumber(bonus.value, format)}`;
-    default:
-      return formatNumber(bonus.value, format);
-  }
-};
 
 const factorSourceIcon = (source: ResourceFactor[0]): LucideIcon => {
   if (source instanceof AttributeDefinition) return Users;
@@ -1141,6 +1033,7 @@ export default function GamepediaModal({
     const costParameters = gameState.getUnitCostParameters(unit.key);
     const { sources, reductions } = gameState.getUnitCostModifiers(unit.key);
     const parameterSources = gameState.getCostParameterSources(unit.key);
+    const statModifiers = gameState.getUnitStatModifiers(unit.key);
     const owned = gameState.getUnitCount(unit.key);
     return (
       <div className="gamepedia-detail">
@@ -1253,6 +1146,29 @@ export default function GamepediaModal({
         ) : (
           <p className="gamepedia-category">Enemy-only unit</p>
         )}
+        <p className="gamepedia-category">Unit stat bonuses</p>
+        <div className="gamepedia-effect-list">
+          {statModifiers.length === 0 ? (
+            <p>No active stat bonuses.</p>
+          ) : (
+            statModifiers.map(([source, bonus], index) => (
+              <div
+                className="gamepedia-effect-row"
+                key={`${source}-${bonus.destination}-${index}`}
+              >
+                <div className="gamepedia-effect-copy">
+                  {renderReference(source)}
+                  <span className="gamepedia-effect-meta">
+                    {bonusEffectLabel(bonus)}
+                  </span>
+                </div>
+                <strong className="gamepedia-effect-total">
+                  {bonusValueText(bonus, numberFormat)}
+                </strong>
+              </div>
+            ))
+          )}
+        </div>
         {renderRelated(entry)}
       </div>
     );

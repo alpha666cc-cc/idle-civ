@@ -18,7 +18,7 @@ const unitStatLabels: Record<string, string> = {
   "tag.naval.attack": "ship attack",
   "tag.naval.hp": "ship hulls",
   "unitAll.hp": "units health",
-  "unitAll.attack": "units attack",
+  "unitAll.attack": "unit attack",
 };
 
 const resourceLabels: Record<string, string> = {

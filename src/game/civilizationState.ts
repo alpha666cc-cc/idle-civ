@@ -2107,20 +2107,31 @@ export class CivilizationState {
       speed: { flat: ExpNumber.ZERO, multiplier: ExpNumber.ONE },
       accuracy: { flat: ExpNumber.ZERO, multiplier: ExpNumber.ONE },
     };
-    for (const [, bonus] of sources) {
-      if (
-        bonus.type !== "attributeFlat" &&
-        bonus.type !== "attributeMultiplier"
-      )
-        continue;
+    for (const [, bonus] of this.unitStatBonusesFor(unit, sources)) {
       const target = parseUnitStatTarget(bonus.destination);
-      if (!target || !unitMatchesStatTarget(unit, target)) continue;
+      if (!target) continue;
       const bucket = factors[target.stat];
       if (bonus.type === "attributeFlat")
         bucket.flat = bucket.flat.add(bonus.value);
       else bucket.multiplier = bucket.multiplier.mul(bonus.value);
     }
     return factors;
+  }
+
+  private unitStatBonusesFor(
+    unit: UnitDefinition,
+    sources: readonly (readonly [sourceId: string, bonus: Bonus])[],
+  ): readonly (readonly [sourceId: string, bonus: Bonus])[] {
+    return sources.filter(([, bonus]) => {
+      if (
+        bonus.type !== "attributeFlat" &&
+        bonus.type !== "attributeMultiplier"
+      ) {
+        return false;
+      }
+      const target = parseUnitStatTarget(bonus.destination);
+      return target !== undefined && unitMatchesStatTarget(unit, target);
+    });
   }
 
   /** Base stats, then summed flats, then compounded multipliers — per stat. */
@@ -3160,6 +3171,14 @@ export class CivilizationState {
       }
     }
     return stats;
+  }
+
+  /** Active bonus sources that modify at least one stat on the specified unit. */
+  getUnitStatModifiers(
+    unitId: string,
+  ): readonly (readonly [sourceId: string, bonus: Bonus])[] {
+    const unit = findUnitDefinition(unitId);
+    return unit ? this.unitStatBonusesFor(unit, this.activeBonuses()) : [];
   }
 
   getUnitStatsWithResearch(
