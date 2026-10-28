@@ -227,6 +227,47 @@ describe("optimizeBattleTactics iteration", () => {
     expect(progress).toContain(1);
   });
 
+  it("optimizes formations for owned units as well as recruits", () => {
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: (army, formations) => {
+        const recruits = army.get("legionary") ?? ExpNumber.ZERO;
+        const ownedFormation = formations.get("hoplite");
+        const required = ownedFormation === "turtle" ? 1 : 2;
+        return recruits.gte(ExpNumber.fromNumber(required));
+      },
+      winsWithFormationsAndOrders: (army, formations) => {
+        const recruits = army.get("legionary") ?? ExpNumber.ZERO;
+        const ownedFormation = formations.get("hoplite");
+        const required = ownedFormation === "turtle" ? 1 : 2;
+        return recruits.gte(ExpNumber.fromNumber(required));
+      },
+    };
+    const result = optimizeBattleTactics(
+      marathon,
+      [{ key: "legionary" }],
+      context,
+      false,
+      new Map([["hoplite", ExpNumber.ONE]]),
+      new Map([["hoplite", "standard"]]),
+      new Map(),
+      ["standard", "turtle"],
+      ["standard"],
+    );
+
+    expect(result?.composition.get("legionary")).toBe(1);
+    expect(result?.formations.get("hoplite")).toBe("turtle");
+  });
+
   it("prices recruited units with the same cumulative cost curve as the engine", () => {
     const unitId = "chariot_iron";
     const count = 1_000;

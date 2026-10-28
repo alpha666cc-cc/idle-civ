@@ -632,7 +632,6 @@ export const optimizeBattleTactics = (
   }
   if (!best) return null;
 
-  const tacticalUnitIds = [...best.composition.keys()];
   let bestResult = best;
   let bestCost = compositionCost(bestResult.composition, context);
   onProgress?.(bestResult, "Minimum army for the current tactics");
@@ -646,6 +645,7 @@ export const optimizeBattleTactics = (
   visitedTactics.add(tacticKey(formations, orders));
 
   for (;;) {
+    const tacticalUnitIds = [...bestResult.totalComposition.keys()];
     let next:
       | {
           readonly composition: SimulatorArmy;

@@ -37,6 +37,7 @@ const settlement = (
   workers: WorkerAssignments = emptyWorkerAssignments(),
   builtBuildings: Partial<Record<BuildingKey, number>> = {},
   tradeRoutes: TradeRouteMap = {},
+  boughtResearch: string[] = [],
 ): CivilizationState =>
   new CivilizationState(
     { ...emptyResourceAmounts(), ...resources },
@@ -55,7 +56,7 @@ const settlement = (
     false,
     false,
     false,
-    [],
+    boughtResearch,
     {},
     {},
     tradeRoutes,
@@ -86,8 +87,9 @@ const marketState = (
   resources: Partial<ResourceAmounts> = {},
   workers: WorkerAssignments = emptyWorkerAssignments(),
   tradeRoutes: TradeRouteMap = {},
+  boughtResearch: string[] = [],
 ): CivilizationState =>
-  settlement(resources, workers, {}, tradeRoutes).addFactor(
+  settlement(resources, workers, {}, tradeRoutes, boughtResearch).addFactor(
     "trade" as ResourceKey,
     "additional",
     ["market", ExpNumber.fromNumber(tradePower)],
@@ -239,6 +241,30 @@ describe("trade prices", () => {
 });
 
 describe("trade routes", () => {
+  it("uses the attribute-targeted spread when buying goods", () => {
+    const state = marketState(
+      0,
+      { trade: ExpNumber.fromNumber(100), gold: ExpNumber.fromNumber(1_000) },
+      foodAndGoldWorkers(),
+      { food: enabledRoute("buy") },
+      ["naval_ramming"],
+    )
+      .addFactor("food" as ResourceKey, "additional", [
+        "farm",
+        ExpNumber.fromNumber(4),
+      ])
+      .addFactor("gold" as ResourceKey, "additional", [
+        "goldMine",
+        ExpNumber.fromNumber(1),
+      ]);
+
+    expect(state.getAttributeValue("spread").toNumber()).toBe(5);
+    expect(rowValue(drains(state, "food"), "food route purchase")).toBeCloseTo(
+      -80,
+      6,
+    );
+  });
+
   it("sells the banked trade power at the mid price from buildings, not workers", () => {
     const state = marketState(
       0,
@@ -633,14 +659,15 @@ describe("trade routes", () => {
 
   it("caps a skipped purchase at the purse", () => {
     // One percent of a hundred banked is one gold a second, so sixty seconds of it
-    // asks for sixty gold and buys a sixtieth of that in food.
+    // asks for sixty gold. Naval Ramming halves the spread, buying 48 rather than
+    // the default 24 food.
     const stock = {
       trade: ExpNumber.fromNumber(100),
       gold: ExpNumber.fromNumber(1e6),
     };
     const state = marketState(0, stock, foodAndGoldWorkers(), {
       food: enabledRoute("buy", 0.01),
-    })
+    }, ["naval_ramming"])
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
         ExpNumber.fromNumber(4),
@@ -667,7 +694,7 @@ describe("trade routes", () => {
     );
     expectClose(
       bought.resources.food,
-      untouched.resources.food.toNumber() + 24,
+      untouched.resources.food.toNumber() + 48,
     );
     expect(bought.resources.gold.toNumber()).toBeGreaterThanOrEqual(0);
   });

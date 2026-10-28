@@ -198,6 +198,7 @@ export const isBuyableUnit = (unit: UnitDefinition): boolean =>
  * scopes, one grammar, so tomorrow's research is pure data:
  *   `hoplite.attack`   — one unit
  *   `tag.ranged.range` — every unit carrying a tag
+ *   `domain.ground.attack` — every unit in a domain
  *   `unitAll.hp`       — every unit
  */
 export type UnitStatTarget =
@@ -207,6 +208,11 @@ export type UnitStatTarget =
       readonly stat: UnitStatKey;
     }
   | { readonly scope: "tag"; readonly tag: string; readonly stat: UnitStatKey }
+  | {
+      readonly scope: "domain";
+      readonly domain: UnitDomain;
+      readonly stat: UnitStatKey;
+    }
   | { readonly scope: "all"; readonly stat: UnitStatKey };
 
 const unitStatPattern = new RegExp(
@@ -214,6 +220,10 @@ const unitStatPattern = new RegExp(
 );
 const tagStatPattern = new RegExp(
   "^tag\\.([a-z-]+)\\.(hp|attack|armor|range|speed|accuracy)$",
+);
+const domainStatPattern = new RegExp(
+  "^domain\\.([a-z]+)\\.(hp|attack|armor|range|speed|accuracy)$",
+  "i",
 );
 const allStatPattern = new RegExp(
   "^unitAll\\.(hp|attack|armor|range|speed|accuracy)$",
@@ -227,6 +237,18 @@ export const parseUnitStatTarget = (
 
   const tag = tagStatPattern.exec(destination);
   if (tag) return { scope: "tag", tag: tag[1], stat: tag[2] as UnitStatKey };
+
+  const domain = domainStatPattern.exec(destination);
+  if (
+    domain &&
+    domain[1].toLowerCase() in unitDomainLabels
+  ) {
+    return {
+      scope: "domain",
+      domain: domain[1].toLowerCase() as UnitDomain,
+      stat: domain[2] as UnitStatKey,
+    };
+  }
 
   const unit = unitStatPattern.exec(destination);
   if (unit && findUnitDefinition(unit[1])) {
@@ -243,7 +265,9 @@ export const unitMatchesStatTarget = (
     ? true
     : target.scope === "tag"
       ? unit.tags.includes(target.tag)
-      : unit.key === target.unitId;
+      : target.scope === "domain"
+        ? unit.domain === target.domain
+        : unit.key === target.unitId;
 
 /** Units a destination reaches, so the Gamepedia can link modifiers both ways. */
 export const unitsForStatTarget = (target: UnitStatTarget): UnitDefinition[] =>
@@ -253,6 +277,8 @@ export const unitStatTargetLabel = (target: UnitStatTarget): string => {
   const stat = unitStatLabels[target.stat].toLowerCase();
   if (target.scope === "all") return `every unit's ${stat}`;
   if (target.scope === "tag") return `${target.tag} units' ${stat}`;
+  if (target.scope === "domain")
+    return `${unitDomainLabels[target.domain]} units' ${stat}`;
   return `${findUnitDefinition(target.unitId)?.name ?? target.unitId} ${stat}`;
 };
 

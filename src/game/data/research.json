@@ -1526,7 +1526,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.infantry.hp",
-        "value": "1.25"
+        "value": "1.5"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "domain.ground.attack",
+        "value": "1.5"
       }
     ],
     "unlocks": ["assassin"],
@@ -1554,6 +1559,11 @@
         "type": "attributeMultiplier",
         "destination": "trade",
         "value": "100"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "tag.naval.costs.all",
+        "value": "0.5"
       }
     ],
     "unlocks": ["trader_classical"],
@@ -1603,7 +1613,7 @@
       {
         "type": "costReductionPercent",
         "destination": "tag.siege.costs.all",
-        "value": "0.75"
+        "value": "0.80"
       },
       {
         "type": "attributeMultiplier",
@@ -1626,11 +1636,16 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.naval.attack",
-        "value": "1.25"
+        "value": "1.5"
       },
       {
         "type": "costReductionPercent",
-        "destination": "tag.naval.costs.all",
+        "destination": "allUnits.costs.all",
+        "value": "0.75"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "spread",
         "value": "0.5"
       }
     ],
@@ -1649,17 +1664,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.infantry.attack",
-        "value": "2"
+        "value": "4"
       },
       {
         "type": "attributeMultiplier",
         "destination": "tag.cavalry.attack",
-        "value": "2"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "allUnits.costs.all",
-        "value": "0.75"
+        "value": "4"
       },
       {
         "type": "attributeMultiplier",

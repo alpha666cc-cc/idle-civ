@@ -395,14 +395,14 @@
       },
       {
         "unitId": "archer_classical",
-        "count": 1000000,
-        "label": "1M archers",
+        "count": 4000000,
+        "label": "4M archers",
         "formation": "backline"
       },
       {
         "unitId": "elephant_iron",
-        "count": 4000,
-        "label": "4000 elephants",
+        "count": 10000,
+        "label": "10000 elephants",
         "formation": "rush"
       },
       {

@@ -112,6 +112,9 @@ const destinationName = (destination: string): string => {
       const tag = unitStat.tag;
       return `${tag[0].toUpperCase()}${tag.slice(1)} ${stat.toLowerCase()}`;
     }
+    if (unitStat.scope === "domain") {
+      return `${unitDomainLabels[unitStat.domain]} ${stat.toLowerCase()}`;
+    }
     const entry = gamepedia.get(unitStat.unitId);
     return `${entry ? displayName(entry.object) : unitStat.unitId} ${stat.toLowerCase()}`;
   }

@@ -48,6 +48,7 @@ describe("Gamepedia unit stat bonus relations", () => {
 
     expect(scopes).toContain("all");
     expect(scopes).toContain("tag");
+    expect(scopes).toContain("domain");
     expect(sourceCategories).toContain("research");
     expect(sourceCategories).toContain("combat");
   });

@@ -5,6 +5,7 @@
   "wastedResources": 0,
   "tradeProductionMultiplier": 1,
   "tradeRoutes": 1,
+  "spread": 10,
   "offlineEfficiency": 0.25,
   "foodProductionPerWorker": 1,
   "woodProductionPerWorker": 1,

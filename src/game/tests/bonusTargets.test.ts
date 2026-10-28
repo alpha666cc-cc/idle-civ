@@ -36,6 +36,9 @@ describe("bonus destination paths", () => {
     expect(
       normalizeBonusDestination("domain.Ground.costs.all.factor"),
     ).toBe("domain.ground.costs.all.factor");
+    expect(normalizeBonusDestination("domain.Ground.attack")).toBe(
+      "domain.ground.attack",
+    );
     expect(normalizeBonusDestination("tag.Cavalry.costs.all")).toBe(
       "tag.cavalry.costs.all",
     );
@@ -66,6 +69,7 @@ describe("bonus destination paths", () => {
     expect(isValidBonusDestination("domain.ground.costs.all.factor")).toBe(
       true,
     );
+    expect(isValidBonusDestination("domain.ground.attack")).toBe(true);
     expect(isValidBonusDestination("tag.cavalry.costs.all")).toBe(true);
     expect(isValidBonusDestination("tag.antiArmor.costs.all.factor")).toBe(
       true,

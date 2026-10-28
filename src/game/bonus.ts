@@ -312,6 +312,11 @@ export const normalizeBonusDestination = (destination: string): string => {
     if (resource) return `${resource.key}ProductionPerWorker`;
   }
 
+  const unitStat = parseUnitStatTarget(destination);
+  if (unitStat?.scope === "domain") {
+    return `domain.${unitStat.domain}.${unitStat.stat}`;
+  }
+
   return canonicalId(destination);
 };
 

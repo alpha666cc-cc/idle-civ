@@ -57,7 +57,6 @@ import {
 import {
   calculateTradeMultiplier,
   clampTradeIntensity,
-  DEFAULT_TRADE_SPREAD,
   GOLD_PER_TRADE_POWER,
   defaultTradeRoute,
   getTradePrice,
@@ -366,6 +365,7 @@ for (const key of [
   "wastedResources",
   "tradeProductionMultiplier",
   "tradeRoutes",
+  "spread",
   "offlineEfficiency",
   "buildingPower",
   ...buildingPowerAttributeDefinitions.map(({ key }) => key),
@@ -3924,7 +3924,7 @@ export class CivilizationState {
         resources[resource] = resources[resource].add(
           gold
             .mul(unitsPerGold)
-            .div(ExpNumber.fromNumber(DEFAULT_TRADE_SPREAD)),
+            .div(this.getAttributeValue("spread")),
         );
         continue;
       }
@@ -4237,7 +4237,7 @@ export class CivilizationState {
         gold: goldValue,
         units: goldValue
           .mul(unitsPerGold)
-          .div(ExpNumber.fromNumber(DEFAULT_TRADE_SPREAD)),
+          .div(this.getAttributeValue("spread")),
       };
     }
     return { units: goldValue.mul(unitsPerGold), gold: goldValue };

@@ -56,6 +56,7 @@ export type DerivedAttributeKey =
   | "wastedResources"
   | "tradeProductionMultiplier"
   | "tradeRoutes"
+  | "spread"
   | "offlineEfficiency"
   | "foodProductionPerWorker"
   | "woodProductionPerWorker"
