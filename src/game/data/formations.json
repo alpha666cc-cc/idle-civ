@@ -65,8 +65,8 @@
     "unlockAge": 2,
     "unlockType": "research",
     "researchId": "martial_drill",
-    "positionOffset": 0,
-    "movementSpeed": 0.5,
+    "positionOffset": -1,
+    "movementSpeed": 0.7,
     "statBonuses": [
       {
         "attribute": "unitAll.hp",
