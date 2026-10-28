@@ -1664,12 +1664,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "tag.infantry.attack",
-        "value": "4"
+        "value": "2"
       },
       {
         "type": "attributeMultiplier",
         "destination": "tag.cavalry.attack",
-        "value": "4"
+        "value": "2"
       },
       {
         "type": "attributeMultiplier",

@@ -385,7 +385,13 @@
         "unitId": "legionary",
         "count": 300000,
         "label": "300k legionaries",
-        "formation": "frontline"
+        "formation": "turtle"
+      },
+      {
+        "unitId": "assassin",
+        "count": 10000,
+        "label": "10k assassins",
+        "formation": "rush"
       },
       {
         "unitId": "onager",
