@@ -20,8 +20,13 @@ const savePath = resolve(
   "simulator battle8.xml",
 );
 
+// This is a slow diagnostic (runs a full optimizeBattleTactics on a real save,
+// ~45 min) intended for manual debugging. It is gated behind RUN_BUG_ANALYSIS so
+// it never runs, or times out, during the normal `npm test` suite.
+const runBugAnalysis = process.env.RUN_BUG_ANALYSIS === "1";
+
 describe("bug formation analysis", () => {
-  it.skipIf(!existsSync(savePath))("inspects the bug formation save", () => {
+  it.skipIf(!runBugAnalysis || !existsSync(savePath))("inspects the bug formation save", () => {
     const xml = readFileSync(savePath, "utf-8");
     const saveData = parseSave(xml, "xml");
     const state = loadSaveData(saveData);

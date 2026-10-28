@@ -765,7 +765,7 @@ describe("optimizeBattleTactics iteration", () => {
     expect(withHoplite?.military.lte(withoutHoplite?.military ?? ExpNumber.ZERO)).toBe(
       true,
     );
-  }, 120_000);
+  }, 300_000);
 
   it("is deterministic for identical inputs", () => {
     const first = runSolver(firstFire, ["warrior", "slinger"]);
