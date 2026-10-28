@@ -13,7 +13,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { findAttributeDefinition } from "../game/attributes";
 import type { CivilizationState } from "../game/civilizationState";
-import type { ExpNumber } from "../game/expNumber";
+import { ExpNumber } from "../game/expNumber";
 import {
   clampTradeIntensity,
   DEFAULT_TRADE_SPREAD,
@@ -124,7 +124,7 @@ const IntensityField = ({
 
 /**
  * One market route: on or off, buying or selling, and the share of the trade
- * power bank it spends each second. The engine owns every value, so the card only
+ * power bank it converts each second. The engine owns every value, so the card only
  * reads the route and writes the change — including the refusal notice when all
  * the route slots are taken.
  */
@@ -301,6 +301,13 @@ export default function TradePanel({
   fmt,
   onNotice,
 }: Props) {
+  const goldPerTrade = gameState.getGoldPerTradePower();
+  const goldPerTradeText = fmt(goldPerTrade);
+  const visibleGoldPerTrade =
+    goldPerTrade.gt(ExpNumber.ZERO) && goldPerTradeText === "0"
+      ? `${fmt(goldPerTrade.mul(ExpNumber.fromNumber(1_000)))}e-3`
+      : goldPerTradeText;
+
   return (
     <section className="production-workbench" aria-label="Trade">
       <div className="workbench-heading">
@@ -315,12 +322,6 @@ export default function TradePanel({
 
       <div className="trade-overview">
         <div className="trade-metric">
-          <span className="metric-label">Trade income</span>
-          <span className="metric-value">
-            +{fmt(gameState.getTradePowerRate())}/s
-          </span>
-        </div>
-        <div className="trade-metric">
           <span className="metric-label">Routes in use</span>
           <span className="metric-value">
             {gameState.getActiveTradeRoutes().length} /{" "}
@@ -332,9 +333,15 @@ export default function TradePanel({
           <span className="metric-value">×{DEFAULT_TRADE_SPREAD}</span>
         </div>
         <div className="trade-metric">
-          <span className="metric-label">Trade value</span>
+          <span className="metric-label">Gold per trade</span>
           <span className="metric-value">
-            1 = 1 gold
+            {visibleGoldPerTrade} gold
+          </span>
+        </div>
+        <div className="trade-metric">
+          <span className="metric-label">Max gold per route</span>
+          <span className="metric-value">
+            {fmt(gameState.getMaxTradeRouteGold())} gold/s
           </span>
         </div>
         <div className="trade-metric">

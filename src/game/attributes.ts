@@ -109,7 +109,7 @@ export const productionDefinitions: AttributeDefinition[] = [
     "trade",
     "Trade",
     "amount",
-    "Trade is the reserve the market accumulates and never spends: an open trade route forwards `reserve × intensity` worth of it as gold each second, and the reserve also multiplies every production rate by 1 + log₁₀(reserve + 1).",
+    "Trade is the reserve the market accumulates and never spends: an open route forwards `reserve × intensity` each second, valued by the banked-trade-to-raw-gold-production ratio, and the reserve also multiplies every production rate by 1 + log₁₀(reserve + 1).",
     0.1,
   ),
 ];

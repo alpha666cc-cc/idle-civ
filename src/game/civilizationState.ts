@@ -55,9 +55,9 @@ import {
   type CostReductions,
 } from "./bonus";
 import {
+  calculateGoldPerTradePower,
   calculateTradeMultiplier,
   clampTradeIntensity,
-  GOLD_PER_TRADE_POWER,
   defaultTradeRoute,
   getTradePrice,
   tradeRouteSource,
@@ -1301,9 +1301,8 @@ export class CivilizationState {
   }
 
   /**
-   * Production factors for trade pricing: buildings, bonuses, multipliers, and drains,
-   * but **excluding worker production** so players cannot sway the market by reassigning
-   * workers. Trade routes are priced against these rates to prevent market manipulation.
+   * Trade pricing factors use buildings and bonuses, but exclude worker production
+   * so workers cannot sway prices.
    */
   private getTradePriceFactors(resourceKey: ResourceKey): ResourceFactors {
     const factors = this.resourceFactors[resourceKey];
@@ -4082,14 +4081,12 @@ export class CivilizationState {
   }
 
   /**
-   * Trade routes (Trade tab). A route buys or sells one resource for gold: it asks
-   * for `intensity` of the banked trade each second, one trade being one
-   * gold of goods, and moves `production(R) / production(gold)` units of the
-   * resource for that gold — a tenth of it when buying, the spread. Both legs are
-   * capped by what the settlement holds, and both ride the production factors as
-   * drain rows — debits positive, credits negative — so neither picks up a
-   * production multiplier and both show up in the Gamepedia's Drain list. The
-   * reserve is never spent.
+   * Trade routes (Trade tab). A route values its share of the banked trade using
+   * the ratio of the trade reserve to raw gold production, then buys or sells
+   * one resource for that gold value. Both legs are capped by what the settlement
+   * holds, and both ride the production factors as drain rows — debits positive,
+   * credits negative — so neither picks up a production multiplier and both
+   * show up in the Gamepedia's Drain list. The trade reserve is never spent.
    */
   getTradeRoute(resource: TradeResourceKey): TradeRoute {
     return this.tradeRoutes[resource] ?? defaultTradeRoute;
@@ -4099,6 +4096,15 @@ export class CivilizationState {
   /** Trade income per second — what markets and their boosts produce. */
   getTradePowerRate(): ExpNumber {
     return this.computeResourceRate("trade");
+  }
+
+  /** Current gold value per reserve unit against pre-route gold production. */
+  getGoldPerTradePower(): ExpNumber {
+    const rawGoldProduction = computeResourceRate(this.getFactors("gold"));
+    return calculateGoldPerTradePower(
+      this.resources.trade,
+      rawGoldProduction,
+    );
   }
 
   /** The live mid price of one tradable resource, from rates excluding worker production. */
@@ -4171,9 +4177,9 @@ export class CivilizationState {
   /**
    * What one second of a route would move, for the Trade tab preview. It is
    * computed from the settings alone, so the card can show it before the route is
-   * switched on. `tradePower` is the value the route asks for out of the reserve
-   * (one trade being one gold of goods), and the two legs are capped by what
-   * the settlement actually holds — the same numbers the tick will apply.
+   * switched on. `tradePower` is the gold value the route asks for out of the
+   * reserve, and the two legs are capped by what the settlement actually holds
+   * — the same numbers the tick will apply.
    */
   getTradeRouteThroughput(resource: TradeResourceKey): {
     tradePower: ExpNumber;
@@ -4186,6 +4192,11 @@ export class CivilizationState {
       resourcePerSecond: legs?.units ?? ExpNumber.ZERO,
       goldPerSecond: legs?.gold ?? ExpNumber.ZERO,
     };
+  }
+
+  /** Maximum gold flow a single route can request at 100% intensity. */
+  getMaxTradeRouteGold(): ExpNumber {
+    return this.resources.trade.mul(this.getGoldPerTradePower());
   }
 
   /** Routes that are actually served: enabled, and inside the slot cap. */
@@ -4206,9 +4217,9 @@ export class CivilizationState {
   }
 
   /**
-   * What a route asks for each second: its share of the banked trade, at one
-   * trade to one gold. The reserve is never spent, so this grows with the
-   * bank rather than with the income.
+   * What a route asks for each second: its share of the banked trade, valued at
+   * the current banked-trade-to-raw-gold-production ratio. The reserve is never
+   * spent, so this grows with the bank rather than with the income.
    */
   private tradeRouteValue(resource: TradeResourceKey): ExpNumber {
     const route = this.tradeRoutes[resource];
@@ -4217,7 +4228,7 @@ export class CivilizationState {
     if (intensity <= 0) return ExpNumber.ZERO;
     return this.resources.trade
       .mul(ExpNumber.fromNumber(intensity))
-      .mul(ExpNumber.fromNumber(GOLD_PER_TRADE_POWER));
+      .mul(this.getGoldPerTradePower());
   }
 
   /**

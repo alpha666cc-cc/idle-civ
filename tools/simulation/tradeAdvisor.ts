@@ -30,10 +30,10 @@
  *   sale — a stock the settlement stopped making is dead weight, not a surplus.
  * - Every rate is read with the settlement's own route rows put back, so a route can
  *   never consume the production it is judged on and then conclude it has none.
- * - Because a route asks for `intensity × reserve`, the intensity *is* the flow's
- *   share of the bank, and it is quantised onto the same logarithmic slider stops
- *   the Trade tab uses. That keeps the decision cheap: the intensity only moves
- *   when the target flow moves by a factor of √10, not on every tick.
+ * - Because a route converts `intensity × reserve × gold-per-trade`, the intensity
+ *   is sized against the bank's current gold value and quantised onto the same
+ *   logarithmic slider stops the Trade tab uses. That keeps the decision cheap:
+ *   the intensity only moves when the target flow moves by a factor of √10.
  *
  * The advisor holds no memory of its own — the route settings on the state are the
  * memory — so `decideAction` stays a pure function and a route swap cannot flap
@@ -244,9 +244,10 @@ const intensityFor = (
 ): number => {
   const bank = state.resources.trade;
   if (bank.lte(ExpNumber.ZERO)) return 0;
-  // A flow larger than the whole reserve still only asks for the whole of it, and a
-  // NaN share collapses to the smallest stop rather than to `NaN`.
-  const share = goldPerSecond.div(bank).toNumber();
+  // The engine values each reserve unit against raw gold production before
+  // routing, so size the share against that converted bank.
+  const valuedBank = bank.mul(state.getGoldPerTradePower());
+  const share = goldPerSecond.div(valuedBank).toNumber();
   return tradeIntensityForStop(
     Math.min(profile.maxStop, tradeIntensityStop(share)),
   );

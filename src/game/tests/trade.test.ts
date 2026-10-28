@@ -14,6 +14,7 @@ import { ExpNumber } from "../expNumber";
 import { formatNumber } from "../numberFormat";
 import { emptyStatistics } from "../statistics";
 import {
+  calculateGoldPerTradePower,
   calculateTradeMultiplier,
   clampTradeIntensity,
   DEFAULT_TRADE_SPREAD,
@@ -148,6 +149,87 @@ describe("trade multiplier arithmetic", () => {
   });
 });
 
+describe("trade route value arithmetic", () => {
+  it("uses the maximum gold value when the trade reserve is zero", () => {
+    expect(
+      calculateGoldPerTradePower(ExpNumber.ZERO, ExpNumber.ONE).toNumber(),
+    ).toBe(1_000);
+  });
+
+  it("keeps the one-to-one value when trade equals raw gold production", () => {
+    expect(
+      calculateGoldPerTradePower(
+        ExpNumber.from("1e400"),
+        ExpNumber.from("1e400"),
+      ).toNumber(),
+    ).toBe(1);
+  });
+
+  it("reduces value when trade reserve dominates gold production", () => {
+    expect(
+      calculateGoldPerTradePower(
+        ExpNumber.from("150e30"),
+        ExpNumber.from("3e30"),
+      ).toNumber(),
+    ).toBeCloseTo(1 / 3, 5);
+  });
+
+  it("boosts value when raw gold production dominates the trade reserve", () => {
+    const state = settlement({
+      trade: ExpNumber.from("2e6"),
+      gold: ExpNumber.ZERO,
+    }).addFactor("gold" as ResourceKey, "additional", [
+      "goldMine",
+      ExpNumber.from("20e9"),
+    ]);
+
+    expect(state.getGoldPerTradePower().toNumber()).toBeGreaterThan(3);
+  });
+
+  it("boosts a low trade reserve against a much larger raw gold rate", () => {
+    expect(
+      calculateGoldPerTradePower(
+        ExpNumber.from("2e6"),
+        ExpNumber.from("20e9"),
+      ).toNumber(),
+    ).toBeGreaterThan(3);
+    expect(
+      calculateGoldPerTradePower(
+        ExpNumber.from("1e30"),
+        ExpNumber.from("5e31"),
+      ).toNumber(),
+    ).toBeCloseTo(3, 5);
+  });
+
+  it("keeps a large trade reserve above the raw gold production scale", () => {
+    const tradeReserve = ExpNumber.from("1e33");
+    const rawGoldProduction = ExpNumber.from("2e30");
+    const maxRouteGold = tradeReserve.mul(
+      calculateGoldPerTradePower(tradeReserve, rawGoldProduction),
+    );
+
+    expect(maxRouteGold.gt(rawGoldProduction)).toBe(true);
+  });
+
+  it("caps extreme trade ratios at the maximum value", () => {
+    expect(
+      calculateGoldPerTradePower(
+        ExpNumber.fromLog10(1e302),
+        ExpNumber.ONE,
+      ).toNumber(),
+    ).toBe(0.001);
+  });
+
+  it("approaches the maximum value when gold production dominates", () => {
+    expect(
+      calculateGoldPerTradePower(
+        ExpNumber.ONE,
+        ExpNumber.fromLog10(1e302),
+      ).toNumber(),
+    ).toBe(1_000);
+  });
+});
+
 describe("trade prices", () => {
   it("derives the mid price from the production ratio", () => {
     const rates: Record<string, ExpNumber> = {
@@ -241,9 +323,22 @@ describe("trade prices", () => {
 });
 
 describe("trade routes", () => {
+  it("shows the maximum gold value of the full trade reserve per route", () => {
+    const state = marketState(
+      1,
+      { trade: ExpNumber.fromNumber(100) },
+      foodAndGoldWorkers(),
+    ).addFactor("gold" as ResourceKey, "additional", [
+      "goldMine",
+      ExpNumber.fromNumber(99),
+    ]);
+
+    expectClose(state.getMaxTradeRouteGold(), 100);
+  });
+
   it("uses the attribute-targeted spread when buying goods", () => {
     const state = marketState(
-      0,
+      1,
       { trade: ExpNumber.fromNumber(100), gold: ExpNumber.fromNumber(1_000) },
       foodAndGoldWorkers(),
       { food: enabledRoute("buy") },
@@ -251,11 +346,11 @@ describe("trade routes", () => {
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
 
     expect(state.getAttributeValue("spread").toNumber()).toBe(5);
@@ -267,18 +362,18 @@ describe("trade routes", () => {
 
   it("sells the banked trade at the mid price from buildings, not workers", () => {
     const state = marketState(
-      0,
+      1,
       { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
       foodAndGoldWorkers(),
       { food: enabledRoute("sell") },
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
 
     // A hundred banked trade is a hundred gold, and the mid price is four
@@ -303,24 +398,27 @@ describe("trade routes", () => {
       traded.resources.gold,
       state.computeResourceRate("gold").toNumber(),
     );
-    // The reserve is untouched.
-    expect(traded.resources.trade.toNumber()).toBe(100);
+    // The route does not spend the reserve; trade production still accrues.
+    expectClose(
+      traded.resources.trade,
+      100 + state.computeResourceRate("trade").toNumber(),
+    );
   });
 
   it("spends only the configured share of the bank", () => {
     const state = marketState(
-      0,
+      1,
       { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
       foodAndGoldWorkers(),
       { food: enabledRoute("sell", 0.5) },
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
 
     expect(rowValue(drains(state, "food"), "food route")).toBeCloseTo(200, 6);
@@ -333,7 +431,7 @@ describe("trade routes", () => {
 
   it("replaces the drain on every read instead of stacking it", () => {
     const state = marketState(
-      0,
+      1,
       { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
       foodAndGoldWorkers(),
       { food: enabledRoute("sell") },
@@ -359,8 +457,8 @@ describe("trade routes", () => {
       foodAndGoldWorkers(),
     );
 
-    // Routing drains goods and gold, never trade: a running route leaves the
-    // reserve exactly as an idle one does.
+    // The route does not spend the reserve; trade production still accrues as
+    // usual on every tick.
     expect(routed.tick().resources.trade.toString()).toBe(
       idle.tick().resources.trade.toString(),
     );
@@ -368,18 +466,18 @@ describe("trade routes", () => {
 
   it("divides what a purchase receives by the spread", () => {
     const state = marketState(
-      0,
+      1,
       { trade: ExpNumber.fromNumber(100), gold: ExpNumber.fromNumber(1_000) },
       foodAndGoldWorkers(),
       { food: enabledRoute("buy") },
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
 
     // The same hundred gold, but a tenth of the goods: 400 / 10 = 40 food, and
@@ -395,18 +493,18 @@ describe("trade routes", () => {
   it("caps a sale at the stock on hand and credits the gold for that", () => {
     // The route would like to sell 400 food, but only ten are on hand.
     const state = marketState(
-      0,
+      1,
       { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(10) },
       foodAndGoldWorkers(),
       { food: enabledRoute("sell") },
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
 
     // Ten food is capped in, and the gold credit follows the capped amount:
@@ -429,18 +527,18 @@ describe("trade routes", () => {
   it("caps a purchase at the purse", () => {
     // Thirty gold cannot cover a hundred, so only thirty is spent.
     const state = marketState(
-      0,
+      1,
       { trade: ExpNumber.fromNumber(100), gold: ExpNumber.fromNumber(30) },
       foodAndGoldWorkers(),
       { food: enabledRoute("buy") },
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
 
     expect(rowValue(drains(state, "gold"), "food route")).toBeCloseTo(30, 6);
@@ -453,7 +551,7 @@ describe("trade routes", () => {
 
   it("credits the gold without the production multiplier", () => {
     const idle = marketState(
-      0,
+      1,
       {
         trade: ExpNumber.fromNumber(100),
         gold: ExpNumber.fromNumber(0),
@@ -463,11 +561,11 @@ describe("trade routes", () => {
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
     const routed = idle.setTradeRoute("food", { enabled: true, intensity: 1 });
 
@@ -483,7 +581,7 @@ describe("trade routes", () => {
     // The cap is the stock, so an empty one leaves the route idle rather than
     // crediting gold for goods the settlement never had.
     const state = marketState(
-      0,
+      1,
       { trade: ExpNumber.fromNumber(1e6) },
       foodAndGoldWorkers(),
       { food: enabledRoute("sell") },
@@ -506,7 +604,7 @@ describe("trade routes", () => {
 
   it("previews the flow even while the route is off", () => {
     const state = marketState(
-      0,
+      1,
       {
         trade: ExpNumber.fromNumber(100),
         food: ExpNumber.fromNumber(1e6),
@@ -517,11 +615,11 @@ describe("trade routes", () => {
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
     expect(state.getTradeRoute("food").enabled).toBe(false);
 
@@ -552,7 +650,7 @@ describe("trade routes", () => {
 
   it("serves only the first slot when a save carries extra routes", () => {
     const state = marketState(
-      0,
+      1,
       { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
       foodAndGoldWorkers(),
       { food: enabledRoute("sell"), wood: enabledRoute("sell") },
@@ -582,28 +680,28 @@ describe("trade routes", () => {
       trade: ExpNumber.fromNumber(100),
       food: ExpNumber.fromNumber(1e6),
     };
-    const state = marketState(0, stock, foodAndGoldWorkers(), {
+    const state = marketState(1, stock, foodAndGoldWorkers(), {
       food: enabledRoute("sell"),
     })
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
     // The skip switches the route off for the window, so the sixty seconds of
     // production land first, and the route is then applied once for the window.
     const skipped = state.advanceTime(60);
-    const untouched = marketState(0, stock, foodAndGoldWorkers())
+    const untouched = marketState(1, stock, foodAndGoldWorkers())
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ])
       .advanceTime(60);
 
@@ -626,34 +724,34 @@ describe("trade routes", () => {
       trade: ExpNumber.fromNumber(100),
       food: ExpNumber.fromNumber(10),
     };
-    const state = marketState(0, stock, foodAndGoldWorkers(), {
+    const state = marketState(1, stock, foodAndGoldWorkers(), {
       food: enabledRoute("sell"),
     })
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
     const skipped = state.advanceTime(60);
-    const untouched = marketState(0, stock, foodAndGoldWorkers())
+    const untouched = marketState(1, stock, foodAndGoldWorkers())
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ])
       .advanceTime(60);
 
-    expectClose(skipped.resources.food, 0);
+    const foodSold = untouched.resources.food.sub(skipped.resources.food);
+    expect(foodSold.gt(ExpNumber.ZERO)).toBe(true);
     expectClose(
       skipped.resources.gold,
-      untouched.resources.gold.toNumber() +
-        untouched.resources.food.toNumber() / 4,
+      untouched.resources.gold.toNumber() + foodSold.div(ExpNumber.fromNumber(4)).toNumber(),
     );
   });
 
@@ -665,26 +763,26 @@ describe("trade routes", () => {
       trade: ExpNumber.fromNumber(100),
       gold: ExpNumber.fromNumber(1e6),
     };
-    const state = marketState(0, stock, foodAndGoldWorkers(), {
+    const state = marketState(1, stock, foodAndGoldWorkers(), {
       food: enabledRoute("buy", 0.01),
     }, ["naval_ramming"])
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
     const bought = state.advanceTime(60);
-    const untouched = marketState(0, stock, foodAndGoldWorkers())
+    const untouched = marketState(1, stock, foodAndGoldWorkers())
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ])
       .advanceTime(60);
 
@@ -730,55 +828,57 @@ describe("trade routes", () => {
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
     const upkeep = state.getProductionFactors("food").drain;
     const skipped = state.advanceTime(60);
 
     // The upkeep is still a row on the rate the skip used, and food fell by it.
     expect(upkeep.map(([source]) => String(source))).toContain("people");
-    expect(skipped.resources.food.toNumber()).toBeLessThan(1e6);
+    const withoutRoute = state
+      .setTradeRoute("food", { enabled: false })
+      .advanceTime(60);
+    expect(skipped.resources.food.lt(withoutRoute.resources.food)).toBe(true);
   });
 
   it("trade prices are independent of worker assignments", () => {
     // Create a state with buildings but no workers
     const noWorkers = marketState(
-      0,
-      { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
+      1,
+      { trade: ExpNumber.fromNumber(99), food: ExpNumber.fromNumber(1_000) },
       emptyWorkerAssignments(),
       { food: enabledRoute("sell") },
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
 
     // Create a state with many workers assigned to food
     const manyFoodWorkers = marketState(
-      0,
-      { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
+      1,
+      { trade: ExpNumber.fromNumber(99), food: ExpNumber.fromNumber(1_000) },
       {
         ...emptyWorkerAssignments(),
         food: ExpNumber.fromNumber(100),
-        gold: ExpNumber.fromNumber(1),
       },
       { food: enabledRoute("sell") },
     )
       .addFactor("food" as ResourceKey, "additional", [
         "farm",
-        ExpNumber.fromNumber(4),
+        ExpNumber.fromNumber(396),
       ])
       .addFactor("gold" as ResourceKey, "additional", [
         "goldMine",
-        ExpNumber.fromNumber(1),
+        ExpNumber.fromNumber(99),
       ]);
 
     // Both should have the same trade price since it's based on buildings, not workers
@@ -793,11 +893,11 @@ describe("trade routes", () => {
 
     // The route should drain the same amount in both cases
     expect(rowValue(drains(noWorkers, "food"), "food route")).toBeCloseTo(
-      400,
+      396,
       6,
     );
     expect(rowValue(drains(manyFoodWorkers, "food"), "food route")).toBeCloseTo(
-      400,
+      396,
       6,
     );
   });

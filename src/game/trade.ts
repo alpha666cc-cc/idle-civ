@@ -5,9 +5,9 @@ import type { ProductionResourceKey } from "./attributes";
  * Trade routes: the market turns its trade reserve into goods.
  *
  * A route has three settings — on or off, buy or sell, and an intensity. Every
- * second each enabled route forwards `intensity ×` the trade income, and
- * one unit of trade income is worth `GOLD_PER_TRADE_POWER` gold of goods. The
- * trade reserve is never spent by a route: routing drains goods and gold,
+ * second each enabled route forwards `intensity ×` the trade reserve, valued
+ * against raw gold production. The trade reserve is never spent by a route:
+ * routing drains goods and gold,
  * nothing else. The price of a resource is the production ratio against gold
  * (excluding worker production), so whatever the settlement produces fastest
  * through buildings and bonuses is what one gold buys most of, and the slowest
@@ -29,7 +29,7 @@ export type TradeResourceKey = (typeof tradeableResourceKeys)[number];
 
 export type TradeMode = "buy" | "sell";
 
-/** One route's settings; `intensity` is a 0–1 share of the trade income. */
+/** One route's settings; `intensity` is a 0–1 share of the banked trade. */
 export type TradeRoute = {
   readonly enabled: boolean;
   readonly mode: TradeMode;
@@ -87,8 +87,35 @@ export const tradeIntensityStop = (intensity: number): number => {
   return Math.min(Math.max(Math.round(stop), 0), TRADE_INTENSITY_STOPS);
 };
 
-/** One unit of trade income moves this many gold of goods through a route. */
-export const GOLD_PER_TRADE_POWER = 1;
+const MIN_GOLD_PER_TRADE = ExpNumber.fromNumber(0.001);
+const MAX_GOLD_PER_TRADE = ExpNumber.fromNumber(1_000);
+const GOLD_PER_TRADE_LOG_SLOPE =
+  Math.log10(3) / Math.log10(50);
+
+/**
+ * Gold value per unit of routed trade. A power curve keeps equal trade and raw
+ * gold values at 1:1, and values a 50:1 gold-to-trade ratio at 3 gold per trade.
+ * The output is clamped from 0.001 to 1,000.
+ */
+export const calculateGoldPerTradePower = (
+  tradeReserve: ExpNumber,
+  rawGoldProduction: ExpNumber,
+): ExpNumber => {
+  if (tradeReserve.lte(ExpNumber.ZERO)) return MAX_GOLD_PER_TRADE;
+  if (rawGoldProduction.lte(ExpNumber.ZERO)) return MIN_GOLD_PER_TRADE;
+  if (tradeReserve.eq(rawGoldProduction)) return ExpNumber.ONE;
+
+  const log10Ratio =
+    rawGoldProduction.log10() - tradeReserve.log10();
+  const valueExponent = GOLD_PER_TRADE_LOG_SLOPE * log10Ratio;
+  if (valueExponent <= MIN_GOLD_PER_TRADE.log10()) {
+    return MIN_GOLD_PER_TRADE;
+  }
+  if (valueExponent >= MAX_GOLD_PER_TRADE.log10()) {
+    return MAX_GOLD_PER_TRADE;
+  }
+  return ExpNumber.fromLog10(valueExponent);
+};
 
 /**
  * Units per gold used when a live rate cannot price a resource — no workers
