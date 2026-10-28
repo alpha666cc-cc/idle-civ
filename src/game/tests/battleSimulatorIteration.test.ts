@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   mergeSimulatorArmy,
   optimizeBattleTactics,
+  proveMinimumMilitaryWinner,
   solveMinimumArmy,
   type BattleSimulatorContext,
   type SimulatorOwnedArmy,
   type SimulatorCandidate,
+  type SimulatorResult,
   type SimulatorTotalArmy,
 } from "../battleSimulator";
 import { ExpNumber } from "../expNumber";
@@ -227,6 +229,358 @@ describe("optimizeBattleTactics iteration", () => {
     expect(progress).toContain(1);
   });
 
+  it("keeps resource-cost trade-offs with internal casualty metrics", () => {
+    const candidate: SimulatorCandidate = { key: "warrior" };
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+        {
+          resource: "wood",
+          base: ExpNumber.fromNumber(
+            count === 1 ? 5 : count === 2 ? 0 : count * 5,
+          ),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army, formations) => {
+        const count = army.get("warrior") ?? ExpNumber.ZERO;
+        return formations.get("warrior") === "frontline"
+          ? count.gte(ExpNumber.ONE)
+          : count.gte(ExpNumber.fromNumber(2));
+      },
+      getBattleMetrics: (_army, formations) => ({
+        playerCasualties: ExpNumber.fromNumber(
+          formations.get("warrior") === "frontline" ? 0 : 1,
+        ),
+        enemyCasualties: ExpNumber.fromNumber(2),
+        playerCasualtyRate:
+          formations.get("warrior") === "frontline" ? 0 : 0.5,
+        enemyCasualtyRate: 1,
+      }),
+    };
+
+    const result = optimizeBattleTactics(
+      marathon,
+      [candidate],
+      context,
+      false,
+      new Map(),
+      new Map(),
+      new Map(),
+      ["standard", "frontline"],
+      ["standard"],
+    );
+
+    if (!result) throw new Error("Expected winning plans to be found");
+    expect(result.composition.get("warrior")).toBe(1);
+    expect(result.battleMetrics?.playerCasualtyRate).toBe(0);
+    expect(result.alternatives).toHaveLength(1);
+    expect(result.alternatives?.[0].composition.get("warrior")).toBe(2);
+    expect(result.alternatives?.[0].totalCost).toEqual([
+      { resource: "military", base: ExpNumber.fromNumber(2) },
+      { resource: "wood", base: ExpNumber.ZERO },
+    ]);
+    for (const plan of [result, ...(result.alternatives ?? [])]) {
+      expect(
+        context.winsWithFormationsAndOrders(
+          plan.totalComposition,
+          plan.formations,
+          plan.orders,
+          marathon,
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("uses casualty metrics internally for equal-cost formations", () => {
+    const candidate: SimulatorCandidate = { key: "warrior" };
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army) =>
+        (army.get("warrior") ?? ExpNumber.ZERO).gte(ExpNumber.ONE),
+      getBattleMetrics: (_army, formations) => ({
+        playerCasualties: ExpNumber.fromNumber(
+          formations.get("warrior") === "frontline" ? 0 : 1,
+        ),
+        enemyCasualties: ExpNumber.ONE,
+        playerCasualtyRate:
+          formations.get("warrior") === "frontline" ? 0 : 0.5,
+        enemyCasualtyRate: 1,
+      }),
+    };
+
+    const result = optimizeBattleTactics(
+      marathon,
+      [candidate],
+      context,
+      false,
+      new Map(),
+      new Map(),
+      new Map(),
+      ["standard", "frontline"],
+      ["standard"],
+    );
+
+    if (!result) throw new Error("Expected a winning formation");
+    expect(result.formations.get("warrior")).toBe("frontline");
+    expect(result.alternatives).toHaveLength(0);
+  });
+
+  it("continues equal-cost formation improvements across multiple units", () => {
+    const candidates: SimulatorCandidate[] = [
+      { key: "warrior" },
+      { key: "slinger" },
+      { key: "spearman_bronze" },
+    ];
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => true,
+      winsWithFormations: () => true,
+      winsWithFormationsAndOrders: () => true,
+      getBattleMetrics: (_army, formations) => {
+        const improved = [...formations.values()].filter(
+          (formation) => formation === "frontline",
+        ).length;
+        return {
+          playerCasualties: ExpNumber.ONE,
+          enemyCasualties: ExpNumber.ONE,
+          playerCasualtyRate: 0.8 - improved * 0.1,
+          enemyCasualtyRate: 1,
+        };
+      },
+    };
+    const owned: SimulatorOwnedArmy = new Map(
+      candidates.map(({ key }) => [key, ExpNumber.ONE]),
+    );
+    const formations = new Map(
+      candidates.map(({ key }) => [key, "standard" as FormationId]),
+    );
+    const result = optimizeBattleTactics(
+      marathon,
+      candidates,
+      context,
+      false,
+      owned,
+      formations,
+      new Map(),
+      ["standard", "frontline"],
+      ["standard"],
+    );
+
+    if (!result) throw new Error("Expected the owned army to win");
+    expect(result.composition.size).toBe(0);
+    for (const { key } of candidates) {
+      expect(result.formations.get(key)).toBe("frontline");
+    }
+    expect(result.battleMetrics?.playerCasualtyRate).toBeCloseTo(0.5);
+  });
+
+  it("re-solves promising losing formations for a better mixed army", () => {
+    const candidates: SimulatorCandidate[] = [
+      { key: "warrior" },
+      { key: "slinger" },
+    ];
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: (army) =>
+        (army.get("warrior") ?? ExpNumber.ZERO).gte(
+          ExpNumber.fromNumber(10),
+        ),
+      winsWithFormations: (army, formations) =>
+        formations.get("warrior") === "frontline"
+          ? false
+          : (army.get("warrior") ?? ExpNumber.ZERO).gte(
+              ExpNumber.fromNumber(10),
+            ),
+      winsWithFormationsAndOrders: (army, formations) => {
+        if (formations.get("warrior") === "frontline") {
+          return (
+            (army.get("warrior") ?? ExpNumber.ZERO).eq(ExpNumber.ONE) &&
+            (army.get("slinger") ?? ExpNumber.ZERO).eq(ExpNumber.ONE)
+          );
+        }
+        return (army.get("warrior") ?? ExpNumber.ZERO).gte(
+          ExpNumber.fromNumber(10),
+        );
+      },
+      getBattleMetrics: (_army, formations) => ({
+        playerCasualties: ExpNumber.ONE,
+        enemyCasualties: ExpNumber.ONE,
+        playerCasualtyRate:
+          formations.get("warrior") === "frontline" ? 0.2 : 0.8,
+        enemyCasualtyRate:
+          formations.get("warrior") === "frontline" ? 1 : 0.2,
+      }),
+    };
+
+    const result = optimizeBattleTactics(
+      marathon,
+      candidates,
+      context,
+      true,
+      new Map(),
+      new Map(),
+      new Map(),
+      ["standard", "frontline"],
+      ["standard"],
+    );
+
+    if (!result) throw new Error("Expected a winning formation and army");
+    expect(result.composition).toEqual(
+      new Map([
+        ["warrior", 1],
+        ["slinger", 1],
+      ]),
+    );
+    expect(result.military.eq(ExpNumber.fromNumber(2))).toBe(true);
+    expect(result.formations.get("warrior")).toBe("frontline");
+    expect(
+      context.winsWithFormationsAndOrders(
+        result.totalComposition,
+        result.formations,
+        result.orders,
+        marathon,
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps resource-cost trade-offs without ranking by casualties", () => {
+    const candidate: SimulatorCandidate = { key: "warrior" };
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+        {
+          resource: "wood",
+          base: ExpNumber.fromNumber(10 - count),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army) =>
+        (army.get("warrior") ?? ExpNumber.ZERO).gte(ExpNumber.ONE),
+      getBattleMetrics: (army) => {
+        const count = army.get("warrior") ?? ExpNumber.ZERO;
+        const casualtyRate = 1 / count.toNumber();
+        return {
+          playerCasualties: ExpNumber.ONE,
+          enemyCasualties: ExpNumber.ONE,
+          playerCasualtyRate: casualtyRate,
+          enemyCasualtyRate: 1,
+        };
+      },
+    };
+
+    const result = optimizeBattleTactics(
+      marathon,
+      [candidate],
+      context,
+      false,
+      new Map(),
+      new Map(),
+      new Map(),
+      ["standard"],
+      ["standard"],
+    );
+
+    if (!result) throw new Error("Expected winning configurations");
+    const plans = [result, ...(result.alternatives ?? [])];
+    expect(plans.map(({ composition }) => composition.get("warrior"))).toEqual([
+      1, 2, 3, 4, 5, 9,
+    ]);
+    expect(
+      plans.map(({ battleMetrics }) => battleMetrics?.playerCasualtyRate),
+    ).toEqual([1, 0.5, 1 / 3, 0.25, 0.2, 1 / 9]);
+  });
+
+  it("does not recommend extra recruits when the owned army already wins", () => {
+    const candidate: SimulatorCandidate = { key: "warrior" };
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => true,
+      winsWithFormations: () => true,
+      winsWithFormationsAndOrders: () => true,
+      getBattleMetrics: (army) => {
+        const total = [...army.values()].reduce(
+          (sum, count) => sum.add(count),
+          ExpNumber.ZERO,
+        );
+        return {
+          playerCasualties: ExpNumber.ONE,
+          enemyCasualties: ExpNumber.ONE,
+          playerCasualtyRate: 1 / total.toNumber(),
+          enemyCasualtyRate: 1,
+        };
+      },
+    };
+
+    const result = optimizeBattleTactics(
+      marathon,
+      [candidate],
+      context,
+      false,
+      new Map([["warrior", ExpNumber.ONE]]),
+      new Map(),
+      new Map(),
+      ["standard"],
+      ["standard"],
+    );
+
+    if (!result) throw new Error("Expected the owned army to win");
+    expect(result.composition.size).toBe(0);
+    expect(result.alternatives).toHaveLength(0);
+  });
+
   it("optimizes formations for owned units as well as recruits", () => {
     const context: BattleSimulatorContext = {
       getCost: (_unitId, count) => [
@@ -266,6 +620,48 @@ describe("optimizeBattleTactics iteration", () => {
 
     expect(result?.composition.get("legionary")).toBe(1);
     expect(result?.formations.get("hoplite")).toBe("turtle");
+  });
+
+  it("finds a cheaper army that needs two formation changes together", () => {
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army, formations) => {
+        const recruits = army.get("legionary") ?? ExpNumber.ZERO;
+        const hasFormationSynergy =
+          formations.get("warrior") === "frontline" &&
+          formations.get("slinger") === "backline";
+        const required = hasFormationSynergy ? 1 : 2;
+        return recruits.gte(ExpNumber.fromNumber(required));
+      },
+    };
+    const result = optimizeBattleTactics(
+      marathon,
+      [{ key: "legionary" }],
+      context,
+      false,
+      new Map([
+        ["warrior", ExpNumber.ONE],
+        ["slinger", ExpNumber.ONE],
+      ]),
+      new Map(),
+      new Map(),
+      ["standard", "frontline", "backline"],
+      ["standard"],
+    );
+
+    expect(result?.composition.get("legionary")).toBe(1);
+    expect(result?.formations.get("warrior")).toBe("frontline");
+    expect(result?.formations.get("slinger")).toBe("backline");
   });
 
   it("prices recruited units with the same cumulative cost curve as the engine", () => {
@@ -405,5 +801,61 @@ describe("optimizeBattleTactics iteration", () => {
     expect(
       result.totalComposition.get("warrior")?.gte(ExpNumber.fromNumber(3)),
     ).toBe(true);
+  });
+
+  it("proves the cheapest winning army within the selected roster", async () => {
+    const candidate: SimulatorCandidate = { key: "warrior" };
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army, formations) => {
+        const count = army.get("warrior") ?? ExpNumber.ZERO;
+        return formations.get("warrior") === "turtle"
+          ? count.gte(ExpNumber.fromNumber(2))
+          : count.gte(ExpNumber.fromNumber(3));
+      },
+    };
+    const initial: SimulatorResult = {
+      composition: new Map([["warrior", 4]]),
+      totalComposition: new Map([["warrior", ExpNumber.fromNumber(4)]]),
+      military: ExpNumber.fromNumber(4),
+      totalCost: [
+        { resource: "military", base: ExpNumber.fromNumber(4) },
+      ],
+      research: { ids: [], costs: [] },
+      formations: new Map([["warrior", "standard"]]),
+      orders: new Map([["warrior", "standard"]]),
+    };
+    const progress: number[] = [];
+
+    const result = await proveMinimumMilitaryWinner(
+      marathon,
+      [candidate],
+      context,
+      new Map(),
+      ["standard", "turtle"],
+      initial,
+      (plan: SimulatorResult) => progress.push(plan.composition.get("warrior") ?? 0),
+      async () => {},
+    );
+
+    expect(result.composition.get("warrior")).toBe(2);
+    expect(result.formations.get("warrior")).toBe("turtle");
+    expect(result.searchStats?.proofStatus).toBe("proven");
+    expect(result.searchStats?.armyCompositionsTested).toBe(3);
+    // Each composition: 1 seeded (standard) + 1 new doctrine (turtle) = 2 per composition.
+    // Standard doctrine is deduped since seeded tactic is already standard.
+    // 3 compositions × 2 tactics = 6 tactical setups total.
+    expect(result.searchStats?.tacticalSetupsTested).toBe(6);
+    expect(progress).toContain(2);
   });
 });

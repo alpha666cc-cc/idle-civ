@@ -8,7 +8,10 @@
  */
 import { ExpNumber } from "./expNumber";
 import { calculateCostSeries, type CostParameters } from "./buyableCost";
-import { simulateBattleOutcome } from "./battle";
+import {
+  simulateBattleOutcome,
+  simulateBattleSummary,
+} from "./battle";
 import type { ArmyStack } from "./battle";
 import type { FormationId } from "./formations";
 import { DEFAULT_FORMATION } from "./formations";
@@ -16,12 +19,17 @@ import type { OrderId } from "./orders";
 import { DEFAULT_ORDER } from "./orders";
 import {
   optimizeBattleTactics,
+  proveMinimumMilitaryWinner,
+  solveMinimumArmy,
   type SimulatorArmy,
   type SimulatorOwnedArmy,
   type SimulatorTotalArmy,
   type BattleSimulatorContext,
   type SimulatorCandidate,
   type SimulatorCostTotal,
+  type SimulatorBattleMetrics,
+  type SimulatorPlan,
+  type SimulatorResult,
 } from "./battleSimulator";
 import type { ResourceKey } from "./attributes";
 
@@ -73,6 +81,13 @@ export type WorkerInput = {
   candidateIds: string[];
   /** Candidates with exact unit-cost curve parameters. */
   candidateCosts: [string, SerializedCostParameters[]][];
+  /** Unbought unlock-research IDs associated with each available unit. */
+  candidateResearchIds: Record<string, string[]>;
+  /** Sequential research cost curves indexed by required unique tech count. */
+  researchCostsByCount: {
+    resource: ResourceKey;
+    base: SerializedExpNumber;
+  }[][];
   /** Currently owned army counts. */
   ownedArmy: [string, SerializedExpNumber][];
   /** Fully serialised enemy stacks for the battle. */
@@ -84,7 +99,7 @@ export type WorkerInput = {
   currentOrders?: [string, OrderId][];
 };
 
-export type SerializedSimulatorResult = {
+export type SerializedSimulatorPlan = {
   composition: [string, number][];
   totalComposition: [string, SerializedExpNumber][];
   military: SerializedExpNumber;
@@ -92,6 +107,19 @@ export type SerializedSimulatorResult = {
   research: { ids: string[]; costs: { resource: string; base: SerializedExpNumber }[] };
   formations: [string, FormationId][];
   orders: [string, OrderId][];
+};
+
+export type SerializedSimulatorResult = SerializedSimulatorPlan & {
+  alternatives?: SerializedSimulatorPlan[];
+  searchStats?: {
+    tacticTests: number;
+    armyRefinementTests: number;
+    paretoPlansFound: number;
+    paretoPlansTruncated: boolean;
+    proofStatus?: "searching" | "proven" | "cancelled" | "failed";
+    armyCompositionsTested?: number;
+    tacticalSetupsTested?: number;
+  };
 };
 
 export type WorkerOutput =
@@ -128,6 +156,10 @@ const serializeResult = (
   totalCost: readonly SimulatorCostTotal[],
   formations: ReadonlyMap<string, FormationId>,
   orders: ReadonlyMap<string, OrderId>,
+  extras?: Pick<
+    SimulatorResult,
+    "alternatives" | "searchStats"
+  >,
 ): SerializedSimulatorResult => ({
   composition: [...composition.entries()],
   totalComposition: [...totalComposition.entries()].map(([id, n]) => [id, serExp(n)]),
@@ -136,6 +168,32 @@ const serializeResult = (
   research: { ids: [], costs: [] }, // filled in on the main thread from the result
   formations: [...formations.entries()],
   orders: [...orders.entries()],
+  ...(extras?.alternatives
+    ? { alternatives: extras.alternatives.map(serializePlan) }
+    : {}),
+  ...(extras?.searchStats ? { searchStats: extras.searchStats } : {}),
+});
+
+const serializePlan = (plan: SimulatorPlan): SerializedSimulatorPlan => ({
+  composition: [...plan.composition.entries()],
+  totalComposition: [...plan.totalComposition.entries()].map(([id, n]) => [
+    id,
+    serExp(n),
+  ]),
+  military: serExp(plan.military),
+  totalCost: plan.totalCost.map(({ resource, base }) => ({
+    resource,
+    base: serExp(base),
+  })),
+  research: {
+    ids: [...plan.research.ids],
+    costs: plan.research.costs.map(({ resource, base }) => ({
+      resource,
+      base: serExp(base),
+    })),
+  },
+  formations: [...plan.formations.entries()],
+  orders: [...plan.orders.entries()],
 });
 
 // ---------------------------------------------------------------------------
@@ -152,6 +210,8 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
     candidateStats,
     candidateIds,
     candidateCosts,
+    candidateResearchIds,
+    researchCostsByCount,
     ownedArmy: rawOwned,
     enemyStacks: rawEnemy,
     availableFormations,
@@ -238,6 +298,51 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
       return simulateBattleOutcome(playerStacks, enemyStacks) === "player";
     };
 
+    const getBattleMetrics = (
+      total: SimulatorTotalArmy,
+      formations: ReadonlyMap<string, FormationId>,
+      orders: ReadonlyMap<string, OrderId>,
+      _battleId: string,
+    ): SimulatorBattleMetrics => {
+      const playerStacks = buildStacks(total, allStats, formations, orders);
+      const simulation = simulateBattleSummary(playerStacks, enemyStacks);
+      const playerInitial = playerStacks.reduce(
+        (sum, stack) => sum.add(stack.count),
+        ExpNumber.ZERO,
+      );
+      const enemyInitial = enemyStacks.reduce(
+        (sum, stack) => sum.add(stack.count),
+        ExpNumber.ZERO,
+      );
+      const playerCasualties = ExpNumber.max(
+        ExpNumber.ZERO,
+        playerInitial.sub(simulation.playerSurvivors),
+      );
+      const enemyCasualties = ExpNumber.max(
+        ExpNumber.ZERO,
+        enemyInitial.sub(simulation.enemySurvivors),
+      );
+      const percentage = (casualties: ExpNumber, initial: ExpNumber): number =>
+        initial.isZero
+          ? 0
+          : Math.min(
+              100,
+              Math.max(
+                0,
+                casualties
+                  .div(initial)
+                  .mul(ExpNumber.fromNumber(100))
+                  .toNumber(),
+              ),
+            );
+      return {
+        playerCasualties,
+        enemyCasualties,
+        playerCasualtyRate: percentage(playerCasualties, playerInitial),
+        enemyCasualtyRate: percentage(enemyCasualties, enemyInitial),
+      };
+    };
+
     const context: BattleSimulatorContext = {
       getCost: (unitId, count) => {
         return calculateCostSeries(
@@ -253,38 +358,34 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
         winsWithFormations(composition, formations, battleId),
       winsWithFormationsAndOrders: (composition, formations, orders, _bid) =>
         winsWithFormationsAndOrders(composition, formations, orders, battleId),
-      getResearch: () => ({ ids: [], costs: [] }),
+      getBattleMetrics,
+      getResearch: (unitIds) => {
+        const ids = [
+          ...new Set(
+            unitIds.flatMap((unitId) => candidateResearchIds[unitId] ?? []),
+          ),
+        ];
+        return {
+          ids,
+          costs: ids.length
+            ? (researchCostsByCount[ids.length - 1] ?? []).map(
+                ({ resource, base }) => ({
+                  resource,
+                  base: deserExp(base),
+                }),
+              )
+            : [],
+        };
+      },
     };
 
     const candidateDefs: SimulatorCandidate[] = candidateIds.map((key) => ({
       key,
     }));
 
-    // Step 0: Check if the player's current army with their CURRENT formations & orders already wins
+    // Test current tactics first, but still search alternatives for cheaper wins.
     const currentFormationsMap = new Map<string, FormationId>(currentFormations ?? []);
     const currentOrdersMap = new Map<string, OrderId>(currentOrders ?? []);
-    if (
-      ownedArmy.size > 0 &&
-      winsWithFormationsAndOrders(
-        ownedArmy,
-        currentFormationsMap,
-        currentOrdersMap,
-        battleId,
-      )
-    ) {
-      post({
-        type: "done",
-        result: serializeResult(
-          new Map(),
-          ownedArmy,
-          ExpNumber.ZERO,
-          [],
-          currentFormationsMap,
-          currentOrdersMap,
-        ),
-      });
-      return;
-    }
 
     post({ type: "progress", phase: "Solving under current tactics…" });
     await tick();
@@ -295,7 +396,69 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
     });
     await tick();
 
-    const result = optimizeBattleTactics(
+    const defaultFormations = new Map(
+      [...candidateIds, ...ownedArmy.keys()].map((unitId) => [
+        unitId,
+        DEFAULT_FORMATION,
+      ]),
+    );
+    const defaultOrders = new Map(
+      [...candidateIds, ...ownedArmy.keys()].map((unitId) => [
+        unitId,
+        DEFAULT_ORDER,
+      ]),
+    );
+    let firstWin = solveMinimumArmy(
+      battleId,
+      candidateDefs,
+      context,
+      requireMixed,
+      ownedArmy,
+      currentFormationsMap,
+      currentOrdersMap,
+    );
+    if (!firstWin) {
+      firstWin = solveMinimumArmy(
+        battleId,
+        candidateDefs,
+        context,
+        requireMixed,
+        ownedArmy,
+        defaultFormations,
+        defaultOrders,
+      );
+    }
+
+    if (firstWin) {
+      post({
+        type: "progress",
+        phase: "Winning plan found; refining the cost ceiling…",
+        result: serializeResult(
+          firstWin.composition,
+          firstWin.totalComposition,
+          firstWin.military,
+          firstWin.totalCost,
+          firstWin.formations,
+          firstWin.orders,
+          {
+            ...firstWin,
+            alternatives: [],
+            searchStats: {
+              tacticTests: 0,
+              armyRefinementTests: 0,
+              paretoPlansFound: 1,
+              paretoPlansTruncated: false,
+              proofStatus: "searching",
+              armyCompositionsTested: 0,
+              tacticalSetupsTested: 0,
+            },
+          },
+        ),
+      });
+      await tick();
+    }
+
+    const refined = optimizeBattleTactics(
       battleId,
       candidateDefs,
       context,
@@ -305,31 +468,76 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
       currentOrdersMap,
       availableFormations,
       availableOrders,
-      (intermediate, phase) =>
-        post({
-          type: "progress",
-          phase,
-          result: serializeResult(
-            intermediate.composition,
-            intermediate.totalComposition,
-            intermediate.military,
-            intermediate.totalCost,
-            intermediate.formations,
-            intermediate.orders,
-          ),
-        }),
     );
+    const result = refined ?? firstWin;
+    if (result) {
+      post({
+        type: "progress",
+        phase: "Proving the lowest military-cost winning plan…",
+        result: serializeResult(
+          result.composition,
+          result.totalComposition,
+          result.military,
+          result.totalCost,
+          result.formations,
+          result.orders,
+          {
+            ...result,
+            alternatives: [],
+            searchStats: {
+              tacticTests: 0,
+              armyRefinementTests: 0,
+              paretoPlansFound: 1,
+              paretoPlansTruncated: false,
+              proofStatus: "searching",
+              armyCompositionsTested: 0,
+              tacticalSetupsTested: 0,
+            },
+          },
+        ),
+      });
+      await tick();
+    }
+
+    const proven = result
+      ? await proveMinimumMilitaryWinner(
+          battleId,
+          candidateDefs,
+          context,
+          ownedArmy,
+          availableFormations,
+          result,
+          (intermediate, armyCompositionsTested, tacticalSetupsTested) =>
+            post({
+              type: "progress",
+              phase:
+                `Proving minimum military cost: ${armyCompositionsTested} ` +
+                `armies, ${tacticalSetupsTested} tactic setups tested…`,
+              result: serializeResult(
+                intermediate.composition,
+                intermediate.totalComposition,
+                intermediate.military,
+                intermediate.totalCost,
+                intermediate.formations,
+                intermediate.orders,
+                intermediate,
+              ),
+            }),
+          tick,
+        )
+      : null;
 
     post({
       type: "done",
-      result: result
+      result: proven
         ? serializeResult(
-            result.composition,
-            result.totalComposition,
-            result.military,
-            result.totalCost,
-            result.formations,
-            result.orders,
+            proven.composition,
+            proven.totalComposition,
+            proven.military,
+            proven.totalCost,
+            proven.formations,
+            proven.orders,
+            proven,
           )
         : null,
     });

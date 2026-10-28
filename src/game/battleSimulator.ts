@@ -29,7 +29,13 @@ export type SimulatorResearch = {
   readonly ids: readonly string[];
   readonly costs: readonly SimulatorCostTotal[];
 };
-export type SimulatorResult = {
+export type SimulatorBattleMetrics = {
+  readonly playerCasualties: ExpNumber;
+  readonly enemyCasualties: ExpNumber;
+  readonly playerCasualtyRate: number;
+  readonly enemyCasualtyRate: number;
+};
+export type SimulatorPlan = {
   /** Additional recruits only; the player's current army is not charged again. */
   readonly composition: SimulatorArmy;
   /** Full army used to test the battle, including currently owned units. */
@@ -37,10 +43,24 @@ export type SimulatorResult = {
   readonly military: ExpNumber;
   readonly totalCost: readonly SimulatorCostTotal[];
   readonly research: SimulatorResearch;
+  readonly battleMetrics?: SimulatorBattleMetrics;
   /** Optimal formation per unit type for this battle. */
   readonly formations: ReadonlyMap<string, FormationId>;
   /** Optimal targeting order per unit type for this battle. */
   readonly orders: ReadonlyMap<string, OrderId>;
+};
+export type SimulatorResult = SimulatorPlan & {
+  /** Other non-dominated winning plans found during the bounded search. */
+  readonly alternatives?: readonly SimulatorPlan[];
+  readonly searchStats?: {
+    readonly tacticTests: number;
+    readonly armyRefinementTests: number;
+    readonly paretoPlansFound: number;
+    readonly paretoPlansTruncated: boolean;
+    readonly proofStatus?: "searching" | "proven" | "cancelled" | "failed";
+    readonly armyCompositionsTested?: number;
+    readonly tacticalSetupsTested?: number;
+  };
 };
 export type SimulatorCandidate = Pick<UnitDefinition, "key">;
 export type SimulatorProgress = (
@@ -64,6 +84,12 @@ export type BattleSimulatorContext = {
     orders: ReadonlyMap<string, OrderId>,
     battleId: string,
   ) => boolean;
+  getBattleMetrics?: (
+    composition: SimulatorTotalArmy,
+    formations: ReadonlyMap<string, FormationId>,
+    orders: ReadonlyMap<string, OrderId>,
+    battleId: string,
+  ) => SimulatorBattleMetrics;
 };
 
 /** Buyable units of the battle's age and the previous age. */
@@ -94,6 +120,11 @@ export const mergeSimulatorArmy = (
 
 const maximumProbe = 10_000_000;
 const maximumPasses = 3;
+const maximumPairedFormationTrials = 128;
+const maximumParetoPlans = 12;
+const armyRefinementScales = [1.25, 1.5, 2, 4];
+const armyReinforcementSteps = [1, 2, 4, 8];
+const maximumArmyRefinementTrials = 128;
 
 /** New unit types in a proposal are the ones absent from the current army. */
 const additionalUnitIds = (
@@ -111,6 +142,414 @@ const militaryOf = (costs: readonly SimulatorCostTotal[]): ExpNumber => {
   }
   return total;
 };
+
+const planCostsByResource = (plan: SimulatorPlan): Map<ResourceKey, ExpNumber> => {
+  const costs = new Map<ResourceKey, ExpNumber>();
+  for (const { resource, base } of [...plan.totalCost, ...plan.research.costs]) {
+    costs.set(resource, (costs.get(resource) ?? ExpNumber.ZERO).add(base));
+  }
+  return costs;
+};
+
+const totalMilitaryCost = (plan: SimulatorPlan): ExpNumber =>
+  planCostsByResource(plan).get("military") ?? ExpNumber.ZERO;
+
+const comparePlanCosts = (
+  left: SimulatorPlan,
+  right: SimulatorPlan,
+): number => {
+  const leftCosts = planCostsByResource(left);
+  const rightCosts = planCostsByResource(right);
+  const resources = [...new Set([...leftCosts.keys(), ...rightCosts.keys()])]
+    .sort();
+  for (const resource of resources) {
+    const comparison = (leftCosts.get(resource) ?? ExpNumber.ZERO).compareTo(
+      rightCosts.get(resource) ?? ExpNumber.ZERO,
+    );
+    if (comparison !== 0) return comparison;
+  }
+  return 0;
+};
+
+const orderByMilitaryCost = (
+  plans: readonly SimulatorPlan[],
+): SimulatorPlan[] =>
+  [...plans].sort(
+    (left, right) =>
+      totalMilitaryCost(left).compareTo(totalMilitaryCost(right)) ||
+      comparePlanCosts(left, right),
+  );
+
+const sampleParetoPlans = (
+  orderedPlans: readonly SimulatorPlan[],
+  limit: number,
+): SimulatorPlan[] => {
+  if (orderedPlans.length <= limit) return [...orderedPlans];
+  if (limit <= 1) return [orderedPlans[0]];
+  return Array.from({ length: limit }, (_, index) => {
+    const sampleIndex = Math.floor(
+      (index * (orderedPlans.length - 1)) / (limit - 1),
+    );
+    return orderedPlans[sampleIndex];
+  });
+};
+
+export type SimulatorProofProgress = (
+  result: SimulatorResult,
+  armyCompositionsTested: number,
+  tacticalSetupsTested: number,
+) => void;
+
+const minimumMilitaryCost = (
+  composition: SimulatorArmy,
+  context: BattleSimulatorContext,
+): ExpNumber => compositionCost(composition, context);
+
+/**
+ * Exhaustively prove the minimum military-cost winner within the selected
+ * candidate roster and available tactics. The first winner supplies a finite
+ * military-cost ceiling; every composition below it is enumerated.
+ *
+ * Tactical proof uses doctrine-based evaluation (O(doctrines) per composition)
+ * instead of an exhaustive per-unit cross-product (O((F×O)^N)), which is
+ * intractable for armies with many unit types.
+ */
+export const proveMinimumMilitaryWinner = async (
+  battleId: string,
+  candidates: readonly SimulatorCandidate[],
+  context: BattleSimulatorContext,
+  ownedArmy: SimulatorOwnedArmy,
+  availableFormations: readonly FormationId[],
+  initialResult: SimulatorResult,
+  onProgress: SimulatorProofProgress,
+  yieldToWorker: () => Promise<void>,
+): Promise<SimulatorResult> => {
+  let bestResult = initialResult;
+  let bestCost = minimumMilitaryCost(initialResult.composition, context);
+  let armyCompositionsTested = 0;
+  let tacticalSetupsTested = 0;
+  let setupsSinceYield = 0;
+  const allUnitIds = [
+    ...new Set([
+      ...candidates.map(({ key }) => key),
+      ...[...ownedArmy]
+        .filter(([, count]) => count.gt(ExpNumber.ZERO))
+        .map(([unitId]) => unitId),
+    ]),
+  ];
+
+  // Build the fixed set of doctrine tactic maps to test per composition.
+  // This replaces the per-unit cross-product (O((F×O)^N)) with O(doctrines).
+  const proofDoctrines: TacticalDoctrine[] = ["standard"];
+  if (
+    availableFormations.includes("rush") &&
+    availableFormations.includes("frontline")
+  ) {
+    proofDoctrines.push("shock");
+  }
+  if (
+    availableFormations.includes("rush") ||
+    availableFormations.includes("frontline")
+  ) {
+    proofDoctrines.push("rush");
+  }
+  if (availableFormations.includes("turtle")) proofDoctrines.push("turtle");
+  if (
+    availableFormations.includes("frontline") &&
+    availableFormations.includes("backline")
+  ) {
+    proofDoctrines.push("frontline");
+  }
+  // Seed with the best tactic found during optimizeBattleTactics.
+  const seededFormations = new Map(initialResult.formations);
+  const seededOrders = new Map(initialResult.orders);
+
+  const reportProgress = (): void => {
+    onProgress(
+      {
+        ...bestResult,
+        alternatives: [],
+        searchStats: {
+          tacticTests: tacticalSetupsTested,
+          armyRefinementTests: 0,
+          paretoPlansFound: 1,
+          paretoPlansTruncated: false,
+          proofStatus: "searching",
+          armyCompositionsTested,
+          tacticalSetupsTested,
+        },
+      },
+      armyCompositionsTested,
+      tacticalSetupsTested,
+    );
+  };
+
+  if (bestCost.isZero) {
+    const proven = {
+      ...bestResult,
+      alternatives: [],
+      searchStats: {
+        tacticTests: 0,
+        armyRefinementTests: 0,
+        paretoPlansFound: 1,
+        paretoPlansTruncated: false,
+        proofStatus: "proven" as const,
+        armyCompositionsTested: 1,
+        tacticalSetupsTested: 0,
+      },
+    };
+    return proven;
+  }
+
+  const militaryCostAt = (unitId: string, count: number): ExpNumber =>
+    militaryOf(context.getCost(unitId, count));
+  const maximumCountFor = (unitId: string): number => {
+    const first = militaryCostAt(unitId, 1);
+    if (first.lte(ExpNumber.ZERO)) {
+      throw new Error(
+        `Cannot prove a finite search: ${unitId} has no positive military cost.`,
+      );
+    }
+    let low = 0;
+    let high = 1;
+    while (militaryCostAt(unitId, high).lte(bestCost)) {
+      low = high;
+      if (high === Number.MAX_SAFE_INTEGER) {
+        throw new Error(
+          `Cannot prove a finite search: ${unitId} exceeds the safe integer count range.`,
+        );
+      }
+      high = Math.min(Number.MAX_SAFE_INTEGER, high * 2);
+    }
+    while (low < high - 1) {
+      const middle = low + Math.ceil((high - low) / 2);
+      if (militaryCostAt(unitId, middle).lte(bestCost)) low = middle;
+      else high = middle;
+    }
+    return low;
+  };
+
+  const limits = new Map(
+    candidates.map(({ key }) => [key, maximumCountFor(key)]),
+  );
+
+  /**
+   * Test a tactic assignment against the given total composition.
+   * Updates bestResult if it wins and costs less than the current best.
+   */
+  const tryTactic = async (
+    composition: SimulatorArmy,
+    armyCost: ExpNumber,
+    totalComposition: SimulatorTotalArmy,
+    tacticsFormations: ReadonlyMap<string, FormationId>,
+    tacticsOrders: ReadonlyMap<string, OrderId>,
+  ): Promise<void> => {
+    tacticalSetupsTested += 1;
+    setupsSinceYield += 1;
+    if (
+      context.winsWithFormationsAndOrders(
+        totalComposition,
+        tacticsFormations,
+        tacticsOrders,
+        battleId,
+      ) &&
+      armyCost.lt(bestCost)
+    ) {
+      bestCost = armyCost;
+      bestResult = {
+        composition: new Map(composition),
+        totalComposition,
+        military: armyCost,
+        totalCost: sumCosts(composition, context),
+        research: context.getResearch(
+          additionalUnitIds(ownedArmy, composition),
+        ),
+        formations: new Map(tacticsFormations),
+        orders: new Map(tacticsOrders),
+      };
+      reportProgress();
+      await yieldToWorker();
+      setupsSinceYield = 0;
+    } else if (setupsSinceYield >= 256) {
+      reportProgress();
+      await yieldToWorker();
+      setupsSinceYield = 0;
+    }
+  };
+
+  const defaultOrders = new Map<string, OrderId>(
+    allUnitIds.map((unitId) => [unitId, DEFAULT_ORDER]),
+  );
+
+  // Serialize a tactic map for deduplication.
+  const serializeTactic = (
+    tacticsFormations: ReadonlyMap<string, FormationId>,
+    tacticsOrders: ReadonlyMap<string, OrderId>,
+  ): string =>
+    allUnitIds
+      .map((id) => `${id}:${tacticsFormations.get(id) ?? DEFAULT_FORMATION}:${tacticsOrders.get(id) ?? DEFAULT_ORDER}`)
+      .join(",");
+  const seededKey = serializeTactic(seededFormations, seededOrders);
+
+  const assignments = async (
+    composition: SimulatorArmy,
+    armyCost: ExpNumber,
+  ): Promise<void> => {
+    const totalComposition = mergeSimulatorArmy(ownedArmy, composition);
+    const triedKeys = new Set<string>();
+
+    // Try the seeded (optimized) tactic first — most likely to win.
+    triedKeys.add(seededKey);
+    await tryTactic(
+      composition,
+      armyCost,
+      totalComposition,
+      seededFormations,
+      seededOrders,
+    );
+
+    // Then try each macro doctrine, skipping duplicates of the seeded tactic.
+    for (const doctrine of proofDoctrines) {
+      const docFormations = buildDoctrineFormations(
+        allUnitIds,
+        doctrine,
+        availableFormations,
+      );
+      const docKey = serializeTactic(docFormations, defaultOrders);
+      if (triedKeys.has(docKey)) continue;
+      triedKeys.add(docKey);
+      await tryTactic(
+        composition,
+        armyCost,
+        totalComposition,
+        docFormations,
+        defaultOrders,
+      );
+    }
+
+    armyCompositionsTested += 1;
+  };
+  const composition = new Map<string, number>();
+  const asyncEnumerate = async (
+    index: number,
+    armyCost: ExpNumber,
+  ): Promise<void> => {
+    if (!armyCost.lt(bestCost)) return;
+    if (index === candidates.length) {
+      await assignments(composition, armyCost);
+      return;
+    }
+    const { key } = candidates[index];
+    const maximum = limits.get(key) ?? 0;
+    for (let count = 0; count <= maximum; count += 1) {
+      const next = new Map(composition);
+      if (count > 0) next.set(key, count);
+      const nextCost = minimumMilitaryCost(next, context);
+      if (!nextCost.lt(bestCost)) break;
+      if (count > 0) composition.set(key, count);
+      await asyncEnumerate(index + 1, nextCost);
+      composition.delete(key);
+    }
+  };
+
+  await asyncEnumerate(0, ExpNumber.ZERO);
+  return {
+    ...bestResult,
+    alternatives: [],
+    searchStats: {
+      tacticTests: tacticalSetupsTested,
+      armyRefinementTests: 0,
+      paretoPlansFound: 1,
+      paretoPlansTruncated: false,
+      proofStatus: "proven",
+      armyCompositionsTested,
+      tacticalSetupsTested,
+    },
+  };
+};
+
+const samePlanCosts = (left: SimulatorPlan, right: SimulatorPlan): boolean => {
+  const leftCosts = planCostsByResource(left);
+  const rightCosts = planCostsByResource(right);
+  const resources = new Set([...leftCosts.keys(), ...rightCosts.keys()]);
+  return [...resources].every((resource) =>
+    (leftCosts.get(resource) ?? ExpNumber.ZERO).eq(
+      rightCosts.get(resource) ?? ExpNumber.ZERO,
+    ),
+  );
+};
+
+const tacticDeviationCount = (plan: SimulatorPlan): number => {
+  const activeUnits = new Set(plan.totalComposition.keys());
+  return (
+    [...plan.formations].filter(
+      ([unitId, formation]) =>
+        activeUnits.has(unitId) && formation !== DEFAULT_FORMATION,
+    ).length +
+    [...plan.orders].filter(
+      ([unitId, order]) =>
+        activeUnits.has(unitId) && order !== DEFAULT_ORDER,
+    ).length
+  );
+};
+
+const formationOutcomeIsBetter = (
+  left: SimulatorPlan,
+  right: SimulatorPlan,
+): boolean => {
+  const leftCasualties = left.battleMetrics?.playerCasualtyRate;
+  const rightCasualties = right.battleMetrics?.playerCasualtyRate;
+  if (
+    leftCasualties !== undefined &&
+    rightCasualties !== undefined &&
+    leftCasualties !== rightCasualties
+  ) {
+    return leftCasualties < rightCasualties;
+  }
+  return tacticDeviationCount(left) < tacticDeviationCount(right);
+};
+
+const battleMetricsAreBetter = (
+  left: SimulatorBattleMetrics | undefined,
+  right: SimulatorBattleMetrics | undefined,
+): boolean => {
+  if (!left || !right) return false;
+  return (
+    left.enemyCasualtyRate > right.enemyCasualtyRate ||
+    (left.enemyCasualtyRate === right.enemyCasualtyRate &&
+      left.playerCasualtyRate < right.playerCasualtyRate)
+  );
+};
+
+const planIsBetter = (
+  left: SimulatorPlan,
+  right: SimulatorPlan,
+  context: BattleSimulatorContext,
+): boolean => {
+  const leftCost = compositionCost(left.composition, context);
+  const rightCost = compositionCost(right.composition, context);
+  return (
+    leftCost.lt(rightCost) ||
+    (leftCost.eq(rightCost) && formationOutcomeIsBetter(left, right))
+  );
+};
+
+const planDominates = (left: SimulatorPlan, right: SimulatorPlan): boolean => {
+  const leftCosts = planCostsByResource(left);
+  const rightCosts = planCostsByResource(right);
+  const resources = new Set([...leftCosts.keys(), ...rightCosts.keys()]);
+  let strictlyBetter = false;
+  for (const resource of resources) {
+    const leftCost = leftCosts.get(resource) ?? ExpNumber.ZERO;
+    const rightCost = rightCosts.get(resource) ?? ExpNumber.ZERO;
+    if (leftCost.gt(rightCost)) return false;
+    if (leftCost.lt(rightCost)) strictlyBetter = true;
+  }
+  return strictlyBetter;
+};
+
+const samePlanKey = (plan: SimulatorPlan): string =>
+  `${[...plan.composition].sort(([left], [right]) => left.localeCompare(right))}|${formatTactics(plan.formations)}|${formatTactics(plan.orders)}`;
 
 /**
  * Find optimal formation assignments for a given army composition.
@@ -548,15 +987,79 @@ const formatTactics = (tactics: ReadonlyMap<string, string>): string =>
   tactics.size === 0
     ? "standard"
     : [...tactics.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
         .map(([unitId, tactic]) => `${unitId}:${tactic}`)
         .join(" ");
 
 /**
  * Alternate between finding the minimum army for fixed tactics and testing
- * recruit formations/orders against progressively larger fractions of it.
- * Keep tactic changes only when trimming recruits lowers their exact cost, then
- * re-solve the minimum army under those tactics.
+ * single tactic changes, then paired formation changes, against progressively
+ * larger fractions of it. Keep changes only when trimming recruits lowers
+ * their exact cost, then re-solve the minimum army under those tactics.
  */
+export type TacticalDoctrine = "standard" | "shock" | "rush" | "turtle" | "frontline";
+
+export const buildDoctrineFormations = (
+  unitIds: readonly string[],
+  doctrine: TacticalDoctrine,
+  availableFormations: readonly FormationId[],
+): Map<string, FormationId> => {
+  const formations = new Map<string, FormationId>();
+  const hasRush = availableFormations.includes("rush");
+  const hasFrontline = availableFormations.includes("frontline");
+  const hasTurtle = availableFormations.includes("turtle");
+  const hasBackline = availableFormations.includes("backline");
+
+  for (const unitId of unitIds) {
+    const def = findUnitDefinition(unitId);
+    const isMelee = (def?.stats.range ?? 1) <= 1;
+    const isTank = isMelee || (def?.tags.includes("infantry") ?? false);
+
+    if (doctrine === "shock") {
+      // Coordinated Shock Assault:
+      // Frontline tanks take frontline (+20% HP, -2 position offset) to absorb and screen.
+      // Strikers / Cavalry / Ranged take rush (+30% attack, 2x speed) to destroy backlines.
+      if (isTank && hasFrontline) {
+        formations.set(unitId, "frontline");
+      } else if (hasRush) {
+        formations.set(unitId, "rush");
+      } else if (hasFrontline) {
+        formations.set(unitId, "frontline");
+      } else {
+        formations.set(unitId, DEFAULT_FORMATION);
+      }
+    } else if (doctrine === "rush") {
+      if (hasRush) {
+        formations.set(unitId, "rush");
+      } else if (hasFrontline) {
+        formations.set(unitId, "frontline");
+      } else {
+        formations.set(unitId, DEFAULT_FORMATION);
+      }
+    } else if (doctrine === "turtle") {
+      if (isTank && hasTurtle) {
+        formations.set(unitId, "turtle");
+      } else if (!isTank && hasBackline) {
+        formations.set(unitId, "backline");
+      } else {
+        formations.set(unitId, DEFAULT_FORMATION);
+      }
+    } else if (doctrine === "frontline") {
+      if (isTank && hasFrontline) {
+        formations.set(unitId, "frontline");
+      } else if (!isTank && hasBackline) {
+        formations.set(unitId, "backline");
+      } else {
+        formations.set(unitId, DEFAULT_FORMATION);
+      }
+    } else {
+      formations.set(unitId, DEFAULT_FORMATION);
+    }
+  }
+
+  return formations;
+};
+
 export const optimizeBattleTactics = (
   battleId: string,
   candidates: readonly SimulatorCandidate[],
@@ -598,6 +1101,23 @@ export const optimizeBattleTactics = (
       ]),
     );
 
+  const withMetrics = (plan: SimulatorPlan): SimulatorResult => {
+    const battleMetrics = context.getBattleMetrics?.(
+      plan.totalComposition,
+      plan.formations,
+      plan.orders,
+      battleId,
+    );
+    return battleMetrics ? { ...plan, battleMetrics } : plan;
+  };
+  const isWinningPlan = (plan: SimulatorPlan): boolean =>
+    context.winsWithFormationsAndOrders(
+      plan.totalComposition,
+      plan.formations,
+      plan.orders,
+      battleId,
+    );
+
   let formations = assignDefaults(
     availableFormations,
     initialFormations,
@@ -632,10 +1152,44 @@ export const optimizeBattleTactics = (
   }
   if (!best) return null;
 
-  let bestResult = best;
+  const paretoPlans: SimulatorPlan[] = [];
+  let paretoPlansTruncated = false;
+  const registerParetoPlan = (plan: SimulatorPlan): void => {
+    if (!isWinningPlan(plan)) return;
+    const key = samePlanKey(plan);
+    if (paretoPlans.some((current) => samePlanKey(current) === key)) return;
+    const equivalentIndex = paretoPlans.findIndex(
+      (current) => samePlanCosts(current, plan),
+    );
+    if (equivalentIndex >= 0) {
+      if (formationOutcomeIsBetter(plan, paretoPlans[equivalentIndex])) {
+        paretoPlans[equivalentIndex] = plan;
+      }
+      return;
+    }
+    if (paretoPlans.some((current) => planDominates(current, plan))) return;
+    for (let index = paretoPlans.length - 1; index >= 0; index -= 1) {
+      if (planDominates(plan, paretoPlans[index])) paretoPlans.splice(index, 1);
+    }
+    paretoPlans.push(plan);
+    if (paretoPlans.length > maximumParetoPlans * 4) {
+      const sampled = sampleParetoPlans(
+        orderByMilitaryCost(paretoPlans),
+        maximumParetoPlans * 4,
+      );
+      paretoPlans.splice(0, paretoPlans.length, ...sampled);
+      paretoPlansTruncated = true;
+    }
+  };
+
+  let bestResult = withMetrics(best);
+  if (!isWinningPlan(bestResult)) return null;
+  registerParetoPlan(bestResult);
   let bestCost = compositionCost(bestResult.composition, context);
   onProgress?.(bestResult, "Minimum army for the current tactics");
+
   let attempts = 0;
+  let exploratoryAttempts = 0;
   const visitedTactics = new Set<string>();
   const tacticKey = (
     currentFormations: ReadonlyMap<string, FormationId>,
@@ -643,6 +1197,63 @@ export const optimizeBattleTactics = (
   ): string =>
     `${formatTactics(currentFormations)}|${formatTactics(currentOrders)}`;
   visitedTactics.add(tacticKey(formations, orders));
+
+  // Evaluate candidate macro doctrines upfront
+  const doctrines: TacticalDoctrine[] = [];
+  if (
+    availableFormations.includes("rush") &&
+    availableFormations.includes("frontline")
+  ) {
+    doctrines.push("shock");
+  }
+  if (
+    availableFormations.includes("rush") ||
+    availableFormations.includes("frontline")
+  ) {
+    doctrines.push("rush");
+  }
+  if (availableFormations.includes("turtle")) {
+    doctrines.push("turtle");
+  }
+  if (
+    availableFormations.includes("frontline") &&
+    availableFormations.includes("backline")
+  ) {
+    doctrines.push("frontline");
+  }
+
+  for (const doc of doctrines) {
+    const docFormations = buildDoctrineFormations(
+      allUnitIds,
+      doc,
+      availableFormations,
+    );
+    const docOrders = assignDefaults(availableOrders, new Map(), DEFAULT_ORDER);
+    const docKey = tacticKey(docFormations, docOrders);
+    if (visitedTactics.has(docKey)) continue;
+    visitedTactics.add(docKey);
+
+    const docSolved = solveMinimumArmy(
+      battleId,
+      candidates,
+      context,
+      requireMixed,
+      ownedArmy,
+      docFormations,
+      docOrders,
+    );
+    if (docSolved) {
+      const docPlan = withMetrics(docSolved);
+      registerParetoPlan(docPlan);
+      if (planIsBetter(docPlan, bestResult, context)) {
+        bestResult = docPlan;
+        formations = new Map(docFormations);
+        orders = new Map(docOrders);
+        bestCost = compositionCost(bestResult.composition, context);
+        onProgress?.(bestResult, `Re-solved army under ${doc} doctrine`);
+      }
+    }
+  }
 
   for (;;) {
     const tacticalUnitIds = [...bestResult.totalComposition.keys()];
@@ -652,12 +1263,57 @@ export const optimizeBattleTactics = (
           readonly formations: ReadonlyMap<string, FormationId>;
           readonly orders: ReadonlyMap<string, OrderId>;
           readonly cost: ExpNumber;
+          readonly plan: SimulatorPlan;
         }
       | undefined;
+    let exploratory:
+      | {
+          readonly formations: ReadonlyMap<string, FormationId>;
+          readonly orders: ReadonlyMap<string, OrderId>;
+          readonly metrics: SimulatorBattleMetrics;
+        }
+      | undefined;
+    const currentTacticMetrics = context.getBattleMetrics?.(
+      bestResult.totalComposition,
+      formations,
+      orders,
+      battleId,
+    );
     const consider = (
       trialFormations: ReadonlyMap<string, FormationId>,
       trialOrders: ReadonlyMap<string, OrderId>,
     ): void => {
+      const trialKey = tacticKey(trialFormations, trialOrders);
+      if (visitedTactics.has(trialKey)) return;
+      const currentArmyWins = context.winsWithFormationsAndOrders(
+        bestResult.totalComposition,
+        trialFormations,
+        trialOrders,
+        battleId,
+      );
+      if (!currentArmyWins) {
+        const metrics = context.getBattleMetrics?.(
+          bestResult.totalComposition,
+          trialFormations,
+          trialOrders,
+          battleId,
+        );
+        if (
+          battleMetricsAreBetter(metrics, currentTacticMetrics) &&
+          (!exploratory ||
+            battleMetricsAreBetter(metrics, exploratory.metrics))
+        ) {
+          if (metrics) {
+            exploratory = {
+              formations: trialFormations,
+              orders: trialOrders,
+              metrics,
+            };
+          }
+        }
+        return;
+      }
+
       let reachesAtFraction = false;
       for (const fraction of [0.5, 0.75, 1]) {
         const probeArmy = new Map<string, ExpNumber>(ownedArmy);
@@ -691,12 +1347,31 @@ export const optimizeBattleTactics = (
         context,
       );
       const cost = compositionCost(trimmed, context);
-      if (cost.lt(bestCost) && (!next || cost.lt(next.cost))) {
+      const totalComposition = mergeSimulatorArmy(ownedArmy, trimmed);
+      const candidatePlan = withMetrics({
+        composition: trimmed,
+        totalComposition,
+        military: cost,
+        totalCost: sumCosts(trimmed, context),
+        research: context.getResearch(
+          additionalUnitIds(ownedArmy, trimmed),
+        ),
+        formations: trialFormations,
+        orders: trialOrders,
+      });
+      if (!isWinningPlan(candidatePlan)) return;
+      registerParetoPlan(candidatePlan);
+      const improvesBest = planIsBetter(candidatePlan, bestResult, context);
+      if (
+        improvesBest &&
+        (!next || planIsBetter(candidatePlan, next.plan, context))
+      ) {
         next = {
           composition: trimmed,
           formations: trialFormations,
           orders: trialOrders,
           cost,
+          plan: candidatePlan,
         };
       }
     };
@@ -722,13 +1397,62 @@ export const optimizeBattleTactics = (
         onProgress?.(bestResult, `Testing ${unitId}: ${order} (${attempts})`);
       }
     }
-    if (!next) break;
+    if (!next) {
+      const formationChanges = tacticalUnitIds.flatMap((unitId) =>
+        availableFormations
+          .filter((formation) => formations.get(unitId) !== formation)
+          .map((formation) => ({ unitId, formation })),
+      );
+      const pairedTrials: {
+        readonly first: (typeof formationChanges)[number];
+        readonly second: (typeof formationChanges)[number];
+      }[] = [];
+      for (let first = 0; first < formationChanges.length; first += 1) {
+        const firstChange = formationChanges[first];
+        for (
+          let second = first + 1;
+          second < formationChanges.length;
+          second += 1
+        ) {
+          const secondChange = formationChanges[second];
+          if (firstChange.unitId === secondChange.unitId) continue;
+          pairedTrials.push({ first: firstChange, second: secondChange });
+        }
+      }
+      const trialCount = Math.min(
+        pairedTrials.length,
+        maximumPairedFormationTrials,
+      );
+      for (let trialIndex = 0; trialIndex < trialCount; trialIndex += 1) {
+        const sampledIndex = Math.floor(
+          (trialIndex * (pairedTrials.length - 1)) /
+            Math.max(1, trialCount - 1),
+        );
+        const { first, second } = pairedTrials[sampledIndex];
+        const trialFormations = new Map(formations);
+        trialFormations.set(first.unitId, first.formation);
+        trialFormations.set(second.unitId, second.formation);
+        attempts += 1;
+        consider(trialFormations, orders);
+        onProgress?.(
+          bestResult,
+          `Testing combination: ${first.unitId} ${first.formation} + ${second.unitId} ${second.formation} (${attempts})`,
+        );
+      }
+    }
+    if (!next && (!exploratory || exploratoryAttempts >= 1)) break;
 
-    const nextKey = tacticKey(next.formations, next.orders);
+    const nextFormations = next?.formations ?? exploratory?.formations;
+    const nextOrders = next?.orders ?? exploratory?.orders;
+    if (!nextFormations || !nextOrders) break;
+    const nextKey = tacticKey(nextFormations, nextOrders);
     if (visitedTactics.has(nextKey)) break;
     visitedTactics.add(nextKey);
-    formations = new Map(next.formations);
-    orders = new Map(next.orders);
+    formations = new Map(nextFormations);
+    orders = new Map(nextOrders);
+    if (!next && exploratory) {
+      exploratoryAttempts += 1;
+    }
     const reSolved = solveMinimumArmy(
       battleId,
       candidates,
@@ -738,20 +1462,19 @@ export const optimizeBattleTactics = (
       formations,
       orders,
     );
-    bestResult =
-      reSolved && compositionCost(reSolved.composition, context).lte(next.cost)
-        ? reSolved
-        : {
-            composition: next.composition,
-            totalComposition: mergeSimulatorArmy(ownedArmy, next.composition),
-            military: next.cost,
-            totalCost: sumCosts(next.composition, context),
-            research: context.getResearch(
-              additionalUnitIds(ownedArmy, next.composition),
-            ),
-            formations,
-            orders,
-          };
+    if (reSolved) {
+      const resolvedPlan = withMetrics(reSolved);
+      if (planIsBetter(resolvedPlan, bestResult, context)) {
+        bestResult = resolvedPlan;
+      } else if (!next) {
+        break;
+      }
+    } else if (next && planIsBetter(next.plan, bestResult, context)) {
+      bestResult = next.plan;
+    } else {
+      break;
+    }
+    registerParetoPlan(bestResult);
     bestCost = compositionCost(bestResult.composition, context);
     onProgress?.(
       bestResult,
@@ -766,10 +1489,107 @@ export const optimizeBattleTactics = (
       formations,
     )}} orders {${formatTactics(orders)}} after ${attempts} tactic trials`,
   );
+  let armyRefinementTests = 0;
+  const refinementCandidates = new Map<
+    string,
+    { readonly composition: SimulatorArmy; readonly basePlan: SimulatorPlan }
+  >();
+  const addRefinementCandidate = (
+    composition: SimulatorArmy,
+    basePlan: SimulatorPlan,
+  ): void => {
+    const compositionKey = [...composition]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([unitId, count]) => `${unitId}:${count}`)
+      .join(",");
+    const key = `${compositionKey}|${formatTactics(basePlan.formations)}|${formatTactics(basePlan.orders)}`;
+    refinementCandidates.set(key, { composition, basePlan });
+  };
+  const refinementPlans = [...paretoPlans].slice(0, maximumParetoPlans);
+  for (const basePlan of refinementPlans) {
+    for (const scale of armyRefinementScales) {
+      const scaled = new Map<string, number>();
+      for (const [unitId, count] of basePlan.composition) {
+        const refinedCount = Math.min(maximumProbe, Math.ceil(count * scale));
+        if (refinedCount > 0) scaled.set(unitId, refinedCount);
+      }
+      if (
+        scaled.size !== basePlan.composition.size ||
+        [...scaled].some(
+          ([unitId, count]) => basePlan.composition.get(unitId) !== count,
+        )
+      ) {
+        addRefinementCandidate(scaled, basePlan);
+      }
+    }
+    for (const { key: unitId } of candidates) {
+      for (const additionalCount of armyReinforcementSteps) {
+        const reinforced = new Map(basePlan.composition);
+        const count = (reinforced.get(unitId) ?? 0) + additionalCount;
+        if (count > maximumProbe) continue;
+        reinforced.set(unitId, count);
+        addRefinementCandidate(reinforced, basePlan);
+      }
+    }
+  }
+
+  const refinementEntries = [...refinementCandidates.values()].slice(
+    0,
+    maximumArmyRefinementTrials,
+  );
+  armyRefinementTests = refinementEntries.length;
+  for (const { composition, basePlan } of refinementEntries) {
+    const totalComposition = mergeSimulatorArmy(ownedArmy, composition);
+    if (
+      !context.winsWithFormationsAndOrders(
+        totalComposition,
+        basePlan.formations,
+        basePlan.orders,
+        battleId,
+      )
+    ) {
+      continue;
+    }
+
+    registerParetoPlan(
+      withMetrics({
+        composition,
+        totalComposition,
+        military: compositionCost(composition, context),
+        totalCost: sumCosts(composition, context),
+        research: context.getResearch(
+          additionalUnitIds(ownedArmy, composition),
+        ),
+        formations: basePlan.formations,
+        orders: basePlan.orders,
+      }),
+    );
+  }
+  registerParetoPlan(bestResult);
+  const nonDominatedPlans = paretoPlans.filter(
+    (plan) =>
+      !paretoPlans.some(
+        (other) => other !== plan && planDominates(other, plan),
+      ),
+  );
+  const orderedParetoPlans = orderByMilitaryCost(nonDominatedPlans);
+  const primaryPlan = orderedParetoPlans[0] ?? bestResult;
+  const bestKey = samePlanKey(primaryPlan);
+  const alternatives = sampleParetoPlans(
+    orderedParetoPlans.filter((plan) => samePlanKey(plan) !== bestKey),
+    maximumParetoPlans,
+  );
+  paretoPlansTruncated =
+    paretoPlansTruncated ||
+    orderedParetoPlans.length > maximumParetoPlans + 1;
   return {
-    ...bestResult,
-    military: bestCost,
-    formations,
-    orders,
+    ...primaryPlan,
+    alternatives,
+    searchStats: {
+      tacticTests: attempts,
+      armyRefinementTests,
+      paretoPlansFound: orderedParetoPlans.length,
+      paretoPlansTruncated,
+    },
   };
 };

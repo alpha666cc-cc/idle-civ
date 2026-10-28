@@ -69,11 +69,13 @@ import BattleSimulatorPanel, {
 } from "./components/BattleSimulatorPanel";
 import {
   simulatorCandidates,
+  type SimulatorPlan,
   type SimulatorResult,
 } from "./game/battleSimulator";
 import type {
   WorkerInput,
   WorkerOutput,
+  SerializedSimulatorPlan,
   SerializedSimulatorResult,
 } from "./game/battleSimulatorWorker";
 import { researchIdsForBattle } from "./game/research";
@@ -458,6 +460,7 @@ function App() {
     import("./game/battleSimulator").SimulatorResult | null
   >(null);
   const [simFailed, setSimFailed] = useState(false);
+  const [simError, setSimError] = useState("");
   const simWorkerRef = useRef<Worker | null>(null);
   const [autosaveIntervalSeconds, setAutosaveIntervalSeconds] =
     useState(loadAutosaveInterval);
@@ -523,46 +526,51 @@ function App() {
 
   /** Deserialise a SerializedSimulatorResult back into a SimulatorResult. */
   const deserializeSimResult = useCallback(
-    (raw: SerializedSimulatorResult, battleId: string): SimulatorResult => {
+    (raw: SerializedSimulatorResult): SimulatorResult => {
       const deserExp = (s: { s: number; m: number; e: number }): ExpNumber =>
         new ExpNumber(s.s, s.m, s.e);
-      // Recompute research from the main-thread game state (not available in worker)
-      const compositionIds = raw.composition.map(([id]) => id);
       const ownedIds = gameState.getArmyStacks().map(({ unitId }) => unitId);
-      const newIds = compositionIds.filter((id) => !ownedIds.includes(id));
-      const research =
-        newIds.length > 0
-          ? gameState.getResearchForUnitTypes(newIds)
-          : { ids: [], costs: [] };
-      // Also recompute totalCost with accurate main-thread costs
-      const composition = new Map(raw.composition);
-      const totalCostMap = new Map<ResourceKey, ExpNumber>();
-      for (const [unitId, count] of composition) {
-        for (const { resource, base } of gameState.getUnitCost(unitId, count)) {
-          totalCostMap.set(
-            resource,
-            (totalCostMap.get(resource) ?? ExpNumber.ZERO).add(base),
-          );
+      const deserializePlan = (plan: SerializedSimulatorPlan): SimulatorPlan => {
+        const compositionIds = plan.composition.map(([id]) => id);
+        const newIds = compositionIds.filter((id) => !ownedIds.includes(id));
+        const research =
+          newIds.length > 0
+            ? gameState.getResearchForUnitTypes(newIds)
+            : { ids: [], costs: [] };
+        const composition = new Map(plan.composition);
+        const totalCostMap = new Map<ResourceKey, ExpNumber>();
+        for (const [unitId, count] of composition) {
+          for (const { resource, base } of gameState.getUnitCost(
+            unitId,
+            count,
+          )) {
+            totalCostMap.set(
+              resource,
+              (totalCostMap.get(resource) ?? ExpNumber.ZERO).add(base),
+            );
+          }
         }
-      }
-      const totalCost = [...totalCostMap.entries()].map(([resource, base]) => ({
-        resource,
-        base,
-      }));
-      // Also recompute military from the accurate cost
-      const military =
-        totalCostMap.get("military" as ResourceKey) ?? ExpNumber.ZERO;
-      void battleId; // used only for staleness key
+        const totalCost = [...totalCostMap.entries()].map(
+          ([resource, base]) => ({ resource, base }),
+        );
+        const military =
+          totalCostMap.get("military" as ResourceKey) ?? ExpNumber.ZERO;
+        return {
+          composition,
+          totalComposition: new Map(
+            plan.totalComposition.map(([id, n]) => [id, deserExp(n)]),
+          ),
+          military,
+          totalCost,
+          research,
+          formations: new Map(plan.formations),
+          orders: new Map(plan.orders),
+        };
+      };
       return {
-        composition,
-        totalComposition: new Map(
-          raw.totalComposition.map(([id, n]) => [id, deserExp(n)]),
-        ),
-        military,
-        totalCost,
-        research,
-        formations: new Map(raw.formations),
-        orders: new Map(raw.orders),
+        ...deserializePlan(raw),
+        alternatives: raw.alternatives?.map(deserializePlan),
+        searchStats: raw.searchStats,
       };
     },
     [gameState],
@@ -590,6 +598,7 @@ function App() {
       }
       setSimResult(null);
       setSimFailed(false);
+      setSimError("");
     },
     [gameState],
   );
@@ -603,13 +612,28 @@ function App() {
     });
     setSimResult(null);
     setSimFailed(false);
+    setSimError("");
   }, []);
 
   const simCancel = useCallback((): void => {
+    const wasRunning = simWorkerRef.current !== null;
     simWorkerRef.current?.terminate();
     simWorkerRef.current = null;
     setSimRunning(false);
     setSimPhase("");
+    if (wasRunning) {
+      setSimResult((current) =>
+        current?.searchStats
+          ? {
+              ...current,
+              searchStats: {
+                ...current.searchStats,
+                proofStatus: "cancelled",
+              },
+            }
+          : current,
+      );
+    }
   }, []);
 
   const simReset = useCallback((): void => {
@@ -618,6 +642,7 @@ function App() {
     setSimSelected(new Set());
     setSimResult(null);
     setSimFailed(false);
+    setSimError("");
   }, [simCancel]);
 
   const simRun = useCallback((): void => {
@@ -738,6 +763,29 @@ function App() {
           })),
       ],
     );
+    const candidateResearchIds: WorkerInput["candidateResearchIds"] =
+      Object.fromEntries(
+        allCandidateIds.map((unitId) => [
+          unitId,
+          gameState.getResearchForUnitTypes([unitId]).ids,
+        ]),
+      );
+    const maximumRequiredResearch = new Set(
+      Object.values(candidateResearchIds).flat(),
+    ).size;
+    const researchCostsByCount: WorkerInput["researchCostsByCount"] =
+      Array.from({ length: maximumRequiredResearch }, (_, index) =>
+        gameState.getResearchCostForCount(index + 1).map(
+          ({ resource, base }) => ({
+            resource,
+            base: {
+              s: base.sign,
+              m: base.mantissa,
+              e: base.exponent,
+            },
+          }),
+        ),
+      );
 
     const availableFormations = gameState.getAvailableFormations() as string[];
     const availableOrders = gameState.getAvailableOrders() as string[];
@@ -749,6 +797,8 @@ function App() {
       candidateStats,
       candidateIds: candidates.map((u) => u.key),
       candidateCosts,
+      candidateResearchIds,
+      researchCostsByCount,
       ownedArmy: [...ownedArmy.entries()].map(([id, n]) => [
         id,
         { s: n.sign, m: n.mantissa, e: n.exponent },
@@ -777,13 +827,16 @@ function App() {
     setSimRunning(true);
     setSimPhase("Starting…");
     setSimArmyKey(currentKey);
+    setSimResult(null);
+    setSimFailed(false);
+    setSimError("");
 
     worker.onmessage = (event: MessageEvent<WorkerOutput>) => {
       const msg = event.data;
       if (msg.type === "progress") {
         setSimPhase(msg.phase);
         if (msg.result) {
-          setSimResult(deserializeSimResult(msg.result, battle.key));
+          setSimResult(deserializeSimResult(msg.result));
           setSimFailed(false);
         }
       } else if (msg.type === "done") {
@@ -791,7 +844,7 @@ function App() {
         setSimPhase("");
         simWorkerRef.current = null;
         if (msg.result) {
-          setSimResult(deserializeSimResult(msg.result, battle.key));
+          setSimResult(deserializeSimResult(msg.result));
           setSimFailed(false);
         } else {
           setSimResult(null);
@@ -800,7 +853,19 @@ function App() {
       } else if (msg.type === "error") {
         console.error("[Battle Simulator Worker]", msg.message);
         setSimRunning(false);
-        setSimPhase("");
+        setSimPhase("Search could not be proven.");
+        setSimError(msg.message);
+        setSimResult((current) =>
+          current?.searchStats
+            ? {
+                ...current,
+                searchStats: {
+                  ...current.searchStats,
+                  proofStatus: "failed",
+                },
+              }
+            : current,
+        );
         simWorkerRef.current = null;
       }
     };
@@ -808,7 +873,19 @@ function App() {
     worker.onerror = (err) => {
       console.error("[Battle Simulator Worker] uncaught error", err);
       setSimRunning(false);
-      setSimPhase("");
+      setSimPhase("Search could not be proven.");
+      setSimError(err.message || "Unknown worker error");
+      setSimResult((current) =>
+        current?.searchStats
+          ? {
+              ...current,
+              searchStats: {
+                ...current.searchStats,
+                proofStatus: "failed",
+              },
+            }
+          : current,
+      );
       simWorkerRef.current = null;
     };
 
@@ -830,6 +907,7 @@ function App() {
     armyKey: simArmyKey,
     result: simCurrentArmyKey === simArmyKey ? simResult : null,
     failed: simCurrentArmyKey === simArmyKey && simFailed,
+    error: simCurrentArmyKey === simArmyKey ? simError : "",
   };
 
   const simPanelActions: SimulatorPanelActions = {

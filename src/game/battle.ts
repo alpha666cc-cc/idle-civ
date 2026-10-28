@@ -692,8 +692,8 @@ const simulateBattleInternal = (
     }
   }
 
-  const playerSurvivors = recordRounds ? totalLiving(player) : ExpNumber.ZERO;
-  const enemySurvivors = recordRounds ? totalLiving(enemy) : ExpNumber.ZERO;
+  const playerSurvivors = totalLiving(player);
+  const enemySurvivors = totalLiving(enemy);
   const playerHolds = hasLiving(player);
   const enemyHolds = hasLiving(enemy);
   const outcome: BattleOutcome =
@@ -713,6 +713,14 @@ export const simulateBattle = (
   options: { maxRounds?: number } = {},
 ): BattleSimulation =>
   simulateBattleInternal(playerStacks, enemyStacks, options, true);
+
+/** Survivor summary for search/scoring without retaining the per-round log. */
+export const simulateBattleSummary = (
+  playerStacks: readonly ArmyStack[],
+  enemyStacks: readonly ArmyStack[],
+  options: { maxRounds?: number } = {},
+): BattleSimulation =>
+  simulateBattleInternal(playerStacks, enemyStacks, options, false);
 
 /** Deterministic win/loss check for strategy search; skips all round-log work. */
 export const simulateBattleOutcome = (
