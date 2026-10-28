@@ -4083,7 +4083,7 @@ export class CivilizationState {
 
   /**
    * Trade routes (Trade tab). A route buys or sells one resource for gold: it asks
-   * for `intensity` of the banked trade power each second, one trade power being one
+   * for `intensity` of the banked trade each second, one trade being one
    * gold of goods, and moves `production(R) / production(gold)` units of the
    * resource for that gold — a tenth of it when buying, the spread. Both legs are
    * capped by what the settlement holds, and both ride the production factors as
@@ -4096,7 +4096,7 @@ export class CivilizationState {
   }
 
   /** Routes currently running, in the order they are served. */
-  /** Trade power income per second — what markets and their boosts produce. */
+  /** Trade income per second — what markets and their boosts produce. */
   getTradePowerRate(): ExpNumber {
     return this.computeResourceRate("trade");
   }
@@ -4172,7 +4172,7 @@ export class CivilizationState {
    * What one second of a route would move, for the Trade tab preview. It is
    * computed from the settings alone, so the card can show it before the route is
    * switched on. `tradePower` is the value the route asks for out of the reserve
-   * (one trade power being one gold of goods), and the two legs are capped by what
+   * (one trade being one gold of goods), and the two legs are capped by what
    * the settlement actually holds — the same numbers the tick will apply.
    */
   getTradeRouteThroughput(resource: TradeResourceKey): {
@@ -4206,8 +4206,8 @@ export class CivilizationState {
   }
 
   /**
-   * What a route asks for each second: its share of the banked trade power, at one
-   * trade power to one gold. The reserve is never spent, so this grows with the
+   * What a route asks for each second: its share of the banked trade, at one
+   * trade to one gold. The reserve is never spent, so this grows with the
    * bank rather than with the income.
    */
   private tradeRouteValue(resource: TradeResourceKey): ExpNumber {

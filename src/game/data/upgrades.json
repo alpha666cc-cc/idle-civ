@@ -3025,7 +3025,7 @@
     "guid": "43c564ee-5074-5096-a547-f47a81995391",
     "key": "wonder_a2_trade",
     "name": "The Thousand-Sail Harbor",
-    "description": "A great harbor sends trade power coursing through the settlement a thousand times faster.",
+    "description": "A great harbor sends trade coursing through the settlement a thousand times faster.",
     "building": "market",
     "threshold": 1000,
     "tier": 0,

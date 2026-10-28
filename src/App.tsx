@@ -218,7 +218,7 @@ const summaryResources: SummaryResource[] = [
   { key: "science", label: "Science", icon: Sparkles, tone: "violet" },
   { key: "military", label: "Military", icon: Swords, tone: "blue" },
   { key: "metalwork", label: "Metalwork", icon: Hammer, tone: "orange" },
-  { key: "trade", label: "Trade power", icon: Store, tone: "purple" },
+  { key: "trade", label: "Trade", icon: Store, tone: "purple" },
 ];
 
 const numberFormatStorageKey = "idle-civ:number-format";

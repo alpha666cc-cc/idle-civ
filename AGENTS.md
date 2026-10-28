@@ -86,9 +86,9 @@ production(gold)` units — a tenth of that when buying, the spread. **Both legs
   (`tradeRoutes`, all configured routes written including disabled ones to preserve
   intensity settings, persisted in `SAVE_VERSION = 6`), the cap on how many run at
   once is the `tradeRoutes` stat (base 1, so an `attributeFlat` bonus opens a further
-  route). Each card shows the whole chain — `<n> trade power → +X food −Y gold per
+  route). Each card shows the whole chain — `<n> trade → +X food −Y gold per
   second`, computed even while the route is off — and the header states the value
-  (1 trade power = 1 gold). The gold card and the old trade-power conversion are gone.
+  (1 trade = 1 gold). The gold card and the old trade conversion are gone.
   **Not yet implemented:** saves, ages, research,
   offline progress (trade routes do not run offline), `attributeDrain`/`costReductionFlat` bonus data, unit
   retirement (old units stay owned and counted in army power), more than one
@@ -378,10 +378,10 @@ Getters: `population` (= `resources.population`), `maximumPopulation` /
 | `computeClickPower()`                               | The global click power stat: base 1, `attributeFlat` bonuses sum, `attributeMultiplier` bonuses compound                                                                                                  |
 | `getAttributeValue(key)`                            | Current value of any attribute: computed for derived stats, stored amount/capacity base otherwise                                                                                                         |
 | `getDerivedAttributeFactors(key)`                   | Base term + every active flat/multiplier bonus targeting a derived attribute, paired with source ids (feeds the Gamepedia stat page)                                                                      |
-| `getTradeRoute(id)` / `setTradeRoute(id, patch)`    | Trade-route settings (on/off, buy/sell, 0–1 intensity share of the trade power bank). Enabling one is refused while every slot is taken; a no-op patch returns `this`                                     |
+| `getTradeRoute(id)` / `setTradeRoute(id, patch)`    | Trade-route settings (on/off, buy/sell, 0–1 intensity share of the trade bank). Enabling one is refused while every slot is taken; a no-op patch returns `this`                                     |
 | `getActiveTradeRoutes()` / `getTradeRouteSlots()`   | The routes running, and how many may (the `tradeRoutes` stat, based at 1 — an `attributeFlat` bonus opens a further slot with no engine change)                                                           |
-| `getTradePrice(id)` / `getTradeRouteThroughput(id)` | The live mid price from the production ratio vs gold (read from `baseProductionFactors`, so a route's own legs cannot price it), and the chain the card shows: banked trade power → goods/gold per second |
-| `getTradePowerRate()`                               | Trade power income per second — what markets and their boosts produce                                                                                                                                     |
+| `getTradePrice(id)` / `getTradeRouteThroughput(id)` | The live mid price from the production ratio vs gold (read from `baseProductionFactors`, so a route's own legs cannot price it), and the chain the card shows: banked trade → goods/gold per second |
+| `getTradePowerRate()`                               | Trade income per second — what markets and their boosts produce                                                                                                                                     |
 | `buyUpgrade(id)`                                    | No-op unless unlocked and affordable; pays the cost and appends the id                                                                                                                                    |
 | `defeatEncounter(id)`                               | Idempotent; appends the encounter id and records the fastest victory time                                                                                                                                 |
 | `enterAge(id)`                                      | Idempotent; appends the age id and records the fastest entry time                                                                                                                                         |

@@ -61,7 +61,7 @@
   {
     "id": "turtle",
     "name": "Turtle",
-    "description": "Defensive formation: trades attack and speed for hp, and takes 50% less damage from ranged attackers.",
+    "description": "Turtle: +1100% HP, -15% attack, half speed; takes 99% less ranged damage.",
     "unlockAge": 2,
     "unlockType": "research",
     "researchId": "martial_drill",
@@ -70,17 +70,17 @@
     "statBonuses": [
       {
         "attribute": "unitAll.hp",
-        "multiplier": 2
+        "multiplier": 4
       },
       {
         "attribute": "unitAll.attack",
-        "multiplier": 0.7
+        "multiplier": 0.85
       }
     ],
     "damageTakenVs": [
       {
         "tag": "ranged",
-        "multiplier": 0.5
+        "multiplier": 0.25
       }
     ]
   },

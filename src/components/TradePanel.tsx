@@ -197,7 +197,7 @@ const TradeRouteCard = ({
           aria-disabled={!canEnable}
           title={
             canEnable
-              ? "Route banked trade power through this resource every second"
+              ? "Route banked trade through this resource every second"
               : `Every one of the ${slots} trade routes is already in use`
           }
           onClick={toggleRoute}
@@ -291,7 +291,7 @@ const TradeRouteCard = ({
 };
 
 /**
- * Trade tab: the market's routes. Each one turns banked trade power into goods
+ * Trade tab: the market's routes. Each one turns banked trade into goods
  * at the production ratio against gold, so the route worth opening is whichever
  * resource the settlement cannot afford to produce itself.
  */
@@ -309,13 +309,13 @@ export default function TradePanel({
           <h3>Trade</h3>
         </div>
         <span>
-          <Store size={14} /> {fmt(gameState.resources.trade)} trade power
+          <Store size={14} /> {fmt(gameState.resources.trade)} trade
         </span>
       </div>
 
       <div className="trade-overview">
         <div className="trade-metric">
-          <span className="metric-label">Trade power income</span>
+          <span className="metric-label">Trade income</span>
           <span className="metric-value">
             +{fmt(gameState.getTradePowerRate())}/s
           </span>
@@ -332,7 +332,7 @@ export default function TradePanel({
           <span className="metric-value">×{DEFAULT_TRADE_SPREAD}</span>
         </div>
         <div className="trade-metric">
-          <span className="metric-label">Trade power value</span>
+          <span className="metric-label">Trade value</span>
           <span className="metric-value">
             1 = 1 gold
           </span>

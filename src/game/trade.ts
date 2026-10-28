@@ -2,12 +2,12 @@ import { ExpNumber } from "./expNumber";
 import type { ProductionResourceKey } from "./attributes";
 
 /**
- * Trade routes: the market turns its trade power into goods.
+ * Trade routes: the market turns its trade reserve into goods.
  *
  * A route has three settings — on or off, buy or sell, and an intensity. Every
- * second each enabled route forwards `intensity ×` the trade power income, and
- * one trade power of income is worth `GOLD_PER_TRADE_POWER` gold of goods. The
- * trade power reserve is never spent by a route: routing drains goods and gold,
+ * second each enabled route forwards `intensity ×` the trade income, and
+ * one unit of trade income is worth `GOLD_PER_TRADE_POWER` gold of goods. The
+ * trade reserve is never spent by a route: routing drains goods and gold,
  * nothing else. The price of a resource is the production ratio against gold
  * (excluding worker production), so whatever the settlement produces fastest
  * through buildings and bonuses is what one gold buys most of, and the slowest
@@ -15,7 +15,7 @@ import type { ProductionResourceKey } from "./attributes";
  * workers.
  */
 
-/** Resources with a route: gold is the numeraire, trade power is the fuel. */
+/** Resources with a route: gold is the numeraire, trade is the fuel. */
 export const tradeableResourceKeys = [
   "food",
   "wood",
@@ -29,7 +29,7 @@ export type TradeResourceKey = (typeof tradeableResourceKeys)[number];
 
 export type TradeMode = "buy" | "sell";
 
-/** One route's settings; `intensity` is a 0–1 share of the trade power income. */
+/** One route's settings; `intensity` is a 0–1 share of the trade income. */
 export type TradeRoute = {
   readonly enabled: boolean;
   readonly mode: TradeMode;
@@ -87,7 +87,7 @@ export const tradeIntensityStop = (intensity: number): number => {
   return Math.min(Math.max(Math.round(stop), 0), TRADE_INTENSITY_STOPS);
 };
 
-/** One trade power of income moves this many gold of goods through a route. */
+/** One unit of trade income moves this many gold of goods through a route. */
 export const GOLD_PER_TRADE_POWER = 1;
 
 /**

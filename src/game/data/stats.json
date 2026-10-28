@@ -33,7 +33,7 @@
     "guid": "ad01f113-0ed4-565f-93ec-852275150dd5",
     "key": "tradeRoutes",
     "label": "Trade routes",
-    "description": "How many market trade routes may run at once, each spending banked trade power. Based at one; bonuses open further routes."
+    "description": "How many market trade routes may run at once, each spending banked trade. Based at one; bonuses open further routes."
   },
   {
     "guid": "bd2e941c-4c31-47c9-a75d-cc8b212aad74",

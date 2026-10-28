@@ -78,7 +78,7 @@ const enabledRoute = (
 ): TradeRouteMap["food"] => ({ enabled: true, mode, intensity });
 
 /**
- * A settlement whose markets produce `tradePower` trade power per second, so the
+ * A settlement whose markets produce `tradePower` trade per second, so the
  * bank keeps growing. `resources.trade` seeds the reserve a route reads, and the
  * banked amount (not the income) is what a route moves.
  */
@@ -131,7 +131,7 @@ const expectClose = (value: ExpNumber, expected: number): void => {
 };
 
 describe("trade multiplier arithmetic", () => {
-  it("keeps a finite trade power beyond the JavaScript number range", () => {
+  it("keeps finite trade beyond the JavaScript number range", () => {
     const tradePower = ExpNumber.from("1e400");
 
     expect(tradePower.isFinite).toBe(true);
@@ -226,7 +226,7 @@ describe("trade prices", () => {
     expect(clampTradeIntensity(0.00037)).toBe(0.00037);
   });
 
-  it("routes every roster resource, gold and trade power excluded", () => {
+  it("routes every roster resource, excluding gold and trade", () => {
     expect([...tradeableResourceKeys]).toEqual([
       "food",
       "wood",
@@ -265,7 +265,7 @@ describe("trade routes", () => {
     );
   });
 
-  it("sells the banked trade power at the mid price from buildings, not workers", () => {
+  it("sells the banked trade at the mid price from buildings, not workers", () => {
     const state = marketState(
       0,
       { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
@@ -281,7 +281,7 @@ describe("trade routes", () => {
         ExpNumber.fromNumber(1),
       ]);
 
-    // A hundred banked trade power is a hundred gold, and the mid price is four
+    // A hundred banked trade is a hundred gold, and the mid price is four
     // food to the gold (from buildings, not workers), so the route drains 400 food
     // and credits 100 gold. Both legs are drains: the sale is a negative one, so it
     // carries no multiplier.
@@ -346,7 +346,7 @@ describe("trade routes", () => {
     expect(drains(state.tick(), "food")).toHaveLength(1);
   });
 
-  it("never spends the trade power reserve", () => {
+  it("never spends the trade reserve", () => {
     const routed = marketState(
       4,
       { trade: ExpNumber.fromNumber(100), food: ExpNumber.fromNumber(1_000) },
@@ -359,7 +359,7 @@ describe("trade routes", () => {
       foodAndGoldWorkers(),
     );
 
-    // Routing drains goods and gold, never trade power: a running route leaves the
+    // Routing drains goods and gold, never trade: a running route leaves the
     // reserve exactly as an idle one does.
     expect(routed.tick().resources.trade.toString()).toBe(
       idle.tick().resources.trade.toString(),
@@ -526,7 +526,7 @@ describe("trade routes", () => {
     expect(state.getTradeRoute("food").enabled).toBe(false);
 
     // The card shows what the settings are worth before the route is switched on:
-    // the banked trade power, and what it buys on either side.
+    // the banked trade, and what it buys on either side.
     const throughput = state.getTradeRouteThroughput("food");
     expectClose(throughput.tradePower, 100);
     expectClose(throughput.goldPerSecond, 100);
