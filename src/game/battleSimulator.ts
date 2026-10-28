@@ -389,8 +389,6 @@ export const proveMinimumMilitaryWinner = async (
     allUnitIds
       .map((id) => `${id}:${tacticsFormations.get(id) ?? DEFAULT_FORMATION}:${tacticsOrders.get(id) ?? DEFAULT_ORDER}`)
       .join(",");
-  const seededKey = serializeTactic(seededFormations, seededOrders);
-
   const assignments = async (
     composition: SimulatorArmy,
     armyCost: ExpNumber,
@@ -398,33 +396,55 @@ export const proveMinimumMilitaryWinner = async (
     const totalComposition = mergeSimulatorArmy(ownedArmy, composition);
     const triedKeys = new Set<string>();
 
-    // Try the seeded (optimized) tactic first — most likely to win.
-    triedKeys.add(seededKey);
-    await tryTactic(
-      composition,
-      armyCost,
-      totalComposition,
-      seededFormations,
-      seededOrders,
-    );
-
-    // Then try each macro doctrine, skipping duplicates of the seeded tactic.
-    for (const doctrine of proofDoctrines) {
-      const docFormations = buildDoctrineFormations(
-        allUnitIds,
-        doctrine,
-        availableFormations,
-      );
-      const docKey = serializeTactic(docFormations, defaultOrders);
-      if (triedKeys.has(docKey)) continue;
-      triedKeys.add(docKey);
+    /**
+     * Sieve of Eratosthenes approach:
+     * Each doctrine is a "prime" seed.  From each seed we sieve outward by
+     * changing exactly one unit's formation at a time, producing all
+     * single-step neighbours.  This covers O(doctrines × F × N) tactic
+     * configurations per composition — e.g. 5 × 8 × 13 ≈ 520 — rather than
+     * the intractable O(F^N) cross-product while still finding any combination
+     * reachable in one step from a sensible baseline.
+     */
+    const tryIfNew = async (
+      tacticsFormations: ReadonlyMap<string, FormationId>,
+      tacticsOrders: ReadonlyMap<string, OrderId>,
+    ): Promise<void> => {
+      const key = serializeTactic(tacticsFormations, tacticsOrders);
+      if (triedKeys.has(key)) return;
+      triedKeys.add(key);
       await tryTactic(
         composition,
         armyCost,
         totalComposition,
-        docFormations,
-        defaultOrders,
+        tacticsFormations,
+        tacticsOrders,
       );
+    };
+
+    // Build seed set: seeded tactic + all doctrines.
+    const seeds: Map<string, FormationId>[] = [
+      new Map(seededFormations),
+    ];
+    for (const doctrine of proofDoctrines) {
+      seeds.push(
+        buildDoctrineFormations(allUnitIds, doctrine, availableFormations),
+      );
+    }
+
+    // For each seed: test it, then test all single-unit formation perturbations.
+    for (const baseFormations of seeds) {
+      // Test the seed itself.
+      await tryIfNew(baseFormations, seededOrders);
+      await tryIfNew(baseFormations, defaultOrders);
+
+      // Sieve step: perturb one unit's formation through all available options.
+      for (const unitId of allUnitIds) {
+        for (const formation of availableFormations) {
+          const perturbed = new Map(baseFormations);
+          perturbed.set(unitId, formation);
+          await tryIfNew(perturbed, defaultOrders);
+        }
+      }
     }
 
     armyCompositionsTested += 1;

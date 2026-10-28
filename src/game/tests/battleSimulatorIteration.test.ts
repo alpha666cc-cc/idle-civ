@@ -852,9 +852,12 @@ describe("optimizeBattleTactics iteration", () => {
     expect(result.formations.get("warrior")).toBe("turtle");
     expect(result.searchStats?.proofStatus).toBe("proven");
     expect(result.searchStats?.armyCompositionsTested).toBe(3);
-    // Each composition: 1 seeded (standard) + 1 new doctrine (turtle) = 2 per composition.
-    // Standard doctrine is deduped since seeded tactic is already standard.
-    // 3 compositions × 2 tactics = 6 tactical setups total.
+    // Sieve approach per composition (dedup via tryIfNew):
+    //   Seed1 (standard): test itself, + perturb warrior->turtle.
+    //   Doctrine 'standard' deduped. Doctrine 'turtle' also deduped after sieve.
+    //   (The sieve step on seed1 already generated warrior:turtle)
+    //   so seed 'turtle' doctrine finds all its tests deduped.
+    // Sieve: 2 distinct tactics per composition * 3 compositions = 6.
     expect(result.searchStats?.tacticalSetupsTested).toBe(6);
     expect(progress).toContain(2);
   });

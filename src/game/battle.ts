@@ -451,6 +451,7 @@ const applyScreening = (
   target: Fighter,
   damage: ExpNumber,
   targetAllies: readonly Fighter[],
+  attacker: Fighter,
 ): ExpNumber => {
   const protectedTarget = target.tags.some(
     (tag) => tag === "ranged" || tag === "siege",
@@ -467,8 +468,13 @@ const applyScreening = (
   const shared = damage.mul(ExpNumber.fromNumber(screeningShare));
   const each = shared.div(ExpNumber.fromNumber(screens.length));
   for (const screen of screens) {
-    screen.hpPool = ExpNumber.max(ExpNumber.ZERO, screen.hpPool.sub(each));
+    // Each screen's share is damage aimed at it, so apply the full matchup
+    // multiplier (formation damageTakenVs/damageDealtVs, bonusVs, domain).
+    const screenMultiplier = matchupMultiplier(attacker, screen);
+    const reduced = each.mul(ExpNumber.fromNumber(screenMultiplier));
+    screen.hpPool = ExpNumber.max(ExpNumber.ZERO, screen.hpPool.sub(reduced));
   }
+  // The target takes the rest of the damage, which is the original minus what was screened(matchup excluded).
   return damage.sub(shared);
 };
 
@@ -595,9 +601,10 @@ const simulateBattleInternal = (
       const eligible = melee
         ? foes
             .filter((foe) => attacker.canHit.includes(foe.domain))
-            .sort((left, right) =>
-              Math.abs(positionOf(left) - attackerPosition) -
-              Math.abs(positionOf(right) - attackerPosition),
+            .sort(
+              (left, right) =>
+                Math.abs(positionOf(left) - attackerPosition) -
+                Math.abs(positionOf(right) - attackerPosition),
             )
             .slice(0, 1)
         : foes;
@@ -626,24 +633,31 @@ const simulateBattleInternal = (
         Math.min(
           1,
           attacker.stats.accuracy *
-            (1 - Math.min(1, distance / Math.max(1, attacker.stats.range)) * 0.3),
+            (1 -
+              Math.min(1, distance / Math.max(1, attacker.stats.range)) * 0.3),
         ),
       );
       const targetAllies = attacker.side === "player" ? enemy : player;
-      // A line that screens its allies absorbs part of the hit meant for them.
+      // Raw damage before any resistances — each unit that actually takes a
+      // share (screen or target) applies its own matchup multiplier after
+      // screening decides who takes what.
       const intendedDamage = attackers
         .mul(attacker.stats.attack)
-        .mul(
-          ExpNumber.fromNumber(
-            hitChance * matchupMultiplier(attacker, target),
-          ),
-        );
+        .mul(ExpNumber.fromNumber(hitChance));
       const damage = applyScreening(
         target,
         intendedDamage,
         targetAllies,
+        attacker,
       );
-      target.hpPool = ExpNumber.max(ExpNumber.ZERO, target.hpPool.sub(damage));
+      // The target's own resistances apply only to what reaches it after screening.
+      const targetDamage = damage.mul(
+        ExpNumber.fromNumber(matchupMultiplier(attacker, target)),
+      );
+      target.hpPool = ExpNumber.max(
+        ExpNumber.ZERO,
+        target.hpPool.sub(targetDamage),
+      );
       attacks.push({
         attackerSide: attacker.side,
         attackerId: attacker.unitId,
@@ -661,19 +675,24 @@ const simulateBattleInternal = (
         targetAliveBefore: targetBefore,
         targetAliveAfter: livingCount(target),
         intendedDamage,
-        targetDamage: ExpNumber.max(ExpNumber.ZERO, targetHpBefore.sub(target.hpPool)),
+        targetDamage: ExpNumber.max(
+          ExpNumber.ZERO,
+          targetHpBefore.sub(target.hpPool),
+        ),
         screening: targetAllies
           .filter((fighter) => fighter !== target)
           .flatMap((fighter) => {
             const before = screenBefore.get(fighter);
             if (!before || before.hp.eq(fighter.hpPool)) return [];
-            return [{
-              side: fighter.side,
-              unitId: fighter.unitId,
-              damage: before.hp.sub(fighter.hpPool),
-              aliveBefore: before.count,
-              aliveAfter: livingCount(fighter),
-            }];
+            return [
+              {
+                side: fighter.side,
+                unitId: fighter.unitId,
+                damage: before.hp.sub(fighter.hpPool),
+                aliveBefore: before.count,
+                aliveAfter: livingCount(fighter),
+              },
+            ];
           }),
       });
     }
