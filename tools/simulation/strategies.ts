@@ -14,6 +14,7 @@ import {
 } from "../../src/game/buildings.js";
 import { encounterDefinitions } from "../../src/game/encounters.js";
 import { researchDefinitions } from "../../src/game/research.js";
+import { upgradeDefinitions } from "../../src/game/upgrades.js";
 import { type ArmyStack } from "../../src/game/battle.js";
 import { type FormationId } from "../../src/game/formations.js";
 import { type OrderId } from "../../src/game/orders.js";
@@ -30,7 +31,6 @@ import {
   type MilestoneEvent,
   isResourceGatherable,
 } from "./simulation.js";
-import { upgradeDefinitions } from "../../src/game/upgrades.js";
 import {
   producerResourceKeys,
   type ProductionResourceKey,
@@ -61,10 +61,7 @@ import {
   type FundingRoute,
   type WorkerFocus,
 } from "./workerFunding.js";
-import {
-  currentObjective,
-  helperBuildingAction,
-} from "./objectivePlan.js";
+import { currentObjective, helperBuildingAction } from "./objectivePlan.js";
 
 // Enable adaptive funding only for strategies with measured age-1 improvements.
 export let ADAPTIVE_WORKER_FUNDING_ENABLED = true;
@@ -150,15 +147,11 @@ const ageTwoTownHallTarget: { building: BuildingKey; targetCount: number } = {
 const ageTwoRequiredInfrastructureTargets: readonly {
   building: BuildingKey;
   targetCount: number;
-}[] = [
-  { building: "university", targetCount: 510 },
-];
+}[] = [{ building: "university", targetCount: 510 }];
 const ageTwoOptionalInfrastructureTargets: readonly {
   building: BuildingKey;
   targetCount: number;
-}[] = [
-  { building: "market", targetCount: 430 },
-];
+}[] = [{ building: "market", targetCount: 430 }];
 const ageTwoInfrastructureTargets = [
   ...ageTwoRequiredInfrastructureTargets,
   ...ageTwoOptionalInfrastructureTargets,
@@ -3178,10 +3171,8 @@ export class PlayerStrategy extends ResearchStrategy {
     _context: SimulationContext,
   ): SimulationAction {
     return action.type === "gather"
-      ? (this.assignWorkersByRatio(
-          state,
-          this.getWorkerRatios(state),
-        ) ?? action)
+      ? (this.assignWorkersByRatio(state, this.getWorkerRatios(state)) ??
+          action)
       : action;
   }
 
@@ -3248,9 +3239,7 @@ export class PlayerStrategy extends ResearchStrategy {
     );
   }
 
-  private hasCompletedAgeTwoEconomyTargets(
-    state: CivilizationState,
-  ): boolean {
+  private hasCompletedAgeTwoEconomyTargets(state: CivilizationState): boolean {
     const productionComplete = ageTwoProductionTargets.every((building) => {
       const targetUpgrade = upgradeDefinitions.find(
         ({ unlock }) =>
@@ -3914,6 +3903,36 @@ export class ObjectiveStrategy implements SimulationStrategy {
     const purchase = objective.purchase(state);
     if (purchase) return purchase;
 
+    // Build 2 universities after First Fire (PlayerStrategy pattern)
+    if (
+      state.defeatedEncounters.includes("age0_1_first_fire") &&
+      state.getBuildingCount("university") < 2 &&
+      state.canBuild("university")
+    ) {
+      const affordable = state.getMaxAffordableBuildings("university");
+      const remaining = 2 - state.getBuildingCount("university");
+      if (affordable > 0) {
+        return {
+          type: "build",
+          building: "university",
+          count: Math.min(affordable, remaining),
+        };
+      }
+    }
+
+    // Buy farm enhancer upgrades when affordable (must-buy for population growth)
+    const owned = new Set(state.boughtUpgrades);
+    for (const upgrade of upgradeDefinitions) {
+      if (owned.has(upgrade.key)) continue;
+      if (!upgrade.key.startsWith("farmEnhancer")) continue;
+      if (
+        state.isUpgradeUnlocked(upgrade.key) &&
+        state.getUpgradeFailureReason(upgrade.key) === null
+      ) {
+        return { type: "buyUpgrade", upgradeId: upgrade.key };
+      }
+    }
+
     const launch = getRequiredBattleAction(state);
     if (launch) return launch;
 
@@ -3980,7 +3999,10 @@ export class ObjectiveStrategy implements SimulationStrategy {
       costs: costs.map(({ resource, base }) => [resource, base.toString()]),
       buildings: state.builtBuildings,
       units: Object.fromEntries(
-        Object.entries(state.unitCounts).map(([id, count]) => [id, count.toString()]),
+        Object.entries(state.unitCounts).map(([id, count]) => [
+          id,
+          count.toString(),
+        ]),
       ),
       research: state.boughtResearch,
       battles: state.defeatedEncounters,
