@@ -580,7 +580,6 @@ function App() {
     ...gameState
       .getArmyStacks()
       .map(({ unitId, count }) => `${unitId}:${count.toString()}`),
-    `research:${gameState.boughtResearch.join(",")}`,
   ].join("|");
 
   const simSelectBattle = useCallback(

@@ -913,7 +913,7 @@
     "domain": "ground",
     "tags": ["infantry"],
     "canHit": ["ground"],
-    "bonusVs": [],
+    "bonusVs": ["infantry", "ranged"],
     "hp": 3840,
     "attack": 2240,
     "armor": 0.05,

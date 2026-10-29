@@ -153,7 +153,7 @@
       },
       {
         "resource": "metalwork",
-        "base": "1e39",
+        "base": "1e38",
         "factor": 1,
         "exponent": 0.5
       }
@@ -539,7 +539,7 @@
       },
       {
         "resource": "metalwork",
-        "base": "1e38",
+        "base": "1e37",
         "factor": 1,
         "exponent": 0.5
       }
@@ -901,7 +901,7 @@
       },
       {
         "resource": "metalwork",
-        "base": "1e38",
+        "base": "1e37",
         "factor": 1,
         "exponent": 0.5
       }
@@ -1263,7 +1263,7 @@
       },
       {
         "resource": "metalwork",
-        "base": "3e38",
+        "base": "1e38",
         "factor": 1,
         "exponent": 0.5
       }
@@ -1588,19 +1588,19 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "5e42",
+        "base": "1e42",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "stone",
-        "base": "4e41",
+        "base": "1e41",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "food",
-        "base": "1e47",
+        "base": "1e46",
         "factor": 1,
         "exponent": 0.5
       },
@@ -1982,25 +1982,25 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "20e42",
-        "factor": 1,
-        "exponent": 0.5
-      },
-      {
-        "resource": "stone",
         "base": "2e42",
         "factor": 1,
         "exponent": 0.5
       },
       {
+        "resource": "stone",
+        "base": "200e39",
+        "factor": 1,
+        "exponent": 0.5
+      },
+      {
         "resource": "gold",
-        "base": "100e39",
+        "base": "200e39",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
-        "base": "1e33",
+        "base": "100e30",
         "factor": 1,
         "exponent": 0.5
       }
@@ -2364,19 +2364,19 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "5e42",
-        "factor": 1,
-        "exponent": 0.5
-      },
-      {
-        "resource": "stone",
         "base": "500e39",
         "factor": 1,
         "exponent": 0.5
       },
       {
+        "resource": "stone",
+        "base": "50e39",
+        "factor": 1,
+        "exponent": 0.5
+      },
+      {
         "resource": "metalwork",
-        "base": "2e29",
+        "base": "2e28",
         "factor": 1,
         "exponent": 0.5
       }
@@ -2710,19 +2710,25 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "1e44",
+        "base": "2e43",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "stone",
-        "base": "1e43",
+        "base": "1e42",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
-        "base": "5e33",
+        "base": "2e33",
+        "factor": 1,
+        "exponent": 0.5
+      },
+      {
+        "resource": "gold",
+        "base": "1e42",
         "factor": 1,
         "exponent": 0.5
       }
