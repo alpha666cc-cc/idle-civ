@@ -181,18 +181,18 @@
     "enemyArmy": [
       {
         "unitId": "chariot_bronze",
-        "count": 2500,
-        "label": "2500 chariots"
+        "count": 2300,
+        "label": "2.3k chariots"
       },
       {
         "unitId": "spearman_bronze",
-        "count": 10000,
-        "label": "10k bronze"
+        "count": 9200,
+        "label": "9.2k bronze"
       },
       {
         "unitId": "bowman_bronze",
-        "count": 2000,
-        "label": "2k bowmen"
+        "count": 1840,
+        "label": "1.84k bowmen"
       }
     ],
     "bonuses": [
@@ -221,22 +221,22 @@
     "enemyArmy": [
       {
         "unitId": "spearman_iron",
-        "count": 20000,
+        "count": 18400,
         "label": "30k defenders"
       },
       {
         "unitId": "ballista",
-        "count": 10,
+        "count": 9,
         "label": "10 ballista"
       },
       {
         "unitId": "bowman_bronze",
-        "count": 10000,
+        "count": 9200,
         "label": "10k archers"
       },
       {
         "unitId": "war_galley_iron",
-        "count": 1000,
+        "count": 920,
         "label": "1k galley"
       }
     ],
@@ -266,27 +266,27 @@
     "enemyArmy": [
       {
         "unitId": "spearman_iron",
-        "count": 100000,
+        "count": 92000,
         "label": "10 sea peoples spearmen"
       },
       {
         "unitId": "cavalry_iron",
-        "count": 10000,
+        "count": 9200,
         "label": "5 sea peoples cavalry"
       },
       {
         "unitId": "elephant_iron",
-        "count": 200,
+        "count": 184,
         "label": "2 war elephants"
       },
       {
         "unitId": "bowman_bronze",
-        "count": 50000,
+        "count": 46000,
         "label": "3k bowmen"
       },
       {
         "unitId": "quinquereme",
-        "count": 800,
+        "count": 736,
         "label": "800 quinquereme"
       }
     ],
@@ -321,19 +321,19 @@
     "enemyArmy": [
       {
         "unitId": "archer_classical",
-        "count": 100000,
+        "count": 88000,
         "label": "100k archers",
         "formation": "backline"
       },
       {
         "unitId": "hoplite",
-        "count": 200000,
+        "count": 176000,
         "label": "200k hoplites",
         "formation": "frontline"
       },
       {
         "unitId": "trader_classical",
-        "count": 10000,
+        "count": 8800,
         "label": "10k trade galleys"
       }
     ],
@@ -383,37 +383,37 @@
     "enemyArmy": [
       {
         "unitId": "legionary",
-        "count": 300000,
+        "count": 264000,
         "label": "300k legionaries",
         "formation": "turtle"
       },
       {
         "unitId": "assassin",
-        "count": 10000,
+        "count": 8800,
         "label": "10k assassins",
         "formation": "rush"
       },
       {
         "unitId": "onager",
-        "count": 10000,
+        "count": 8800,
         "label": "10k onagers",
         "formation": "backline"
       },
       {
         "unitId": "archer_classical",
-        "count": 4000000,
+        "count": 3520000,
         "label": "4M archers",
         "formation": "backline"
       },
       {
         "unitId": "elephant_iron",
-        "count": 10000,
+        "count": 8800,
         "label": "10000 elephants",
         "formation": "rush"
       },
       {
         "unitId": "fire_ship",
-        "count": 20000,
+        "count": 17600,
         "label": "20k fire ships"
       }
     ],
@@ -453,31 +453,31 @@
     "enemyArmy": [
       {
         "unitId": "companion",
-        "count": 500000,
+        "count": 440000,
         "label": "500k companion cavalry",
         "formation": "rush"
       },
       {
         "unitId": "elephant_iron",
-        "count": 100000,
+        "count": 88000,
         "label": "100k elephants",
         "formation": "rush"
       },
       {
         "unitId": "hoplite",
-        "count": 6000000,
+        "count": 5280000,
         "label": "6M hoplites",
         "formation": "frontline"
       },
       {
         "unitId": "archer_classical",
-        "count": 1000000,
+        "count": 880000,
         "label": "1M archers",
         "formation": "backline"
       },
       {
         "unitId": "trader_classical",
-        "count": 100000,
+        "count": 88000,
         "label": "100k trade galleys"
       }
     ],
