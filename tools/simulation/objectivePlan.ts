@@ -331,14 +331,9 @@ const buyIfAffordable = (
  * fund the research needed to unlock their winning army; population objectives fund
  * the research that speeds the citizens and housing they need. Agriculture (×2 food,
  * -50% farm cost) and pottery (×2 food, -50% house cost) are the core Age-0 examples.
- *
- * Note: research is paused after pottery until the population target is reached,
- * following the PlayerStrategy pattern which invests in production (farms) rather
- * than additional research during the growth phase.
  */
 const getPopulationResearchCosts = (
   state: CivilizationState,
-  target: number,
 ): FundingCost[] => {
   const costs: FundingCost[] = [];
   const bought = new Set(state.boughtResearch);
@@ -347,12 +342,36 @@ const getPopulationResearchCosts = (
     ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
     : -1;
 
-  // Pause research after pottery until population target is reached
+  // Pause research after pottery (following PlayerStrategy pattern)
+  if (bought.has("pottery")) return costs;
+
+  // Include university costs if we need science for research and First Fire is defeated
   if (
-    bought.has("pottery") &&
-    state.population.lt(ExpNumber.fromNumber(target))
+    state.defeatedEncounters.includes("age0_1_first_fire") &&
+    state.getBuildingCount("university") === 0 &&
+    state.isBuildingAvailable("university")
   ) {
-    return [];
+    for (const { resource, base } of state.getBuildingCost(
+      "university",
+      0,
+      1,
+    )) {
+      costs.push({ resource, base });
+    }
+  }
+
+  // Add science deficit to funding vector if we need to buy research
+  // This tells the worker solver to assign workers to science production
+  if (
+    state.defeatedEncounters.includes("age0_1_first_fire") &&
+    state.getBuildingCount("university") > 0
+  ) {
+    const neededScience = ExpNumber.fromNumber(200); // First research costs 200 science
+    const currentScience = state.resources.science;
+    if (currentScience.lt(neededScience)) {
+      const deficit = neededScience.sub(currentScience);
+      costs.push({ resource: "science", base: deficit });
+    }
   }
 
   for (const research of researchDefinitions) {
@@ -401,77 +420,11 @@ const getPopulationResearchCosts = (
 };
 
 /**
- * The next affordable population-boosting research, or null if none.
- *
- * Note: research is paused after pottery until the population target is reached,
- * following the PlayerStrategy pattern.
+ * The next affordable production building enhancer upgrade, or null if none.
+ * These are must-buy as they increase building capacity for faster growth.
+ * Excludes goldMine enhancers as they're not needed for population growth.
  */
-const getPopulationResearchAction = (
-  state: CivilizationState,
-  target: number,
-): SimulationAction | null => {
-  const bought = new Set(state.boughtResearch);
-  const currentAge = state.getCurrentAge();
-  const currentAgeIndex = currentAge
-    ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
-    : -1;
-
-  // Pause research after pottery until population target is reached
-  if (
-    bought.has("pottery") &&
-    state.population.lt(ExpNumber.fromNumber(target))
-  ) {
-    return null;
-  }
-
-  for (const research of researchDefinitions) {
-    // Skip already-bought research
-    if (bought.has(research.key)) continue;
-
-    // Only research in the current age
-    if (currentAgeIndex < 0 || research.age !== currentAgeIndex) continue;
-
-    // Check prerequisites are met
-    if (research.prerequisites.some((prereq) => !bought.has(prereq))) {
-      continue;
-    }
-
-    // Check if research helps population growth
-    const helpsPopulation = research.bonuses.some((bonus) => {
-      if (bonus.type === "attributeMultiplier") {
-        return (
-          bonus.destination === "food" || bonus.destination === "allProduction"
-        );
-      }
-      if (
-        bonus.type === "costReductionPercent" ||
-        bonus.type === "costReductionFactor"
-      ) {
-        return (
-          bonus.destination === "farm.costs.all" ||
-          bonus.destination === "house.costs.all" ||
-          bonus.destination === "allBuildings.costs.all"
-        );
-      }
-      return false;
-    });
-
-    if (!helpsPopulation) continue;
-
-    // Return if affordable
-    if (state.canBuyResearch(research.key)) {
-      return { type: "buyResearch", researchId: research.key };
-    }
-  }
-
-  return null;
-};
-
-/**
- * The next affordable farm enhancer upgrade, or null if none.
- * These are must-buy for population growth as they increase farm capacity.
- */
-const getFarmEnhancerAction = (
+const getProductionEnhancerAction = (
   state: CivilizationState,
 ): SimulationAction | null => {
   const owned = new Set(state.boughtUpgrades);
@@ -480,8 +433,14 @@ const getFarmEnhancerAction = (
     // Skip already-bought upgrades
     if (owned.has(upgrade.key)) continue;
 
-    // Only farm enhancers
-    if (!upgrade.key.startsWith("farmEnhancer")) continue;
+    // Production building enhancers (farm, lumberYard, quarry) - exclude goldMine
+    if (
+      !upgrade.key.startsWith("farmEnhancer") &&
+      !upgrade.key.startsWith("lumberYardEnhancer") &&
+      !upgrade.key.startsWith("quarryEnhancer")
+    ) {
+      continue;
+    }
 
     // Check if unlocked and affordable
     if (
@@ -530,13 +489,39 @@ const populationObjective = (
     // Include population-boosting research costs (agriculture, pottery, etc.)
     // so the worker solver funds food multipliers in parallel with buildings.
     // Research is paused after pottery until population target is reached.
-    const researchCosts = getPopulationResearchCosts(state, target);
+    const researchCosts = getPopulationResearchCosts(state);
     return growthCosts(state, stepTarget, researchCosts);
   },
   purchase: (state) =>
     buyIfAffordable(state, requiredPreparationBuilding(state)) ??
-    getFarmEnhancerAction(state) ??
-    getPopulationResearchAction(state, target) ??
+    // Build 1 university after First Fire (for science/research)
+    // Must be bought before research so science is available
+    (state.defeatedEncounters.includes("age0_1_first_fire") &&
+    state.getBuildingCount("university") === 0 &&
+    state.canBuild("university")
+      ? {
+          type: "build",
+          building: "university",
+          count: state.getMaxAffordableBuildings("university"),
+        }
+      : null) ??
+    // Force agriculture and pottery before enhancers - they have very high ROI for population growth
+    // The worker solver will assign workers to science when university costs are in the funding vector
+    (() => {
+      const bought = new Set(state.boughtResearch);
+      if (!bought.has("agriculture") && state.canBuyResearch("agriculture")) {
+        return { type: "buyResearch", researchId: "agriculture" };
+      }
+      if (
+        bought.has("agriculture") &&
+        !bought.has("pottery") &&
+        state.canBuyResearch("pottery")
+      ) {
+        return { type: "buyResearch", researchId: "pottery" };
+      }
+      return null;
+    })() ??
+    getProductionEnhancerAction(state) ??
     buyIfAffordable(state, growthBuilding(state, target)),
 });
 
@@ -575,7 +560,20 @@ const battleObjective = (
   },
   purchase: (state) =>
     buyIfAffordable(state, requiredPreparationBuilding(state)) ??
-    getFarmEnhancerAction(state) ??
+    // Universities (for science) before enhancers and battle research
+    (state.defeatedEncounters.includes("age0_1_first_fire") &&
+    state.getBuildingCount("university") < 2 &&
+    state.canBuild("university")
+      ? {
+          type: "build",
+          building: "university",
+          count: Math.min(
+            state.getMaxAffordableBuildings("university"),
+            2 - state.getBuildingCount("university"),
+          ),
+        }
+      : null) ??
+    getProductionEnhancerAction(state) ??
     getRecommendedBattlePurchase(state, getSimulatorBattlePlan(state)),
 });
 

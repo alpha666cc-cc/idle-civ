@@ -1081,41 +1081,44 @@ const simulatorPlanKey = (
   state: CivilizationState,
   candidates: readonly UnitDefinition[],
 ): string => {
-  const unitSignatures = candidates.map((unit) => {
-    const stats = state.getUnitStatsWithResearch(
-      unit.key,
-      state.boughtResearch,
-    );
-    const costs = state.getUnitCostParameters(unit.key);
-    return [
-      unit.key,
-      stats
-        ? [
-            stats.hp.toString(),
-            stats.attack.toString(),
-            stats.armor,
-            stats.range,
-            stats.speed,
-            stats.accuracy,
-          ].join(":")
-        : "missing-stats",
-      costs
-        .map(
-          ({ cost, unitBase, unitFactor }) =>
-            `${cost.resource}:${unitBase.toString()}:${unitFactor.toString()}`,
-        )
-        .join(","),
-    ].join("/");
-  });
-  const unlockResearch = state
-    .getResearchForUnitTypes(candidates.map(({ key }) => key))
-    .ids.join(",");
+  // Simplified cache key: only include what actually affects battle solver behavior
+  // - Battle key (which encounter we're fighting)
+  // - Available unit types (which units are unlocked)
+  // - Research that affects units (bonuses matter for battle outcome)
+  // Don't include full stats/costs which change constantly but don't affect
+  // the minimum army calculation significantly
+  const unitIds = candidates.map(({ key }) => key).sort().join(",");
+  const relevantResearch = state.boughtResearch.filter((researchId) => {
+    const research = researchDefinitions.find(({ key }) => key === researchId);
+    if (!research) return false;
+    // Only include research that actually affects unit stats or unlocks units
+    return research.bonuses.some(
+      (bonus) =>
+        bonus.type === "attributeMultiplier" &&
+        (bonus.destination.startsWith("unit.") ||
+          bonus.destination.startsWith("tag.")),
+    ) || research.unlocks.some((unlock) => unitIds.includes(unlock));
+  }).sort().join(",");
   return [
     getRequiredBattle(state)?.key ?? "",
-    unlockResearch,
-    ...unitSignatures,
+    unitIds,
+    relevantResearch,
   ].join("|");
 };
+
+/** Cache hit/miss tracking for battle simulator. */
+let simulatorCacheHits = 0;
+let simulatorCacheMisses = 0;
+
+export const getSimulatorCacheStats = () => ({
+  hits: simulatorCacheHits,
+  misses: simulatorCacheMisses,
+  hitRate:
+    simulatorCacheHits + simulatorCacheMisses > 0
+      ? simulatorCacheHits / (simulatorCacheHits + simulatorCacheMisses)
+      : 0,
+  size: simulatorPlanCache.size,
+});
 
 /** The simulator's advisory plan for the current battle, or null if unavailable. */
 const simulatorPlanCache = new Map<string, SimulatorResult | null>();
@@ -1127,9 +1130,11 @@ export const getSimulatorBattlePlan = (
   const key = simulatorPlanKey(state, candidates);
   const cached = simulatorPlanCache.get(key);
   if (cached !== undefined) {
+    simulatorCacheHits += 1;
     return cached ? getRemainingSimulatorPlan(state, cached) : null;
   }
 
+  simulatorCacheMisses += 1;
   const battle = getRequiredBattle(state);
   const result =
     !battle || candidates.length === 0
@@ -1140,7 +1145,7 @@ export const getSimulatorBattlePlan = (
           simulatorContext(state),
           candidates.length > 1,
         );
-  if (simulatorPlanCache.size >= 64) {
+  if (simulatorPlanCache.size >= 512) {
     const oldest = simulatorPlanCache.keys().next().value;
     if (oldest !== undefined) simulatorPlanCache.delete(oldest);
   }
@@ -3903,38 +3908,50 @@ export class ObjectiveStrategy implements SimulationStrategy {
     const purchase = objective.purchase(state);
     if (purchase) return purchase;
 
-    // Build 2 universities after First Fire (PlayerStrategy pattern)
-    if (
-      state.defeatedEncounters.includes("age0_1_first_fire") &&
-      state.getBuildingCount("university") < 2 &&
-      state.canBuild("university")
-    ) {
-      const affordable = state.getMaxAffordableBuildings("university");
-      const remaining = 2 - state.getBuildingCount("university");
-      if (affordable > 0) {
-        return {
-          type: "build",
-          building: "university",
-          count: Math.min(affordable, remaining),
-        };
-      }
-    }
-
-    // Buy farm enhancer upgrades when affordable (must-buy for population growth)
-    const owned = new Set(state.boughtUpgrades);
-    for (const upgrade of upgradeDefinitions) {
-      if (owned.has(upgrade.key)) continue;
-      if (!upgrade.key.startsWith("farmEnhancer")) continue;
-      if (
-        state.isUpgradeUnlocked(upgrade.key) &&
-        state.getUpgradeFailureReason(upgrade.key) === null
-      ) {
-        return { type: "buyUpgrade", upgradeId: upgrade.key };
-      }
-    }
-
     const launch = getRequiredBattleAction(state);
     if (launch) return launch;
+
+    // Buy science-boosting research (writing, etc.) only for population objectives, not battles
+    if (objective.id.startsWith("pop")) {
+      const boughtResearch = new Set(state.boughtResearch);
+      const currentAge = state.getCurrentAge();
+      const currentAgeIndex = currentAge
+        ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
+        : -1;
+
+      for (const research of researchDefinitions) {
+        if (boughtResearch.has(research.key)) continue;
+        if (currentAgeIndex < 0 || research.age !== currentAgeIndex) continue;
+        if (
+          research.prerequisites.some((prereq) => !boughtResearch.has(prereq))
+        ) {
+          continue;
+        }
+
+        // Check if research boosts science production
+        const boostsScience = research.bonuses.some((bonus) => {
+          if (bonus.type === "attributeMultiplier") {
+            return (
+              bonus.destination === "science" ||
+              bonus.destination === "allProduction"
+            );
+          }
+          if (bonus.type === "costReductionPercent") {
+            return bonus.destination === "allBuildings.costs.all";
+          }
+          return false;
+        });
+
+        if (!boostsScience) continue;
+
+        if (
+          state.isResearchUnlocked(research.key) &&
+          state.getResearchFailureReason(research.key) === null
+        ) {
+          return { type: "buyResearch", researchId: research.key };
+        }
+      }
+    }
 
     const costs = objective.costs(state);
     if (costs.length > 0) {
