@@ -3120,7 +3120,7 @@
     "name": "The Colossus Foundry",
     "description": "A monumental forge multiplies metalwork production a thousandfold.",
     "building": "smithy",
-    "threshold": 7000,
+    "threshold": 6500,
     "tier": 0,
     "costs": [
       {
@@ -3197,7 +3197,22 @@
       {
         "type": "costReductionFactor",
         "destination": "allBuildings.costs.all.factor",
-        "value": 0.83
+        "value": 0.9
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "house.costs.all.factor",
+        "value": 0.92
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "basicProductionBuildings.costs.all.factor",
+        "value": 0.92
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "people.costs.all.factor",
+        "value": 0.9
       },
       {
         "type": "costReductionFactor",
