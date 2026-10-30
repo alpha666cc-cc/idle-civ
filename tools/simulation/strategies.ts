@@ -1084,23 +1084,31 @@ const simulatorPlanKey = (
   // - Research that affects units (bonuses matter for battle outcome)
   // Don't include full stats/costs which change constantly but don't affect
   // the minimum army calculation significantly
-  const unitIds = candidates.map(({ key }) => key).sort().join(",");
-  const relevantResearch = state.boughtResearch.filter((researchId) => {
-    const research = researchDefinitions.find(({ key }) => key === researchId);
-    if (!research) return false;
-    // Only include research that actually affects unit stats or unlocks units
-    return research.bonuses.some(
-      (bonus) =>
-        bonus.type === "attributeMultiplier" &&
-        (bonus.destination.startsWith("unit.") ||
-          bonus.destination.startsWith("tag.")),
-    ) || research.unlocks.some((unlock) => unitIds.includes(unlock));
-  }).sort().join(",");
-  return [
-    getRequiredBattle(state)?.key ?? "",
-    unitIds,
-    relevantResearch,
-  ].join("|");
+  const unitIds = candidates
+    .map(({ key }) => key)
+    .sort()
+    .join(",");
+  const relevantResearch = state.boughtResearch
+    .filter((researchId) => {
+      const research = researchDefinitions.find(
+        ({ key }) => key === researchId,
+      );
+      if (!research) return false;
+      // Only include research that actually affects unit stats or unlocks units
+      return (
+        research.bonuses.some(
+          (bonus) =>
+            bonus.type === "attributeMultiplier" &&
+            (bonus.destination.startsWith("unit.") ||
+              bonus.destination.startsWith("tag.")),
+        ) || research.unlocks.some((unlock) => unitIds.includes(unlock))
+      );
+    })
+    .sort()
+    .join(",");
+  return [getRequiredBattle(state)?.key ?? "", unitIds, relevantResearch].join(
+    "|",
+  );
 };
 
 /** Cache hit/miss tracking for battle simulator. */
@@ -3070,6 +3078,7 @@ export class PlayerStrategy extends ResearchStrategy {
       // Dynamic: if research is affordable, put all workers on economy.
       // If not, put 75% on science to make it affordable.
       const researchAffordable = state.hasResourcesForResearch();
+      // 50% science when unaffordable: balances research speed and economy building.
       const scienceShare = researchAffordable ? 0.05 : 0.5;
       const rest = 1 - scienceShare;
       return {
@@ -3337,7 +3346,10 @@ export class PlayerStrategy extends ResearchStrategy {
     // Build university first: age-2 research is priced in science, and without
     // enough science production the strategy can never buy the techs that unlock
     // age-2 units.
-    for (const { building, targetCount } of ageTwoRequiredInfrastructureTargets) {
+    for (const {
+      building,
+      targetCount,
+    } of ageTwoRequiredInfrastructureTargets) {
       const infrastructureAction = this.getBuildingTargetAction(
         state,
         building,
@@ -3375,7 +3387,10 @@ export class PlayerStrategy extends ResearchStrategy {
       }
     }
 
-    for (const { building, targetCount } of ageTwoOptionalInfrastructureTargets) {
+    for (const {
+      building,
+      targetCount,
+    } of ageTwoOptionalInfrastructureTargets) {
       const infrastructureAction = this.getBuildingTargetAction(
         state,
         building,
@@ -3506,10 +3521,10 @@ export class PlayerStrategy extends ResearchStrategy {
 
       if (!state.hasResourcesForResearch()) {
         // Research unaffordable → put workers on science.
-        scienceShare = 0.6;
+        scienceShare = 0.5;
       } else if (nextBattle && hasAge2Units) {
         // Battle pending and units unlocked → check if we can win.
-        const plan = state.getSimulatorBattlePlan?.() ?? null;
+        const plan = getSimulatorBattlePlan(state);
         if (plan) {
           // Need to buy units → allocate to military/metalwork.
           militaryShare = 0.3;
@@ -3563,8 +3578,21 @@ export class PlayerStrategy extends ResearchStrategy {
       if (researchAction) return researchAction;
       // Buy affordable enhancer upgrades for buildings that have reached their
       // threshold, boosting production before spending on new buildings.
-      for (const building of ["farm", "lumberYard", "quarry", "goldMine", "barracks", "university", "smithy", "market"] as BuildingKey[]) {
-        const upgradeAction = this.getProductionUpgradeAction(state, building, context);
+      for (const building of [
+        "farm",
+        "lumberYard",
+        "quarry",
+        "goldMine",
+        "barracks",
+        "university",
+        "smithy",
+        "market",
+      ] as BuildingKey[]) {
+        const upgradeAction = this.getProductionUpgradeAction(
+          state,
+          building,
+          context,
+        );
         if (upgradeAction?.type === "buyUpgrade") return upgradeAction;
       }
       // Only buy units if age-2 units are actually unlocked (research done).
