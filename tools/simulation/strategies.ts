@@ -147,7 +147,7 @@ const ageTwoTownHallTarget: { building: BuildingKey; targetCount: number } = {
 const ageTwoRequiredInfrastructureTargets: readonly {
   building: BuildingKey;
   targetCount: number;
-}[] = [{ building: "university", targetCount: 1000 }];
+}[] = [{ building: "university", targetCount: 600 }];
 const ageTwoOptionalInfrastructureTargets: readonly {
   building: BuildingKey;
   targetCount: number;
@@ -307,6 +307,8 @@ const playerResearchOrderByAge: readonly (readonly string[])[] = [
     "recurve_archery",
     "shock_cavalry",
     "phalanx_doctrine",
+    "martial_drill",
+    "subterfuge",
     "drama_poetry",
     "surveying",
     "currency_standard",
@@ -314,10 +316,8 @@ const playerResearchOrderByAge: readonly (readonly string[])[] = [
     "architecture",
     "aqueducts",
     "banking_concepts",
-    "martial_drill",
     "aesthetics",
     "armor_layering",
-    "subterfuge",
     "naval_ramming",
     "armed_merchant_navies",
     "siege_logistics",
@@ -3067,15 +3067,18 @@ export class PlayerStrategy extends ResearchStrategy {
       };
     }
     if (state?.getCurrentAge()?.key === "age2") {
-      // Player allocates ~20% to science during research phases, shifting
-      // to military/metalwork/trade for battles. Keep a moderate science share.
+      // Dynamic: if research is affordable, put all workers on economy.
+      // If not, put 75% on science to make it affordable.
+      const researchAffordable = state.hasResourcesForResearch();
+      const scienceShare = researchAffordable ? 0.05 : 0.5;
+      const rest = 1 - scienceShare;
       return {
-        food: 0.1,
-        wood: 0.05,
-        stone: 0.05,
-        gold: 0.05,
+        food: rest * 0.4,
+        wood: rest * 0.25,
+        stone: rest * 0.2,
+        gold: rest * 0.15,
         military: 0,
-        science: 0.75,
+        science: scienceShare,
         metalwork: 0,
         trade: 0,
       };
@@ -3490,6 +3493,72 @@ export class PlayerStrategy extends ResearchStrategy {
     // research unlocks the units the battle simulator needs, and upgrades boost
     // production so research becomes affordable sooner.
     if (state.getCurrentAge()?.key === "age2") {
+      // Adaptive worker allocation based on next objective.
+      const nextBattle = state.getNextBattle();
+      const hasAge2Units = state
+        .getRosterUnits()
+        .some((unit) => unit.age === 2 && state.isUnitAvailable(unit.key));
+
+      let scienceShare = 0.05;
+      let militaryShare = 0;
+      let metalworkShare = 0;
+      let tradeShare = 0;
+
+      if (!state.hasResourcesForResearch()) {
+        // Research unaffordable → put workers on science.
+        scienceShare = 0.6;
+      } else if (nextBattle && hasAge2Units) {
+        // Battle pending and units unlocked → check if we can win.
+        const plan = state.getSimulatorBattlePlan?.() ?? null;
+        if (plan) {
+          // Need to buy units → allocate to military/metalwork.
+          militaryShare = 0.3;
+          metalworkShare = 0.2;
+        }
+      } else {
+        // Economy building phase → allocate to food/wood/stone/gold.
+        scienceShare = 0.1;
+      }
+
+      // Check if any wonder is unlocked and affordable.
+      const affordableWonders = upgradeDefinitions.filter(
+        (u) =>
+          u.key.startsWith("wonder_a2") &&
+          !state.isUpgradeBought(u.key) &&
+          state.isUpgradeUnlocked(u.key) &&
+          state.hasResourcesForUpgrade(u.key),
+      );
+      if (affordableWonders.length > 0) {
+        tradeShare = 0.3;
+      }
+
+      const rest = Math.max(
+        0.05,
+        1 - scienceShare - militaryShare - metalworkShare - tradeShare,
+      );
+      const workerAction = this.assignWorkersByRatio(state, {
+        food: rest * 0.35,
+        wood: rest * 0.25,
+        stone: rest * 0.25,
+        gold: rest * 0.15,
+        military: militaryShare,
+        science: scienceShare,
+        metalwork: metalworkShare,
+        trade: tradeShare,
+      });
+      if (workerAction) return workerAction;
+
+      // After battle 8, build economy before research.
+      const battle8Won = state.defeatedEncounters.includes("age2_1_marathon");
+      if (battle8Won) {
+        const ageTwoProductionAction = this.getAgeTwoProductionAction(
+          state,
+          context,
+        );
+        if (ageTwoProductionAction?.type === "build") {
+          return ageTwoProductionAction;
+        }
+      }
       const researchAction = this.getResearchAction(state);
       if (researchAction) return researchAction;
       // Buy affordable enhancer upgrades for buildings that have reached their
@@ -3499,9 +3568,6 @@ export class PlayerStrategy extends ResearchStrategy {
         if (upgradeAction?.type === "buyUpgrade") return upgradeAction;
       }
       // Only buy units if age-2 units are actually unlocked (research done).
-      const hasAge2Units = state
-        .getRosterUnits()
-        .some((unit) => unit.age === 2 && state.isUnitAvailable(unit.key));
       if (hasAge2Units) {
         const simulatorAction = this.getSimulatorActions(state)[0];
         if (simulatorAction) return simulatorAction;
