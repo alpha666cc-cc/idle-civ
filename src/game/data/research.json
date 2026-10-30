@@ -2287,10 +2287,10 @@
     "guid": "5453ddcb-9d64-5014-bea3-4b573d06bb9f",
     "key": "chivalric_code",
     "name": "Chivalric Code",
-    "description": "unit_stat_boost cavalry_speed (small); cost_reduction cavalry_units (small); production_multiplier military (small)",
+    "description": "unit_stat_boost cavalry_speed (small); cost_reduction cavalry_units (small); production_multiplier military (small); inspired by Don Quixote's delusions of knightly grandeur",
     "age": 3,
     "category": "military",
-    "prerequisites": ["feudalism", "yew_bowcraft"],
+    "prerequisites": ["windmills", "yew_bowcraft"],
     "bonuses": [
       {
         "type": "attributeMultiplier",

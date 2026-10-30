@@ -197,11 +197,11 @@
   },
   "civil_service": {
     "column": 19,
-    "row": 3
+    "row": 4
   },
   "logic": {
-    "column": 16,
-    "row": 4
+    "column": 19,
+    "row": 0
   },
   "currency_standard": {
     "column": 20,
@@ -213,7 +213,7 @@
   },
   "crop_rotation": {
     "column": 18,
-    "row": 3
+    "row": 4
   },
   "lumber_mills": {
     "column": 16,
@@ -232,8 +232,8 @@
     "row": 0
   },
   "scholasticism": {
-    "column": 18,
-    "row": 4
+    "column": 20,
+    "row": 1
   },
   "legion_discipline": {
     "column": 19,
@@ -245,19 +245,19 @@
   },
   "shock_cavalry": {
     "column": 20,
-    "row": 1
+    "row": 3
   },
   "recurve_archery": {
-    "column": 21,
-    "row": 3
+    "column": 20,
+    "row": 4
   },
   "heavy_counterweights": {
     "column": 23,
-    "row": 3
+    "row": 4
   },
   "incendiary_weapons": {
-    "column": 23,
-    "row": 4
+    "column": 22,
+    "row": 3
   },
   "subterfuge": {
     "column": 22,
@@ -272,8 +272,8 @@
     "row": 1
   },
   "siege_logistics": {
-    "column": 22,
-    "row": 4
+    "column": 21,
+    "row": 3
   },
   "naval_ramming": {
     "column": 22,
@@ -297,7 +297,7 @@
   },
   "water_power": {
     "column": 24,
-    "row": 1
+    "row": 2
   },
   "gothic_architecture": {
     "column": 27,
@@ -345,7 +345,7 @@
   },
   "professional_men_at_arms": {
     "column": 24,
-    "row": 3
+    "row": 4
   },
   "trebuchet_physics": {
     "column": 26,
@@ -376,7 +376,7 @@
     "row": 1
   },
   "chivalric_code": {
-    "column": 27,
+    "column": 28,
     "row": 1
   },
   "printing_press": {

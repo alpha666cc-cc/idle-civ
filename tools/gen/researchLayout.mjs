@@ -64,7 +64,7 @@ const DIRECT_LINE_BONUS = 15;
 const AGE_BUDGET = {};
 
 // Ages to skip layout generation and use existing frozen positions
-const FROZEN_AGES = new Set([0, 1, 2]);
+const FROZEN_AGES = new Set([0, 1, 2, 3]);
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..");

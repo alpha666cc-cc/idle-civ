@@ -421,6 +421,10 @@ The colony ship should be a long-term project with multiple requirements rather 
 - Food, water, and energy reserves
 - Navigation and destination research
 
+## Content: Human-readable descriptions
+
+At the end of content development, rewrite all technology, building, unit, and achievement descriptions to be human-readable and engaging rather than mechanical shorthand. Current descriptions are functional notes like "production_multiplier food (large)" — these should become flavorful, historically-themed text that a player would enjoy reading while learning what the tech does.
+
 Completing the expedition can begin a new colony loop or prestige layer. The next system should inherit selected discoveries, technologies, or civilization bonuses while introducing new local constraints and content.
 
 Balance target: reaching 10 billion should be a substantial campaign milestone, while the colony ship should require a final research and production phase after the population goal rather than arriving immediately when the target is reached.
