@@ -149,19 +149,31 @@ const applyFormationStats = (
   }
 
   const bonusMap = new Map(
-    formationDef.statBonuses.map((b) => [b.attribute, b.multiplier]),
+    formationDef.statBonuses.map((b) => [b.attribute, b]),
   );
 
   const applyBonus = (value: ExpNumber, attribute: string): ExpNumber => {
-    const multiplier = bonusMap.get(attribute);
-    if (!multiplier) return value;
-    return value.mul(ExpNumber.fromNumber(multiplier));
+    const bonus = bonusMap.get(attribute);
+    if (!bonus) return value;
+    if (bonus.multiplier !== undefined) {
+      return value.mul(ExpNumber.fromNumber(bonus.multiplier));
+    }
+    if (bonus.additive !== undefined) {
+      return value.add(ExpNumber.fromNumber(bonus.additive));
+    }
+    return value;
   };
 
   const applyBonusToNumber = (value: number, attribute: string): number => {
-    const multiplier = bonusMap.get(attribute);
-    if (!multiplier) return value;
-    return value * multiplier;
+    const bonus = bonusMap.get(attribute);
+    if (!bonus) return value;
+    if (bonus.multiplier !== undefined) {
+      return value * bonus.multiplier;
+    }
+    if (bonus.additive !== undefined) {
+      return value + bonus.additive;
+    }
+    return value;
   };
 
   let newStats = {
@@ -169,17 +181,20 @@ const applyFormationStats = (
     hp: applyBonus(stats.hp, "unitAll.hp"),
     attack: applyBonus(stats.attack, "unitAll.attack"),
     accuracy: applyBonusToNumber(stats.accuracy, "unitAll.accuracy"),
+    range: applyBonusToNumber(stats.range, "unitAll.range"),
   };
 
   // Tag-specific bonuses: for now, just apply to all units with that tag
   // This is a simplification - proper implementation would check unit tags
-  if (bonusMap.has("tag.cavalry.attack")) {
+  const cavalryBonus = bonusMap.get("tag.cavalry.attack");
+  if (cavalryBonus) {
     newStats = {
       ...newStats,
       attack: applyBonus(newStats.attack, "tag.cavalry.attack"),
     };
   }
-  if (bonusMap.has("tag.ranged.attack")) {
+  const rangedBonus = bonusMap.get("tag.ranged.attack");
+  if (rangedBonus) {
     newStats = {
       ...newStats,
       attack: applyBonus(newStats.attack, "tag.ranged.attack"),

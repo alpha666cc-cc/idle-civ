@@ -21,12 +21,18 @@ const formationEffectSummary = (formationId: string): string => {
     "unitAll.hp": "HP",
     "unitAll.attack": "attack",
     "unitAll.accuracy": "accuracy",
+    "unitAll.range": "range",
   };
   for (const bonus of formation.statBonuses ?? []) {
-    const change = Math.round(Math.abs(bonus.multiplier - 1) * 100);
-    if (change === 0) continue;
-    const sign = bonus.multiplier > 1 ? "+" : "-";
-    effects.push(`${sign}${change}% ${statNames[bonus.attribute] ?? bonus.attribute}`);
+    if (bonus.multiplier !== undefined) {
+      const change = Math.round(Math.abs(bonus.multiplier - 1) * 100);
+      if (change === 0) continue;
+      const sign = bonus.multiplier > 1 ? "+" : "-";
+      effects.push(`${sign}${change}% ${statNames[bonus.attribute] ?? bonus.attribute}`);
+    } else if (bonus.additive !== undefined) {
+      const sign = bonus.additive > 0 ? "+" : "";
+      effects.push(`${sign}${bonus.additive} ${statNames[bonus.attribute] ?? bonus.attribute}`);
+    }
   }
   for (const rule of formation.damageTakenVs ?? []) {
     const change = Math.round(Math.abs(rule.multiplier - 1) * 100);

@@ -43,7 +43,8 @@ export type FormationDefinitionData = {
   // Stat bonuses: optional trades (e.g., +hp, -attack)
   readonly statBonuses?: readonly {
     readonly attribute: string;
-    readonly multiplier: number;
+    readonly multiplier?: number;
+    readonly additive?: number;
   }[];
 
   // Damage taken from attackers carrying a given tag, as a multiplier on
@@ -70,7 +71,8 @@ class FormationDefinition_ extends GameObject {
   readonly movementSpeed: number;
   readonly statBonuses?: readonly {
     readonly attribute: string;
-    readonly multiplier: number;
+    readonly multiplier?: number;
+    readonly additive?: number;
   }[];
   readonly damageTakenVs?: readonly {
     readonly tag: string;

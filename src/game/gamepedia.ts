@@ -389,7 +389,7 @@ for (const formation of formationDefinitions) {
     researchId?: string;
     positionOffset: number;
     movementSpeed: number;
-    statBonuses?: readonly { attribute: string; multiplier: number }[];
+    statBonuses?: readonly { attribute: string; multiplier?: number; additive?: number }[];
     damageTakenVs?: readonly { tag: string; multiplier: number }[];
     damageDealtVs?: readonly { tag: string; multiplier: number }[];
 

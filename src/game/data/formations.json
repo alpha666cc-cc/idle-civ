@@ -90,13 +90,17 @@
     "description": "Harass from range: can't be targeted when enemy is close.",
     "unlockAge": 3,
     "unlockType": "research",
-    "researchId": "rigging_sails",
+    "researchId": "raiding_vessels",
     "positionOffset": 1,
     "movementSpeed": 1.2,
     "statBonuses": [
       {
         "attribute": "unitAll.accuracy",
         "multiplier": 1.5
+      },
+      {
+        "attribute": "unitAll.range",
+        "additive": 1
       }
     ]
   },
