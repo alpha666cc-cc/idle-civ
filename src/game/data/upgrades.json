@@ -192,19 +192,19 @@
     "costs": [
       {
         "resource": "food",
-        "base": "6.49942720156444e3979",
+        "base": "1e81",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "wood",
-        "base": "8.66590293541983e3978",
+        "base": "1e73",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e61",
         "factor": 1,
         "exponent": 0.5
       }
@@ -578,19 +578,19 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "8.66590293541983e3978",
+        "base": "1e72",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "stone",
-        "base": "8.66590293541983e3978",
+        "base": "1e73",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e61",
         "factor": 1,
         "exponent": 0.5
       }
@@ -940,13 +940,13 @@
     "costs": [
       {
         "resource": "stone",
-        "base": "8.66590293541983e3978",
+        "base": "1e72",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e61",
         "factor": 1,
         "exponent": 0.5
       }
@@ -1302,19 +1302,19 @@
     "costs": [
       {
         "resource": "wood",
-        "base": "8.66590293541983e3978",
+        "base": "1e83",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "stone",
-        "base": "8.66590293541983e3978",
+        "base": "1e83",
         "factor": 1,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
-        "base": "1e3",
+        "base": "1e62",
         "factor": 1,
         "exponent": 0.5
       }
