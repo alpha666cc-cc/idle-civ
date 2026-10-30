@@ -139,23 +139,20 @@ const ageTwoProductionTargets: readonly BuildingKey[] = [
   "quarry",
   "goldMine",
 ];
-const ageTwoProductionTargetCount = 2400;
+const ageTwoProductionTargetCount = 1800;
 const ageTwoTownHallTarget: { building: BuildingKey; targetCount: number } = {
   building: "townHall",
-  targetCount: 120,
+  targetCount: 100,
 };
 const ageTwoRequiredInfrastructureTargets: readonly {
   building: BuildingKey;
   targetCount: number;
-}[] = [{ building: "university", targetCount: 510 }];
+}[] = [{ building: "university", targetCount: 1000 }];
 const ageTwoOptionalInfrastructureTargets: readonly {
   building: BuildingKey;
   targetCount: number;
-}[] = [{ building: "market", targetCount: 430 }];
-const ageTwoInfrastructureTargets = [
-  ...ageTwoRequiredInfrastructureTargets,
-  ...ageTwoOptionalInfrastructureTargets,
-];
+}[] = [{ building: "market", targetCount: 350 }];
+// ageTwoInfrastructureTargets removed — split into required/optional above.
 
 /**
  * The first unwon encounter in the current age. Encounter order is the
@@ -3069,17 +3066,16 @@ export class PlayerStrategy extends ResearchStrategy {
         trade: 0,
       };
     }
-    if (
-      state?.getCurrentAge()?.key === "age2" &&
-      !this.hasCompletedAgeTwoEconomyTargets(state)
-    ) {
+    if (state?.getCurrentAge()?.key === "age2") {
+      // Player allocates ~20% to science during research phases, shifting
+      // to military/metalwork/trade for battles. Keep a moderate science share.
       return {
-        food: 0.6,
-        wood: 0.2,
-        stone: 0.1,
-        gold: 0.1,
+        food: 0.1,
+        wood: 0.05,
+        stone: 0.05,
+        gold: 0.05,
         military: 0,
-        science: 0,
+        science: 0.75,
         metalwork: 0,
         trade: 0,
       };
@@ -3335,6 +3331,22 @@ export class PlayerStrategy extends ResearchStrategy {
       deferredEconomyAction = townHallAction;
     }
 
+    // Build university first: age-2 research is priced in science, and without
+    // enough science production the strategy can never buy the techs that unlock
+    // age-2 units.
+    for (const { building, targetCount } of ageTwoRequiredInfrastructureTargets) {
+      const infrastructureAction = this.getBuildingTargetAction(
+        state,
+        building,
+        targetCount,
+        context,
+      );
+      if (infrastructureAction) {
+        if (infrastructureAction.type === "build") return infrastructureAction;
+        deferredEconomyAction ??= infrastructureAction;
+      }
+    }
+
     for (const building of ageTwoProductionTargets) {
       const upgradeAction = this.getProductionUpgradeAction(
         state,
@@ -3360,7 +3372,7 @@ export class PlayerStrategy extends ResearchStrategy {
       }
     }
 
-    for (const { building, targetCount } of ageTwoInfrastructureTargets) {
+    for (const { building, targetCount } of ageTwoOptionalInfrastructureTargets) {
       const infrastructureAction = this.getBuildingTargetAction(
         state,
         building,
@@ -3472,6 +3484,30 @@ export class PlayerStrategy extends ResearchStrategy {
         this.getWorkerRatios(state),
       );
       if (workerAction) return workerAction;
+    }
+
+    // In age 2, buy research and upgrades before building economy: age-2
+    // research unlocks the units the battle simulator needs, and upgrades boost
+    // production so research becomes affordable sooner.
+    if (state.getCurrentAge()?.key === "age2") {
+      const researchAction = this.getResearchAction(state);
+      if (researchAction) return researchAction;
+      // Buy affordable enhancer upgrades for buildings that have reached their
+      // threshold, boosting production before spending on new buildings.
+      for (const building of ["farm", "lumberYard", "quarry", "goldMine", "barracks", "university", "smithy", "market"] as BuildingKey[]) {
+        const upgradeAction = this.getProductionUpgradeAction(state, building, context);
+        if (upgradeAction?.type === "buyUpgrade") return upgradeAction;
+      }
+      // Only buy units if age-2 units are actually unlocked (research done).
+      const hasAge2Units = state
+        .getRosterUnits()
+        .some((unit) => unit.age === 2 && state.isUnitAvailable(unit.key));
+      if (hasAge2Units) {
+        const simulatorAction = this.getSimulatorActions(state)[0];
+        if (simulatorAction) return simulatorAction;
+        const battleAction = this.getBattleLaunchAction(state);
+        if (battleAction) return battleAction;
+      }
     }
 
     const ageTwoProductionAction = this.getAgeTwoProductionAction(
