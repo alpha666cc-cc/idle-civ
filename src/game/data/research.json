@@ -1685,7 +1685,7 @@
     "guid": "22fc1e59-343f-556d-96f4-d19741e46320",
     "key": "feudalism",
     "name": "Feudalism",
-    "description": "production_multiplier farm (large); upkeep_reduction population (small)",
+    "description": "production_multiplier food (large); production_multiplier military (small); worker_efficiency basic (small)",
     "age": 3,
     "category": "civilian",
     "prerequisites": ["civil_service"],
@@ -1694,17 +1694,20 @@
         "type": "attributeMultiplier",
         "destination": "food",
         "value": "100"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": "10"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "basicProductionPerWorker",
+        "value": "1.5"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "upkeep_reduction",
-        "target": "population",
-        "value": "small",
-        "reason": "no upkeep drain on population"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "a763341c-14aa-5a3a-b147-115695328d96",
@@ -1825,7 +1828,7 @@
     "guid": "b4e4a084-fd55-5a11-804d-58f4bfb5db8d",
     "key": "universities",
     "name": "Universities",
-    "description": "production_multiplier science (large); building_cost_reduction all (small)",
+    "description": "production_multiplier science (large); worker_efficiency advanced (small); building_cost_reduction all (small)",
     "age": 3,
     "category": "civilian",
     "prerequisites": ["scholasticism"],
@@ -1833,7 +1836,12 @@
       {
         "type": "attributeMultiplier",
         "destination": "science",
-        "value": "100"
+        "value": "20"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "advancedProductionPerWorker",
+        "value": "2"
       },
       {
         "type": "costReductionPercent",
@@ -1848,40 +1856,58 @@
     "guid": "285f5f44-b912-567b-9fdf-39ba4e571457",
     "key": "patronage",
     "name": "Patronage",
-    "description": "cost_reduction enhancers (small); production_multiplier all (small)",
+    "description": "production_multiplier gold (small); production_multiplier science (small); worker_efficiency advanced (small); building_cost_reduction advanced_production (small)",
     "age": 3,
     "category": "civilian",
     "prerequisites": ["guilds"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "allProduction",
+        "destination": "gold",
+        "value": "10"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": "10"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "advancedProductionPerWorker",
         "value": "2"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "advancedProductionBuildings.costs.all",
+        "value": "0.5"
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "cost_reduction",
-        "target": "enhancers",
-        "value": "small",
-        "reason": "no such buyable (dock / enhancer cost path)"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "2386df14-3767-5111-a715-3392a74c7771",
     "key": "manorialism",
     "name": "Manorialism",
-    "description": "building_capacity house (large); production_multiplier house (small)",
+    "description": "production_multiplier science (small); building_cost_reduction house (small); citizen_cost_reduction people (small)",
     "age": 3,
     "category": "civilian",
     "prerequisites": ["feudalism"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "People.capacity",
-        "value": "2"
+        "destination": "science",
+        "value": "10"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "house.costs.all",
+        "value": "0.5"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "people.costs.all",
+        "value": "0.5"
       }
     ],
     "unlocks": [],
@@ -1937,32 +1963,30 @@
     "guid": "e14aaf6c-4ce2-5f3a-86c3-664229d81571",
     "key": "almanacs",
     "name": "Almanacs",
-    "description": "offline_efficiency offline_progress (small); offline_cap hours (small)",
+    "description": "production_multiplier food (small); worker_efficiency basic (small)",
     "age": 3,
     "category": "civilian",
     "prerequisites": ["crop_rotation"],
-    "bonuses": [],
-    "unlocks": [],
-    "ignored": [
+    "bonuses": [
       {
-        "type": "offline_efficiency",
-        "target": "offline_progress",
-        "value": "small",
-        "reason": "offline tuning not research-driven"
+        "type": "attributeMultiplier",
+        "destination": "food",
+        "value": "10"
       },
       {
-        "type": "offline_cap",
-        "target": "hours",
-        "value": "small",
-        "reason": "offline tuning not research-driven"
+        "type": "attributeMultiplier",
+        "destination": "basicProductionPerWorker",
+        "value": "2"
       }
-    ]
+    ],
+    "unlocks": [],
+    "ignored": []
   },
   {
     "guid": "99397f6f-0266-5fe8-9e35-57c54e514e18",
     "key": "plate_armor",
     "name": "Plate Armor",
-    "description": "unlock_unit knight (small); unit_stat_boost cavalry_attack (small)",
+    "description": "unlock_unit knight (small); unit_stat_boost cavalry_attack (small); production_multiplier metalwork (small)",
     "age": 3,
     "category": "military",
     "prerequisites": ["shock_cavalry", "armor_layering"],
@@ -1971,35 +1995,28 @@
         "type": "attributeMultiplier",
         "destination": "tag.armored.attack",
         "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": "10"
       }
     ],
     "unlocks": ["knight"],
+    "conversions": [
+      {
+        "from": "cavalry_iron",
+        "to": "knight",
+        "ratio": 2
+      }
+    ],
     "ignored": []
   },
   {
     "guid": "975bd393-0021-5c02-b005-b8aa7a5b6ed6",
     "key": "yew_bowcraft",
     "name": "Yew Bowcraft",
-    "description": "unlock_unit longbow (small); convert_unit archer_classical (small)",
-    "age": 3,
-    "category": "military",
-    "prerequisites": ["recurve_archery"],
-    "bonuses": [],
-    "unlocks": ["longbow"],
-    "conversions": [
-      {
-        "from": "archer_classical",
-        "to": "longbow",
-        "ratio": 3
-      }
-    ],
-    "ignored": []
-  },
-  {
-    "guid": "5c69ba8b-6c6d-5055-9cc8-f5e02703e306",
-    "key": "steel_crossbows",
-    "name": "Steel Crossbows",
-    "description": "unlock_unit crossbow (small); unit_stat_boost ranged_attack (small)",
+    "description": "unlock_unit longbow (small); unit_stat_boost ranged_attack (small); production_multiplier wood (small)",
     "age": 3,
     "category": "military",
     "prerequisites": ["recurve_archery"],
@@ -2008,6 +2025,41 @@
         "type": "attributeMultiplier",
         "destination": "tag.ranged.attack",
         "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "wood",
+        "value": "10"
+      }
+    ],
+    "unlocks": ["longbow"],
+    "conversions": [
+      {
+        "from": "archer_classical",
+        "to": "longbow",
+        "ratio": 1
+      }
+    ],
+    "ignored": []
+  },
+  {
+    "guid": "5c69ba8b-6c6d-5055-9cc8-f5e02703e306",
+    "key": "steel_crossbows",
+    "name": "Steel Crossbows",
+    "description": "unlock_unit crossbow (small); unit_stat_boost ranged_attack (small); production_multiplier metalwork (small)",
+    "age": 3,
+    "category": "military",
+    "prerequisites": ["recurve_archery"],
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "tag.ranged.attack",
+        "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": "10"
       }
     ],
     "unlocks": ["crossbow"],
@@ -2017,7 +2069,7 @@
     "guid": "27e60724-58dd-5564-9679-ec3d87876160",
     "key": "professional_men_at_arms",
     "name": "Professional Men-at-Arms",
-    "description": "unlock_unit man_at_arms (small); unit_stat_boost infantry_hp (small)",
+    "description": "unlock_unit man_at_arms (small); unit_stat_boost infantry_hp (small); production_multiplier military (small)",
     "age": 3,
     "category": "military",
     "prerequisites": ["legion_discipline"],
@@ -2026,16 +2078,28 @@
         "type": "attributeMultiplier",
         "destination": "tag.infantry.hp",
         "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": "10"
       }
     ],
     "unlocks": ["man_at_arms"],
+    "conversions": [
+      {
+        "from": "legionary",
+        "to": "man_at_arms",
+        "ratio": 2
+      }
+    ],
     "ignored": []
   },
   {
     "guid": "0ef540d5-2899-5b6a-bf70-3b7ff5483982",
     "key": "trebuchet_physics",
     "name": "Trebuchet Physics",
-    "description": "unlock_unit trebuchet (small); unit_stat_boost army_power (small)",
+    "description": "unlock_unit trebuchet (small); unit_stat_boost army_power (small); production_multiplier metalwork (small)",
     "age": 3,
     "category": "military",
     "prerequisites": ["heavy_counterweights"],
@@ -2044,16 +2108,28 @@
         "type": "attributeMultiplier",
         "destination": "unitAll.attack",
         "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": "10"
       }
     ],
     "unlocks": ["trebuchet"],
+    "conversions": [
+      {
+        "from": "ballista",
+        "to": "trebuchet",
+        "ratio": 2
+      }
+    ],
     "ignored": []
   },
   {
     "guid": "6c496756-96c2-5327-8c43-3dad08755e3e",
     "key": "clinker_building",
     "name": "Clinker Building",
-    "description": "unlock_unit cog (small); unit_stat_boost ship_attack (small)",
+    "description": "unlock_unit cog (small); unit_stat_boost ship_attack (small); production_multiplier military (small)",
     "age": 3,
     "category": "military",
     "prerequisites": ["shipbuilding_principles"],
@@ -2062,6 +2138,11 @@
         "type": "attributeMultiplier",
         "destination": "tag.naval.attack",
         "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": "10"
       }
     ],
     "unlocks": ["cog"],
@@ -2071,7 +2152,7 @@
     "guid": "1f67ab98-5bc7-5e41-948c-7f336992c8e8",
     "key": "raiding_vessels",
     "name": "Raiding Vessels",
-    "description": "unlock_unit longship (small); unit_stat_boost ship_attack (small)",
+    "description": "unlock_unit longship (small); unit_stat_boost ship_attack (small); production_multiplier trade (small)",
     "age": 3,
     "category": "military",
     "prerequisites": ["clinker_building"],
@@ -2080,6 +2161,11 @@
         "type": "attributeMultiplier",
         "destination": "tag.naval.attack",
         "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": "10"
       }
     ],
     "unlocks": ["longship"],
@@ -2089,7 +2175,7 @@
     "guid": "3359e7a8-8af0-5a6e-bbe5-2a767f7f5e78",
     "key": "early_black_powder",
     "name": "Early Black Powder",
-    "description": "unlock_unit bombard (small); unit_stat_boost army_power (small)",
+    "description": "unlock_unit bombard (small); unit_stat_boost army_power (small); production_multiplier basic_production (large)",
     "age": 3,
     "category": "military",
     "prerequisites": ["trebuchet_physics"],
@@ -2098,6 +2184,11 @@
         "type": "attributeMultiplier",
         "destination": "unitAll.attack",
         "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "basicProduction",
+        "value": "10"
       }
     ],
     "unlocks": ["bombard"],
@@ -2107,7 +2198,7 @@
     "guid": "faa14909-1481-537d-ab14-e0cc5df3ceda",
     "key": "rigging_sails",
     "name": "Rigging & Sails",
-    "description": "unlock_unit caravel (small); unit_stat_boost ranged_attack (small)",
+    "description": "unlock_unit caravel (small); unit_stat_boost ranged_attack (small); production_multiplier trade (small)",
     "age": 3,
     "category": "military",
     "prerequisites": ["clinker_building"],
@@ -2116,6 +2207,11 @@
         "type": "attributeMultiplier",
         "destination": "tag.ranged.attack",
         "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "trade",
+        "value": "10"
       }
     ],
     "unlocks": ["caravel"],
@@ -2126,7 +2222,7 @@
     "guid": "8725ca2f-d4fa-52f0-b800-31c01392d3a3",
     "key": "castle_fortification",
     "name": "Castle Fortification",
-    "description": "unit_stat_boost army_defense (small); cost_reduction military_units (small)",
+    "description": "unit_stat_boost army_defense (small); cost_reduction military_units (small); production_multiplier stone (small)",
     "age": 3,
     "category": "military",
     "prerequisites": ["gothic_architecture"],
@@ -2140,6 +2236,11 @@
         "type": "costReductionPercent",
         "destination": "allUnits.costs.all",
         "value": "0.5"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": "10"
       }
     ],
     "unlocks": [],
@@ -2149,7 +2250,7 @@
     "guid": "1c4664a2-d8aa-5695-a152-fe3b7a4da76d",
     "key": "crossbow_drills",
     "name": "Crossbow Drills",
-    "description": "unit_stat_boost ranged_attack (small); cost_reduction ranged_units (small)",
+    "description": "unit_stat_boost ranged_attack (small); cost_reduction ranged_units (small); production_multiplier military (small)",
     "age": 3,
     "category": "military",
     "prerequisites": ["steel_crossbows"],
@@ -2163,6 +2264,11 @@
         "type": "costReductionPercent",
         "destination": "tag.ranged.costs.all",
         "value": "0.5"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": "10"
       }
     ],
     "unlocks": [],
@@ -2172,7 +2278,7 @@
     "guid": "5453ddcb-9d64-5014-bea3-4b573d06bb9f",
     "key": "chivalric_code",
     "name": "Chivalric Code",
-    "description": "unit_stat_boost cavalry_speed (small); cost_reduction cavalry_units (small)",
+    "description": "unit_stat_boost cavalry_speed (small); cost_reduction cavalry_units (small); production_multiplier military (small)",
     "age": 3,
     "category": "military",
     "prerequisites": ["plate_armor"],
@@ -2186,6 +2292,11 @@
         "type": "costReductionPercent",
         "destination": "tag.cavalry.costs.all",
         "value": "0.5"
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "military",
+        "value": "10"
       }
     ],
     "unlocks": [],
