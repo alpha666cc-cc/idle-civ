@@ -1688,7 +1688,7 @@
     "description": "production_multiplier food (large); production_multiplier military (small); worker_efficiency basic (small)",
     "age": 3,
     "category": "civilian",
-    "prerequisites": ["civil_service"],
+    "prerequisites": ["civil_service", "plate_armor"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1716,7 +1716,7 @@
     "description": "production_multiplier gold_mine (large); building_cost_reduction all (small)",
     "age": 3,
     "category": "civilian",
-    "prerequisites": ["banking_concepts"],
+    "prerequisites": ["banking_concepts", "raiding_vessels"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1785,7 +1785,7 @@
     "description": "building_cost_reduction all (small); production_multiplier all (small)",
     "age": 3,
     "category": "civilian",
-    "prerequisites": ["architecture"],
+    "prerequisites": ["architecture", "trebuchet_physics"],
     "bonuses": [
       {
         "type": "costReductionPercent",
@@ -1808,7 +1808,7 @@
     "description": "global_production trade (large); building_cost_reduction all (small)",
     "age": 3,
     "category": "civilian",
-    "prerequisites": ["trade_routes"],
+    "prerequisites": ["trade_routes", "rigging_sails"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1831,7 +1831,7 @@
     "description": "production_multiplier science (large); worker_efficiency advanced (small); building_cost_reduction all (small)",
     "age": 3,
     "category": "civilian",
-    "prerequisites": ["scholasticism"],
+    "prerequisites": ["scholasticism", "almanacs"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1859,7 +1859,7 @@
     "description": "production_multiplier gold (small); production_multiplier science (small); worker_efficiency advanced (small); building_cost_reduction advanced_production (small)",
     "age": 3,
     "category": "civilian",
-    "prerequisites": ["guilds"],
+    "prerequisites": ["guilds", "cartography"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1892,7 +1892,7 @@
     "description": "production_multiplier science (small); building_cost_reduction house (small); citizen_cost_reduction people (small)",
     "age": 3,
     "category": "civilian",
-    "prerequisites": ["feudalism"],
+    "prerequisites": ["windmills"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1920,7 +1920,11 @@
     "description": "production_multiplier quarry (large); building_cost_reduction all (small)",
     "age": 3,
     "category": "civilian",
-    "prerequisites": ["metallurgy_prep"],
+    "prerequisites": [
+      "metallurgy_prep",
+      "water_power",
+      "professional_men_at_arms"
+    ],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1943,7 +1947,7 @@
     "description": "production_multiplier metalwork (large); building_cost_reduction all (small)",
     "age": 3,
     "category": "civilian",
-    "prerequisites": ["guilds"],
+    "prerequisites": ["plate_armor"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1966,7 +1970,7 @@
     "description": "production_multiplier food (small); worker_efficiency basic (small)",
     "age": 3,
     "category": "civilian",
-    "prerequisites": ["crop_rotation"],
+    "prerequisites": ["crop_rotation", "manorialism"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -1998,18 +2002,16 @@
       },
       {
         "type": "attributeMultiplier",
+        "destination": "tag.armored.armor",
+        "value": "1.25"
+      },
+      {
+        "type": "attributeMultiplier",
         "destination": "metalwork",
         "value": "10"
       }
     ],
     "unlocks": ["knight"],
-    "conversions": [
-      {
-        "from": "cavalry_iron",
-        "to": "knight",
-        "ratio": 2
-      }
-    ],
     "ignored": []
   },
   {
@@ -2019,7 +2021,7 @@
     "description": "unlock_unit longbow (small); unit_stat_boost ranged_attack (small); production_multiplier wood (small)",
     "age": 3,
     "category": "military",
-    "prerequisites": ["recurve_archery"],
+    "prerequisites": ["recurve_archery", "craftsmanship"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -2049,7 +2051,7 @@
     "description": "unlock_unit crossbow (small); unit_stat_boost ranged_attack (small); production_multiplier metalwork (small)",
     "age": 3,
     "category": "military",
-    "prerequisites": ["recurve_archery"],
+    "prerequisites": ["recurve_archery", "chivalric_code"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -2102,7 +2104,7 @@
     "description": "unlock_unit trebuchet (small); unit_stat_boost army_power (small); production_multiplier metalwork (small)",
     "age": 3,
     "category": "military",
-    "prerequisites": ["heavy_counterweights"],
+    "prerequisites": ["heavy_counterweights", "craftsmanship", "mining_shafts"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -2132,7 +2134,7 @@
     "description": "unlock_unit cog (small); unit_stat_boost ship_attack (small); production_multiplier military (small)",
     "age": 3,
     "category": "military",
-    "prerequisites": ["shipbuilding_principles"],
+    "prerequisites": ["shipbuilding_principles", "craftsmanship"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -2155,7 +2157,7 @@
     "description": "unlock_unit longship (small); unit_stat_boost ship_attack (small); production_multiplier trade (small)",
     "age": 3,
     "category": "military",
-    "prerequisites": ["clinker_building"],
+    "prerequisites": ["clinker_building", "feudalism"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -2169,6 +2171,7 @@
       }
     ],
     "unlocks": ["longship"],
+    "unlocksFormations": ["skirmish"],
     "ignored": []
   },
   {
@@ -2178,7 +2181,7 @@
     "description": "unlock_unit bombard (small); unit_stat_boost army_power (small); production_multiplier basic_production (large)",
     "age": 3,
     "category": "military",
-    "prerequisites": ["trebuchet_physics"],
+    "prerequisites": ["patronage", "universities", "crossbow_drills"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
@@ -2215,7 +2218,13 @@
       }
     ],
     "unlocks": ["caravel"],
-    "unlocksFormations": ["skirmish"],
+    "conversions": [
+      {
+        "from": "trader_classical",
+        "to": "caravel",
+        "ratio": 2
+      }
+    ],
     "ignored": []
   },
   {
@@ -2281,7 +2290,7 @@
     "description": "unit_stat_boost cavalry_speed (small); cost_reduction cavalry_units (small); production_multiplier military (small)",
     "age": 3,
     "category": "military",
-    "prerequisites": ["plate_armor"],
+    "prerequisites": ["feudalism", "yew_bowcraft"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
