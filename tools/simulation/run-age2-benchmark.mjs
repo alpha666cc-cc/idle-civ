@@ -132,7 +132,7 @@ async function main() {
 
   console.log("\n=== RESULTS SUMMARY ===\n");
 
-  for (const { strategyName, result, battleTimes, runTime } of results) {
+  for (const { strategyName, result, battleTimes, runTime, cacheStats } of results) {
     console.log(`Strategy: ${strategyName}`);
     console.log(`  Success: ${result.success}`);
     console.log(`  Objective Reached: ${result.objectiveReached}`);
@@ -145,6 +145,10 @@ async function main() {
     console.log(`  Final Population: ${result.population}`);
     console.log(`  Battles Won: ${result.battlesWon}`);
     console.log(`  Upgrades Bought: ${result.upgradesBought}`);
+    console.log(`  Cache Hits: ${cacheStats.hits}`);
+    console.log(`  Cache Misses: ${cacheStats.misses}`);
+    console.log(`  Cache Hit Rate: ${(cacheStats.hitRate * 100).toFixed(1)}%`);
+    console.log(`  Cache Size: ${cacheStats.size}`);
     const wonderUpgrade = result.boughtUpgrades.find((upgrade) =>
       upgrade.includes("wonder"),
     );

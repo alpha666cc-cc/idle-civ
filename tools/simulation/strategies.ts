@@ -3075,10 +3075,7 @@ export class PlayerStrategy extends ResearchStrategy {
       };
     }
     if (state?.getCurrentAge()?.key === "age2") {
-      // Dynamic: if research is affordable, put all workers on economy.
-      // If not, put 75% on science to make it affordable.
       const researchAffordable = state.hasResourcesForResearch();
-      // 50% science when unaffordable: balances research speed and economy building.
       const scienceShare = researchAffordable ? 0.05 : 0.5;
       const rest = 1 - scienceShare;
       return {
@@ -3520,7 +3517,7 @@ export class PlayerStrategy extends ResearchStrategy {
       let tradeShare = 0;
 
       if (!state.hasResourcesForResearch()) {
-        // Research unaffordable → put workers on science.
+        // 50% science, 50% economy: balances research speed and economy building.
         scienceShare = 0.5;
       } else if (nextBattle && hasAge2Units) {
         // Battle pending and units unlocked → check if we can win.
@@ -3563,21 +3560,36 @@ export class PlayerStrategy extends ResearchStrategy {
       });
       if (workerAction) return workerAction;
 
-      // After battle 8, build economy before research.
+      // After battle 8, build economy before research if university count < 600.
       const battle8Won = state.defeatedEncounters.includes("age2_1_marathon");
       if (battle8Won) {
-        const ageTwoProductionAction = this.getAgeTwoProductionAction(
-          state,
-          context,
-        );
-        if (ageTwoProductionAction?.type === "build") {
-          return ageTwoProductionAction;
+        const uniCount = state.getBuildingCount("university");
+        if (uniCount < 600) {
+          const ageTwoProductionAction = this.getAgeTwoProductionAction(
+            state,
+            context,
+          );
+          if (ageTwoProductionAction) return ageTwoProductionAction;
         }
       }
-      const researchAction = this.getResearchAction(state);
-      if (researchAction) return researchAction;
-      // Buy affordable enhancer upgrades for buildings that have reached their
-      // threshold, boosting production before spending on new buildings.
+      const battle9Ready = state.defeatedEncounters.includes("age2_1_marathon") &&
+        state.isResearchBought("martial_drill") &&
+        state.isResearchBought("subterfuge");
+
+      // After martial_drill + subterfuge, prioritize units and battle 9.
+      if (battle9Ready) {
+        const hasAge2Units = state
+          .getRosterUnits()
+          .some((unit) => unit.age === 2 && state.isUnitAvailable(unit.key));
+        if (hasAge2Units) {
+          const simulatorAction = this.getSimulatorActions(state)[0];
+          if (simulatorAction) return simulatorAction;
+          const battleAction = this.getBattleLaunchAction(state);
+          if (battleAction) return battleAction;
+        }
+      }
+
+      // Buy affordable enhancer upgrades first (boosts production).
       for (const building of [
         "farm",
         "lumberYard",
@@ -3595,6 +3607,20 @@ export class PlayerStrategy extends ResearchStrategy {
         );
         if (upgradeAction?.type === "buyUpgrade") return upgradeAction;
       }
+      // After battle 8, build economy before buying research.
+      const battle8Won2 = state.defeatedEncounters.includes("age2_1_marathon");
+      if (battle8Won2) {
+        const uniCount = state.getBuildingCount("university");
+        if (uniCount < 600) {
+          const ageTwoProductionAction = this.getAgeTwoProductionAction(
+            state,
+            context,
+          );
+          if (ageTwoProductionAction) return ageTwoProductionAction;
+        }
+      }
+      const researchAction = this.getResearchAction(state);
+      if (researchAction) return researchAction;
       // Only buy units if age-2 units are actually unlocked (research done).
       if (hasAge2Units) {
         const simulatorAction = this.getSimulatorActions(state)[0];
