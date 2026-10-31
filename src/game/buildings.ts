@@ -51,6 +51,11 @@ export type BuildingEffects = {
     resource: ResourceKey;
     amount: ExpNumber;
   }>;
+  bonus?: BuildingEffectEntry<{
+    type: string;
+    destination: string;
+    value: number;
+  }>;
 };
 
 /**
@@ -137,6 +142,9 @@ type BuildingData = {
     resourceProduction?:
       | { resource: ResourceKey; amount: number }
       | { resource: ResourceKey; amount: number }[];
+    bonus?:
+      | { type: string; destination: string; value: number }
+      | { type: string; destination: string; value: number }[];
   };
   unlock?: BuildingUnlock;
   /** Base power for this building's `${key}Power` stat; absent for non-producers. */
@@ -201,14 +209,18 @@ const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
             resource,
             amount: ExpNumber.fromNumber(amount),
           })),
+          bonus: normalizeBuildingEffects(effects.bonus),
         }
       : undefined,
     data.unlock,
     // A building that produces something owns a power stat; `power` is its base
     // value, so the JSON decides whether it starts at 1 or somewhere else.
-    data.effects?.additiveMultiplier || data.effects?.resourceProduction
-      ? ExpNumber.fromNumber(data.power ?? 1)
-      : undefined,
+    // If the JSON explicitly defines power (even as 0), honor it.
+    data.power !== undefined
+      ? ExpNumber.fromNumber(data.power)
+      : data.effects?.additiveMultiplier || data.effects?.resourceProduction
+        ? ExpNumber.fromNumber(1)
+        : undefined,
   );
 };
 

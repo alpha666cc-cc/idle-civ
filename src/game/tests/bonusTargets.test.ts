@@ -11,6 +11,7 @@ import {
   buildingDefinitions,
   hasBuildingEffectTag,
 } from "../buildings";
+import { attributeDefinitions, type AttributeKey } from "../attributes";
 
 describe("bonus destination paths", () => {
   it("normalizes the requested target families to stable ids", () => {
@@ -94,16 +95,25 @@ describe("bonus destination paths", () => {
     ).toThrow("Unknown bonus type: costParameterAdd");
   });
 
-  it("marks capacity-providing building effects as independent of power", () => {
-    const capacityEffects = buildingDefinitions.flatMap(
-      ({ effects }) => effects?.capacityProvided ?? [],
+  it("house capacity effect is affected by power, other buildings have nopower", () => {
+    const house = buildingDefinitions.find(b => b.key === "house");
+    const townHall = buildingDefinitions.find(b => b.key === "townHall");
+
+    const houseCapacity = house?.effects.capacityProvided?.[0];
+    const townHallCapacity = townHall?.effects.capacityProvided?.[0];
+
+    // House capacity keeps the nopower tag (capacity grants are flat, not
+    // scaled by the building's power).
+    expect(hasBuildingEffectTag(houseCapacity!, "nopower")).toBe(true);
+
+    // TownHall capacity keeps the nopower tag for the same reason.
+    expect(hasBuildingEffectTag(townHallCapacity!, "nopower")).toBe(true);
+
+    // Other buildings should keep nopower
+    const barracksCapacity = townHall?.effects.capacityProvided?.find(
+      (e) => e.building === "barracks",
     );
-    expect(capacityEffects).toHaveLength(6);
-    expect(
-      capacityEffects.every((effect) =>
-        hasBuildingEffectTag(effect, "nopower"),
-      ),
-    ).toBe(true);
+    expect(hasBuildingEffectTag(barracksCapacity!, "nopower")).toBe(true);
   });
 
   it("matches the cost resource and buyable scope", () => {
@@ -134,5 +144,40 @@ describe("bonus destination paths", () => {
       true,
     );
     expect(costTargetMatchesBuyable(antiArmorTarget!, "warrior")).toBe(false);
+  });
+
+  it("buildings with explicit power get power attributes registered", () => {
+    const house = buildingDefinitions.find(b => b.key === "house");
+    const townHall = buildingDefinitions.find(b => b.key === "townHall");
+
+    expect(house?.power?.toString()).toBe("0");
+    expect(townHall?.power?.toString()).toBe("0");
+
+    const housePowerAttr = attributeDefinitions.find(
+      (a) => a.key === ("housePower" as AttributeKey),
+    );
+    const townHallPowerAttr = attributeDefinitions.find(
+      (a) => a.key === ("townHallPower" as AttributeKey),
+    );
+
+    expect(housePowerAttr).toBeDefined();
+    expect(townHallPowerAttr).toBeDefined();
+    expect(housePowerAttr?.family).toBe("derived");
+    expect(townHallPowerAttr?.family).toBe("derived");
+  });
+
+  it("house and townhall have no production effects even with power", () => {
+    const house = buildingDefinitions.find(b => b.key === "house");
+    const townHall = buildingDefinitions.find(b => b.key === "townHall");
+
+    // These buildings only provide capacity, not production
+    expect(house?.effects.additiveMultiplier).toBeUndefined();
+    expect(house?.effects.resourceProduction).toBeUndefined();
+    expect(townHall?.effects.additiveMultiplier).toBeUndefined();
+    expect(townHall?.effects.resourceProduction).toBeUndefined();
+
+    // Power alone without effects doesn't boost production
+    expect(house?.effects.capacityProvided).toBeDefined();
+    expect(townHall?.effects.capacityProvided).toBeDefined();
   });
 });

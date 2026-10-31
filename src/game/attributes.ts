@@ -185,11 +185,17 @@ derivedAttributeDefinitions.push(wastedResourcesDefinition);
  * otherwise), raised by `attributeMultiplier` bonuses (e.g. an encounter
  * granting `farmPower` ×4). A production building is one that has an
  * `additiveMultiplier` or a `resourceProduction` effect — `house`, `townHall`
- * and `people` (capacity/drain only) have none. Keys are `${buildingKey}Power`.
+ * and `people` (capacity/drain only) have none, unless the JSON explicitly
+ * defines power for them. Keys are `${buildingKey}Power`.
  */
 export const buildingPowerAttributeDefinitions: AttributeDefinition[] =
   buildingDefinitions
-    .filter((b) => b.effects.additiveMultiplier || b.effects.resourceProduction)
+    .filter(
+      (b) =>
+        b.effects.additiveMultiplier ||
+        b.effects.resourceProduction ||
+        b.power !== undefined,
+    )
     .map(
       (b) =>
         new AttributeDefinition(

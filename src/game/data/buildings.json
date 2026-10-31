@@ -42,12 +42,20 @@
     ],
     "available": true,
     "maxCount": 0,
+    "power": 0,
     "effects": {
       "capacityProvided": {
         "building": "people",
         "perBuilding": 10,
         "tags": ["nopower"]
-      }
+      },
+      "bonus": [
+        {
+          "type": "attributeMultiplier",
+          "destination": "basicProduction.worker.efficiency",
+          "value": 1.01
+        }
+      ]
     }
   },
   {
@@ -187,6 +195,7 @@
     ],
     "available": true,
     "maxCount": 1,
+    "power": 0,
     "effects": {
       "capacityProvided": [
         {
@@ -213,6 +222,13 @@
           "building": "market",
           "perBuilding": 1,
           "tags": ["nopower"]
+        }
+      ],
+      "bonus": [
+        {
+          "type": "attributeFlat",
+          "destination": "allProduction.worker.efficiency",
+          "value": 0.01
         }
       ]
     }

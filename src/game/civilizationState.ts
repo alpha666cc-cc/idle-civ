@@ -50,6 +50,7 @@ import { ordersForAge } from "./orders";
 import {
   costTargetMatchesBuyable,
   collectCostReductions,
+  parseBonus,
   parseCostParameterTarget,
   type Bonus,
   type CostReductions,
@@ -1517,7 +1518,11 @@ export class CivilizationState {
    * active flat/multiplier bonus targeting it, paired with their source ids so the
    * Gamepedia stat page can render linked factor rows (§13.2).
    */
-  getDerivedAttributeFactors(key: string): DerivedAttributeFactors | undefined {
+  getDerivedAttributeFactors(
+    key: string,
+    includeBuilding = true,
+    includeGlobal = true,
+  ): DerivedAttributeFactors | undefined {
     const attribute = findAttributeDefinition(key);
     const computation = derivedAttributeComputations[key];
     if (attribute?.family !== "derived" || !computation) return undefined;
@@ -1526,7 +1531,7 @@ export class CivilizationState {
       additional: [],
       multiplicative: [],
     };
-    const bonusesByDest = this.activeBonusesByDestination();
+    const bonusesByDest = this.activeBonusesByDestination(includeBuilding);
     const keyBonuses = bonusesByDest.get(key) ?? [];
     for (const [sourceId, bonus] of keyBonuses) {
       if (bonus.type === "attributeFlat") {
@@ -1584,7 +1589,10 @@ export class CivilizationState {
 
     // A building's power folds in the global `buildingPower` multiplier, so the
     // displayed value is the effective one (§13.2).
-    if (buildingPowerAttributeDefinitions.some(({ key: pk }) => pk === key)) {
+    if (
+      includeGlobal &&
+      buildingPowerAttributeDefinitions.some(({ key: pk }) => pk === key)
+    ) {
       factors.multiplicative.push([
         "buildingPower",
         this.getAttributeValue("buildingPower"),
@@ -1665,8 +1673,79 @@ export class CivilizationState {
    * exponent never collapses a building's output.
    */
   buildingPower(buildingKey: BuildingKey): ExpNumber {
-    const value = this.getAttributeValue(`${buildingKey}Power`);
+    // Full own power includes core (age/upgrade/encounter) bonuses AND
+    // building-emitted bonuses from *other* buildings, so an external bonus
+    // can raise a 0-base building's power above 0. The building's own bonus
+    // never feeds back (buildingBonuses scales by coreBuildingPower only).
+    const own = this.fullOwnBuildingPower(buildingKey);
+    const globalPower = this.getAttributeValue("buildingPower");
+    // No fallback: 0 means 0. The global building-power multiplier still
+    // applies so an age/upgradethat raises global power also lifts this
+    // building's power above 0. Other bonuses (ages, upgrades, buildings)
+    // can boost it through fullOwnBuildingPower above.
+    const value = own.mul(globalPower);
+    if (buildingKey === "townHall" || buildingKey === "house" || buildingKey === "people") {
+      return value;
+    }
+    // Production buildings keep a floor of 1 so a zeroed power never zeroes
+    // their additiveMultiplier/resourceProduction output.
     return value.gt(ExpNumber.ZERO) ? value : ExpNumber.ONE;
+  }
+
+  /**
+   * Full own power: base + core bonuses + building-emitted bonuses from other
+   * buildings (all bonuses targeting this key), excluding the global factor.
+   * Used for display/effect scaling of the building's power stat.
+   */
+  private fullOwnBuildingPower(buildingKey: BuildingKey): ExpNumber {
+    const key = `${buildingKey}Power`;
+    const computation = derivedAttributeComputations[key];
+    const attribute = findAttributeDefinition(key);
+    if (!computation || attribute?.family !== "derived") {
+      return ExpNumber.ZERO;
+    }
+    const factors = this.getDerivedAttributeFactors(key, true, false);
+    if (!factors) return ExpNumber.ZERO;
+    const flat = factors.additional.reduce(
+      (total, [, value]) => total.add(value),
+      factors.base,
+    );
+    const multiplier = factors.multiplicative.reduce(
+      (total, [, value]) => total.mul(value),
+      ExpNumber.ONE,
+    );
+    return flat.mul(multiplier);
+  }
+
+  /**
+   * Building power computed from core (non-building) bonuses only, so that
+   * building-emitted bonuses can scale by it without recursing through
+   * activeBonuses(). Mirrors compoundStatValue() for a single key.
+   */
+  private coreBuildingPower(buildingKey: BuildingKey): ExpNumber {
+    const key = `${buildingKey}Power`;
+    const computation = derivedAttributeComputations[key];
+    const attribute = findAttributeDefinition(key);
+    if (!computation || attribute?.family !== "derived") {
+      return ExpNumber.ONE;
+    }
+    const factors = this.getDerivedAttributeFactors(key, false, false);
+    if (!factors) return ExpNumber.ONE;
+    const flat = factors.additional.reduce(
+      (total, [, value]) => total.add(value),
+      factors.base,
+    );
+    const multiplier = factors.multiplicative.reduce(
+      (total, [, value]) => total.mul(value),
+      ExpNumber.ONE,
+    );
+    // Own power only (no global factor) so buildingBonuses can scale by it
+    // without recursing. The global factor is applied in buildingPower().
+    const value = flat.mul(multiplier);
+    // Return raw value (possibly 0) so buildingBonuses can skip buildings whose
+    // power has not yet been granted by an age. buildingPower() applies the
+    // fallback to 1 for effect scaling.
+    return value;
   }
 
   /** Effective effects for one or more buildings, shared by simulation and Pedia. */
@@ -2540,9 +2619,10 @@ export class CivilizationState {
    * Cached on the identity of the four source id lists: rebuilt once per real
    * change, reused by every query in between (see the module cache note). Age bonuses
    * are derived from `enteredAges` (permanent entries) the same way research/encounters
-   * derive from their bought/defeated lists.
+   * derive from their bought/defeated lists. Building bonuses are computed fresh
+   * each time since they're cheap to calculate.
    */
-  private activeBonuses(): [sourceId: string, bonus: Bonus][] {
+  private activeBonuses(includeBuilding = true): [sourceId: string, bonus: Bonus][] {
     let byUpgrades = activeBonusCaches.get(this.boughtUpgrades);
     if (!byUpgrades) {
       byUpgrades = new WeakMap<
@@ -2575,11 +2655,17 @@ export class CivilizationState {
     }
     let byResearch = byAchievements.get(this.boughtResearch);
     if (!byResearch) {
-      byResearch = new WeakMap<readonly string[], ActiveBonusList>();
+      byResearch = new WeakMap<
+        readonly string[],
+        ActiveBonusList
+      >();
       byAchievements.set(this.boughtResearch, byResearch);
     }
     const cached = byResearch.get(this.enteredAges);
-    if (cached) return cached;
+    if (cached)
+      return includeBuilding
+        ? [...cached, ...this.buildingBonuses()]
+        : [...cached];
     const computed: [sourceId: string, bonus: Bonus][] = [
       ...this.boughtUpgradeBonuses(),
       ...this.defeatedEncounterBonuses(),
@@ -2588,53 +2674,114 @@ export class CivilizationState {
       ...this.enteredAgeBonuses(),
     ];
     byResearch.set(this.enteredAges, computed);
-    return computed;
+    return includeBuilding
+      ? [...computed, ...this.buildingBonuses()]
+      : [...computed];
   }
 
   /**
-   * Active bonuses indexed by destination for O(1) lookups. Cached by the same
-   * identity tuple as activeBonuses() since they have identical invalidation criteria.
+   * Collect bonuses emitted by buildings, scaled by count^power.
+   * Buildings with bonus effects emit bonuses like ages/encounters do.
    */
-  private activeBonusesByDestination(): Map<
+  private buildingBonuses(): [sourceId: string, bonus: Bonus][] {
+    const bonuses: [sourceId: string, bonus: Bonus][] = [];
+    for (const building of buildingDefinitions) {
+      const count = this.buildingCount(building.key);
+      if (count === 0) continue;
+      const buildingBonuses = building.effects.bonus;
+      if (!buildingBonuses) continue;
+
+      // Scaling uses core power (no building bonuses, to avoid self-recursion)
+      // times the GLOBAL building-power multiplier computed from core bonuses
+      // only (no building bonuses), so all boosts apply without recursing.
+      const corePower = this.coreBuildingPower(building.key);
+      const globalFactors = this.getDerivedAttributeFactors(
+        "buildingPower",
+        false,
+        false,
+      );
+      const globalPower = globalFactors
+        ? globalFactors.additional
+            .reduce((t, [, v]) => t.add(v), globalFactors.base)
+            .mul(
+              globalFactors.multiplicative.reduce(
+                (t, [, v]) => t.mul(v),
+                ExpNumber.ONE,
+              ),
+            )
+        : ExpNumber.ONE;
+      const power = corePower.mul(globalPower);
+      // No impact until an age grants this building real power.
+      if (!power.gt(ExpNumber.ZERO)) continue;
+
+      const quantity = ExpNumber.fromNumber(count);
+      const scaling = quantity.pow(power);
+
+      for (const effect of buildingBonuses) {
+        const scaledValue = ExpNumber.fromNumber(effect.value).mul(scaling);
+        const bonus = parseBonus(effect.type, effect.destination, scaledValue.toString());
+        bonuses.push([building.key, bonus]);
+      }
+    }
+    return bonuses;
+  }
+
+  /**
+   * Cached activeBonusesByDestination() for the full (includeBuilding=true)
+   * case, indexed by the same identity tuple as activeBonuses(). The
+   * includeBuilding=false case is computed fresh (cheap, recursion-safe).
+   */
+  private activeBonusesByDestination(includeBuilding = true): Map<
     string,
     [sourceId: string, bonus: Bonus][]
   > {
-    let byUpgrades = activeBonusByDestinationCaches.get(this.boughtUpgrades);
-    if (!byUpgrades) {
-      byUpgrades = new WeakMap<
-        readonly string[],
-        WeakMap<
+    if (includeBuilding) {
+      let byUpgrades = activeBonusByDestinationCaches.get(this.boughtUpgrades);
+      if (!byUpgrades) {
+        byUpgrades = new WeakMap<
+          readonly string[],
+          WeakMap<
+            readonly string[],
+            WeakMap<readonly string[], WeakMap<readonly string[], BonusMap>>
+          >
+        >();
+        activeBonusByDestinationCaches.set(this.boughtUpgrades, byUpgrades);
+      }
+      let byEncounters = byUpgrades.get(this.defeatedEncounters);
+      if (!byEncounters) {
+        byEncounters = new WeakMap<
           readonly string[],
           WeakMap<readonly string[], WeakMap<readonly string[], BonusMap>>
-        >
-      >();
-      activeBonusByDestinationCaches.set(this.boughtUpgrades, byUpgrades);
+        >();
+        byUpgrades.set(this.defeatedEncounters, byEncounters);
+      }
+      let byAchievements = byEncounters.get(this.earnedAchievements);
+      if (!byAchievements) {
+        byAchievements = new WeakMap<
+          readonly string[],
+          WeakMap<readonly string[], BonusMap>
+        >();
+        byEncounters.set(this.earnedAchievements, byAchievements);
+      }
+      let byResearch = byAchievements.get(this.boughtResearch);
+      if (!byResearch) {
+        byResearch = new WeakMap<readonly string[], BonusMap>();
+        byAchievements.set(this.boughtResearch, byResearch);
+      }
+      const cached = byResearch.get(this.enteredAges);
+      if (cached) return cached;
+      const computed = this.buildActiveBonusesByDestination(true);
+      byResearch.set(this.enteredAges, computed);
+      return computed;
     }
-    let byEncounters = byUpgrades.get(this.defeatedEncounters);
-    if (!byEncounters) {
-      byEncounters = new WeakMap<
-        readonly string[],
-        WeakMap<readonly string[], WeakMap<readonly string[], BonusMap>>
-      >();
-      byUpgrades.set(this.defeatedEncounters, byEncounters);
-    }
-    let byAchievements = byEncounters.get(this.earnedAchievements);
-    if (!byAchievements) {
-      byAchievements = new WeakMap<
-        readonly string[],
-        WeakMap<readonly string[], BonusMap>
-      >();
-      byEncounters.set(this.earnedAchievements, byAchievements);
-    }
-    let byResearch = byAchievements.get(this.boughtResearch);
-    if (!byResearch) {
-      byResearch = new WeakMap<readonly string[], BonusMap>();
-      byAchievements.set(this.boughtResearch, byResearch);
-    }
-    const cached = byResearch.get(this.enteredAges);
-    if (cached) return cached;
+    return this.buildActiveBonusesByDestination(false);
+  }
 
-    const bonuses = this.activeBonuses();
+  private buildActiveBonusesByDestination(includeBuilding: boolean): Map<
+    string,
+    [sourceId: string, bonus: Bonus][]
+  > {
+    const bonuses = this.activeBonuses(includeBuilding);
     const byDestination = new Map<string, [sourceId: string, bonus: Bonus][]>();
     for (const [sourceId, bonus] of bonuses) {
       const dest = String(bonus.destination);
@@ -2643,7 +2790,6 @@ export class CivilizationState {
       }
       byDestination.get(dest)!.push([sourceId, bonus]);
     }
-    byResearch.set(this.enteredAges, byDestination);
     return byDestination;
   }
 

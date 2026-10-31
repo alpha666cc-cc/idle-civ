@@ -143,16 +143,19 @@ describe("building resource bonuses", () => {
     ).toBeCloseTo(4, 9);
   });
 
-  it("gives power only to production buildings, never house or townHall", () => {
+  it("gives power to production buildings and to house/townHall (base 0)", () => {
     const state = stateWith({ farm: 5, house: 5, "townHall": 5 });
     // Production buildings carry a farmPower attribute and read it.
     expect(findAttributeDefinition("farmPower")).toBeDefined();
-    // Capacity-only and drain-only buildings have no power attribute at all.
-    for (const key of ["house", "townHall", "people"]) {
-      expect(findAttributeDefinition(`${key}Power`)).toBeUndefined();
-      // buildingPower falls back to 1 so the exponent is a no-op for them.
-      expect(state.buildingPower(key as BuildingKey).toNumber()).toBe(1);
+    // house and townHall now carry an explicit power attribute (base 0), and
+    // with no fallback 0 means 0.
+    for (const key of ["house", "townHall"]) {
+      expect(findAttributeDefinition(`${key}Power`)).toBeDefined();
+      expect(state.buildingPower(key as BuildingKey).toNumber()).toBe(0);
     }
+    // people carries no power attribute at all.
+    expect(findAttributeDefinition("peoplePower")).toBeUndefined();
+    expect(state.buildingPower("people" as BuildingKey).toNumber()).toBe(0);
   });
 
   it("keeps the capacity base stored but reports effective capacity", () => {
@@ -171,7 +174,13 @@ describe("building resource bonuses", () => {
 
     // age0 grants TownHall.capacity ×5 alongside global production-building
     // power ×1.2. Capacity grants remain independent of that power multiplier.
-    expect(aged.getAttributeValue("buildingPower").toNumber()).toBe(1.2);
+    // age0 grants TownHall.capacity ×5 alongside the global
+    // production-building power ×1.2. (TownHall no longer boosts building
+    // power; it boosts worker efficiency instead.)
+    expect(aged.getAttributeValue("buildingPower").toNumber()).toBeCloseTo(
+      1.2,
+      9,
+    );
     expect(aged.getBuildingMax("house")).toEqual(base.getBuildingMax("house"));
     expect(aged.getBuildingMax("townHall").toNumber()).toBe(5);
     expect(
@@ -236,10 +245,13 @@ describe("building resource bonuses", () => {
       expect(building?.power?.toNumber()).toBe(1);
       expect(stateWith().buildingPower(key as BuildingKey).toNumber()).toBe(1);
     }
-    // Non-producers carry no power at all.
-    for (const key of ["house", "townHall", "people"] as const) {
+    // `people` carries no power at all; house and townHall now carry an
+    // explicit base power of 0 (which falls back to 1 at runtime).
+    const people = buildingDefinitions.find((b) => b.key === "people");
+    expect(people?.power).toBeUndefined();
+    for (const key of ["house", "townHall"] as const) {
       const building = buildingDefinitions.find((b) => b.key === key);
-      expect(building?.power).toBeUndefined();
+      expect(building?.power?.toNumber()).toBe(0);
     }
   });
 });

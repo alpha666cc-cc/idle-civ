@@ -36,7 +36,7 @@
     "description": "How many market trade routes may run at once, each spending banked trade. Based at one; bonuses open further routes."
   },
   {
-    "guid": "bd2e941c-4c31-47c9-a75d-cc8b212aad74",
+    "guid": "bd2e941c-4c31-57c9-a75d-cc8b212aad74",
     "key": "spread",
     "label": "Trade spread",
     "description": "The purchase-side multiplier on the mid price. Lower spread means trade routes buy more goods for the same gold."
