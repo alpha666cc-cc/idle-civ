@@ -92,6 +92,12 @@ const groupDestinationLabel = (destination: string): string | undefined => {
     return "Advanced production buildings";
   if (destination === "productionBuilding.power")
     return "Production building power";
+  if (destination === "basicProductionPerWorker")
+    return "Basic production worker efficiency";
+  if (destination === "advancedProductionPerWorker")
+    return "Advanced production worker efficiency";
+  if (destination === "allProductionPerWorker")
+    return "All production worker efficiency";
   const tag = /^tag\.([a-zA-Z-]+)$/.exec(destination);
   if (tag) return `${tag[1]} units`;
   const domain = /^domain\.([a-z]+)$/.exec(destination);

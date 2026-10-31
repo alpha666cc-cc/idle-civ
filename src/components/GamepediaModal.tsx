@@ -466,6 +466,45 @@ export default function GamepediaModal({
               </strong>
             </div>
           ))}
+          {gameState.buildingPower(building.key).gt(ExpNumber.ZERO) &&
+            effects.bonus?.map((effect, index) => {
+              const count = gameState.getBuildingCount(building.key);
+              const power = gameState.buildingPower(building.key);
+              const scaledValue = ExpNumber.fromNumber(effect.value).mul(
+                ExpNumber.fromNumber(count).pow(power),
+              );
+              const bonus = {
+                type: effect.type,
+                destination: effect.destination,
+                value: scaledValue,
+              } as Bonus;
+              return (
+                <div
+                  className="gamepedia-effect-row"
+                  key={`bonus-${effect.destination}-${index}`}
+                >
+                  <div className="gamepedia-effect-copy">
+                    <span className="gamepedia-effect-meta">
+                      {bonusEffectLabel({
+                        type: effect.type,
+                        destination: effect.destination,
+                        value: ExpNumber.fromNumber(effect.value),
+                      } as Bonus)} - {bonusValueText(
+                        {
+                          type: effect.type,
+                          destination: effect.destination,
+                          value: ExpNumber.fromNumber(effect.value),
+                        } as Bonus,
+                        numberFormat,
+                      )} per building
+                    </span>
+                  </div>
+                  <strong className="gamepedia-effect-total">
+                    {bonusValueText(bonus, numberFormat)} total
+                  </strong>
+                </div>
+              );
+            })}
         </div>
 
         <p className="gamepedia-category">Capacity</p>

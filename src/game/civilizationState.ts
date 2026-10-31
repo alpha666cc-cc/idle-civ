@@ -1786,6 +1786,7 @@ export class CivilizationState {
                 : power,
             ),
         })) ?? undefined,
+      bonus: effects.bonus,
     };
   }
 
