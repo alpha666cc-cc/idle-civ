@@ -1221,14 +1221,66 @@ export class CivilizationState {
           }
         }
       }
+
+      // Per-worker efficiency bonuses feed the multiplier pile so they move the
+      // ×totalMultiplier display (§13.2). attributeFlat adds to additiveMultiplier,
+      // attributeMultiplier compounds into multiplicative — matching how basicProduction /
+      // advancedProduction bonuses are treated, so ×12.77 reflects them.
+      if (isBasic) {
+        const basicPerWorkerBonuses =
+          bonusesByDest.get("basicProductionPerWorker") ?? [];
+        for (const [sourceId, bonus] of basicPerWorkerBonuses) {
+          if (bonus.type === "attributeMultiplier") {
+            bonusFactors.multiplicative.push([sourceId, bonus.value]);
+          } else if (bonus.type === "attributeFlat") {
+            bonusFactors.additiveMultiplier.push([sourceId, bonus.value]);
+          }
+        }
+      }
+
+      if (isAdvanced) {
+        const advancedPerWorkerBonuses =
+          bonusesByDest.get("advancedProductionPerWorker") ?? [];
+        for (const [sourceId, bonus] of advancedPerWorkerBonuses) {
+          if (bonus.type === "attributeMultiplier") {
+            bonusFactors.multiplicative.push([sourceId, bonus.value]);
+          } else if (bonus.type === "attributeFlat") {
+            bonusFactors.additiveMultiplier.push([sourceId, bonus.value]);
+          }
+        }
+      }
+
+      const allPerWorkerBonuses =
+        bonusesByDest.get("allProductionPerWorker") ?? [];
+      for (const [sourceId, bonus] of allPerWorkerBonuses) {
+        if (bonus.type === "attributeMultiplier") {
+          bonusFactors.multiplicative.push([sourceId, bonus.value]);
+        } else if (bonus.type === "attributeFlat") {
+          bonusFactors.additiveMultiplier.push([sourceId, bonus.value]);
+        }
+      }
+
+      // Individual per-resource per-worker bonuses (e.g. woodProductionPerWorker)
+      const resourcePerWorkerBonuses =
+        bonusesByDest.get(
+          `${resourceKey}ProductionPerWorker`,
+        ) ?? [];
+      for (const [sourceId, bonus] of resourcePerWorkerBonuses) {
+        if (bonus.type === "attributeMultiplier") {
+          bonusFactors.multiplicative.push([sourceId, bonus.value]);
+        } else if (bonus.type === "attributeFlat") {
+          bonusFactors.additiveMultiplier.push([sourceId, bonus.value]);
+        }
+      }
     }
 
-    // Worker production: workers × productionPerWorker stat (which can be boosted)
-    const productionPerWorkerStat = this.getAttributeValue(
-      `${resourceKey}ProductionPerWorker`,
+    // Worker production: base workers × productionPerWorker (per-worker bonuses
+    // above already flow into the multiplier pile, so we only add the base here).
+    const workerBase = workerProduction.workers.mul(
+      ExpNumber.fromNumber(workerProduction.productionPerWorker),
     );
     const workerAdditional: ResourceFactor[] = [
-      [workerProduction, workerProduction.workers.mul(productionPerWorkerStat)],
+      [workerProduction, workerBase],
     ];
     if (
       workerProduction.autoClickProduction.gt(ExpNumber.ZERO) &&
@@ -2716,11 +2768,17 @@ export class CivilizationState {
       if (!power.gt(ExpNumber.ZERO)) continue;
 
       const quantity = ExpNumber.fromNumber(count);
-      const scaling = quantity.pow(power);
 
       for (const effect of buildingBonuses) {
-        const scaledValue = ExpNumber.fromNumber(effect.value).mul(scaling);
-        const bonus = parseBonus(effect.type, effect.destination, scaledValue.toString());
+        // Match the additiveMultiplier scaling curve: (value × count) ^ power
+        const scaledValue = ExpNumber.fromNumber(effect.value)
+          .mul(quantity)
+          .pow(power);
+        const bonus = parseBonus(
+          effect.type,
+          effect.destination,
+          scaledValue.toString(),
+        );
         bonuses.push([building.key, bonus]);
       }
     }

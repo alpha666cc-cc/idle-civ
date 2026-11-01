@@ -53,7 +53,7 @@
         {
           "type": "attributeMultiplier",
           "destination": "basicProduction.worker.efficiency",
-          "value": 1.01
+          "value": 0.01
         }
       ]
     }

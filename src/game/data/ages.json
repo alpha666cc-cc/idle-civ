@@ -103,12 +103,12 @@
       {
         "type": "costReductionFactor",
         "destination": "university.costs.all.factor",
-        "value": 1.3
+        "value": 1.1
       },
       {
         "type": "costReductionFactor",
         "destination": "barracks.costs.all.factor",
-        "value": 1.3
+        "value": 1.1
       },
       {
         "type": "attributeFlat",
