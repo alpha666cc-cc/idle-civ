@@ -113,7 +113,7 @@
       {
         "type": "attributeFlat",
         "destination": "house.power",
-        "value": 0.1
+        "value": 0.9259259259259259
       }
     ]
   },

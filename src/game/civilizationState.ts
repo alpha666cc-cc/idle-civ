@@ -214,17 +214,19 @@ const activeBonusCaches = new WeakMap<
 >();
 
 /** Cached activeBonusesByDestination(), indexed by destination for O(1) lookups.
- * Same cache key as activeBonuses() since they have the same invalidation criteria. */
-type BonusMap = Map<string, [sourceId: string, bonus: Bonus][]>;
+ * Keyed by bonus-source ids and building-count identity. */
+type BonusDestinationMap = Map<
+  string,
+  [sourceId: string, bonus: Bonus][]
+>;
+type ByEnteredAge = WeakMap<readonly string[], BonusDestinationMap>;
+type ByResearch = WeakMap<readonly string[], ByEnteredAge>;
+type ByAchievement = WeakMap<readonly string[], ByResearch>;
+type ByEncounter = WeakMap<readonly string[], ByAchievement>;
+type ByUpgrade = WeakMap<readonly string[], ByEncounter>;
 const activeBonusByDestinationCaches = new WeakMap<
-  readonly string[],
-  WeakMap<
-    readonly string[],
-    WeakMap<
-      readonly string[],
-      WeakMap<readonly string[], WeakMap<readonly string[], BonusMap>>
-    >
-  >
+  Partial<Record<BuildingKey, number>>,
+  ByUpgrade
 >();
 
 /** Cached getUnitStats(), keyed by the same identity tuple as activeBonuses plus unit id.
@@ -1222,62 +1224,14 @@ export class CivilizationState {
         }
       }
 
-      // Per-worker efficiency bonuses feed the multiplier pile so they move the
-      // ×totalMultiplier display (§13.2). attributeFlat adds to additiveMultiplier,
-      // attributeMultiplier compounds into multiplicative — matching how basicProduction /
-      // advancedProduction bonuses are treated, so ×12.77 reflects them.
-      if (isBasic) {
-        const basicPerWorkerBonuses =
-          bonusesByDest.get("basicProductionPerWorker") ?? [];
-        for (const [sourceId, bonus] of basicPerWorkerBonuses) {
-          if (bonus.type === "attributeMultiplier") {
-            bonusFactors.multiplicative.push([sourceId, bonus.value]);
-          } else if (bonus.type === "attributeFlat") {
-            bonusFactors.additiveMultiplier.push([sourceId, bonus.value]);
-          }
-        }
-      }
-
-      if (isAdvanced) {
-        const advancedPerWorkerBonuses =
-          bonusesByDest.get("advancedProductionPerWorker") ?? [];
-        for (const [sourceId, bonus] of advancedPerWorkerBonuses) {
-          if (bonus.type === "attributeMultiplier") {
-            bonusFactors.multiplicative.push([sourceId, bonus.value]);
-          } else if (bonus.type === "attributeFlat") {
-            bonusFactors.additiveMultiplier.push([sourceId, bonus.value]);
-          }
-        }
-      }
-
-      const allPerWorkerBonuses =
-        bonusesByDest.get("allProductionPerWorker") ?? [];
-      for (const [sourceId, bonus] of allPerWorkerBonuses) {
-        if (bonus.type === "attributeMultiplier") {
-          bonusFactors.multiplicative.push([sourceId, bonus.value]);
-        } else if (bonus.type === "attributeFlat") {
-          bonusFactors.additiveMultiplier.push([sourceId, bonus.value]);
-        }
-      }
-
-      // Individual per-resource per-worker bonuses (e.g. woodProductionPerWorker)
-      const resourcePerWorkerBonuses =
-        bonusesByDest.get(
-          `${resourceKey}ProductionPerWorker`,
-        ) ?? [];
-      for (const [sourceId, bonus] of resourcePerWorkerBonuses) {
-        if (bonus.type === "attributeMultiplier") {
-          bonusFactors.multiplicative.push([sourceId, bonus.value]);
-        } else if (bonus.type === "attributeFlat") {
-          bonusFactors.additiveMultiplier.push([sourceId, bonus.value]);
-        }
-      }
     }
 
-    // Worker production: base workers × productionPerWorker (per-worker bonuses
-    // above already flow into the multiplier pile, so we only add the base here).
+    // Worker efficiency belongs on worker output only; it must not multiply
+    // building production or other flat additions for this resource.
     const workerBase = workerProduction.workers.mul(
-      ExpNumber.fromNumber(workerProduction.productionPerWorker),
+      isProductionKey
+        ? this.getAttributeValue(`${resourceKey}ProductionPerWorker`)
+        : ExpNumber.ZERO,
     );
     const workerAdditional: ResourceFactor[] = [
       [workerProduction, workerBase],
@@ -2740,49 +2694,55 @@ export class CivilizationState {
     const bonuses: [sourceId: string, bonus: Bonus][] = [];
     for (const building of buildingDefinitions) {
       const count = this.buildingCount(building.key);
-      if (count === 0) continue;
-      const buildingBonuses = building.effects.bonus;
-      if (!buildingBonuses) continue;
-
-      // Scaling uses core power (no building bonuses, to avoid self-recursion)
-      // times the GLOBAL building-power multiplier computed from core bonuses
-      // only (no building bonuses), so all boosts apply without recursing.
-      const corePower = this.coreBuildingPower(building.key);
-      const globalFactors = this.getDerivedAttributeFactors(
-        "buildingPower",
-        false,
-        false,
-      );
-      const globalPower = globalFactors
-        ? globalFactors.additional
-            .reduce((t, [, v]) => t.add(v), globalFactors.base)
-            .mul(
-              globalFactors.multiplicative.reduce(
-                (t, [, v]) => t.mul(v),
-                ExpNumber.ONE,
-              ),
-            )
-        : ExpNumber.ONE;
-      const power = corePower.mul(globalPower);
-      // No impact until an age grants this building real power.
-      if (!power.gt(ExpNumber.ZERO)) continue;
-
-      const quantity = ExpNumber.fromNumber(count);
-
-      for (const effect of buildingBonuses) {
-        // Match the additiveMultiplier scaling curve: (value × count) ^ power
-        const scaledValue = ExpNumber.fromNumber(effect.value)
-          .mul(quantity)
-          .pow(power);
-        const bonus = parseBonus(
-          effect.type,
-          effect.destination,
-          scaledValue.toString(),
-        );
+      for (const bonus of this.getBuildingBonuses(building.key, count)) {
         bonuses.push([building.key, bonus]);
       }
     }
     return bonuses;
+  }
+
+  /** Building-emitted bonuses at a count, using the same values as the engine. */
+  getBuildingBonuses(
+    buildingKey: BuildingKey,
+    count = this.buildingCount(buildingKey),
+  ): Bonus[] {
+    const effects = buildingDefinitions.find(
+      ({ key }) => key === buildingKey,
+    )?.effects.bonus;
+    if (!effects || count <= 0) return [];
+
+    // Scale from core and global power only to avoid building-bonus recursion.
+    const corePower = this.coreBuildingPower(buildingKey);
+    const globalFactors = this.getDerivedAttributeFactors(
+      "buildingPower",
+      false,
+      false,
+    );
+    const globalPower = globalFactors
+      ? globalFactors.additional
+          .reduce((total, [, value]) => total.add(value), globalFactors.base)
+          .mul(
+            globalFactors.multiplicative.reduce(
+              (total, [, value]) => total.mul(value),
+              ExpNumber.ONE,
+            ),
+          )
+      : ExpNumber.ONE;
+    const power = corePower.mul(globalPower);
+    if (!power.gt(ExpNumber.ZERO)) return [];
+
+    const quantity = ExpNumber.fromNumber(count);
+    return effects.map((effect) => {
+      // Match the additiveMultiplier curve: (value × count) ^ power.
+      const scaledValue = ExpNumber.fromNumber(effect.value)
+        .mul(quantity)
+        .pow(power);
+      return parseBonus(
+        effect.type,
+        effect.destination,
+        scaledValue.toString(),
+      );
+    });
   }
 
   /**
@@ -2794,46 +2754,42 @@ export class CivilizationState {
     string,
     [sourceId: string, bonus: Bonus][]
   > {
-    if (includeBuilding) {
-      let byUpgrades = activeBonusByDestinationCaches.get(this.boughtUpgrades);
-      if (!byUpgrades) {
-        byUpgrades = new WeakMap<
-          readonly string[],
-          WeakMap<
-            readonly string[],
-            WeakMap<readonly string[], WeakMap<readonly string[], BonusMap>>
-          >
-        >();
-        activeBonusByDestinationCaches.set(this.boughtUpgrades, byUpgrades);
-      }
-      let byEncounters = byUpgrades.get(this.defeatedEncounters);
-      if (!byEncounters) {
-        byEncounters = new WeakMap<
-          readonly string[],
-          WeakMap<readonly string[], WeakMap<readonly string[], BonusMap>>
-        >();
-        byUpgrades.set(this.defeatedEncounters, byEncounters);
-      }
-      let byAchievements = byEncounters.get(this.earnedAchievements);
-      if (!byAchievements) {
-        byAchievements = new WeakMap<
-          readonly string[],
-          WeakMap<readonly string[], BonusMap>
-        >();
-        byEncounters.set(this.earnedAchievements, byAchievements);
-      }
-      let byResearch = byAchievements.get(this.boughtResearch);
-      if (!byResearch) {
-        byResearch = new WeakMap<readonly string[], BonusMap>();
-        byAchievements.set(this.boughtResearch, byResearch);
-      }
-      const cached = byResearch.get(this.enteredAges);
-      if (cached) return cached;
-      const computed = this.buildActiveBonusesByDestination(true);
-      byResearch.set(this.enteredAges, computed);
-      return computed;
+    if (!includeBuilding) {
+      return this.buildActiveBonusesByDestination(false);
     }
-    return this.buildActiveBonusesByDestination(false);
+    // Building bonuses depend on counts as well as the non-building bonus
+    // sources, so both identities participate in this cache key.
+    let byUpgrades = activeBonusByDestinationCaches.get(this.builtBuildings);
+    if (!byUpgrades) {
+      byUpgrades = new WeakMap<readonly string[], ByEncounter>();
+      activeBonusByDestinationCaches.set(this.builtBuildings, byUpgrades);
+    }
+    let byEncounters = byUpgrades.get(this.boughtUpgrades);
+    if (!byEncounters) {
+      byEncounters = new WeakMap<readonly string[], ByAchievement>();
+      byUpgrades.set(this.boughtUpgrades, byEncounters);
+    }
+    let byAchievements = byEncounters.get(this.defeatedEncounters);
+    if (!byAchievements) {
+      byAchievements = new WeakMap<readonly string[], ByResearch>();
+      byEncounters.set(this.defeatedEncounters, byAchievements);
+    }
+    let byResearch = byAchievements.get(this.earnedAchievements);
+    if (!byResearch) {
+      byResearch = new WeakMap<readonly string[], ByEnteredAge>();
+      byAchievements.set(this.earnedAchievements, byResearch);
+    }
+    let byAge = byResearch.get(this.boughtResearch);
+    if (!byAge) {
+      byAge = new WeakMap<readonly string[], BonusDestinationMap>();
+      byResearch.set(this.boughtResearch, byAge);
+    }
+
+    const cached = byAge.get(this.enteredAges);
+    if (cached) return cached;
+    const computed = this.buildActiveBonusesByDestination(true);
+    byAge.set(this.enteredAges, computed);
+    return computed;
   }
 
   private buildActiveBonusesByDestination(includeBuilding: boolean): Map<

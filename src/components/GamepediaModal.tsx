@@ -269,6 +269,10 @@ export default function GamepediaModal({
     const costs = gameState.getBuildingCost(building.key, count);
     const effects = gameState.getBuildingEffects(building.key);
     const totalEffects = gameState.getBuildingEffects(building.key, count);
+    const totalBuildingBonuses = gameState.getBuildingBonuses(
+      building.key,
+      count,
+    );
     const parameters = gameState.getBuildingCostParameters(building.key);
     const { sources, multiplierSources, reductions, globalMultiplier } =
       gameState.getBuildingCostModifiers(building.key);
@@ -468,15 +472,12 @@ export default function GamepediaModal({
           ))}
           {gameState.buildingPower(building.key).gt(ExpNumber.ZERO) &&
             effects.bonus?.map((effect, index) => {
-              const count = gameState.getBuildingCount(building.key);
-              const power = gameState.buildingPower(building.key);
-              const scaledValue = ExpNumber.fromNumber(effect.value).mul(
-                ExpNumber.fromNumber(count).pow(power),
-              );
-              const bonus = {
+              const bonus = totalBuildingBonuses[index];
+              if (!bonus) return null;
+              const unscaledBonus = {
                 type: effect.type,
                 destination: effect.destination,
-                value: scaledValue,
+                value: ExpNumber.fromNumber(effect.value),
               } as Bonus;
               return (
                 <div
@@ -485,18 +486,13 @@ export default function GamepediaModal({
                 >
                   <div className="gamepedia-effect-copy">
                     <span className="gamepedia-effect-meta">
-                      {bonusEffectLabel({
-                        type: effect.type,
-                        destination: effect.destination,
-                        value: ExpNumber.fromNumber(effect.value),
-                      } as Bonus)} - {bonusValueText(
-                        {
-                          type: effect.type,
-                          destination: effect.destination,
-                          value: ExpNumber.fromNumber(effect.value),
-                        } as Bonus,
-                        numberFormat,
-                      )} per building
+                      {bonusEffectLabel(unscaledBonus)} —{" "}
+                      {effect.type === "attributeMultiplier"
+                        ? `scaling coefficient ×${unscaledBonus.value.toString()}`
+                        : `${bonusValueText(
+                            unscaledBonus,
+                            numberFormat,
+                          )} per building`}
                     </span>
                   </div>
                   <strong className="gamepedia-effect-total">
@@ -586,6 +582,10 @@ export default function GamepediaModal({
     const workerProduction = hasWorkers
       ? gameState.getWorkerProduction(key as ProductionResourceKey)
       : undefined;
+    const workerEfficiencyKey = `${key}ProductionPerWorker`;
+    const workerEfficiency = hasWorkers
+      ? gameState.getAttributeValue(workerEfficiencyKey)
+      : undefined;
     const totalMultiplier = gameState.getModifierSummary(key).totalMultiplier;
 
     return (
@@ -631,26 +631,44 @@ export default function GamepediaModal({
             <div className="gamepedia-stats">
               {hasWorkers && workerProduction !== undefined && (
                 <div className="gamepedia-stat">
-                  <span>Workers</span>
-                  <strong>{formatCount(workerProduction.workers)}</strong>
+                  <span>Assigned workers</span>
+                  <strong>
+                    {renderReference(
+                      "population",
+                      formatCount(workerProduction.workers),
+                    )}
+                  </strong>
                 </div>
               )}
-              {workerProduction !== undefined && (
-                <>
-                  <div className="gamepedia-stat">
-                    <span>Base</span>
-                    <strong>
-                      {formatAmount(workerProduction.workerProduction)}/s
-                    </strong>
-                  </div>
-                  <div className="gamepedia-stat">
-                    <span>Auto</span>
-                    <strong>
-                      +{formatAmount(workerProduction.autoClickProduction)}/s
-                    </strong>
-                  </div>
-                </>
-              )}
+              {workerProduction !== undefined &&
+                workerEfficiency !== undefined && (
+                  <>
+                    <div className="gamepedia-stat">
+                      <span>Worker efficiency</span>
+                      <strong>
+                        {renderReference(
+                          workerEfficiencyKey,
+                          formatAmount(workerEfficiency),
+                        )}
+                      </strong>
+                    </div>
+                    <div className="gamepedia-stat">
+                      <span>Worker output</span>
+                      <strong>
+                        {formatAmount(
+                          workerProduction.workers.mul(workerEfficiency),
+                        )}
+                        /s
+                      </strong>
+                    </div>
+                    <div className="gamepedia-stat">
+                      <span>Auto</span>
+                      <strong>
+                        +{formatAmount(workerProduction.autoClickProduction)}/s
+                      </strong>
+                    </div>
+                  </>
+                )}
               <div className="gamepedia-stat">
                 <span>Multipliers</span>
                 <strong>

@@ -18,6 +18,7 @@ import {
 import {
   attributeDefinitions,
   populationDefinition,
+  productionDefinitions,
   type AttributeDefinition,
 } from "./attributes";
 import { normalizeBonusDestination, parseCostParameterTarget } from "./bonus";
@@ -74,6 +75,21 @@ const bonusDestinationRelatedIds = (destination: string): string[] => {
   const normalized = normalizeBonusDestination(destination);
   const target = parseCostParameterTarget(normalized);
   if (!target) {
+    if (normalized === "allProductionPerWorker") {
+      return productionDefinitions.map(({ key }) => `${key}ProductionPerWorker`);
+    }
+    if (normalized === "basicProductionPerWorker") {
+      return productionDefinitions
+        .filter(({ key }) => ["food", "wood", "stone", "gold"].includes(key))
+        .map(({ key }) => `${key}ProductionPerWorker`);
+    }
+    if (normalized === "advancedProductionPerWorker") {
+      return productionDefinitions
+        .filter(({ key }) =>
+          ["military", "science", "metalwork", "trade"].includes(key),
+        )
+        .map(({ key }) => `${key}ProductionPerWorker`);
+    }
     const unitStatTarget = parseUnitStatTarget(normalized);
     if (unitStatTarget) {
       return unitDefinitions
@@ -279,6 +295,9 @@ for (const building of buildingDefinitions) {
     ),
     ...(building.effects.capacityProvided ?? []).map(
       ({ building: capacityBuilding }) => capacityBuilding,
+    ),
+    ...(building.effects.bonus ?? []).flatMap(({ destination }) =>
+      bonusDestinationRelatedIds(destination),
     ),
   ];
 

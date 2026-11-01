@@ -10,6 +10,33 @@ import {
   unitMatchesStatTarget,
 } from "./units";
 
+describe("Gamepedia worker-efficiency relations", () => {
+  it("links House and Town Hall bonuses to the affected efficiency stats", () => {
+    const basicStats = [
+      "foodProductionPerWorker",
+      "woodProductionPerWorker",
+      "stoneProductionPerWorker",
+      "goldProductionPerWorker",
+    ];
+    const advancedStats = [
+      "militaryProductionPerWorker",
+      "scienceProductionPerWorker",
+      "metalworkProductionPerWorker",
+      "tradeProductionPerWorker",
+    ];
+
+    for (const statId of basicStats) {
+      expect(gamepedia.require("house").relatedIds).toContain(statId);
+      expect(gamepedia.require(statId).relatedIds).toContain("house");
+    }
+
+    for (const statId of [...basicStats, ...advancedStats]) {
+      expect(gamepedia.require("townHall").relatedIds).toContain(statId);
+      expect(gamepedia.require(statId).relatedIds).toContain("townHall");
+    }
+  });
+});
+
 describe("Gamepedia unit stat bonus relations", () => {
   it("links units to research, battle, and other stat bonus sources", () => {
     const sources = gamepedia.all().filter(({ category }) =>
