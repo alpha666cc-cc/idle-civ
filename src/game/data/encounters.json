@@ -527,6 +527,11 @@
         "type": "attributeMultiplier",
         "destination": "military",
         "value": 1.05
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings.costs.all.factor",
+        "value": 0.81
       }
     ],
     "unlocks": []
@@ -552,6 +557,11 @@
         "type": "attributeMultiplier",
         "destination": "military",
         "value": 1.05
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings.costs.all.factor",
+        "value": 0.81
       }
     ],
     "unlocks": []
@@ -592,6 +602,11 @@
         "type": "attributeMultiplier",
         "destination": "unitAll.attack",
         "value": 1.05
+      },
+      {
+        "type": "costReductionFactor",
+        "destination": "allBuildings.costs.all.factor",
+        "value": 0.81
       }
     ],
     "unlocks": []

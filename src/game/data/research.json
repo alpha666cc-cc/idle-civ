@@ -1303,7 +1303,7 @@
     "guid": "58024b9d-a66e-5d06-b781-38c4985eb601",
     "key": "banking_concepts",
     "name": "Banking Concepts",
-    "description": "resource_capacity gold (large); production_multiplier gold (small)",
+    "description": "production_multiplier gold (small)",
     "age": 2,
     "category": "civilian",
     "prerequisites": ["currency_standard"],
@@ -1724,9 +1724,9 @@
         "value": "100"
       },
       {
-        "type": "costReductionPercent",
-        "destination": "allBuildings.costs.all",
-        "value": "0.5"
+        "type": "attributeMultiplier",
+        "destination": "advancedProductionPerWorker",
+        "value": "3"
       }
     ],
     "unlocks": [],
@@ -1736,20 +1736,25 @@
     "guid": "688c5d3b-b73e-59f3-a6c0-7380d70da0c2",
     "key": "windmills",
     "name": "Windmills",
-    "description": "building_capacity farm (large); production_multiplier farm (small)",
+    "description": " production_multiplier farm (small)",
     "age": 3,
     "category": "civilian",
     "prerequisites": ["feudalism"],
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "Farm.capacity",
-        "value": "100"
-      },
-      {
-        "type": "attributeMultiplier",
         "destination": "food",
         "value": "2"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "people.costs.all",
+        "value": "0.80"
+      },
+      {
+        "type": "costReductionPercent",
+        "destination": "townHall.costs.all",
+        "value": "0.80"
       }
     ],
     "unlocks": [],
@@ -1771,8 +1776,8 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "allBuildings.costs.all",
-        "value": "0.5"
+        "destination": "basicProductionBuildings.costs.all",
+        "value": "0.75"
       }
     ],
     "unlocks": [],
@@ -1875,11 +1880,6 @@
         "type": "attributeMultiplier",
         "destination": "advancedProductionPerWorker",
         "value": "2"
-      },
-      {
-        "type": "costReductionPercent",
-        "destination": "advancedProductionBuildings.costs.all",
-        "value": "0.5"
       }
     ],
     "unlocks": [],
@@ -1907,7 +1907,7 @@
       {
         "type": "costReductionPercent",
         "destination": "people.costs.all",
-        "value": "0.5"
+        "value": "0.85"
       }
     ],
     "unlocks": [],
@@ -1933,8 +1933,8 @@
       },
       {
         "type": "costReductionPercent",
-        "destination": "allBuildings.costs.all",
-        "value": "0.5"
+        "destination": "goldMine.costs.all",
+        "value": "0.8"
       }
     ],
     "unlocks": [],
@@ -1957,7 +1957,7 @@
       {
         "type": "costReductionPercent",
         "destination": "allBuildings.costs.all",
-        "value": "0.5"
+        "value": "0.75"
       }
     ],
     "unlocks": [],
@@ -2450,7 +2450,7 @@
     "guid": "eaba986f-36c9-5151-b1b9-16215c95bffe",
     "key": "banking_houses",
     "name": "Banking Houses",
-    "description": "resource_capacity gold (large); production_multiplier gold (small)",
+    "description": "production_multiplier all (small)",
     "age": 4,
     "category": "civilian",
     "prerequisites": ["double_entry_bookkeeping"],
@@ -2462,14 +2462,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "resource_capacity",
-        "target": "gold",
-        "value": "large",
-        "reason": "no resource storage cap"
-      }
-    ]
+    "ignored": [{}]
   },
   {
     "guid": "ba125992-5d0b-5c41-a0d0-1d882a8300c6",
@@ -2509,9 +2502,9 @@
         "value": "100"
       },
       {
-        "type": "costReductionPercent",
-        "destination": "allBuildings.costs.all",
-        "value": "0.5"
+        "type": "costReductionFactor",
+        "destination": "basicProductionBuildings.costs.all.factor",
+        "value": 0.9
       }
     ],
     "unlocks": [],
@@ -2951,7 +2944,7 @@
     "guid": "b22d830e-a6c8-55a6-a192-8fee91a3fe14",
     "key": "internal_combustion",
     "name": "Internal Combustion",
-    "description": "resource_capacity all (large); production_multiplier all (large)",
+    "description": "production_multiplier all (large)",
     "age": 5,
     "category": "civilian",
     "prerequisites": ["steam_engine"],
@@ -2963,14 +2956,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "resource_capacity",
-        "target": "all",
-        "value": "large",
-        "reason": "no resource storage cap"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "3ccdef91-4237-56e9-97c0-1f658ab6d24e",
@@ -3022,7 +3008,7 @@
     "guid": "89a5f191-6dd5-5d67-812b-0c75c46a7362",
     "key": "pharmaceuticals",
     "name": "Pharmaceuticals",
-    "description": "population_growth population (large); building_capacity house (large)",
+    "description": "building_capacity house (large)",
     "age": 5,
     "category": "civilian",
     "prerequisites": ["refining"],
@@ -3363,7 +3349,7 @@
     "guid": "90ee36ad-84ea-5765-a2d3-8e2cb0916793",
     "key": "renewable_energy",
     "name": "Renewable Energy",
-    "description": "resource_capacity all (large); production_multiplier all (large)",
+    "description": "roduction_multiplier all (large)",
     "age": 6,
     "category": "civilian",
     "prerequisites": ["electricity"],
@@ -3375,14 +3361,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "resource_capacity",
-        "target": "all",
-        "value": "large",
-        "reason": "no resource storage cap"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "b363e42d-6e96-5934-bbaf-9a0cd6a8cf19",
