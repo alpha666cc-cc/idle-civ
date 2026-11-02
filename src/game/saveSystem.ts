@@ -734,19 +734,27 @@ const withoutTradeRouteRows = (rows: ResourceFactor[]): ResourceFactor[] =>
 
 const deserializeFactors = (
   data: SerializedFactors | undefined,
+  derivedAgeSources: ReadonlySet<string>,
 ): ResourceFactors => {
   const pair = ([source, value]: readonly [string, string]): ResourceFactor => [
     source,
     ExpNumber.from(value),
   ];
+  const withoutAgeRows = (
+    rows: readonly (readonly [string, string])[] | undefined,
+  ) => (rows ?? []).filter(([source]) => !derivedAgeSources.has(source));
   // A route's rows are derived, never stored: a hand-written or older document
-  // carrying one is stripped on load, so it cannot add to the live drain.
+  // carrying one is stripped on load, so it cannot add to the live drain. Age
+  // bonuses are also derived from enteredAges; remove copies saved by older
+  // versions that both stored and re-derived them.
   const kept = (rows: readonly (readonly [string, string])[] | undefined) =>
-    (rows ?? []).filter(([source]) => !isTradeRouteSource(source)).map(pair);
+    withoutAgeRows(rows)
+      .filter(([source]) => !isTradeRouteSource(source))
+      .map(pair);
   return {
     additional: kept(data?.additional),
-    multiplicative: (data?.multiplicative ?? []).map(pair),
-    additiveMultiplier: (data?.additiveMultiplier ?? []).map(pair),
+    multiplicative: withoutAgeRows(data?.multiplicative).map(pair),
+    additiveMultiplier: withoutAgeRows(data?.additiveMultiplier).map(pair),
     drain: kept(data?.drain),
   };
 };
@@ -768,11 +776,16 @@ export const serializeFactorMap = (
 
 export const deserializeFactorMap = (
   data: SerializedResourceFactors | undefined,
+  derivedAgeSources: readonly string[] = [],
 ): ResourceFactorMap => {
   const factors = emptyResourceFactors();
+  const derivedAgeSourceSet = new Set(derivedAgeSources);
   for (const [key, value] of Object.entries(data ?? {})) {
     if (!(key in factors)) continue;
-    factors[key as ResourceKey] = deserializeFactors(value);
+    factors[key as ResourceKey] = deserializeFactors(
+      value,
+      derivedAgeSourceSet,
+    );
   }
   return factors;
 };
@@ -1015,18 +1028,19 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
     };
   }
 
+  const enteredAges = [...(data.enteredAges ?? [])];
   return new CivilizationState(
     resources,
     workers,
     expandBuildingCounts(
       data.buildingCounts ?? legacyBuildingCounts(data.builtBuildings),
     ),
-    deserializeFactorMap(data.resourceFactors),
+    deserializeFactorMap(data.resourceFactors, enteredAges),
     costOverrides,
     data.autoClicksPerSecond ?? 0,
     [...(data.boughtUpgrades ?? [])],
     [...(data.defeatedEncounters ?? [])],
-    [...(data.enteredAges ?? [])],
+    enteredAges,
     [...(data.earnedAchievements ?? [])],
     deserializeStatistics(data.statistics),
     unitCounts,

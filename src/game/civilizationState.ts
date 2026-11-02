@@ -2841,40 +2841,6 @@ export class CivilizationState {
   }
 
   /**
-   * Apply a batch of attribute bonuses (flat/multiplier/drain) to the resource factor
-   * model, threading the accumulator through addFactor() calls. Used by enterAge() so age
-   * bonuses flow into getFactors()/getBuildingMax() via activeBonuses() without aliasing
-   * `this` (which the lint config forbids).
-   */
-  private applyAttributeBonuses(
-    bonuses: readonly Bonus[],
-    sourceId: string,
-    state: CivilizationState,
-  ): CivilizationState {
-    let acc = state;
-    for (const bonus of bonuses) {
-      const factorType =
-        bonus.type === "attributeFlat"
-          ? "additional"
-          : bonus.type === "attributeMultiplier"
-            ? "multiplicative"
-            : "drain";
-      // Only resource and capacity destinations belong in the factor model.
-      // Derived stats (clickPower, buildingPower, ...) are computed from
-      // activeBonuses() by getDerivedAttributeFactors(), so they must not be
-      // pushed here — they have no resourceFactors bucket.
-      if (acc.resourceFactors[bonus.destination as ResourceKey] === undefined)
-        continue;
-      acc = acc.addFactor(
-        bonus.destination as Parameters<typeof acc.addFactor>[0],
-        factorType,
-        [sourceId, bonus.value],
-      );
-    }
-    return acc;
-  }
-
-  /**
    * Bonuses from entered ages, paired with the age id as the source.
    * Derived from the entered id list, never stored as applied values (§13.4).
    * Ages are permanent entries, so these persist for the life of the state.
@@ -4140,33 +4106,27 @@ export class CivilizationState {
       }
     }
 
-    // Apply age bonuses (data-driven path: ages.json → AgeDefinition.bonuses → engine).
-    // Attribute-targeted bonuses fold into the existing factor model via addFactor(); they
-    // are then re-derived from enteredAges inside activeBonuses() so getBuildingMax() /
-    // getFactors() / etc. pick them up. This replaces the old hardcoded "×10 townHall
-    // capacity" with a data-driven path.
-    const afterBonuses = this.applyAttributeBonuses(age.bonuses, ageId, this);
-
-    return afterBonuses
-      .withState(
-        afterBonuses.resources,
-        afterBonuses.buildingCostOverrides,
-        afterBonuses.builtBuildings,
-        afterBonuses.autoClicksPerSecond,
-        afterBonuses.boughtUpgrades,
-        afterBonuses.defeatedEncounters,
-        [...afterBonuses.enteredAges, ageId],
-        afterBonuses.earnedAchievements,
-        {
-          ...afterBonuses.statistics,
-          fastestAgeMs: afterBonuses.recordFastest(
-            afterBonuses.statistics.fastestAgeMs,
-            ageId,
-          ),
-          wastedResources: afterBonuses.statistics.wastedResources.add(wasted),
-        },
-        newUnitCounts,
-      )
+    // Age bonuses are derived from enteredAges in activeBonuses(); do not also
+    // persist them in resourceFactors, or production applies them twice.
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      [...this.enteredAges, ageId],
+      this.earnedAchievements,
+      {
+        ...this.statistics,
+        fastestAgeMs: this.recordFastest(
+          this.statistics.fastestAgeMs,
+          ageId,
+        ),
+        wastedResources: this.statistics.wastedResources.add(wasted),
+      },
+      newUnitCounts,
+    )
       .recordCurrentAge();
   }
 

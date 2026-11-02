@@ -37,12 +37,13 @@ import { type BuildingKey } from "../buildings";
 import { entryGuidById, entryIdByGuid } from "../dataIds";
 import { ExpNumber } from "../expNumber";
 import { emptyStatistics } from "../statistics";
+import { parseBonus } from "../bonus";
 import { isTradeRouteSource, type TradeMode } from "../trade";
 import {
   achievementDefinitions,
   findAchievementDefinition,
 } from "../achievements";
-import { ageDefinitions } from "../ages";
+import { AgeDefinition, ageDefinitions } from "../ages";
 import { buildingDefinitions } from "../buildings";
 import { encounterDefinitions } from "../encounters";
 import { researchDefinitions } from "../research";
@@ -86,6 +87,94 @@ describe("save document identity", () => {
   });
 
   describe("save round-trips", () => {
+    it("applies entered-age resource bonuses once across save reloads", () => {
+      const ageKey = "ageBonusSaveRoundTripTest";
+      const woodMultiplier = (value: number) =>
+        parseBonus("attributeMultiplier", "wood", value);
+      const initialAge = new AgeDefinition(
+        ageKey,
+        "Age Bonus Save Round Trip Test",
+        "test",
+        0,
+        [],
+        [woodMultiplier(2)],
+      );
+      const ageIndex = ageDefinitions.length;
+      ageDefinitions.push(initialAge);
+
+      try {
+        const beforeEntry = new CivilizationState(
+          emptyResourceAmounts(),
+          { ...emptyWorkerAssignments(), wood: ExpNumber.fromNumber(10) },
+          {},
+          emptyResourceFactors(),
+          {},
+          0,
+          [],
+          [],
+          [],
+          [],
+          emptyStatistics(),
+        );
+        const entered = beforeEntry.enterAge(ageKey);
+        expect(entered.computeResourceRate("wood").toNumber()).toBeCloseTo(
+          20,
+          9,
+        );
+
+        const saved = createSaveData(entered, "age-bonus-once", 1);
+        expect(
+          saved.resourceFactors.wood.multiplicative.some(
+            ([source]) => source === ageKey,
+          ),
+        ).toBe(false);
+        expect(
+          loadSaveData(saved).computeResourceRate("wood").toNumber(),
+        ).toBeCloseTo(20, 9);
+
+        // Simulate older saves, which persisted age bonuses in resourceFactors
+        // while also listing the age in enteredAges.
+        const legacySave: SaveData = {
+          ...saved,
+          resourceFactors: {
+            ...saved.resourceFactors,
+            wood: {
+              ...saved.resourceFactors.wood,
+              multiplicative: [[ageKey, "2"]],
+            },
+          },
+        };
+        expect(
+          loadSaveData(legacySave).computeResourceRate("wood").toNumber(),
+        ).toBeCloseTo(20, 9);
+
+        // Add another bonus to the already-entered age. Both a fresh entry
+        // from the original state and the reloaded save should use it once.
+        ageDefinitions[ageIndex] = new AgeDefinition(
+          ageKey,
+          initialAge.name,
+          initialAge.description,
+          initialAge.buildingThreshold,
+          initialAge.unlocks,
+          [...initialAge.bonuses, woodMultiplier(3)],
+          initialAge.costMultipliers,
+          initialAge.research,
+        );
+
+        const enteredFromOriginal = beforeEntry.enterAge(ageKey);
+        const reloaded = loadSaveData(legacySave);
+        expect(
+          enteredFromOriginal.computeResourceRate("wood").toNumber(),
+        ).toBeCloseTo(60, 9);
+        expect(reloaded.computeResourceRate("wood").toNumber()).toBeCloseTo(
+          60,
+          9,
+        );
+      } finally {
+        ageDefinitions.splice(ageIndex, 1);
+      }
+    });
+
     it("preserves cost exponents and defaults them in legacy overrides", () => {
       const state = sampleState().upgradeBuildingCosts("farm", [
         {
