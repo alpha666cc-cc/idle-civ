@@ -17,7 +17,8 @@
     "effects": {
       "resourceDrain": {
         "resource": "food",
-        "amount": 1
+        "amount": 1,
+        "power": "none"
       }
     }
   },
@@ -47,13 +48,14 @@
       "capacityProvided": {
         "building": "people",
         "perBuilding": 10,
-        "tags": ["nopower"]
+        "power": "none"
       },
       "bonus": [
         {
           "type": "attributeMultiplier",
           "destination": "basicProduction.worker.efficiency",
-          "value": 2e-5
+          "value": 2e-5,
+          "power": "exponent"
         }
       ]
     }
@@ -83,7 +85,8 @@
     "effects": {
       "additiveMultiplier": {
         "resource": "food",
-        "perBuilding": 0.1
+        "perBuilding": 0.1,
+        "power": "exponent"
       }
     }
   },
@@ -112,7 +115,8 @@
     "effects": {
       "additiveMultiplier": {
         "resource": "wood",
-        "perBuilding": 0.1
+        "perBuilding": 0.1,
+        "power": "exponent"
       }
     }
   },
@@ -135,7 +139,8 @@
     "effects": {
       "additiveMultiplier": {
         "resource": "stone",
-        "perBuilding": 0.1
+        "perBuilding": 0.1,
+        "power": "exponent"
       }
     }
   },
@@ -164,7 +169,8 @@
     "effects": {
       "additiveMultiplier": {
         "resource": "gold",
-        "perBuilding": 0.1
+        "perBuilding": 0.1,
+        "power": "exponent"
       }
     }
   },
@@ -201,34 +207,35 @@
         {
           "building": "house",
           "perBuilding": 10,
-          "tags": ["nopower"]
+          "power": "none"
         },
         {
           "building": "barracks",
           "perBuilding": 1,
-          "tags": ["nopower"]
+          "power": "none"
         },
         {
           "building": "university",
           "perBuilding": 1,
-          "tags": ["nopower"]
+          "power": "none"
         },
         {
           "building": "smithy",
           "perBuilding": 1,
-          "tags": ["nopower"]
+          "power": "none"
         },
         {
           "building": "market",
           "perBuilding": 1,
-          "tags": ["nopower"]
+          "power": "none"
         }
       ],
       "bonus": [
         {
           "type": "attributeFlat",
           "destination": "allProduction.worker.efficiency",
-          "value": 0.01
+          "value": 0.01,
+          "power": "exponent"
         }
       ]
     }
@@ -264,11 +271,13 @@
     "effects": {
       "resourceProduction": {
         "resource": "military",
-        "amount": 1
+        "amount": 1,
+        "power": "multiply"
       },
       "additiveMultiplier": {
         "resource": "military",
-        "perBuilding": 0.05
+        "perBuilding": 0.05,
+        "power": "exponent"
       }
     },
     "unlock": {
@@ -308,11 +317,13 @@
     "effects": {
       "resourceProduction": {
         "resource": "science",
-        "amount": 1
+        "amount": 1,
+        "power": "multiply"
       },
       "additiveMultiplier": {
         "resource": "science",
-        "perBuilding": 0.05
+        "perBuilding": 0.05,
+        "power": "exponent"
       }
     },
     "unlock": {
@@ -345,11 +356,13 @@
     "effects": {
       "resourceProduction": {
         "resource": "metalwork",
-        "amount": 1
+        "amount": 1,
+        "power": "multiply"
       },
       "additiveMultiplier": {
         "resource": "metalwork",
-        "perBuilding": 0.05
+        "perBuilding": 0.05,
+        "power": "exponent"
       }
     },
     "unlock": {
@@ -389,11 +402,13 @@
     "effects": {
       "resourceProduction": {
         "resource": "trade",
-        "amount": 1
+        "amount": 1,
+        "power": "multiply"
       },
       "additiveMultiplier": {
         "resource": "trade",
-        "perBuilding": 0.05
+        "perBuilding": 0.05,
+        "power": "exponent"
       }
     },
     "unlock": {

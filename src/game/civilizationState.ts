@@ -70,10 +70,10 @@ import {
 } from "./trade";
 import {
   buildingDefinitions,
-  hasBuildingEffectTag,
   type BuildingCost,
   type BuildingEffects,
   type BuildingKey,
+  type BuildingPowerMode,
 } from "./buildings";
 import { calculateCostSeries, type CostParameters } from "./buyableCost";
 import {
@@ -394,6 +394,19 @@ for (const key of [
 const applyRate = (amount: ExpNumber, rate: ExpNumber): ExpNumber => {
   const next = amount.add(rate);
   return next.sign < 0 ? ExpNumber.ZERO : next;
+};
+
+const scaleBuildingValue = (
+  value: ExpNumber,
+  count: number,
+  power: ExpNumber,
+  mode: BuildingPowerMode,
+): ExpNumber => {
+  const countedValue = value.mul(ExpNumber.fromNumber(count));
+  if (mode === "none") return countedValue;
+  if (mode === "multiply") return countedValue.mul(power);
+  if (power.isZero) return ExpNumber.ZERO;
+  return countedValue.pow(power);
 };
 
 export class CivilizationState {
@@ -1760,37 +1773,42 @@ export class CivilizationState {
       ({ key }) => key === buildingKey,
     )?.effects;
     if (!effects) return {};
-    const quantity = ExpNumber.fromNumber(count);
     const power = this.buildingPower(buildingKey);
     return {
       additiveMultiplier:
         effects.additiveMultiplier?.map((effect) => ({
           ...effect,
-          // Exponent scaling: the summed per-building bonus is
-          // (perBuilding x count)^power (user's farm formula, §13.1).
-          perBuilding: effect.perBuilding.mul(quantity).pow(power),
+          perBuilding: scaleBuildingValue(
+            effect.perBuilding,
+            count,
+            power,
+            effect.power,
+          ),
         })) ?? undefined,
       resourceProduction:
         effects.resourceProduction?.map((effect) => ({
           ...effect,
-          // Flat +N/s per building has no count curve, so power scales it linearly.
-          amount: effect.amount.mul(quantity).mul(power),
+          amount: scaleBuildingValue(
+            effect.amount,
+            count,
+            power,
+            effect.power,
+          ),
         })) ?? undefined,
       resourceDrain:
         effects.resourceDrain?.map((effect) => ({
           ...effect,
-          amount: effect.amount.mul(quantity),
+          amount: scaleBuildingValue(effect.amount, count, power, effect.power),
         })) ?? undefined,
       capacityProvided:
         effects.capacityProvided?.map((effect) => ({
           ...effect,
-          perBuilding: effect.perBuilding
-            .mul(quantity)
-            .mul(
-              hasBuildingEffectTag(effect, "nopower")
-                ? ExpNumber.ONE
-                : power,
-            ),
+          perBuilding: scaleBuildingValue(
+            effect.perBuilding,
+            count,
+            power,
+            effect.power,
+          ),
         })) ?? undefined,
       bonus: effects.bonus,
     };
@@ -2695,7 +2713,7 @@ export class CivilizationState {
     for (const building of buildingDefinitions) {
       const count = this.buildingCount(building.key);
       for (const bonus of this.getBuildingBonuses(building.key, count)) {
-        bonuses.push([building.key, bonus]);
+        if (bonus) bonuses.push([building.key, bonus]);
       }
     }
     return bonuses;
@@ -2705,11 +2723,12 @@ export class CivilizationState {
   getBuildingBonuses(
     buildingKey: BuildingKey,
     count = this.buildingCount(buildingKey),
-  ): Bonus[] {
+  ): (Bonus | undefined)[] {
     const effects = buildingDefinitions.find(
       ({ key }) => key === buildingKey,
     )?.effects.bonus;
-    if (!effects || count <= 0) return [];
+    if (!effects) return [];
+    if (count <= 0) return effects.map(() => undefined);
 
     // Scale from core and global power only to avoid building-bonus recursion.
     const corePower = this.coreBuildingPower(buildingKey);
@@ -2729,19 +2748,17 @@ export class CivilizationState {
           )
       : ExpNumber.ONE;
     const power = corePower.mul(globalPower);
-    if (!power.gt(ExpNumber.ZERO)) return [];
-
-    const quantity = ExpNumber.fromNumber(count);
     return effects.map((effect) => {
-      // Match the additiveMultiplier curve: (value × count) ^ power.
-      const scaledValue = ExpNumber.fromNumber(effect.value)
-        .mul(quantity)
-        .pow(power);
-      return parseBonus(
-        effect.type,
-        effect.destination,
-        scaledValue.toString(),
+      if (effect.power !== "none" && !power.gt(ExpNumber.ZERO)) {
+        return undefined;
+      }
+      const scaledValue = scaleBuildingValue(
+        ExpNumber.fromNumber(effect.value),
+        count,
+        power,
+        effect.power,
       );
+      return parseBonus(effect.type, effect.destination, scaledValue.toString());
     });
   }
 

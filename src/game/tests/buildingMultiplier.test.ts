@@ -191,6 +191,19 @@ describe("building resource bonuses", () => {
     ).toBe(10);
   });
 
+  it("multiplies resource production by the building power mode", () => {
+    const state = stateWith({ barracks: 2 }).enterAge("age0");
+
+    expect(
+      state.getBuildingEffects("barracks").resourceProduction?.[0]?.power,
+    ).toBe("multiply");
+    expect(
+      state
+        .getBuildingEffects("barracks", 2)
+        .resourceProduction?.[0]?.amount.toNumber(),
+    ).toBeCloseTo(2 * 1.2, 9);
+  });
+
   it("keeps fractional capacity grants internal to whole build limits", () => {
     const state = richState({ farm: 9 }).upgradeBuildingLimit("farm", 0.75);
 

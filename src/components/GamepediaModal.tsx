@@ -377,8 +377,7 @@ export default function GamepediaModal({
         <p className="gamepedia-recap">
           {renderReference(`${building.key}Power`)}: ×
           {formatAmount(gameState.getAttributeValue(`${building.key}Power`))}.
-          Production and multiplier effects below include power; drains and
-          capacity grants do not scale.
+          Each effect below states how building power scales it.
         </p>
         <div className="gamepedia-effect-list">
           {effects.resourceProduction?.map((effect, index) => (
@@ -389,7 +388,8 @@ export default function GamepediaModal({
               <div className="gamepedia-effect-copy">
                 {renderReference(effect.resource)}
                 <span className="gamepedia-effect-meta">
-                  +{formatAmount(effect.amount)}/s per building
+                  +{formatAmount(effect.amount)}/s per building · power:{" "}
+                  {effect.power}
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
@@ -415,7 +415,7 @@ export default function GamepediaModal({
                     effect.perBuilding,
                     numberFormat,
                   )}{" "}
-                  per building
+                  per building · power: {effect.power}
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
@@ -437,7 +437,8 @@ export default function GamepediaModal({
               <div className="gamepedia-effect-copy">
                 {renderReference(effect.resource)}
                 <span className="gamepedia-effect-meta">
-                  {formatAmount(effect.amount)}/s per building
+                  {formatAmount(effect.amount)}/s per building · power:{" "}
+                  {effect.power}
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
@@ -457,7 +458,8 @@ export default function GamepediaModal({
                 {renderReference(effect.building)}
                 <span className="gamepedia-effect-meta">
                   +{formatCount(effect.perBuilding)}{" "}
-                  {capacityLabel(effect.building)} per building
+                  {capacityLabel(effect.building)} per building · power:{" "}
+                  {effect.power}
                 </span>
               </div>
               <strong className="gamepedia-effect-total">
@@ -470,37 +472,38 @@ export default function GamepediaModal({
               </strong>
             </div>
           ))}
-          {gameState.buildingPower(building.key).gt(ExpNumber.ZERO) &&
-            effects.bonus?.map((effect, index) => {
-              const bonus = totalBuildingBonuses[index];
-              if (!bonus) return null;
-              const unscaledBonus = {
-                type: effect.type,
-                destination: effect.destination,
-                value: ExpNumber.fromNumber(effect.value),
-              } as Bonus;
-              return (
-                <div
-                  className="gamepedia-effect-row"
-                  key={`bonus-${effect.destination}-${index}`}
-                >
-                  <div className="gamepedia-effect-copy">
-                    <span className="gamepedia-effect-meta">
-                      {bonusEffectLabel(unscaledBonus)} —{" "}
-                      {effect.type === "attributeMultiplier"
-                        ? `scaling coefficient ×${unscaledBonus.value.toString()}`
-                        : `${bonusValueText(
-                            unscaledBonus,
-                            numberFormat,
-                          )} per building`}
-                    </span>
-                  </div>
-                  <strong className="gamepedia-effect-total">
-                    {bonusValueText(bonus, numberFormat)} total
-                  </strong>
+          {effects.bonus?.map((effect, index) => {
+            const bonus = totalBuildingBonuses[index];
+            if (!bonus) return null;
+            const unscaledBonus = {
+              type: effect.type,
+              destination: effect.destination,
+              value: ExpNumber.fromNumber(effect.value),
+            } as Bonus;
+            return (
+              <div
+                className="gamepedia-effect-row"
+                key={`bonus-${effect.destination}-${index}`}
+              >
+                <div className="gamepedia-effect-copy">
+                  <span className="gamepedia-effect-meta">
+                    {bonusEffectLabel(unscaledBonus)} —{" "}
+                    {effect.type === "attributeMultiplier"
+                      ? `scaling coefficient ×${unscaledBonus.value.toString()}`
+                      : `${bonusValueText(
+                          unscaledBonus,
+                          numberFormat,
+                        )} per building`}
+                    {" · power: "}
+                    {effect.power}
+                  </span>
                 </div>
-              );
-            })}
+                <strong className="gamepedia-effect-total">
+                  {bonusValueText(bonus, numberFormat)} total
+                </strong>
+              </div>
+            );
+          })}
         </div>
 
         <p className="gamepedia-category">Capacity</p>

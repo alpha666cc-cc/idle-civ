@@ -26,32 +26,37 @@ export type BuildingCost = {
 export const DEFAULT_COST_EXPONENT = 0.5;
 
 export type BuildingEffectEntry<T extends object> = T[];
-export type BuildingEffectTag = "nopower";
+/**
+ * Scaling of `value × building count`: `none` ignores power, `multiply`
+ * multiplies by power, and `exponent` raises it to power (zero disables it).
+ */
+export type BuildingPowerMode = "none" | "multiply" | "exponent";
 
-export const hasBuildingEffectTag = (
-  effect: { readonly tags?: readonly BuildingEffectTag[] },
-  tag: BuildingEffectTag,
-): boolean => effect.tags?.includes(tag) ?? false;
+type BuildingEffectPower = {
+  power: BuildingPowerMode;
+};
+type BuildingDataEntries<T extends object> =
+  | (T & BuildingEffectPower)
+  | (T & BuildingEffectPower)[];
 
 export type BuildingEffects = {
-  capacityProvided?: BuildingEffectEntry<{
+  capacityProvided?: BuildingEffectEntry<BuildingEffectPower & {
     building: BuildingKey;
     perBuilding: ExpNumber;
-    tags?: readonly BuildingEffectTag[];
   }>;
-  additiveMultiplier?: BuildingEffectEntry<{
+  additiveMultiplier?: BuildingEffectEntry<BuildingEffectPower & {
     resource: ResourceKey;
     perBuilding: ExpNumber;
   }>;
-  resourceDrain?: BuildingEffectEntry<{
+  resourceDrain?: BuildingEffectEntry<BuildingEffectPower & {
     resource: ResourceKey;
     amount: ExpNumber;
   }>;
-  resourceProduction?: BuildingEffectEntry<{
+  resourceProduction?: BuildingEffectEntry<BuildingEffectPower & {
     resource: ResourceKey;
     amount: ExpNumber;
   }>;
-  bonus?: BuildingEffectEntry<{
+  bonus?: BuildingEffectEntry<BuildingEffectPower & {
     type: string;
     destination: string;
     value: number;
@@ -122,29 +127,27 @@ type BuildingData = {
   available: boolean;
   maxCount?: number;
   effects?: {
-    capacityProvided?:
-      | {
-          building: BuildingKey;
-          perBuilding: number;
-          tags?: string[];
-        }
-      | {
-          building: BuildingKey;
-          perBuilding: number;
-          tags?: string[];
-        }[];
-    additiveMultiplier?:
-      | { resource: ResourceKey; perBuilding: number }
-      | { resource: ResourceKey; perBuilding: number }[];
-    resourceDrain?:
-      | { resource: ResourceKey; amount: number }
-      | { resource: ResourceKey; amount: number }[];
-    resourceProduction?:
-      | { resource: ResourceKey; amount: number }
-      | { resource: ResourceKey; amount: number }[];
-    bonus?:
-      | { type: string; destination: string; value: number }
-      | { type: string; destination: string; value: number }[];
+    capacityProvided?: BuildingDataEntries<{
+      building: BuildingKey;
+      perBuilding: number;
+    }>;
+    additiveMultiplier?: BuildingDataEntries<{
+      resource: ResourceKey;
+      perBuilding: number;
+    }>;
+    resourceDrain?: BuildingDataEntries<{
+      resource: ResourceKey;
+      amount: number;
+    }>;
+    resourceProduction?: BuildingDataEntries<{
+      resource: ResourceKey;
+      amount: number;
+    }>;
+    bonus?: BuildingDataEntries<{
+      type: string;
+      destination: string;
+      value: number;
+    }>;
   };
   unlock?: BuildingUnlock;
   /** Base power for this building's `${key}Power` stat; absent for non-producers. */
@@ -158,18 +161,19 @@ const normalizeBuildingEffects = <T extends object>(
   return Array.isArray(value) ? value : [value];
 };
 
-const parseBuildingEffectTags = (
-  tags: string[] | undefined,
-): readonly BuildingEffectTag[] | undefined => {
-  if (tags === undefined) return undefined;
-  return tags.map((tag): BuildingEffectTag => {
-    if (tag === "nopower") return tag;
-    throw new Error(`Unknown building effect tag: ${tag}`);
-  });
+const parseBuildingPowerMode = (mode: string): BuildingPowerMode => {
+  if (mode === "none" || mode === "multiply" || mode === "exponent") {
+    return mode;
+  }
+  throw new Error(`Unknown building effect power mode: ${mode}`);
 };
 
 const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
   const effects = data.effects;
+  const normalizePower = <T extends BuildingEffectPower>(effect: T) => ({
+    ...effect,
+    power: parseBuildingPowerMode(effect.power),
+  });
   return new BuildingDefinition(
     data.key,
     data.name,
@@ -186,30 +190,33 @@ const toBuildingDefinition = (data: BuildingData): BuildingDefinition => {
       ? {
           capacityProvided: normalizeBuildingEffects(
             effects.capacityProvided,
-          )?.map(({ building, perBuilding, tags }) => ({
+          )?.map(({ building, perBuilding, power }) => ({
             building,
             perBuilding: ExpNumber.fromNumber(perBuilding),
-            tags: parseBuildingEffectTags(tags),
+            ...normalizePower({ power }),
           })),
           additiveMultiplier: normalizeBuildingEffects(
             effects.additiveMultiplier,
-          )?.map(({ resource, perBuilding }) => ({
+          )?.map(({ resource, perBuilding, power }) => ({
             resource,
             perBuilding: ExpNumber.fromNumber(perBuilding),
+            ...normalizePower({ power }),
           })),
           resourceDrain: normalizeBuildingEffects(effects.resourceDrain)?.map(
-            ({ resource, amount }) => ({
+            ({ resource, amount, power }) => ({
               resource,
               amount: ExpNumber.fromNumber(amount),
+              ...normalizePower({ power }),
             }),
           ),
           resourceProduction: normalizeBuildingEffects(
             effects.resourceProduction,
-          )?.map(({ resource, amount }) => ({
+          )?.map(({ resource, amount, power }) => ({
             resource,
             amount: ExpNumber.fromNumber(amount),
+            ...normalizePower({ power }),
           })),
-          bonus: normalizeBuildingEffects(effects.bonus),
+          bonus: normalizeBuildingEffects(effects.bonus)?.map(normalizePower),
         }
       : undefined,
     data.unlock,

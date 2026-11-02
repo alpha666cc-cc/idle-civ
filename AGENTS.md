@@ -1089,9 +1089,13 @@ type Bonus = {
 };
 ```
 
-Building effects may carry explicit tags in JSON. The `nopower` tag is currently
-supported only on `capacityProvided` effects; it keeps that capacity grant
-independent of the source building's power. Do not add tags to bonus entries.
+Every building effect and building-emitted bonus declares a `power` mode:
+`"none"` applies the effect per building without using the building's power,
+`"multiply"` scales the counted value by building power, and `"exponent"` raises
+the counted value to building power. All modes still scale by the number of
+buildings; `"none"` replaces the former `nopower` tag. Existing resource
+production uses `"multiply"`, additive multipliers and building bonuses use
+`"exponent"`, and drains/capacity grants use `"none"`.
 
 | Bonus type             | Destination                            | Meaning                                                                                                                     | Nearest existing equivalent              |
 | ---------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |

@@ -7,10 +7,7 @@ import {
   parseCostParameterTarget,
   parseBonusType,
 } from "../bonus";
-import {
-  buildingDefinitions,
-  hasBuildingEffectTag,
-} from "../buildings";
+import { buildingDefinitions } from "../buildings";
 import { attributeDefinitions, type AttributeKey } from "../attributes";
 
 describe("bonus destination paths", () => {
@@ -95,25 +92,30 @@ describe("bonus destination paths", () => {
     ).toThrow("Unknown bonus type: costParameterAdd");
   });
 
-  it("house capacity effect is affected by power, other buildings have nopower", () => {
+  it("declares power mode for every building effect and bonus", () => {
+    for (const building of buildingDefinitions) {
+      for (const entries of Object.values(building.effects)) {
+        for (const effect of entries ?? []) {
+          expect(["none", "multiply", "exponent"]).toContain(effect.power);
+        }
+      }
+    }
+  });
+
+  it("preserves capacity grants that do not scale with building power", () => {
     const house = buildingDefinitions.find(b => b.key === "house");
     const townHall = buildingDefinitions.find(b => b.key === "townHall");
 
     const houseCapacity = house?.effects.capacityProvided?.[0];
     const townHallCapacity = townHall?.effects.capacityProvided?.[0];
 
-    // House capacity keeps the nopower tag (capacity grants are flat, not
-    // scaled by the building's power).
-    expect(hasBuildingEffectTag(houseCapacity!, "nopower")).toBe(true);
+    expect(houseCapacity?.power).toBe("none");
+    expect(townHallCapacity?.power).toBe("none");
 
-    // TownHall capacity keeps the nopower tag for the same reason.
-    expect(hasBuildingEffectTag(townHallCapacity!, "nopower")).toBe(true);
-
-    // Other buildings should keep nopower
     const barracksCapacity = townHall?.effects.capacityProvided?.find(
       (e) => e.building === "barracks",
     );
-    expect(hasBuildingEffectTag(barracksCapacity!, "nopower")).toBe(true);
+    expect(barracksCapacity?.power).toBe("none");
   });
 
   it("matches the cost resource and buyable scope", () => {
