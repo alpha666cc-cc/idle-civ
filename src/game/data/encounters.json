@@ -518,8 +518,45 @@
     "enemyArmy": [
       {
         "unitId": "knight",
-        "count": 3,
-        "label": "30k cavalry"
+        "count": 2e6,
+        "label": "Cavalry",
+        "formation": "rush"
+      },
+      {
+        "unitId": "longbow",
+        "count": 2e6,
+        "label": "Archer line",
+        "formation": "backline"
+      },
+      {
+        "unitId": "hoplite",
+        "count": 250000,
+        "label": "Shield infantry",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "companion",
+        "count": 150000,
+        "label": "Mounted reserve",
+        "formation": "rush"
+      },
+      {
+        "unitId": "onager",
+        "count": 100000,
+        "label": "Siege engines",
+        "formation": "backline"
+      },
+      {
+        "unitId": "fire_ship",
+        "count": 25000,
+        "label": "Fire ships",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "trader_classical",
+        "count": 25000,
+        "label": "Supply ships",
+        "formation": "backline"
       }
     ],
     "bonuses": [
@@ -547,9 +584,46 @@
     "historical": "norman 7,000 · saxon 7,000",
     "enemyArmy": [
       {
-        "unitId": "man_at_arms",
-        "count": 4,
-        "label": "6k Saxons"
+        "unitId": "longbow",
+        "count": 8e6,
+        "label": "Saxon archer line",
+        "formation": "backline"
+      },
+      {
+        "unitId": "knight",
+        "count": 1064000,
+        "label": "Norman cavalry",
+        "formation": "rush"
+      },
+      {
+        "unitId": "hoplite",
+        "count": 80000,
+        "label": "Shield infantry",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "companion",
+        "count": 80000,
+        "label": "Mounted retainers",
+        "formation": "rush"
+      },
+      {
+        "unitId": "onager",
+        "count": 80000,
+        "label": "Siege crews",
+        "formation": "backline"
+      },
+      {
+        "unitId": "fire_ship",
+        "count": 80000,
+        "label": "Fire ships",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "trader_classical",
+        "count": 80000,
+        "label": "Supply ships",
+        "formation": "backline"
       }
     ],
     "bonuses": [
@@ -577,14 +651,58 @@
     "historical": "france 10,000 · france cannons 300 · england 5,000 · england longbows 3,000",
     "enemyArmy": [
       {
+        "unitId": "knight",
+        "count": 2.4e6,
+        "label": "Cavalry",
+        "formation": "rush"
+      },
+      {
         "unitId": "longbow",
-        "count": 3,
-        "label": "3k longbows"
+        "count": 2.4e6,
+        "label": "Longbow line",
+        "formation": "backline"
+      },
+      {
+        "unitId": "crossbow",
+        "count": 2.4e6,
+        "label": "Armoured crossbowmen",
+        "formation": "backline"
       },
       {
         "unitId": "man_at_arms",
-        "count": 2,
-        "label": "2k men-at-arms"
+        "count": 2.4e6,
+        "label": "Men-at-arms",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "trebuchet",
+        "count": 400000,
+        "label": "Trebuchets",
+        "formation": "backline"
+      },
+      {
+        "unitId": "cog",
+        "count": 1.2e6,
+        "label": "Cogs",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "longship",
+        "count": 1.2e6,
+        "label": "Longships",
+        "formation": "rush"
+      },
+      {
+        "unitId": "bombard",
+        "count": 400000,
+        "label": "Bombard crews",
+        "formation": "backline"
+      },
+      {
+        "unitId": "caravel",
+        "count": 1.2e6,
+        "label": "Caravels",
+        "formation": "rush"
       }
     ],
     "bonuses": [
@@ -623,13 +741,45 @@
     "enemyArmy": [
       {
         "unitId": "knight",
-        "count": 2,
-        "label": "6k knights"
+        "count": 480000,
+        "label": "Imperial cavalry",
+        "formation": "rush"
       },
       {
-        "unitId": "man_at_arms",
-        "count": 3,
-        "label": "12k infantry"
+        "unitId": "cuirassier",
+        "count": 360000,
+        "label": "Armoured horse",
+        "formation": "rush"
+      },
+      {
+        "unitId": "musketeer",
+        "count": 440000,
+        "label": "Arquebusiers",
+        "formation": "backline"
+      },
+      {
+        "unitId": "pikeman_ren",
+        "count": 480000,
+        "label": "Pike blocks",
+        "formation": "pike_square"
+      },
+      {
+        "unitId": "cannon",
+        "count": 240000,
+        "label": "Field guns",
+        "formation": "backline"
+      },
+      {
+        "unitId": "dragoon_ren",
+        "count": 280000,
+        "label": "Mounted shot",
+        "formation": "rush"
+      },
+      {
+        "unitId": "galleon",
+        "count": 120000,
+        "label": "River transports",
+        "formation": "backline"
       }
     ],
     "bonuses": [
@@ -653,13 +803,45 @@
     "enemyArmy": [
       {
         "unitId": "war_galley_iron",
-        "count": 4,
-        "label": "222 Ottoman galleys"
+        "count": 1.1e6,
+        "label": "Oared galleys",
+        "formation": "frontline"
       },
       {
         "unitId": "privateer",
-        "count": 2,
-        "label": "60 galliots"
+        "count": 900000,
+        "label": "Fast raiders",
+        "formation": "rush"
+      },
+      {
+        "unitId": "galleon",
+        "count": 1.1e6,
+        "label": "Gun galleons",
+        "formation": "backline"
+      },
+      {
+        "unitId": "frigate_sail",
+        "count": 800000,
+        "label": "Sailing frigates",
+        "formation": "skirmish"
+      },
+      {
+        "unitId": "caravel",
+        "count": 600000,
+        "label": "Caravels",
+        "formation": "rush"
+      },
+      {
+        "unitId": "longship",
+        "count": 500000,
+        "label": "Oared escorts",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "cannon",
+        "count": 400000,
+        "label": "Coastal batteries",
+        "formation": "backline"
       }
     ],
     "bonuses": [
@@ -683,13 +865,51 @@
     "enemyArmy": [
       {
         "unitId": "musketeer",
-        "count": 6,
-        "label": "60k janissaries"
+        "count": 720000,
+        "label": "Janissary shot",
+        "formation": "backline"
+      },
+      {
+        "unitId": "pikeman_ren",
+        "count": 720000,
+        "label": "Pike formations",
+        "formation": "pike_square"
+      },
+      {
+        "unitId": "dragoon_ren",
+        "count": 600000,
+        "label": "Mounted skirmishers",
+        "formation": "rush"
+      },
+      {
+        "unitId": "cuirassier",
+        "count": 540000,
+        "label": "Heavy cavalry",
+        "formation": "rush"
       },
       {
         "unitId": "cannon",
-        "count": 4,
-        "label": "200 guns"
+        "count": 540000,
+        "label": "Siege guns",
+        "formation": "backline"
+      },
+      {
+        "unitId": "man_at_arms",
+        "count": 480000,
+        "label": "Armoured infantry",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "galleon",
+        "count": 240000,
+        "label": "Danube supply ships",
+        "formation": "backline"
+      },
+      {
+        "unitId": "war_galley_iron",
+        "count": 180000,
+        "label": "River patrol",
+        "formation": "frontline"
       }
     ],
     "bonuses": [
@@ -723,18 +943,39 @@
     "enemyArmy": [
       {
         "unitId": "line_infantry",
-        "count": 7,
-        "label": "68k coalition infantry"
+        "count": 1.3e6,
+        "label": "Infantry squares",
+        "formation": "shield_wall"
       },
       {
         "unitId": "lancer",
-        "count": 1,
-        "label": "12k cavalry"
+        "count": 1.1e6,
+        "label": "Heavy cavalry",
+        "formation": "rush"
       },
       {
         "unitId": "howitzer_ind",
-        "count": 2,
-        "label": "150 guns"
+        "count": 900000,
+        "label": "Grand battery",
+        "formation": "backline"
+      },
+      {
+        "unitId": "dragoon_ind",
+        "count": 900000,
+        "label": "Mounted rifles",
+        "formation": "skirmish"
+      },
+      {
+        "unitId": "rifleman",
+        "count": 700000,
+        "label": "Rifle companies",
+        "formation": "backline"
+      },
+      {
+        "unitId": "cuirassier",
+        "count": 600000,
+        "label": "Cuirassiers",
+        "formation": "rush"
       }
     ],
     "bonuses": [
@@ -757,14 +998,46 @@
     "historical": "union 93,000 · confed 71,000",
     "enemyArmy": [
       {
+        "unitId": "line_infantry",
+        "count": 600000,
+        "label": "Infantry brigades",
+        "formation": "frontline"
+      },
+      {
         "unitId": "rifleman",
-        "count": 4,
-        "label": "40k riflemen"
+        "count": 780000,
+        "label": "Rifle lines",
+        "formation": "backline"
       },
       {
         "unitId": "lancer",
-        "count": 2,
-        "label": "10k cavalry"
+        "count": 300000,
+        "label": "Cavalry screen",
+        "formation": "rush"
+      },
+      {
+        "unitId": "gatling",
+        "count": 540000,
+        "label": "Gatling batteries",
+        "formation": "backline"
+      },
+      {
+        "unitId": "howitzer_ind",
+        "count": 480000,
+        "label": "Rifled artillery",
+        "formation": "backline"
+      },
+      {
+        "unitId": "ironclad",
+        "count": 300000,
+        "label": "River ironclads",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "dragoon_ind",
+        "count": 300000,
+        "label": "Mounted scouts",
+        "formation": "skirmish"
       }
     ],
     "bonuses": [
@@ -788,13 +1061,51 @@
     "enemyArmy": [
       {
         "unitId": "rifleman",
-        "count": 8,
-        "label": "800k infantry"
+        "count": 220000,
+        "label": "Entrenched riflemen",
+        "formation": "turtle"
       },
       {
         "unitId": "gatling",
-        "count": 3,
-        "label": "machine guns"
+        "count": 220000,
+        "label": "Machine-gun nests",
+        "formation": "backline"
+      },
+      {
+        "unitId": "howitzer_ind",
+        "count": 240000,
+        "label": "Heavy artillery",
+        "formation": "backline"
+      },
+      {
+        "unitId": "line_infantry",
+        "count": 240000,
+        "label": "Trench infantry",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "zeppelin",
+        "count": 100000,
+        "label": "Observation airships",
+        "formation": "backline"
+      },
+      {
+        "unitId": "biplane",
+        "count": 140000,
+        "label": "Scout aircraft",
+        "formation": "skirmish"
+      },
+      {
+        "unitId": "sub_early",
+        "count": 80000,
+        "label": "Coastal submarines",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "ironclad",
+        "count": 80000,
+        "label": "Shore bombardment",
+        "formation": "backline"
       }
     ],
     "bonuses": [
@@ -828,13 +1139,39 @@
     "enemyArmy": [
       {
         "unitId": "carrier_ww2",
-        "count": 2,
-        "label": "4 carriers + 280 aircraft"
+        "count": 3.6e6,
+        "label": "Carrier groups",
+        "formation": "backline"
       },
       {
         "unitId": "battleship",
-        "count": 1,
-        "label": "2 battleships"
+        "count": 3.6e6,
+        "label": "Battleship screen",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "fighter_ww2",
+        "count": 3.6e6,
+        "label": "Carrier fighters",
+        "formation": "skirmish"
+      },
+      {
+        "unitId": "bomber_ww2",
+        "count": 2.8e6,
+        "label": "Dive bombers",
+        "formation": "backline"
+      },
+      {
+        "unitId": "sub_early",
+        "count": 2.4e6,
+        "label": "Submarine patrol",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "ww2_infantry",
+        "count": 1.6e6,
+        "label": "Island garrison",
+        "formation": "frontline"
       }
     ],
     "bonuses": [
@@ -857,14 +1194,40 @@
     "historical": "soviet infantry 2,500,000,000 · soviet tanks 6,250 · soviet guns 41,600 · german infantry 1,000,000 · german tanks 1,500",
     "enemyArmy": [
       {
-        "unitId": "tank_ww2",
-        "count": 2,
-        "label": "1500 German tanks"
+        "unitId": "ww2_infantry",
+        "count": 1.95e7,
+        "label": "Urban infantry",
+        "formation": "frontline"
       },
       {
-        "unitId": "ww2_infantry",
-        "count": 4,
-        "label": "1M infantry"
+        "unitId": "tank_ww2",
+        "count": 1.35e7,
+        "label": "Armoured columns",
+        "formation": "rush"
+      },
+      {
+        "unitId": "dragoon_mech",
+        "count": 1.35e7,
+        "label": "Mechanized infantry",
+        "formation": "skirmish"
+      },
+      {
+        "unitId": "fighter_ww2",
+        "count": 1.05e7,
+        "label": "Fighter cover",
+        "formation": "backline"
+      },
+      {
+        "unitId": "bomber_ww2",
+        "count": 7.5e6,
+        "label": "Tactical bombers",
+        "formation": "backline"
+      },
+      {
+        "unitId": "howitzer_ind",
+        "count": 1.35e7,
+        "label": "Heavy guns",
+        "formation": "backline"
       }
     ],
     "bonuses": [
@@ -887,14 +1250,52 @@
     "historical": "coalition 950,000 · iraq 1,000,000 · tanks iraq 4,000",
     "enemyArmy": [
       {
-        "unitId": "tank_ww2",
-        "count": 4,
-        "label": "4000 T-72"
+        "unitId": "soldier_modern",
+        "count": 4.4e6,
+        "label": "Mechanized infantry",
+        "formation": "frontline"
       },
       {
-        "unitId": "soldier_modern",
-        "count": 3,
-        "label": "300k infantry"
+        "unitId": "tank_abrams",
+        "count": 4e6,
+        "label": "Main battle tanks",
+        "formation": "rush"
+      },
+      {
+        "unitId": "fighter_jet",
+        "count": 2.8e6,
+        "label": "Air-superiority fighters",
+        "formation": "skirmish"
+      },
+      {
+        "unitId": "attack_heli",
+        "count": 2.8e6,
+        "label": "Attack helicopters",
+        "formation": "skirmish"
+      },
+      {
+        "unitId": "artillery_modern",
+        "count": 3.6e6,
+        "label": "Self-propelled artillery",
+        "formation": "backline"
+      },
+      {
+        "unitId": "drone",
+        "count": 2.8e6,
+        "label": "Recon drones",
+        "formation": "backline"
+      },
+      {
+        "unitId": "destroyer_modern",
+        "count": 2.4e6,
+        "label": "Carrier escorts",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "sub_nuclear",
+        "count": 1.6e6,
+        "label": "Submarine patrol",
+        "formation": "backline"
       }
     ],
     "bonuses": [
@@ -918,13 +1319,51 @@
     "enemyArmy": [
       {
         "unitId": "tank_abrams",
-        "count": 2,
-        "label": "1000 tanks"
+        "count": 3.6e6,
+        "label": "Armoured battalions",
+        "formation": "rush"
+      },
+      {
+        "unitId": "drone",
+        "count": 4.4e6,
+        "label": "Loitering drones",
+        "formation": "skirmish"
       },
       {
         "unitId": "artillery_modern",
-        "count": 2,
-        "label": "2000 artillery"
+        "count": 4e6,
+        "label": "Guided artillery",
+        "formation": "backline"
+      },
+      {
+        "unitId": "fighter_jet",
+        "count": 3.6e6,
+        "label": "Air cover",
+        "formation": "skirmish"
+      },
+      {
+        "unitId": "bomber_stealth",
+        "count": 2.4e6,
+        "label": "Stealth strike aircraft",
+        "formation": "backline"
+      },
+      {
+        "unitId": "destroyer_modern",
+        "count": 3.2e6,
+        "label": "Missile destroyers",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "sub_nuclear",
+        "count": 2.8e6,
+        "label": "Attack submarines",
+        "formation": "backline"
+      },
+      {
+        "unitId": "special_forces",
+        "count": 2e6,
+        "label": "Forward observers",
+        "formation": "skirmish"
       }
     ],
     "bonuses": [
@@ -948,18 +1387,45 @@
     "enemyArmy": [
       {
         "unitId": "mech_suit",
-        "count": 3,
-        "label": "Enemy mechs"
+        "count": 33000,
+        "label": "Powered assault suits",
+        "formation": "frontline"
       },
       {
         "unitId": "orbital_laser",
-        "count": 1,
-        "label": "Enemy orbital"
+        "count": 27000,
+        "label": "Orbital strike platforms",
+        "formation": "backline"
       },
       {
         "unitId": "satellite",
-        "count": 2,
-        "label": "50k satellites"
+        "count": 27000,
+        "label": "Sensor constellation",
+        "formation": "backline"
+      },
+      {
+        "unitId": "starship",
+        "count": 27000,
+        "label": "Interstellar vessel",
+        "formation": "rush"
+      },
+      {
+        "unitId": "bomber_stealth",
+        "count": 21000,
+        "label": "Stealth bombers",
+        "formation": "backline"
+      },
+      {
+        "unitId": "carrier_nuclear",
+        "count": 15000,
+        "label": "Nuclear carriers",
+        "formation": "frontline"
+      },
+      {
+        "unitId": "fighter_jet",
+        "count": 21000,
+        "label": "Orbital interceptors",
+        "formation": "skirmish"
       }
     ],
     "bonuses": [
