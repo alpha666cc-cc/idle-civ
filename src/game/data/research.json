@@ -2134,7 +2134,11 @@
     "description": "unlock_unit cog (small); unit_stat_boost ship_attack (small); production_multiplier military (small)",
     "age": 3,
     "category": "military",
-    "prerequisites": ["shipbuilding_principles", "craftsmanship"],
+    "prerequisites": [
+      "shipbuilding_principles",
+      "craftsmanship",
+      "mining_shafts"
+    ],
     "bonuses": [
       {
         "type": "attributeMultiplier",

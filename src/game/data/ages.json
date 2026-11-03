@@ -129,7 +129,7 @@
     "description": "Knights and castles. Feudal lords gather wealth across continents.",
     "buildingThreshold": 1.5e6,
     "unlocks": [],
-    "research": { "base": "2e58", "factor": 27.7, "exponent": 0.9 },
+    "research": { "base": "1e57", "factor": 100, "exponent": 0.6 },
     "bonuses": [
       {
         "type": "attributeFlat",
