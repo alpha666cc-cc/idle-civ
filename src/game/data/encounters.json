@@ -518,25 +518,25 @@
     "enemyArmy": [
       {
         "unitId": "knight",
-        "count": 2e6,
+        "count": 1e8,
         "label": "Cavalry",
         "formation": "rush"
       },
       {
         "unitId": "longbow",
-        "count": 2e6,
+        "count": 1e8,
         "label": "Archer line",
         "formation": "backline"
       },
       {
         "unitId": "hoplite",
-        "count": 250000,
+        "count": 1e8,
         "label": "Shield infantry",
         "formation": "frontline"
       },
       {
         "unitId": "companion",
-        "count": 150000,
+        "count": 3500000,
         "label": "Mounted reserve",
         "formation": "rush"
       },
@@ -548,13 +548,13 @@
       },
       {
         "unitId": "fire_ship",
-        "count": 25000,
+        "count": 250000,
         "label": "Fire ships",
         "formation": "frontline"
       },
       {
-        "unitId": "trader_classical",
-        "count": 25000,
+        "unitId": "cog",
+        "count": 250000,
         "label": "Supply ships",
         "formation": "backline"
       }
@@ -562,8 +562,8 @@
     "bonuses": [
       {
         "type": "attributeMultiplier",
-        "destination": "military",
-        "value": 1.05
+        "destination": "advancedProduction.worker.efficiency",
+        "value": 10
       },
       {
         "type": "costReductionFactor",
@@ -585,42 +585,42 @@
     "enemyArmy": [
       {
         "unitId": "longbow",
-        "count": 8e6,
+        "count": 2e8,
         "label": "Saxon archer line",
         "formation": "backline"
       },
       {
         "unitId": "knight",
-        "count": 1064000,
+        "count": 1e8,
         "label": "Norman cavalry",
         "formation": "rush"
       },
       {
-        "unitId": "hoplite",
-        "count": 80000,
+        "unitId": "man_at_arms",
+        "count": 2e8,
         "label": "Shield infantry",
         "formation": "frontline"
       },
       {
         "unitId": "companion",
-        "count": 80000,
+        "count": 1e7,
         "label": "Mounted retainers",
         "formation": "rush"
       },
       {
-        "unitId": "onager",
-        "count": 80000,
+        "unitId": "trebuchet",
+        "count": 1e6,
         "label": "Siege crews",
         "formation": "backline"
       },
       {
-        "unitId": "fire_ship",
+        "unitId": "longship",
         "count": 80000,
         "label": "Fire ships",
         "formation": "frontline"
       },
       {
-        "unitId": "trader_classical",
+        "unitId": "caravel",
         "count": 80000,
         "label": "Supply ships",
         "formation": "backline"
@@ -630,7 +630,7 @@
       {
         "type": "attributeMultiplier",
         "destination": "military",
-        "value": 1.05
+        "value": 50
       },
       {
         "type": "costReductionFactor",
@@ -652,55 +652,55 @@
     "enemyArmy": [
       {
         "unitId": "knight",
-        "count": 2.4e6,
+        "count": 2.4e8,
         "label": "Cavalry",
         "formation": "rush"
       },
       {
         "unitId": "longbow",
-        "count": 2.4e6,
+        "count": 2.4e8,
         "label": "Longbow line",
         "formation": "backline"
       },
       {
         "unitId": "crossbow",
-        "count": 2.4e6,
+        "count": 2.4e8,
         "label": "Armoured crossbowmen",
         "formation": "backline"
       },
       {
         "unitId": "man_at_arms",
-        "count": 2.4e6,
+        "count": 2.4e8,
         "label": "Men-at-arms",
         "formation": "frontline"
       },
       {
         "unitId": "trebuchet",
-        "count": 400000,
+        "count": 1e7,
         "label": "Trebuchets",
         "formation": "backline"
       },
       {
         "unitId": "cog",
-        "count": 1.2e6,
+        "count": 2e7,
         "label": "Cogs",
         "formation": "frontline"
       },
       {
         "unitId": "longship",
-        "count": 1.2e6,
+        "count": 2e7,
         "label": "Longships",
         "formation": "rush"
       },
       {
         "unitId": "bombard",
-        "count": 400000,
+        "count": 1e7,
         "label": "Bombard crews",
         "formation": "backline"
       },
       {
         "unitId": "caravel",
-        "count": 1.2e6,
+        "count": 2e7,
         "label": "Caravels",
         "formation": "rush"
       }
