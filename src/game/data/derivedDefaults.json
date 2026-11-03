@@ -1,6 +1,8 @@
 {
   "clickPower": 1,
   "autoClickRate": 0,
+  "workerDiversity": 0,
+  "workerDiversitySpeed": 1,
   "buildingCostMultiplier": 1,
   "wastedResources": 0,
   "tradeProductionMultiplier": 1,

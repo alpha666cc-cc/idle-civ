@@ -38,7 +38,6 @@ import {
 } from "../game/gamepedia";
 import {
   productionDefinitions,
-  AttributeDefinition,
   type ProductionResourceKey,
   type ResourceFactor,
   type ResourceKey,
@@ -148,13 +147,13 @@ const formatFactorValue = (
 };
 
 const factorSourceLabel = (source: ResourceFactor[0]): string =>
-  source instanceof AttributeDefinition ? source.label : source;
+  typeof source === "string" ? source : source.label;
 
 const factorSourceId = (source: ResourceFactor[0]): string | undefined =>
   typeof source === "string" ? source : undefined;
 
 const factorSourceIcon = (source: ResourceFactor[0]): LucideIcon => {
-  if (source instanceof AttributeDefinition) return Users;
+  if (typeof source !== "string") return Users;
   const normalizedSource = source.toLowerCase();
   if (normalizedSource.includes("lumber") || normalizedSource.includes("wood"))
     return Leaf;
@@ -682,6 +681,16 @@ export default function GamepediaModal({
                   )}
                 </strong>
               </div>
+              {hasWorkers && (
+                <div className="gamepedia-stat">
+                  <span>Worker diversity (current / ceiling)</span>
+                  <strong>
+                    ×{formatAmount(gameState.getWorkerDiversityMultiplier())}
+                    {" / ×"}
+                    {formatAmount(gameState.getWorkerDiversityCeiling())}
+                  </strong>
+                </div>
+              )}
             </div>
 
             <p className="gamepedia-category">Modifiers</p>

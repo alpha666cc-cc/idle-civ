@@ -119,6 +119,11 @@
         "type": "attributeMultiplier",
         "destination": "advancedProduction.worker.efficiency",
         "value": 400
+      },
+      {
+        "type": "attributeFlat",
+        "destination": "workerDiversity",
+        "value": 2
       }
     ]
   },
@@ -135,6 +140,16 @@
         "type": "attributeFlat",
         "destination": "TownHall.power",
         "value": 0.01
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "workerDiversity",
+        "value": 4
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "workerDiversity.Speed",
+        "value": 4
       }
     ]
   },
@@ -146,7 +161,18 @@
     "buildingThreshold": 1.5e8,
     "unlocks": [],
     "research": { "base": "1e27", "factor": 200000, "exponent": 0.5 },
-    "bonuses": []
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "workerDiversity",
+        "value": 4
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "workerDiversity.Speed",
+        "value": 4
+      }
+    ]
   },
   {
     "guid": "6240726e-eaaf-5eac-aab8-f1ac16cabe24",
@@ -156,7 +182,18 @@
     "buildingThreshold": 1.5e9,
     "unlocks": [],
     "research": { "base": "1e33", "factor": 2000000, "exponent": 0.5 },
-    "bonuses": []
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "workerDiversity",
+        "value": 4
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "workerDiversity.Speed",
+        "value": 4
+      }
+    ]
   },
   {
     "guid": "fac02a8c-a66b-5bad-b864-2bca5cebc4be",
@@ -166,6 +203,17 @@
     "buildingThreshold": 1.5e10,
     "unlocks": [],
     "research": { "base": "1e39", "factor": 20000000, "exponent": 0.5 },
-    "bonuses": []
+    "bonuses": [
+      {
+        "type": "attributeMultiplier",
+        "destination": "workerDiversity",
+        "value": 4
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "workerDiversity.Speed",
+        "value": 4
+      }
+    ]
   }
 ]

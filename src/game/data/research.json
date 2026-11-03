@@ -2466,7 +2466,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [{}]
+    "ignored": []
   },
   {
     "guid": "ba125992-5d0b-5c41-a0d0-1d882a8300c6",
@@ -3429,14 +3429,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "special_ability",
-        "target": "colony_ship",
-        "value": "large",
-        "reason": "no such mechanic"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "30b8aac0-b298-5f2b-8940-cef33acc5993",
@@ -3454,14 +3447,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "research_speed",
-        "target": "all",
-        "value": "large",
-        "reason": "research purchase is instant; no speed mechanic"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "1b447cea-992a-5fa5-9f44-886245eb1100",
@@ -3851,14 +3837,7 @@
     "prerequisites": ["orbital_arrays"],
     "bonuses": [],
     "unlocks": ["orbital_laser"],
-    "ignored": [
-      {
-        "type": "special_ability",
-        "target": "hit_all",
-        "value": "large",
-        "reason": "no such mechanic"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "fd4919d2-99bd-51f6-bd33-c6796d4ebe27",

@@ -1642,6 +1642,10 @@ function App() {
         ({ key }) => key === bonus.destination,
       );
       if (resource) return `${resource.label} production ×${fmt(bonus.value)}`;
+      const attribute = derivedAttributeDefinitions.find(
+        ({ key }) => key === bonus.destination,
+      );
+      if (attribute) return `${attribute.label} ×${fmt(bonus.value)}`;
       return `${bonus.destination} ×${fmt(bonus.value)}`;
     }
     if (bonus.type.startsWith("costReduction")) {

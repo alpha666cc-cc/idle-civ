@@ -52,6 +52,8 @@ export type ResourceKey =
 export type DerivedAttributeKey =
   | "clickPower"
   | "autoClickRate"
+  | "workerDiversity"
+  | "workerDiversitySpeed"
   | "buildingCostMultiplier"
   | "wastedResources"
   | "tradeProductionMultiplier"
@@ -150,10 +152,8 @@ type DerivedAttributeData = {
 };
 
 /**
- * Computed stats (§13.2 decision 2): `clickPower` and `autoClickRate`. They are
- * never stored — bonuses whose destination is the stat id feed their value, so
- * `+1 per click` is an ordinary `attributeFlat` bonus on `clickPower` and
- * `×2 click power` is an `attributeMultiplier` bonus.
+ * Computed stats (§13.2 decision 2): values are never stored — bonuses whose
+ * destination is the stat id feed their value through the shared attribute path.
  */
 export const derivedAttributeDefinitions: AttributeDefinition[] = (
   statData as DerivedAttributeData[]

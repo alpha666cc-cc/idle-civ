@@ -28,6 +28,16 @@ describe("bonus destination paths", () => {
     expect(
       normalizeBonusDestination("allProduction.worker.efficiency"),
     ).toBe("allProductionPerWorker");
+    expect(normalizeBonusDestination("workerDiversity.Speed")).toBe(
+      "workerDiversitySpeed",
+    );
+    expect(
+      parseBonus("attributeFlat", "workerDiversity", 2).destination,
+    ).toBe("workerDiversity");
+    expect(
+      parseBonus("attributeMultiplier", "workerDiversity.Speed", 4)
+        .destination,
+    ).toBe("workerDiversitySpeed");
     expect(
       normalizeBonusDestination("advancedProduction.worker.efficiency"),
     ).toBe("advancedProductionPerWorker");
@@ -59,6 +69,11 @@ describe("bonus destination paths", () => {
 
   it("validates cost targets, groups, and field-scoped additions", () => {
     expect(isValidBonusDestination("Civilbuildings")).toBe(true);
+    expect(isValidBonusDestination("workerDiversity")).toBe(true);
+    expect(isValidBonusDestination("workerDiversity.Speed")).toBe(true);
+    expect(() => parseBonusType("workerDiversity")).toThrow(
+      "Unknown bonus type: workerDiversity",
+    );
     expect(isValidBonusDestination("house.costs.stone.factor")).toBe(true);
     expect(isValidBonusDestination("all.costs.all.exponent")).toBe(true);
     expect(

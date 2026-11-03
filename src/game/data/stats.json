@@ -12,6 +12,18 @@
     "description": "Automated production clicks generated every second. Dev Tools set the current rate; bonuses are planned to feed it once upgrades target this stat."
   },
   {
+    "guid": "96c8bd46-342a-5bdf-9ae7-021d96638fd3",
+    "key": "workerDiversity",
+    "label": "Worker Diversity",
+    "description": "Coefficient for the shared worker-output ceiling. Starts at 0 and increases through attribute bonuses; the ceiling is this value multiplied by the base-10 logarithm of the least-staffed production resource."
+  },
+  {
+    "guid": "da0cfd09-b19f-53bf-b33f-cbd06a88957e",
+    "key": "workerDiversitySpeed",
+    "label": "Worker Diversity Speed",
+    "description": "Speed of the shared worker-diversity ramp. Starts at ×1; attribute flat and multiplier bonuses change how quickly it approaches its ceiling."
+  },
+  {
     "guid": "91a4fb37-5f3a-54c6-bb46-e91d06d1902a",
     "key": "buildingCostMultiplier",
     "label": "Building cost multiplier",

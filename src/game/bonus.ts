@@ -154,6 +154,7 @@ const canonicalId = (value: string): string => {
     basicproductionperworker: "basicProductionPerWorker",
     advancedproductionperworker: "advancedProductionPerWorker",
     allproductionperworker: "allProductionPerWorker",
+    "workerdiversity.speed": "workerDiversitySpeed",
   };
   return groups[lowered] ?? value;
 };

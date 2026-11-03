@@ -87,6 +87,37 @@ describe("save document identity", () => {
   });
 
   describe("save round-trips", () => {
+    it("preserves worker-diversity ramp progress", () => {
+      const workers = emptyWorkerAssignments();
+      for (const key of Object.keys(workers) as (keyof typeof workers)[]) {
+        workers[key] = ExpNumber.fromNumber(100_000);
+      }
+      let state = new CivilizationState(
+        emptyResourceAmounts(),
+        workers,
+        {},
+        emptyResourceFactors(),
+        {},
+        0,
+        [],
+        [],
+        ["age0", "age1", "age2"],
+        [],
+        emptyStatistics(),
+      );
+      for (let second = 0; second < 30; second += 1) {
+        state = state.tick();
+      }
+
+      const loaded = loadSaveData(
+        createSaveData(state, "worker-diversity", 1),
+      );
+      expect(loaded.getWorkerDiversityMultiplier().toNumber()).toBeCloseTo(
+        2,
+        9,
+      );
+    });
+
     it("applies entered-age resource bonuses once across save reloads", () => {
       const ageKey = "ageBonusSaveRoundTripTest";
       const woodMultiplier = (value: number) =>
@@ -359,6 +390,16 @@ describe("migration", () => {
   it("is a no-op at the current version", () => {
     const data = sampleSave();
     expect(migrateSaveData(data)).toBe(data);
+  });
+
+  it("initializes worker-diversity progress when migrating v7 saves", () => {
+    const old = { ...sampleSave(), version: 7 };
+    delete (old as { workerDiversityMultiplier?: string })
+      .workerDiversityMultiplier;
+    const migrated = migrateSaveData(old);
+
+    expect(migrated.version).toBe(SAVE_VERSION);
+    expect(migrated.workerDiversityMultiplier).toBe("1e0");
   });
 
   it("refuses to down-convert a newer document", () => {

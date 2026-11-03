@@ -12,6 +12,7 @@ import { ExpNumber } from "../expNumber";
 import { emptyStatistics } from "../statistics";
 import type { Bonus } from "../bonus";
 import { UpgradeDefinition, upgradeDefinitions } from "../upgrades";
+import { achievementDefinitions } from "../achievements";
 
 const allProductionKeys: ProductionResourceKey[] = [
   "food",
@@ -28,9 +29,13 @@ const allProductionKeys: ProductionResourceKey[] = [
 const stateWithBonusesAndWorkers = (
   boughtUpgrades: string[],
   workers: Partial<Record<ProductionResourceKey, ExpNumber>>,
+  enteredAges: string[] = [],
+  workerDiversityMultiplier = ExpNumber.ONE,
+  resources = emptyResourceAmounts(),
+  earnedAchievementIds: string[] = [],
 ): CivilizationState =>
   new CivilizationState(
-    emptyResourceAmounts(),
+    resources,
     { ...emptyWorkerAssignments(), ...workers },
     {},
     emptyResourceFactors(),
@@ -38,8 +43,8 @@ const stateWithBonusesAndWorkers = (
     0,
     boughtUpgrades,
     [],
-    [],
-    [],
+    enteredAges,
+    earnedAchievementIds,
     emptyStatistics(),
     {},
     ExpNumber.ONE,
@@ -50,6 +55,7 @@ const stateWithBonusesAndWorkers = (
     {},
     {},
     {},
+    workerDiversityMultiplier,
   );
 
 /** A minimal state with workers assigned. */
@@ -77,6 +83,8 @@ describe("productionPerWorker attributes", () => {
     expect(getDerivedAttributeDefault("woodProductionPerWorker")).toBe(1);
     expect(getDerivedAttributeDefault("stoneProductionPerWorker")).toBe(1);
     expect(getDerivedAttributeDefault("goldProductionPerWorker")).toBe(1);
+    expect(getDerivedAttributeDefault("workerDiversity")).toBe(0);
+    expect(getDerivedAttributeDefault("workerDiversitySpeed")).toBe(1);
 
     // Advanced resources default to 0.1
     expect(getDerivedAttributeDefault("militaryProductionPerWorker")).toBe(0.1);
@@ -90,6 +98,8 @@ describe("productionPerWorker attributes", () => {
   it("is registered as derived attributes", () => {
     expect(findAttributeDefinition("foodProductionPerWorker")).toBeDefined();
     expect(findAttributeDefinition("scienceProductionPerWorker")).toBeDefined();
+    expect(findAttributeDefinition("workerDiversity")).toBeDefined();
+    expect(findAttributeDefinition("workerDiversitySpeed")).toBeDefined();
     expect(
       findAttributeDefinition("militaryProductionPerWorker"),
     ).toBeDefined();
@@ -372,6 +382,174 @@ describe("productionPerWorker attributes", () => {
           9,
         );
       }
+    });
+  });
+
+  describe("worker diversity bonus", () => {
+    const workersAt = (count: number): Record<
+      ProductionResourceKey,
+      ExpNumber
+    > =>
+      Object.fromEntries(
+        allProductionKeys.map((key) => [key, ExpNumber.fromNumber(count)]),
+      ) as Record<ProductionResourceKey, ExpNumber>;
+
+    const tickFor = (
+      state: CivilizationState,
+      seconds: number,
+    ): CivilizationState => {
+      let next = state;
+      for (let second = 0; second < seconds; second += 1) {
+        next = next.tick();
+      }
+      return next;
+    };
+
+    it("unlocks the coefficient in Age 3 with a base coefficient of 2", () => {
+      const workers = workersAt(100_000);
+      const beforeAge3 = stateWithBonusesAndWorkers([], workers, ["age1"]);
+      const age3 = stateWithBonusesAndWorkers([], workers, ["age1", "age2"]);
+
+      expect(beforeAge3.getWorkerDiversityCoefficient().toNumber()).toBe(0);
+      expect(beforeAge3.getWorkerDiversityMultiplier().toNumber()).toBe(1);
+      expect(age3.getWorkerDiversityCoefficient().toNumber()).toBe(2);
+      expect(age3.getWorkerDiversitySpeed().toNumber()).toBe(1);
+      expect(age3.getWorkerDiversityCeiling().toNumber()).toBe(10);
+      expect(age3.getWorkerDiversityMultiplier().toNumber()).toBe(1);
+    });
+
+    it("uses the minimum staffing across all eight production resources", () => {
+      const workers = workersAt(100_000);
+      workers.trade = ExpNumber.fromNumber(10_000);
+      const age3 = stateWithBonusesAndWorkers([], workers, ["age1", "age2"]);
+      const unstaffed = { ...workers, trade: ExpNumber.ZERO };
+      const noTradeWorkers = stateWithBonusesAndWorkers(
+        [],
+        unstaffed,
+        ["age1", "age2"],
+      );
+
+      expect(age3.getWorkerDiversityCeiling().toNumber()).toBe(8);
+      expect(noTradeWorkers.getWorkerDiversityCeiling().toNumber()).toBe(1);
+    });
+
+    it("reaches the calibrated ×2, ×5, and ×10 ramp milestones", () => {
+      const state = stateWithBonusesAndWorkers([], workersAt(100_000), [
+        "age1",
+        "age2",
+      ]);
+
+      const at30Seconds = tickFor(state, 30);
+      const at60Seconds = tickFor(at30Seconds, 30);
+      const at100Seconds = tickFor(at60Seconds, 40);
+
+      expect(at30Seconds.getWorkerDiversityMultiplier().toNumber()).toBeCloseTo(
+        2,
+        9,
+      );
+      expect(at60Seconds.getWorkerDiversityMultiplier().toNumber()).toBeCloseTo(
+        5,
+        9,
+      );
+      expect(
+        at100Seconds.getWorkerDiversityMultiplier().toNumber(),
+      ).toBeCloseTo(10, 9);
+    });
+
+    it("clamps staffing drops immediately and resumes from the clamped value", () => {
+      const workers = workersAt(100_000);
+      const atCeiling = tickFor(
+        stateWithBonusesAndWorkers([], workers, ["age1", "age2"]),
+        100,
+      );
+      const reduced = atCeiling.unassignWorker("trade", 90_000);
+      const restored = stateWithBonusesAndWorkers(
+        [],
+        workers,
+        ["age1", "age2"],
+        reduced.getWorkerDiversityMultiplier(),
+      );
+      const resumed = tickFor(restored, 16);
+
+      expect(reduced.getWorkerDiversityMultiplier().toNumber()).toBeCloseTo(
+        8,
+        9,
+      );
+      expect(restored.getWorkerDiversityMultiplier().toNumber()).toBeCloseTo(
+        8,
+        9,
+      );
+      expect(resumed.getWorkerDiversityMultiplier().toNumber()).toBeCloseTo(
+        10,
+        9,
+      );
+    });
+
+    it("scales the coefficient and speed together after completing Age 3", () => {
+      const age4 = stateWithBonusesAndWorkers(
+        [],
+        workersAt(100_000),
+        ["age1", "age2", "age3"],
+      );
+      const atCeiling = tickFor(age4, 100);
+
+      expect(age4.getWorkerDiversityCoefficient().toNumber()).toBe(8);
+      expect(age4.getWorkerDiversitySpeed().toNumber()).toBe(4);
+      expect(age4.getWorkerDiversityCeiling().toNumber()).toBe(40);
+      expect(atCeiling.getWorkerDiversityMultiplier().toNumber()).toBeCloseTo(
+        40,
+        9,
+      );
+    });
+
+    it("applies diversity to worker output, not clicks, or before Age 3", () => {
+      const workers = workersAt(100_000);
+      const beforeAge3 = stateWithBonusesAndWorkers([], workers, ["age1"]);
+      const age3 = stateWithBonusesAndWorkers([], workers, ["age1", "age2"]);
+      const ramped = tickFor(age3, 30);
+
+      const diversityFactor = ramped
+        .getProductionFactors("food")
+        .additional.find(([source]) => source === "worker diversity")?.[1];
+      const workerFactor = ramped
+        .getProductionFactors("food")
+        .additional.find(([source]) => typeof source !== "string")?.[1];
+      expect(diversityFactor?.toNumber()).toBeCloseTo(
+        workerFactor?.toNumber() ?? 0,
+        9,
+      );
+      expect(beforeAge3.computeClickGain("food").toNumber()).toBeCloseTo(
+        age3.computeClickGain("food").toNumber(),
+        9,
+      );
+    });
+
+    it("integrates the same diversity ramp in time skips and live ticks", () => {
+      const resourceAchievementIds = achievementDefinitions
+        .filter(({ requirement }) => requirement.type === "resource")
+        .map(({ id }) => id);
+      const state = stateWithBonusesAndWorkers(
+        [],
+        workersAt(10),
+        ["age1", "age2"],
+        ExpNumber.ONE,
+        {
+          ...emptyResourceAmounts(),
+          trade: ExpNumber.fromNumber(1e100),
+        },
+        resourceAchievementIds,
+      );
+      const live = tickFor(state, 60);
+      const skipped = state.advanceTime(60);
+
+      expect(skipped.getWorkerDiversityMultiplier().toNumber()).toBeCloseTo(
+        live.getWorkerDiversityMultiplier().toNumber(),
+        9,
+      );
+      expect(skipped.resources.food.toNumber()).toBeCloseTo(
+        live.resources.food.toNumber(),
+        6,
+      );
     });
   });
 });

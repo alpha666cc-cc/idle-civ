@@ -370,6 +370,8 @@ for (const key of [
   "tradeRoutes",
   "spread",
   "offlineEfficiency",
+  "workerDiversity",
+  "workerDiversitySpeed",
   "buildingPower",
   ...buildingPowerAttributeDefinitions.map(({ key }) => key),
   ...productionDefinitions.map(({ key }) => `${key}ProductionPerWorker`),
@@ -447,6 +449,7 @@ export class CivilizationState {
   readonly freeBuildings: boolean;
   readonly freeUnits: boolean;
   readonly freeUpgrades: boolean;
+  readonly workerDiversityMultiplier: ExpNumber;
 
   constructor(
     resources: ResourceAmounts = emptyResourceAmounts(),
@@ -469,6 +472,7 @@ export class CivilizationState {
     unitOrders: Partial<Record<string, BattleOrder>> = {},
     unitFormations: Partial<Record<string, FormationId>> = {},
     tradeRoutes: TradeRouteMap = {},
+    workerDiversityMultiplier = ExpNumber.ONE,
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -490,6 +494,11 @@ export class CivilizationState {
     this.freeBuildings = freeBuildings;
     this.freeUnits = freeUnits;
     this.freeUpgrades = freeUpgrades;
+    this.workerDiversityMultiplier =
+      workerDiversityMultiplier.isFinite &&
+      workerDiversityMultiplier.gte(ExpNumber.ONE)
+        ? workerDiversityMultiplier
+        : ExpNumber.ONE;
 
     // Set population based on people buildings (derived from buildings, not stored).
     // `builtBuildings` holds plain numbers that `build()` already floors, so this is
@@ -991,6 +1000,11 @@ export class CivilizationState {
         this.computeResourceRate(resourceKey),
       );
     }
+    const workerDiversityMultiplier =
+      this.advanceWorkerDiversityMultiplier(
+        this.getWorkerDiversityMultiplier(),
+        1,
+      );
     // Trade routes need no step of their own: their gold and goods legs ride the
     // production factors this loop already applied.
     // One tick is one second of play time for both the lifetime counter and the
@@ -1020,6 +1034,7 @@ export class CivilizationState {
       this.earnedAchievements,
       statistics,
     )
+      .withWorkerDiversityMultiplier(workerDiversityMultiplier)
       .recordCurrentAge()
       .checkAchievements();
   }
@@ -1117,7 +1132,113 @@ export class CivilizationState {
     return remaining;
   }
 
-  getFactors(resourceKey: ResourceKey): ResourceFactors {
+  getWorkerDiversityCoefficient(): ExpNumber {
+    return this.getAttributeValue("workerDiversity");
+  }
+
+  getWorkerDiversitySpeed(): ExpNumber {
+    return this.getAttributeValue("workerDiversitySpeed");
+  }
+
+  getWorkerDiversityCeiling(
+    workers: WorkerAssignments = this.workers,
+  ): ExpNumber {
+    const coefficient = this.getWorkerDiversityCoefficient();
+    if (coefficient.lte(ExpNumber.ZERO)) return ExpNumber.ONE;
+    const workerCounts = productionDefinitions.map(
+      ({ key }) => workers[key as ProductionResourceKey],
+    );
+    if (workerCounts.some((count) => count.lte(ExpNumber.ZERO))) {
+      return ExpNumber.ONE;
+    }
+    const minimumWorkers = workerCounts.reduce((minimum, count) =>
+      ExpNumber.min(minimum, count),
+    );
+    const logWorkers = minimumWorkers.log10();
+    if (!Number.isFinite(logWorkers)) {
+      return logWorkers > 0 ? ExpNumber.INFINITY : ExpNumber.ONE;
+    }
+    return ExpNumber.max(
+      ExpNumber.ONE,
+      coefficient.mul(ExpNumber.fromNumber(logWorkers)),
+    );
+  }
+
+  getWorkerDiversityMultiplier(): ExpNumber {
+    return ExpNumber.max(
+      ExpNumber.ONE,
+      ExpNumber.min(
+        this.workerDiversityMultiplier,
+        this.getWorkerDiversityCeiling(),
+      ),
+    );
+  }
+
+  private advanceWorkerDiversityMultiplier(
+    multiplier: ExpNumber,
+    seconds: number,
+  ): ExpNumber {
+    const ceiling = this.getWorkerDiversityCeiling();
+    const current = ExpNumber.max(
+      ExpNumber.ONE,
+      ExpNumber.min(multiplier, ceiling),
+    );
+    if (current.gte(ceiling) || ceiling.lte(ExpNumber.ONE)) return current;
+
+    const progress = Math.max(
+      0,
+      Math.min(
+        1,
+        current.sub(ExpNumber.ONE).div(ceiling.sub(ExpNumber.ONE)).toNumber(),
+      ),
+    );
+    const progressRate =
+      progress < 1 / 9 ? 1 / 270 : progress < 4 / 9 ? 1 / 90 : 1 / 72;
+    const coefficient = this.getWorkerDiversityCoefficient().toNumber();
+    const speed = this.getWorkerDiversitySpeed().toNumber();
+    const normalizedSpeed = (2 * speed) / coefficient;
+    if (!Number.isFinite(normalizedSpeed) || normalizedSpeed <= 0) return current;
+    const nextProgress = Math.min(
+      1,
+      progress + progressRate * normalizedSpeed * seconds,
+    );
+    return ExpNumber.ONE.add(
+      ceiling
+        .sub(ExpNumber.ONE)
+        .mul(ExpNumber.fromNumber(nextProgress)),
+    );
+  }
+
+  private withWorkerDiversityMultiplier(
+    multiplier: ExpNumber,
+  ): CivilizationState {
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      this.unitFormations,
+      this.tradeRoutes,
+      multiplier,
+    );
+  }
+
+  getFactors(
+    resourceKey: ResourceKey,
+    workerDiversityMultiplier = this.getWorkerDiversityMultiplier(),
+  ): ResourceFactors {
     const factors = this.resourceFactors[resourceKey];
     // Production resources include worker-assignable resources (food, wood, stone, gold)
     // and building-generated resources (military, science, metalwork, trade)
@@ -1250,6 +1371,16 @@ export class CivilizationState {
       [workerProduction, workerBase],
     ];
     if (
+      isProductionKey &&
+      workerBase.gt(ExpNumber.ZERO) &&
+      workerDiversityMultiplier.gt(ExpNumber.ONE)
+    ) {
+      workerAdditional.push([
+        "worker diversity",
+        workerBase.mul(workerDiversityMultiplier.sub(ExpNumber.ONE)),
+      ]);
+    }
+    if (
       workerProduction.autoClickProduction.gt(ExpNumber.ZERO) &&
       this.isResourceGatherable(resourceKey)
     ) {
@@ -1290,8 +1421,11 @@ export class CivilizationState {
    * multiplier, and every other drain — the citizen food upkeep among them.
    * Used for time skips, which apply production at this rate before routes run.
    */
-  private baseProductionFactors(resourceKey: ResourceKey): ResourceFactors {
-    const base = this.getFactors(resourceKey);
+  private baseProductionFactors(
+    resourceKey: ResourceKey,
+    workerDiversityMultiplier = this.getWorkerDiversityMultiplier(),
+  ): ResourceFactors {
+    const base = this.getFactors(resourceKey, workerDiversityMultiplier);
     const multiplicative = [...base.multiplicative];
 
     // Add dev production multiplier
@@ -3749,6 +3883,13 @@ export class CivilizationState {
   }
 
   private withWorkers(workers: WorkerAssignments): CivilizationState {
+    const multiplier = ExpNumber.max(
+      ExpNumber.ONE,
+      ExpNumber.min(
+        this.getWorkerDiversityMultiplier(),
+        this.getWorkerDiversityCeiling(workers),
+      ),
+    );
     return new CivilizationState(
       this.resources,
       workers,
@@ -3770,6 +3911,7 @@ export class CivilizationState {
       this.unitOrders,
       this.unitFormations,
       this.tradeRoutes,
+      multiplier,
     );
   }
 
@@ -3797,6 +3939,7 @@ export class CivilizationState {
       this.unitOrders,
       this.unitFormations,
       this.tradeRoutes,
+      this.workerDiversityMultiplier,
     );
   }
 
@@ -3876,6 +4019,7 @@ export class CivilizationState {
     unitOrders = this.unitOrders,
     unitFormations = this.unitFormations,
     tradeRoutes = this.tradeRoutes,
+    workerDiversityMultiplier = this.workerDiversityMultiplier,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -3898,6 +4042,7 @@ export class CivilizationState {
       unitOrders,
       unitFormations,
       tradeRoutes,
+      workerDiversityMultiplier,
     );
   }
 
@@ -3991,26 +4136,42 @@ export class CivilizationState {
   }
 
   /**
-   * Dev-tools: advance the simulation by whole seconds in one step. Every
-   * production rate is constant across the window — nothing in the model feeds
-   * resource amounts back into the rates — so the skip is one multiply per
-   * producer resource instead of a per-second loop. Auto clicks are already
-   * part of the rate; auto-buy and auto-assign stay with the live loop.
+   * Dev-tools: advance the simulation by whole seconds in one step. Worker
+   * diversity is integrated per second; its average multiplier is then applied
+   * to the otherwise constant rates. Auto-buy and auto-assign stay with the
+   * live loop.
    */
   advanceTime(seconds: number): CivilizationState {
     const wholeSeconds = Math.floor(seconds);
     if (!Number.isFinite(wholeSeconds) || wholeSeconds <= 0) return this;
     const elapsed = Math.min(wholeSeconds, 86_400);
     const elapsedFactor = ExpNumber.fromNumber(elapsed);
+    let workerDiversityMultiplier = this.getWorkerDiversityMultiplier();
+    let totalDiversityBonus = ExpNumber.ZERO;
+    for (let second = 0; second < elapsed; second += 1) {
+      totalDiversityBonus = totalDiversityBonus.add(
+        workerDiversityMultiplier.sub(ExpNumber.ONE),
+      );
+      workerDiversityMultiplier = this.advanceWorkerDiversityMultiplier(
+        workerDiversityMultiplier,
+        1,
+      );
+    }
+    const averageWorkerDiversityMultiplier = ExpNumber.ONE.add(
+      totalDiversityBonus.div(elapsedFactor),
+    );
     const resources = { ...this.resources };
     // A time skip applies the full rate — every drain in it, the citizen food upkeep
     // included — with only the route's own rows held back…
     for (const resourceKey of producerResourceKeys) {
       resources[resourceKey] = applyRate(
         resources[resourceKey],
-        computeResourceRate(this.baseProductionFactors(resourceKey)).mul(
-          elapsedFactor,
-        ),
+        computeResourceRate(
+          this.baseProductionFactors(
+            resourceKey,
+            averageWorkerDiversityMultiplier,
+          ),
+        ).mul(elapsedFactor),
       );
     }
     // …and the route is then applied once for the whole window, its legs scaled by
@@ -4040,6 +4201,7 @@ export class CivilizationState {
       this.earnedAchievements,
       statistics,
     )
+      .withWorkerDiversityMultiplier(workerDiversityMultiplier)
       .recordCurrentAge()
       .checkAchievements();
   }

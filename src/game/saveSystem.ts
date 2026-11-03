@@ -44,7 +44,7 @@ import { formationIds, type FormationId } from "./formations";
  */
 
 /** Bump when the shape changes; `migrateSaveData` handles older documents. */
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 /** How a save travels: the same document, three encodings. */
 export type SaveFormat = "base64" | "json" | "xml";
@@ -158,6 +158,7 @@ export type SaveData = {
   readonly freeBuildings: boolean;
   readonly freeUnits: boolean;
   readonly freeUpgrades: boolean;
+  readonly workerDiversityMultiplier: string;
   readonly actionMultiplier: SavedActionMultiplier;
   readonly largeMultiplier: number;
   readonly dismissedAchievements: string[];
@@ -274,19 +275,42 @@ export const migrateSaveData = (data: SaveData): SaveData => {
       `The save was written by a newer build (version ${data.version}).`,
     );
   }
-  // v6 → v7: formations did not exist, so every old document starts on standard.
+  // v7 → v8: timed worker diversity starts at ×1 in existing saves.
+  if (data.version === 7) {
+    return {
+      ...data,
+      version: SAVE_VERSION,
+      workerDiversityMultiplier: "1e0",
+    };
+  }
+  // v6 saves lack both formations and the worker-diversity ramp.
   if (data.version === 6) {
-    return { ...data, version: SAVE_VERSION, unitFormations: {} };
+    return {
+      ...data,
+      version: SAVE_VERSION,
+      unitFormations: {},
+      workerDiversityMultiplier: "1e0",
+    };
   }
   // v5 → v6: trade routes did not exist, so every old document starts with none.
   // Later versions save all configured routes (enabled and disabled) to preserve
   // intensity settings when routes are toggled.
   if (data.version === 5) {
-    return { ...data, version: SAVE_VERSION, tradeRoutes: {} };
+    return {
+      ...data,
+      version: SAVE_VERSION,
+      tradeRoutes: {},
+      workerDiversityMultiplier: "1e0",
+    };
   }
   // v4 → v5: battle orders did not exist, so every old document starts on standard.
   if (data.version === 4) {
-    return { ...data, version: SAVE_VERSION, unitOrders: {} };
+    return {
+      ...data,
+      version: SAVE_VERSION,
+      unitOrders: {},
+      workerDiversityMultiplier: "1e0",
+    };
   }
   // v1 → v2: research did not exist, so every old document starts with none.
   if (data.version === 1) {
@@ -295,6 +319,7 @@ export const migrateSaveData = (data: SaveData): SaveData => {
       version: SAVE_VERSION,
       boughtResearch: [],
       unitOrders: {},
+      workerDiversityMultiplier: "1e0",
     };
   }
   // v2 → v3: convert builtBuildings array to buildingCounts map
@@ -302,7 +327,13 @@ export const migrateSaveData = (data: SaveData): SaveData => {
     const buildingCounts = data.builtBuildings
       ? countBuildingsFromArray(data.builtBuildings)
       : (data.buildingCounts ?? {});
-    return { ...data, version: SAVE_VERSION, buildingCounts, unitOrders: {} };
+    return {
+      ...data,
+      version: SAVE_VERSION,
+      buildingCounts,
+      unitOrders: {},
+      workerDiversityMultiplier: "1e0",
+    };
   }
   // v3 → v4: convert kebab-case achievement IDs to camelCase
   if (data.version === 3) {
@@ -317,9 +348,14 @@ export const migrateSaveData = (data: SaveData): SaveData => {
       version: SAVE_VERSION,
       earnedAchievements,
       dismissedAchievements,
+      workerDiversityMultiplier: "1e0",
     };
   }
-  return { ...data, version: SAVE_VERSION };
+  return {
+    ...data,
+    version: SAVE_VERSION,
+    workerDiversityMultiplier: "1e0",
+  };
 };
 
 const escapeXml = (value: string): string =>
@@ -961,6 +997,9 @@ export const createSaveData = (
   freeBuildings: state.freeBuildings,
   freeUnits: state.freeUnits,
   freeUpgrades: state.freeUpgrades,
+  workerDiversityMultiplier: state
+    .getWorkerDiversityMultiplier()
+    .toString(),
   actionMultiplier: uiState.actionMultiplier ?? 1,
   largeMultiplier: uiState.largeMultiplier ?? 100,
   dismissedAchievements: [...(uiState.dismissedAchievements ?? [])],
@@ -1052,5 +1091,6 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
     unitOrders,
     unitFormations,
     tradeRoutes,
+    ExpNumber.from(data.workerDiversityMultiplier ?? 1),
   );
 };

@@ -45,8 +45,17 @@ at 0. Click gain = `(worker production + 1)` × multipliers (drains excluded).
 
 ### Special resources
 
-The four **advanced production** resources (see §3) are not worker-assignable — they are
-produced by the advanced buildings themselves, one per second each.
+The four **advanced production** resources (see §3) are worker-assignable at a base
+rate of 0.1/s per worker, and are also produced by their advanced buildings at 1/s each.
+Starting on entering Age 3, worker diversity ramps a shared worker-output multiplier
+toward `workerDiversity × log10(minimum workers across all eight production resources)`.
+The multiplier is 1 if any production resource has no workers; a staffing decrease
+clamps it to the new ceiling immediately, while a later increase must ramp up again.
+`workerDiversity` and `workerDiversity.Speed` are derived attributes in the Stats
+tab and Gamepedia. Standard `attributeFlat` and `attributeMultiplier` bonuses change
+their values: Age 3 starts the coefficient at 2, and later age completions multiply
+both the coefficient and ramp speed. This bonus affects worker output, not gather
+clicks or building output.
 
 | id           | Family      | Status | Produced by                         | Notes                                                                                                                                                                                                                                  |
 | ------------ | ----------- | ------ | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
