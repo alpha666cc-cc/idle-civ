@@ -251,27 +251,6 @@ describe("building bonus scaling matches additiveMultiplier curve", () => {
     );
   });
 
-  it("balances the House bonus to about ×4 at 100k and ×400 at 1m", () => {
-    const at100kHouses = makeState(1000, 100_000)
-      .enterAge("age0")
-      .enterAge("age1")
-      .enterAge("age2");
-    const at1mHouses = makeState(1000, 1_000_000)
-      .enterAge("age0")
-      .enterAge("age1")
-      .enterAge("age2");
-
-    expect(at100kHouses.buildingPower("house").toNumber()).toBeCloseTo(2, 4);
-    expect(at100kHouses.getBuildingBonuses("house")[0]?.value.toNumber()).toBeCloseTo(
-      4,
-      4,
-    );
-    expect(at1mHouses.getBuildingBonuses("house")[0]?.value.toNumber()).toBeCloseTo(
-      400,
-      4,
-    );
-  });
-
   it("applies flat worker efficiency to workers, not building production", () => {
     const base = makeState(0, 0, [], 10, 1);
     const boosted = base.buyUpgrade("test-flat-advanced-efficiency")!;

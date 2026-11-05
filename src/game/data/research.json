@@ -2377,14 +2377,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "research_speed",
-        "target": "all",
-        "value": "small",
-        "reason": "research purchase is instant; no speed mechanic"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "caf92d9e-2505-5c66-947f-e097bbef7452",
@@ -2547,20 +2540,7 @@
     "prerequisites": ["naval_academies"],
     "bonuses": [],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "offline_cap",
-        "target": "hours",
-        "value": "large",
-        "reason": "offline tuning not research-driven"
-      },
-      {
-        "type": "offline_efficiency",
-        "target": "offline_progress",
-        "value": "small",
-        "reason": "offline tuning not research-driven"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "f7adde31-ce2b-567d-9f21-a13d34ae9f3b",
@@ -2770,14 +2750,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "special_ability",
-        "target": "hit_land",
-        "value": "large",
-        "reason": "no such mechanic"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "2d322d98-4d81-5bae-b8b4-580719577efe",
@@ -2818,14 +2791,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "enhancer_scaling",
-        "target": "growth_factor",
-        "value": "small",
-        "reason": "enhancer cost path does not read reductions"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "1095106e-b8fa-5a04-b31b-c0104e3fd01e",
@@ -2929,20 +2895,7 @@
     "prerequisites": ["electricity"],
     "bonuses": [],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "offline_efficiency",
-        "target": "offline_progress",
-        "value": "large",
-        "reason": "offline tuning not research-driven"
-      },
-      {
-        "type": "offline_cap",
-        "target": "hours",
-        "value": "large",
-        "reason": "offline tuning not research-driven"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "b22d830e-a6c8-55a6-a192-8fee91a3fe14",
@@ -3180,14 +3133,7 @@
     "prerequisites": ["rifled_barrels", "cast_bronze_cannon"],
     "bonuses": [],
     "unlocks": ["howitzer_ind"],
-    "ignored": [
-      {
-        "type": "special_ability",
-        "target": "hit_flying",
-        "value": "large",
-        "reason": "no such mechanic"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "ac00426c-159c-597a-a18c-a27099939e5d",
@@ -3292,14 +3238,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "research_speed",
-        "target": "all",
-        "value": "large",
-        "reason": "research purchase is instant; no speed mechanic"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "a8daaf45-8adc-54bc-a32e-4499797e4853",
@@ -3340,14 +3279,7 @@
       }
     ],
     "unlocks": [],
-    "ignored": [
-      {
-        "type": "upkeep_reduction",
-        "target": "population",
-        "value": "large",
-        "reason": "no upkeep drain on population"
-      }
-    ]
+    "ignored": []
   },
   {
     "guid": "90ee36ad-84ea-5765-a2d3-8e2cb0916793",

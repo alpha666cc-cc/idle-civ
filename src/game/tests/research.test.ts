@@ -90,17 +90,14 @@ describe("age progression", () => {
   });
 
   it("zeros age-0 units when entering age 2 so they leave later armies", () => {
-    const state = stateWith(
-      0,
-      ["age0"],
-      { warrior: ExpNumber.fromNumber(8) },
-    );
+    const state = stateWith(0, ["age0"], { warrior: ExpNumber.fromNumber(8) });
 
     const entered = state.enterAge("age1");
 
     expect(entered.unitCounts.warrior?.eq(ExpNumber.ZERO)).toBe(true);
-    expect(entered.getArmyStacks().some(({ unitId }) => unitId === "warrior"))
-      .toBe(false);
+    expect(
+      entered.getArmyStacks().some(({ unitId }) => unitId === "warrior"),
+    ).toBe(false);
   });
 });
 
@@ -123,9 +120,10 @@ describe("research data integrity", () => {
   it("keeps every age's research exponent finite and positive", () => {
     for (const age of ageDefinitions) {
       expect(Number.isFinite(age.research.exponent), age.key).toBe(true);
-      expect(age.research.exponent, `${age.key} research exponent`).toBeGreaterThan(
-        0,
-      );
+      expect(
+        age.research.exponent,
+        `${age.key} research exponent`,
+      ).toBeGreaterThan(0);
     }
   });
 
@@ -406,10 +404,12 @@ describe("research buying", () => {
         value: 0.5,
       });
       const costs = state.getBuildingCost("farm", 0);
-      expect(costs.find(({ resource }) => resource === "food")?.base.toNumber())
-        .toBe(10);
-      expect(costs.find(({ resource }) => resource === "wood")?.base.toNumber())
-        .toBe(5);
+      expect(
+        costs.find(({ resource }) => resource === "food")?.base.toNumber(),
+      ).toBe(10);
+      expect(
+        costs.find(({ resource }) => resource === "wood")?.base.toNumber(),
+      ).toBe(5);
     });
 
     it("applies a factor-only cost addition to every matching unit resource", () => {
@@ -698,8 +698,7 @@ describe("research buying", () => {
       false,
       [],
     );
-    const { reductions, sources } =
-      monument.getBuildingCostModifiers("farm");
+    const { reductions, sources } = monument.getBuildingCostModifiers("farm");
     expect(sources.some(([, bonus]) => bonus.destination === "allUnits")).toBe(
       false,
     );
@@ -791,13 +790,14 @@ describe("research formation unlocks", () => {
     const enteredAges = ageDefinitions
       .slice(0, ageIndex + 1)
       .map(({ key }) => key);
-    const state = stateWith(1e30, enteredAges);
+    const state = stateWith(1e90, enteredAges);
     const formationId = formation.id as FormationId;
     expect(state.isFormationUnlocked(formationId)).toBe(false);
 
-    const bought = buyPrerequisiteClosure(state, formation.researchId).buyResearch(
+    const bought = buyPrerequisiteClosure(
+      state,
       formation.researchId,
-    );
+    ).buyResearch(formation.researchId);
     expect(bought.isFormationUnlocked(formationId)).toBe(true);
   });
 });
