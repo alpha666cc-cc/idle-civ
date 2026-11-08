@@ -21,6 +21,7 @@ import {
   optimizeBattleTactics,
   proveMinimumMilitaryWinner,
   solveMinimumArmy,
+  solveOwnedArmyTactics,
   type SimulatorArmy,
   type SimulatorOwnedArmy,
   type SimulatorTotalArmy,
@@ -270,11 +271,28 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
       );
     }
 
+    // Battle outcome and metrics caches across all search phases
+    const outcomeCache = new Map<string, boolean>();
+    const metricsCache = new Map<string, SimulatorBattleMetrics>();
+
+    const getStackKey = (stacks: readonly ArmyStack[]): string =>
+      stacks
+        .map(
+          (s) =>
+            `${s.unitId}:${s.count.mantissa}e${s.count.exponent}:${s.formation ?? DEFAULT_FORMATION}:${s.order ?? DEFAULT_ORDER}`,
+        )
+        .join(";");
+
     // Build the context the solver uses -----------------------------------
     const wins = (total: SimulatorTotalArmy): boolean => {
       const playerStacks: ArmyStack[] = buildStacks(total, allStats, undefined, undefined);
       if (playerStacks.length === 0 || enemyStacks.length === 0) return false;
-      return simulateBattleOutcome(playerStacks, enemyStacks) === "player";
+      const key = getStackKey(playerStacks);
+      const cached = outcomeCache.get(key);
+      if (cached !== undefined) return cached;
+      const outcome = simulateBattleOutcome(playerStacks, enemyStacks) === "player";
+      outcomeCache.set(key, outcome);
+      return outcome;
     };
 
     const winsWithFormations = (
@@ -284,7 +302,12 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
     ): boolean => {
       const playerStacks: ArmyStack[] = buildStacks(total, allStats, formations, undefined);
       if (playerStacks.length === 0 || enemyStacks.length === 0) return false;
-      return simulateBattleOutcome(playerStacks, enemyStacks) === "player";
+      const key = getStackKey(playerStacks);
+      const cached = outcomeCache.get(key);
+      if (cached !== undefined) return cached;
+      const outcome = simulateBattleOutcome(playerStacks, enemyStacks) === "player";
+      outcomeCache.set(key, outcome);
+      return outcome;
     };
 
     const winsWithFormationsAndOrders = (
@@ -295,7 +318,12 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
     ): boolean => {
       const playerStacks: ArmyStack[] = buildStacks(total, allStats, formations, orders);
       if (playerStacks.length === 0 || enemyStacks.length === 0) return false;
-      return simulateBattleOutcome(playerStacks, enemyStacks) === "player";
+      const key = getStackKey(playerStacks);
+      const cached = outcomeCache.get(key);
+      if (cached !== undefined) return cached;
+      const outcome = simulateBattleOutcome(playerStacks, enemyStacks) === "player";
+      outcomeCache.set(key, outcome);
+      return outcome;
     };
 
     const getBattleMetrics = (
@@ -305,6 +333,9 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
       _battleId: string,
     ): SimulatorBattleMetrics => {
       const playerStacks = buildStacks(total, allStats, formations, orders);
+      const key = getStackKey(playerStacks);
+      const cached = metricsCache.get(key);
+      if (cached !== undefined) return cached;
       const simulation = simulateBattleSummary(playerStacks, enemyStacks);
       const playerInitial = playerStacks.reduce(
         (sum, stack) => sum.add(stack.count),
@@ -335,12 +366,14 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
                   .toNumber(),
               ),
             );
-      return {
+      const metrics: SimulatorBattleMetrics = {
         playerCasualties,
         enemyCasualties,
         playerCasualtyRate: percentage(playerCasualties, playerInitial),
         enemyCasualtyRate: percentage(enemyCasualties, enemyInitial),
       };
+      metricsCache.set(key, metrics);
+      return metrics;
     };
 
     const context: BattleSimulatorContext = {
@@ -386,6 +419,58 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
     // Test current tactics first, but still search alternatives for cheaper wins.
     const currentFormationsMap = new Map<string, FormationId>(currentFormations ?? []);
     const currentOrdersMap = new Map<string, OrderId>(currentOrders ?? []);
+
+    // Step 0: Check if the already-owned army can win with tactics alone (no purchases needed).
+    // If so, cost is 0, which is the proven global minimum.
+    if ([...ownedArmy.values()].some((c) => c.gt(ExpNumber.ZERO))) {
+      post({
+        type: "progress",
+        phase: "Testing current army tactics (no recruits needed)…",
+      });
+      await tick();
+
+      const ownedWin = solveOwnedArmyTactics(
+        battleId,
+        context,
+        ownedArmy,
+        availableFormations,
+        availableOrders,
+        currentFormationsMap,
+        currentOrdersMap,
+      );
+
+      if (ownedWin) {
+        const fullResult = serializeResult(
+          ownedWin.composition,
+          ownedWin.totalComposition,
+          ownedWin.military,
+          ownedWin.totalCost,
+          ownedWin.formations,
+          ownedWin.orders,
+          {
+            ...ownedWin,
+            alternatives: [],
+            searchStats: {
+              tacticTests: 0,
+              armyRefinementTests: 0,
+              paretoPlansFound: 1,
+              paretoPlansTruncated: false,
+              proofStatus: "proven",
+              armyCompositionsTested: 1,
+              tacticalSetupsTested: 0,
+            },
+          },
+        );
+        post({
+          type: "progress",
+          phase: "Victory with current army! No purchases needed.",
+          result: fullResult,
+        });
+        await tick();
+        post({ type: "done", result: fullResult });
+        return;
+      }
+    }
 
     post({ type: "progress", phase: "Solving under current tactics…" });
     await tick();

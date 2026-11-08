@@ -2113,18 +2113,16 @@
       },
       {
         "type": "attributeMultiplier",
+        "destination": "tag.siege.accuracy",
+        "value": "1.5"
+      },
+      {
+        "type": "attributeMultiplier",
         "destination": "metalwork",
         "value": "10"
       }
     ],
     "unlocks": ["trebuchet"],
-    "conversions": [
-      {
-        "from": "ballista",
-        "to": "trebuchet",
-        "ratio": 2
-      }
-    ],
     "ignored": []
   },
   {

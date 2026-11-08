@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   mergeSimulatorArmy,
   solveMinimumArmy,
+  solveOwnedArmyTactics,
   type SimulatorOwnedArmy,
   type SimulatorTotalArmy,
 } from "../battleSimulator";
@@ -165,5 +166,51 @@ describe("battle simulator current army", () => {
 
     expect(total.get("warrior")?.toNumber()).toBe(5);
     expect(total.get("slinger")?.toNumber()).toBe(4);
+  });
+
+  it("solves winning formations and orders for owned army without buying anything", () => {
+    const owned = ownedWarriors(3);
+    const mockContext = {
+      ...context(),
+      // Standard loses, but turtle wins!
+      winsWithFormationsAndOrders: (
+        total: SimulatorTotalArmy,
+        formations: ReadonlyMap<string, string>,
+      ) => {
+        const warriorCount = total.get("warrior")?.toNumber() ?? 0;
+        return warriorCount >= 3 && formations.get("warrior") === "turtle";
+      },
+    };
+
+    const result = solveOwnedArmyTactics(
+      battleId,
+      mockContext,
+      owned,
+      ["standard", "turtle", "frontline"],
+      ["standard", "focus_weak"],
+    );
+
+    expect(result).not.toBeNull();
+    expect(result?.composition.size).toBe(0);
+    expect(result?.military.isZero).toBe(true);
+    expect(result?.formations.get("warrior")).toBe("turtle");
+  });
+
+  it("returns null from solveOwnedArmyTactics when owned army cannot win", () => {
+    const owned = ownedWarriors(1);
+    const mockContext = {
+      ...context(),
+      winsWithFormationsAndOrders: () => false,
+    };
+
+    const result = solveOwnedArmyTactics(
+      battleId,
+      mockContext,
+      owned,
+      ["standard", "turtle"],
+      ["standard"],
+    );
+
+    expect(result).toBeNull();
   });
 });
