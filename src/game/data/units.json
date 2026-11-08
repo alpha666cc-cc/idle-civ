@@ -998,19 +998,19 @@
       {
         "resource": "military",
         "base": 1e55,
-        "factor": 1.05,
+        "factor": 1.1,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": 1e56,
-        "factor": 1.05,
+        "factor": 1.1,
         "exponent": 0.5
       },
       {
         "resource": "food",
         "base": 1e85,
-        "factor": 1.05,
+        "factor": 1.1,
         "exponent": 0.5
       }
     ]
@@ -1037,19 +1037,19 @@
       {
         "resource": "military",
         "base": 1e56,
-        "factor": 1.04,
+        "factor": 1.08,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": 1e55,
-        "factor": 1.04,
+        "factor": 1.08,
         "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": 1e70,
-        "factor": 1.04,
+        "factor": 1.08,
         "exponent": 0.5
       }
     ]
@@ -1076,13 +1076,13 @@
       {
         "resource": "military",
         "base": 1e57,
-        "factor": 1.07,
+        "factor": 1.14,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": 1e57,
-        "factor": 1.07,
+        "factor": 1.14,
         "exponent": 0.5
       }
     ]
@@ -1109,13 +1109,13 @@
       {
         "resource": "military",
         "base": 1e58,
-        "factor": 1.06,
+        "factor": 1.12,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": 1e58,
-        "factor": 1.06,
+        "factor": 1.12,
         "exponent": 0.5
       }
     ]
@@ -1142,13 +1142,13 @@
       {
         "resource": "military",
         "base": 1.582067350470716e61,
-        "factor": 1.1,
+        "factor": 1.2,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": 4.746202051412148e62,
-        "factor": 1.1,
+        "factor": 1.2,
         "exponent": 0.5
       }
     ]
@@ -1175,19 +1175,19 @@
       {
         "resource": "military",
         "base": 1.3888683402212783e61,
-        "factor": 1.055,
+        "factor": 1.15,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": 2.1825073917762934e62,
-        "factor": 1.055,
+        "factor": 1.15,
         "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": 2.777736680442556e62,
-        "factor": 1.055,
+        "factor": 1.15,
         "exponent": 0.5
       }
     ]
@@ -1214,19 +1214,19 @@
       {
         "resource": "military",
         "base": 2.5443528827016393e61,
-        "factor": 1.08,
+        "factor": 1.2,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": 5.088705765403278e62,
-        "factor": 1.08,
+        "factor": 1.2,
         "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": 4.305827955341235e62,
-        "factor": 1.08,
+        "factor": 1.2,
         "exponent": 0.5
       }
     ]
@@ -1253,13 +1253,13 @@
       {
         "resource": "military",
         "base": 7.438555026234529e60,
-        "factor": 1.13,
+        "factor": 1.25,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": 2.231566507870359e62,
-        "factor": 1.13,
+        "factor": 1.25,
         "exponent": 0.5
       }
     ]
@@ -1286,19 +1286,19 @@
       {
         "resource": "military",
         "base": 3.296287481990507e61,
-        "factor": 1.11,
+        "factor": 1.25,
         "exponent": 0.5
       },
       {
         "resource": "metalwork",
         "base": 5.3247720862923575e62,
-        "factor": 1.11,
+        "factor": 1.25,
         "exponent": 0.5
       },
       {
         "resource": "wood",
         "base": 4.056969208603701e62,
-        "factor": 1.11,
+        "factor": 1.25,
         "exponent": 0.5
       }
     ]

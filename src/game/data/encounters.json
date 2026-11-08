@@ -385,7 +385,7 @@
         "unitId": "legionary",
         "count": 150000,
         "label": "150k legionaries",
-        "formation": "frontline"
+        "formation": "turtle"
       },
       {
         "unitId": "assassin",
@@ -401,8 +401,8 @@
       },
       {
         "unitId": "archer_classical",
-        "count": 5000000,
-        "label": "5.0M archers",
+        "count": 7000000,
+        "label": "7.0M archers",
         "formation": "backline"
       },
       {
