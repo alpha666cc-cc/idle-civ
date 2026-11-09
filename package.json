@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "preview": "vite preview",
     "gen:balance": "tsx tools/simulation/balanceSheet.ts",
+    "gen:battle-seeds": "node tools/gen/battle-seeds.mjs",
     "simulate:battle": "node --experimental-strip-types temp/min-army.mjs",
     "simulate": "tsx tools/simulation/run-simulation.mjs",
     "simulate:compare": "tsx tools/simulation/compare-strategies.mjs",

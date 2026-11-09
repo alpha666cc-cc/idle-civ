@@ -69,6 +69,7 @@ import BattleSimulatorPanel, {
 } from "./components/BattleSimulatorPanel";
 import {
   simulatorCandidates,
+  type SimulatorHistoricalSeed,
   type SimulatorPlan,
   type SimulatorResult,
 } from "./game/battleSimulator";
@@ -462,6 +463,7 @@ function App() {
   const [simFailed, setSimFailed] = useState(false);
   const [simError, setSimError] = useState("");
   const simWorkerRef = useRef<Worker | null>(null);
+  const simSeedRequestRef = useRef<AbortController | null>(null);
   const [autosaveIntervalSeconds, setAutosaveIntervalSeconds] =
     useState(loadAutosaveInterval);
   const [saveFormat, setSaveFormat] = useState<SaveFormat>(loadSaveFormat);
@@ -618,6 +620,8 @@ function App() {
 
   const simCancel = useCallback((): void => {
     const wasRunning = simWorkerRef.current !== null;
+    simSeedRequestRef.current?.abort();
+    simSeedRequestRef.current = null;
     simWorkerRef.current?.terminate();
     simWorkerRef.current = null;
     setSimRunning(false);
@@ -646,8 +650,8 @@ function App() {
     setSimError("");
   }, [simCancel]);
 
-  const simRun = useCallback((): void => {
-    if (simRunning) return;
+  const simRun = useCallback(async (): Promise<void> => {
+    if (simRunning || simSeedRequestRef.current !== null) return;
     const battle = encounterDefinitions.find(({ key }) => key === simBattleId);
     if (!battle) return;
 
@@ -791,6 +795,59 @@ function App() {
     const availableFormations = gameState.getAvailableFormations() as string[];
     const availableOrders = gameState.getAvailableOrders() as string[];
 
+    setSimRunning(true);
+    setSimPhase("Loading saved winning plans…");
+    const seedRequest = new AbortController();
+    simSeedRequestRef.current = seedRequest;
+    let historicalSeeds: SimulatorHistoricalSeed[] = [];
+    if (import.meta.env.DEV) {
+      try {
+        const response = await fetch(
+          `/__battle-debug-seeds?battleId=${encodeURIComponent(battle.key)}`,
+          { signal: seedRequest.signal },
+        );
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const payload: unknown = await response.json();
+        if (
+          payload &&
+          typeof payload === "object" &&
+          "seeds" in payload &&
+          Array.isArray(payload.seeds)
+        ) {
+          historicalSeeds = payload.seeds.filter(
+            (seed: unknown): seed is SimulatorHistoricalSeed =>
+              seed !== null &&
+              typeof seed === "object" &&
+              "playerArmy" in seed &&
+              Array.isArray(seed.playerArmy) &&
+              seed.playerArmy.every(
+                (unit: unknown) =>
+                  unit !== null &&
+                  typeof unit === "object" &&
+                  "unitId" in unit &&
+                  typeof unit.unitId === "string" &&
+                  "count" in unit &&
+                  typeof unit.count === "string" &&
+                  "formation" in unit &&
+                  typeof unit.formation === "string" &&
+                  "order" in unit &&
+                  typeof unit.order === "string",
+              ),
+          );
+        }
+      } catch (error) {
+        if (seedRequest.signal.aborted) return;
+        console.warn(
+          "[Battle Simulator] could not load local winning battle setups",
+          error,
+        );
+      }
+    }
+    if (seedRequest.signal.aborted) return;
+    simSeedRequestRef.current = null;
+
     const input: WorkerInput = {
       type: "start",
       battleId: battle.key,
@@ -817,6 +874,7 @@ function App() {
         string,
         import("./game/orders").OrderId,
       ][],
+      historicalSeeds,
     };
 
     const currentKey = simCurrentArmyKey;
@@ -825,8 +883,11 @@ function App() {
       { type: "module" },
     );
     simWorkerRef.current = worker;
-    setSimRunning(true);
-    setSimPhase("Starting…");
+    setSimPhase(
+      historicalSeeds.length > 0
+        ? `Starting with ${historicalSeeds.length} saved winning plans…`
+        : "Starting without saved winning plans…",
+    );
     setSimArmyKey(currentKey);
     setSimResult(null);
     setSimFailed(false);
@@ -906,7 +967,7 @@ function App() {
     running: simRunning,
     phase: simPhase,
     armyKey: simArmyKey,
-    result: simCurrentArmyKey === simArmyKey ? simResult : null,
+    result: simResult,
     failed: simCurrentArmyKey === simArmyKey && simFailed,
     error: simCurrentArmyKey === simArmyKey ? simError : "",
   };

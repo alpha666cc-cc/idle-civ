@@ -2,6 +2,7 @@ import { ExpNumber } from "./expNumber";
 import {
   findUnitDefinition,
   isBuyableUnit,
+  unitPower,
   unitDefinitions,
   type UnitDefinition,
 } from "./units";
@@ -66,7 +67,22 @@ export type SimulatorCandidate = Pick<UnitDefinition, "key">;
 export type SimulatorProgress = (
   result: SimulatorResult,
   phase: string,
+  improved: boolean,
 ) => void;
+export type SimulatorTacticSearch = {
+  readonly formations: ReadonlyMap<string, FormationId>;
+  readonly orders: ReadonlyMap<string, OrderId>;
+  readonly wins: boolean;
+  readonly battleMetrics?: SimulatorBattleMetrics;
+};
+export type SimulatorHistoricalSeed = {
+  readonly playerArmy: readonly {
+    readonly unitId: string;
+    readonly count: string;
+    readonly formation: FormationId;
+    readonly order: OrderId;
+  }[];
+};
 export type BattleSimulatorContext = {
   getCost: (unitId: string, count: ExpNumber) => BuildingCost[];
   getResearch: (unitIds: readonly string[]) => SimulatorResearch;
@@ -338,6 +354,18 @@ export const proveMinimumMilitaryWinner = async (
   const limits = new Map(
     candidates.map(({ key }) => [key, maximumCountFor(key)]),
   );
+  console.debug(
+    `[Battle Simulator] ${battleId}: minimum-cost proof started; ` +
+      `${candidates.length} candidate unit types, ` +
+      `${proofDoctrines.join(", ")} tactics, current military cost ` +
+      `${bestCost.toString()}`,
+  );
+  console.debug(
+    `[Battle Simulator] ${battleId}: proof count ceilings: ` +
+      [...limits]
+        .map(([unitId, count]) => `${unitId} <= ${count}`)
+        .join(", "),
+  );
 
   /**
    * Test a tactic assignment against the given total composition.
@@ -550,8 +578,12 @@ const formationOutcomeIsBetter = (
 const battleMetricsAreBetter = (
   left: SimulatorBattleMetrics | undefined,
   right: SimulatorBattleMetrics | undefined,
+  isWin = false,
 ): boolean => {
   if (!left || !right) return false;
+  if (isWin) {
+    return left.playerCasualtyRate < right.playerCasualtyRate;
+  }
   return (
     left.enemyCasualtyRate > right.enemyCasualtyRate ||
     (left.enemyCasualtyRate === right.enemyCasualtyRate &&
@@ -730,9 +762,40 @@ export const solveMinimumArmy = (
   ownedArmy: SimulatorOwnedArmy = new Map(),
   lockedFormations: ReadonlyMap<string, FormationId> = new Map(),
   lockedOrders: ReadonlyMap<string, OrderId> = new Map(),
+  countCeiling?: ReadonlyMap<string, ExpNumber>,
 ): SimulatorResult | null => {
   const encounter = encounterDefinitions.find(({ key }) => key === battleId);
   if (!encounter) return null;
+  let searchStage = "checking whether the owned army wins";
+  let testAttempts = 0;
+  let battleSimulations = 0;
+  let lastDebugLogAt = 0;
+  let lastDebugTestCount = 0;
+  let lastTestedComposition = "";
+  let lastTestedTactics = "";
+  let lastTestOutcome = "pending";
+  const reportTestProgress = (): void => {
+    const now = Date.now();
+    if (
+      testAttempts !== 1 &&
+      testAttempts - lastDebugTestCount < 256 &&
+      now - lastDebugLogAt < 1000
+    ) {
+      return;
+    }
+    lastDebugLogAt = now;
+    lastDebugTestCount = testAttempts;
+    console.debug(
+      `[Battle Simulator] ${battleId}: ${searchStage}; ` +
+        `${testAttempts} tests, ${battleSimulations} battle simulations; ` +
+        `army {${lastTestedComposition}}; ` +
+        `tactics {${lastTestedTactics || "defaults"}}; ${lastTestOutcome}`,
+    );
+  };
+  console.debug(
+    `[Battle Simulator] ${battleId}: starting minimum-army search with ` +
+      `${candidates.length} candidate unit types`,
+  );
   const winsRaw = (composition: SimulatorArmy): boolean => {
     const total = mergeSimulatorArmy(ownedArmy, composition);
     if (lockedFormations.size > 0 || lockedOrders.size > 0) {
@@ -751,16 +814,47 @@ export const solveMinimumArmy = (
   // the most expensive thing this module does, so memoise it.
   const winCache = new Map<string, boolean>();
   const wins = (composition: SimulatorArmy): boolean => {
+    testAttempts += 1;
     const key = [...composition.entries()]
       .map(([unitId, count]) => `${unitId}:${count}`)
       .sort()
       .join("|");
+    lastTestedComposition = key || "(owned army only)";
+    lastTestedTactics = [...lockedFormations]
+      .map(([unitId, formation]) =>
+        `${unitId}:${formation}`,
+      )
+      .join(",") +
+      (lockedOrders.size > 0
+        ? `; orders ${[...lockedOrders]
+            .map(([unitId, order]) => `${unitId}:${order}`)
+            .join(",")}`
+        : "");
+    if (
+      countCeiling &&
+      [...composition].some(
+        ([unitId, count]) =>
+          count.gt(countCeiling.get(unitId) ?? ExpNumber.ZERO),
+      )
+    ) {
+      lastTestOutcome = "loss (exceeds winning ceiling)";
+      reportTestProgress();
+      return false;
+    }
     const cached = winCache.get(key);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined) {
+      lastTestOutcome = cached ? "WIN (cached)" : "loss (cached)";
+      reportTestProgress();
+      return cached;
+    }
+    battleSimulations += 1;
     const outcome = winsRaw(composition);
     winCache.set(key, outcome);
+    lastTestOutcome = outcome ? "WIN" : "loss";
+    reportTestProgress();
     return outcome;
   };
+  searchStage = "checking whether the owned army wins";
   if (wins(new Map())) {
     const totalComposition = mergeSimulatorArmy(ownedArmy, new Map());
     const availableFormations =
@@ -804,16 +898,21 @@ export const solveMinimumArmy = (
   // seed, so it can never make the answer dearer than it already was.
   const seeds: SimulatorArmy[] = [];
   const two = ExpNumber.fromNumber(2);
-  for (const unit of candidates) {
+  for (const [unitIndex, unit] of candidates.entries()) {
     if (!findUnitDefinition(unit.key)) continue;
+    const maximumSoloCount = countCeiling?.get(unit.key) ?? maximumProbe;
+    if (maximumSoloCount.lt(ExpNumber.ONE)) continue;
+    searchStage =
+      `finding solo threshold for ${unit.key} ` +
+      `(${unitIndex + 1}/${candidates.length})`;
     let low = ExpNumber.ONE;
-    let high = ExpNumber.ONE;
+    let high = ExpNumber.min(ExpNumber.ONE, maximumSoloCount);
     while (!wins(new Map([[unit.key, high]]))) {
-      if (high.gte(maximumProbe)) {
+      if (high.gte(maximumSoloCount)) {
         high = ExpNumber.ZERO;
         break;
       }
-      high = high.mul(two);
+      high = ExpNumber.min(high.mul(two), maximumSoloCount);
     }
     if (high.isZero) continue;
     while (low.lt(high)) {
@@ -831,8 +930,20 @@ export const solveMinimumArmy = (
   // Powers are sized so pair searches can probe up to ~134M units per type,
   // enough for battles with 200M+ enemies (e.g. Hastings).
   if (requireMixed && seeds.length === 0) {
-    const powers = Array.from({ length: 29 }, (_, index) => 2 ** index);
-    const maxPower = powers[powers.length - 1];
+    const powersFor = (unitId: string): number[] => {
+      const maximum = Math.min(
+        2 ** 28,
+        countCeiling?.get(unitId)?.floor().toNumber() ?? 2 ** 28,
+      );
+      const powers: number[] = [];
+      for (let power = 1; power <= maximum; power *= 2) {
+        powers.push(power);
+      }
+      if (maximum >= 1 && powers[powers.length - 1] !== maximum) {
+        powers.push(maximum);
+      }
+      return powers;
+    };
     for (let leftIndex = 0; leftIndex < candidates.length; leftIndex += 1) {
       for (
         let rightIndex = leftIndex + 1;
@@ -841,25 +952,34 @@ export const solveMinimumArmy = (
       ) {
         const left = candidates[leftIndex];
         const right = candidates[rightIndex];
+        const leftPowers = powersFor(left.key);
+        const rightPowers = powersFor(right.key);
+        const maxLeft = leftPowers[leftPowers.length - 1] ?? 0;
+        const maxRight = rightPowers[rightPowers.length - 1] ?? 0;
+        if (maxLeft === 0 || maxRight === 0) continue;
+        searchStage =
+          `checking mixed pair ${left.key} + ${right.key} ` +
+          `(${leftIndex + 1}/${candidates.length}, ` +
+          `${rightIndex + 1}/${candidates.length})`;
         // If maximum counts of both units cannot win, no smaller counts can either.
         if (
           !wins(
             new Map([
-              [left.key, ExpNumber.fromNumber(maxPower)],
-              [right.key, ExpNumber.fromNumber(maxPower)],
+              [left.key, ExpNumber.fromNumber(maxLeft)],
+              [right.key, ExpNumber.fromNumber(maxRight)],
             ]),
           )
         ) {
           continue;
         }
 
-        for (const leftCount of powers) {
+        for (const leftCount of leftPowers) {
           // If maximum rightCount cannot win with this leftCount, skip all smaller rightCounts.
           if (
             !wins(
               new Map([
                 [left.key, ExpNumber.fromNumber(leftCount)],
-                [right.key, ExpNumber.fromNumber(maxPower)],
+                [right.key, ExpNumber.fromNumber(maxRight)],
               ]),
             )
           ) {
@@ -868,14 +988,14 @@ export const solveMinimumArmy = (
 
           // Binary search over powers for the minimum winning rightCount
           let lo = 0;
-          let hi = powers.length - 1;
+          let hi = rightPowers.length - 1;
           while (lo < hi) {
             const mid = Math.floor((lo + hi) / 2);
             if (
               wins(
                 new Map([
                   [left.key, ExpNumber.fromNumber(leftCount)],
-                  [right.key, ExpNumber.fromNumber(powers[mid])],
+                  [right.key, ExpNumber.fromNumber(rightPowers[mid])],
                 ]),
               )
             ) {
@@ -887,7 +1007,7 @@ export const solveMinimumArmy = (
           seeds.push(
             new Map([
               [left.key, ExpNumber.fromNumber(leftCount)],
-              [right.key, ExpNumber.fromNumber(powers[lo])],
+              [right.key, ExpNumber.fromNumber(rightPowers[lo])],
             ]),
           );
         }
@@ -909,7 +1029,10 @@ export const solveMinimumArmy = (
    * depend on which seed happened to be climbed first, which is the very bug
    * this multi-start search exists to remove.
    */
-  const climb = (seed: SimulatorArmy): SimulatorArmy => {
+  const climb = (
+    seed: SimulatorArmy,
+    seedIndex: number,
+  ): SimulatorArmy => {
     let current = seed;
     let currentCost = compositionCost(current, context);
     let improved = true;
@@ -918,6 +1041,9 @@ export const solveMinimumArmy = (
       improved = false;
       passes += 1;
       for (const [unitId, count] of [...current]) {
+        searchStage =
+          `climbing seed ${seedIndex + 1}/${seeds.length}, pass ${passes}, ` +
+          `adjusting ${unitId}`;
         const bases = [
           withCount(current, unitId, count.div(two).ceil()),
           withCount(current, unitId, ExpNumber.ZERO),
@@ -925,19 +1051,26 @@ export const solveMinimumArmy = (
         for (const base of bases) {
           for (const other of ids) {
             if (other === unitId) continue;
+            const currentOtherCount = base.get(other) ?? ExpNumber.ZERO;
+            const maximumOtherCount =
+              countCeiling?.get(other) ?? maximumProbe;
+            const maximumAddition =
+              maximumOtherCount.sub(currentOtherCount);
+            if (!maximumAddition.gt(ExpNumber.ZERO)) continue;
             let add = ExpNumber.ONE;
             let found = false;
-            while (add.lte(maximumProbe)) {
+            while (add.lte(maximumAddition)) {
               const trial = withCount(
                 base,
                 other,
-                (base.get(other) ?? ExpNumber.ZERO).add(add),
+                currentOtherCount.add(add),
               );
               if (wins(trial)) {
                 found = true;
                 break;
               }
-              add = add.mul(two);
+              if (add.gte(maximumAddition)) break;
+              add = ExpNumber.min(add.mul(two), maximumAddition);
             }
             if (!found) continue;
             let low = ExpNumber.ONE;
@@ -949,7 +1082,7 @@ export const solveMinimumArmy = (
               const trial = withCount(
                 base,
                 other,
-                (base.get(other) ?? ExpNumber.ZERO).add(middle),
+                currentOtherCount.add(middle),
               );
               if (wins(trial)) high = middle;
               else low = middle.add(ExpNumber.ONE);
@@ -957,7 +1090,7 @@ export const solveMinimumArmy = (
             const next = withCount(
               base,
               other,
-              (base.get(other) ?? ExpNumber.ZERO).add(high),
+              currentOtherCount.add(high),
             );
             const cost = compositionCost(next, context);
             if (cost.lt(currentCost) && wins(next)) {
@@ -974,8 +1107,10 @@ export const solveMinimumArmy = (
 
   let best: SimulatorArmy | null = null;
   let bestCost = ExpNumber.INFINITY;
-  for (const seed of seeds) {
-    const climbed = climb(seed);
+  for (const [seedIndex, seed] of seeds.entries()) {
+    searchStage =
+      `climbing solo/pair seed ${seedIndex + 1}/${seeds.length}`;
+    const climbed = climb(seed, seedIndex);
     const cost = compositionCost(climbed, context);
     if (cost.lt(bestCost)) {
       best = climbed;
@@ -983,7 +1118,10 @@ export const solveMinimumArmy = (
     }
   }
   if (!best) return null;
-  for (const [unitId, count] of [...best]) {
+  for (const [unitIndex, [unitId, count]] of [...best].entries()) {
+    searchStage =
+      `trimming final army unit ${unitId} ` +
+      `(${unitIndex + 1}/${best.size})`;
     let lo = ExpNumber.ZERO;
     let hi = count;
     while (lo.lt(hi)) {
@@ -1030,6 +1168,13 @@ export const solveMinimumArmy = (
           formations,
         );
 
+  console.debug(
+    `[Battle Simulator] ${battleId}: minimum-army solve finished; ` +
+        `${testAttempts} tests, ${battleSimulations} battle simulations; ` +
+        `winning recruits {${[...best]
+          .map(([unitId, count]) => `${unitId}:${count.toString()}`)
+          .join(",")}}`,
+  );
   return {
     composition: best,
     totalComposition,
@@ -1062,20 +1207,35 @@ export const trimUnderTactics = (
       battleId,
     );
   const trimmed = new Map(composition);
-  for (const [unitId, count] of [...trimmed]) {
-    let lo = ExpNumber.ZERO;
-    let hi = count;
-    while (lo.lt(hi)) {
-      let mid = lo.add(hi).div(ExpNumber.fromNumber(2)).floor();
-      if (!mid.gt(lo)) mid = lo.add(ExpNumber.ONE);
-      if (!mid.lt(hi)) break;
-      const trial = new Map(trimmed);
-      trial.set(unitId, mid);
-      if (wins(trial)) hi = mid;
-      else lo = mid.add(ExpNumber.ONE);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [unitId, count] of [...trimmed]) {
+      const withoutUnit = new Map(trimmed);
+      withoutUnit.delete(unitId);
+      if (wins(withoutUnit)) {
+        trimmed.delete(unitId);
+        changed = true;
+        continue;
+      }
+
+      let lo = ExpNumber.ZERO;
+      let hi = count;
+      while (lo.lt(hi)) {
+        const mid = lo.add(hi).div(ExpNumber.fromNumber(2)).floor();
+        if (!mid.lt(hi)) break;
+        const trial = new Map(trimmed);
+        if (mid.isZero) trial.delete(unitId);
+        else trial.set(unitId, mid);
+        if (wins(trial)) hi = mid;
+        else lo = mid.add(ExpNumber.ONE);
+      }
+      if (!hi.gt(ExpNumber.ZERO)) trimmed.delete(unitId);
+      else if (!hi.eq(count)) {
+        trimmed.set(unitId, hi);
+        changed = true;
+      }
     }
-    if (!hi.gt(ExpNumber.ZERO)) trimmed.delete(unitId);
-    else trimmed.set(unitId, hi);
   }
   return trimmed;
 };
@@ -1167,13 +1327,10 @@ export const buildDoctrineFormations = (
 };
 
 /**
- * Fast search to determine whether the already-owned army can win the encounter
- * purely by adjusting formations and orders, requiring ZERO additional unit purchases.
- * Evaluates current tactics, default tactics, macro doctrines, and coordinate descent.
- * Returns a SimulatorResult with military = 0 and composition = empty if a winning
- * setup is found, or null otherwise.
+ * Searches the owned army's formations and orders, strongest unit first.
+ * Returns the best tactical setup even when it still needs more units.
  */
-export const solveOwnedArmyTactics = (
+export const optimizeOwnedArmyTactics = (
   battleId: string,
   context: BattleSimulatorContext,
   ownedArmy: SimulatorOwnedArmy,
@@ -1181,9 +1338,20 @@ export const solveOwnedArmyTactics = (
   availableOrders: readonly OrderId[],
   initialFormations: ReadonlyMap<string, FormationId> = new Map(),
   initialOrders: ReadonlyMap<string, OrderId> = new Map(),
-): SimulatorResult | null => {
+): SimulatorTacticSearch | null => {
   const activeOwnedUnitIds = [...ownedArmy.entries()]
     .filter(([, count]) => count.gt(ExpNumber.ZERO))
+    .sort(([leftId, leftCount], [rightId, rightCount]) => {
+      const left = findUnitDefinition(leftId);
+      const right = findUnitDefinition(rightId);
+      const leftStrength = left
+        ? unitPower(left.stats).mul(leftCount)
+        : ExpNumber.ZERO;
+      const rightStrength = right
+        ? unitPower(right.stats).mul(rightCount)
+        : ExpNumber.ZERO;
+      return rightStrength.compareTo(leftStrength);
+    })
     .map(([id]) => id);
 
   if (activeOwnedUnitIds.length === 0) return null;
@@ -1200,28 +1368,6 @@ export const solveOwnedArmyTactics = (
       orders,
       battleId,
     );
-
-  const makePlan = (
-    formations: ReadonlyMap<string, FormationId>,
-    orders: ReadonlyMap<string, OrderId>,
-  ): SimulatorResult => {
-    const battleMetrics = context.getBattleMetrics?.(
-      totalComposition,
-      formations,
-      orders,
-      battleId,
-    );
-    return {
-      composition: new Map(),
-      totalComposition,
-      military: ExpNumber.ZERO,
-      totalCost: [],
-      research: { ids: [], costs: [] },
-      formations: new Map(formations),
-      orders: new Map(orders),
-      ...(battleMetrics ? { battleMetrics } : {}),
-    };
-  };
 
   // 1. Check current tactics
   const currentFormations = new Map<string, FormationId>(
@@ -1240,10 +1386,6 @@ export const solveOwnedArmyTactics = (
         : DEFAULT_ORDER,
     ]),
   );
-  if (winsTactics(currentFormations, currentOrders)) {
-    return makePlan(currentFormations, currentOrders);
-  }
-
   // 2. Check default tactics (all standard)
   const defaultFormations = new Map<string, FormationId>(
     activeOwnedUnitIds.map((id) => [id, DEFAULT_FORMATION]),
@@ -1251,10 +1393,6 @@ export const solveOwnedArmyTactics = (
   const defaultOrders = new Map<string, OrderId>(
     activeOwnedUnitIds.map((id) => [id, DEFAULT_ORDER]),
   );
-  if (winsTactics(defaultFormations, defaultOrders)) {
-    return makePlan(defaultFormations, defaultOrders);
-  }
-
   // 3. Check macro doctrines (shock, rush, turtle, frontline)
   const doctrines: TacticalDoctrine[] = [];
   if (
@@ -1282,16 +1420,67 @@ export const solveOwnedArmyTactics = (
     if (availableOrders.includes(ord)) keyOrders.push(ord);
   }
 
+  const isBetterTactic = (
+    formations: ReadonlyMap<string, FormationId>,
+    orders: ReadonlyMap<string, OrderId>,
+    metrics: SimulatorBattleMetrics | undefined,
+    currentFormations: ReadonlyMap<string, FormationId>,
+    currentOrders: ReadonlyMap<string, OrderId>,
+    currentMetrics: SimulatorBattleMetrics | undefined,
+  ): boolean => {
+    const wins = winsTactics(formations, orders);
+    const currentWins = winsTactics(currentFormations, currentOrders);
+    if (wins !== currentWins) return wins;
+    if (battleMetricsAreBetter(metrics, currentMetrics, wins)) return true;
+    if (battleMetricsAreBetter(currentMetrics, metrics, wins)) return false;
+    const deviations = (
+      candidateFormations: ReadonlyMap<string, FormationId>,
+      candidateOrders: ReadonlyMap<string, OrderId>,
+    ): number =>
+      [...candidateFormations.values()].filter(
+        (value) => value !== DEFAULT_FORMATION,
+      ).length +
+      [...candidateOrders.values()].filter(
+        (value) => value !== DEFAULT_ORDER,
+      ).length;
+    return (
+      deviations(formations, orders) <
+      deviations(currentFormations, currentOrders)
+    );
+  };
+
   let bestTactics = {
-    formations: defaultFormations,
-    orders: defaultOrders,
+    formations: currentFormations,
+    orders: currentOrders,
     metrics: context.getBattleMetrics?.(
       totalComposition,
-      defaultFormations,
-      defaultOrders,
+      currentFormations,
+      currentOrders,
       battleId,
     ),
   };
+  const defaultMetrics = context.getBattleMetrics?.(
+    totalComposition,
+    defaultFormations,
+    defaultOrders,
+    battleId,
+  );
+  if (
+    isBetterTactic(
+      defaultFormations,
+      defaultOrders,
+      defaultMetrics,
+      bestTactics.formations,
+      bestTactics.orders,
+      bestTactics.metrics,
+    )
+  ) {
+    bestTactics = {
+      formations: defaultFormations,
+      orders: defaultOrders,
+      metrics: defaultMetrics,
+    };
+  }
 
   for (const doc of doctrines) {
     const docFormations = buildDoctrineFormations(
@@ -1303,16 +1492,22 @@ export const solveOwnedArmyTactics = (
       const docOrders = new Map<string, OrderId>(
         activeOwnedUnitIds.map((id) => [id, ord]),
       );
-      if (winsTactics(docFormations, docOrders)) {
-        return makePlan(docFormations, docOrders);
-      }
       const metrics = context.getBattleMetrics?.(
         totalComposition,
         docFormations,
         docOrders,
         battleId,
       );
-      if (battleMetricsAreBetter(metrics, bestTactics.metrics)) {
+      if (
+        isBetterTactic(
+          docFormations,
+          docOrders,
+          metrics,
+          bestTactics.formations,
+          bestTactics.orders,
+          bestTactics.metrics,
+        )
+      ) {
         bestTactics = { formations: docFormations, orders: docOrders, metrics };
       }
     }
@@ -1323,55 +1518,132 @@ export const solveOwnedArmyTactics = (
   let curOrders = new Map(bestTactics.orders);
   let curMetrics = bestTactics.metrics;
 
+  // Search formations first, then orders. Within each phase, stronger stacks
+  // get first choice and each accepted change becomes the next starting point.
   for (let pass = 0; pass < 2; pass += 1) {
     let improved = false;
     for (const unitId of activeOwnedUnitIds) {
-      // Try formations
       for (const form of availableFormations) {
         if (curFormations.get(unitId) === form) continue;
         const testFormations = new Map(curFormations);
         testFormations.set(unitId, form);
-        if (winsTactics(testFormations, curOrders)) {
-          return makePlan(testFormations, curOrders);
-        }
+        const outcome = winsTactics(testFormations, curOrders);
         const metrics = context.getBattleMetrics?.(
           totalComposition,
           testFormations,
           curOrders,
           battleId,
         );
-        if (battleMetricsAreBetter(metrics, curMetrics)) {
+        const kept = isBetterTactic(
+          testFormations,
+          curOrders,
+          metrics,
+          curFormations,
+          curOrders,
+          curMetrics,
+        );
+        if (kept) {
           curFormations = testFormations;
           curMetrics = metrics;
           improved = true;
         }
+        console.debug(
+          `[Battle Simulator] ${battleId}: testing formation ${unitId} -> ${form}; ` +
+            `${outcome ? "WIN" : "loss"}` +
+            (metrics
+              ? `; casualties player ${metrics.playerCasualtyRate}% / ` +
+                `enemy ${metrics.enemyCasualtyRate}%`
+              : "") +
+            ` -> ${curFormations.get(unitId) ?? DEFAULT_FORMATION} kept`,
+        );
       }
-
-      // Try orders
+    }
+    for (const unitId of activeOwnedUnitIds) {
       for (const ord of availableOrders) {
         if (curOrders.get(unitId) === ord) continue;
         const testOrders = new Map(curOrders);
         testOrders.set(unitId, ord);
-        if (winsTactics(curFormations, testOrders)) {
-          return makePlan(curFormations, testOrders);
-        }
+        const outcome = winsTactics(curFormations, testOrders);
         const metrics = context.getBattleMetrics?.(
           totalComposition,
           curFormations,
           testOrders,
           battleId,
         );
-        if (battleMetricsAreBetter(metrics, curMetrics)) {
+        const kept = isBetterTactic(
+          curFormations,
+          testOrders,
+          metrics,
+          curFormations,
+          curOrders,
+          curMetrics,
+        );
+        if (kept) {
           curOrders = testOrders;
           curMetrics = metrics;
           improved = true;
         }
+        console.debug(
+          `[Battle Simulator] ${battleId}: testing order ${unitId} -> ${ord}; ` +
+            `${outcome ? "WIN" : "loss"}` +
+            (metrics
+              ? `; casualties player ${metrics.playerCasualtyRate}% / ` +
+                `enemy ${metrics.enemyCasualtyRate}%`
+              : "") +
+            ` -> ${curOrders.get(unitId) ?? DEFAULT_ORDER} kept`,
+        );
       }
     }
     if (!improved) break;
   }
 
-  return null;
+  const wins = winsTactics(curFormations, curOrders);
+  const battleMetrics = context.getBattleMetrics?.(
+    totalComposition,
+    curFormations,
+    curOrders,
+    battleId,
+  );
+  return {
+    formations: curFormations,
+    orders: curOrders,
+    wins,
+    ...(battleMetrics ? { battleMetrics } : {}),
+  };
+};
+
+export const solveOwnedArmyTactics = (
+  battleId: string,
+  context: BattleSimulatorContext,
+  ownedArmy: SimulatorOwnedArmy,
+  availableFormations: readonly FormationId[],
+  availableOrders: readonly OrderId[],
+  initialFormations: ReadonlyMap<string, FormationId> = new Map(),
+  initialOrders: ReadonlyMap<string, OrderId> = new Map(),
+): SimulatorResult | null => {
+  const optimized = optimizeOwnedArmyTactics(
+    battleId,
+    context,
+    ownedArmy,
+    availableFormations,
+    availableOrders,
+    initialFormations,
+    initialOrders,
+  );
+  if (!optimized?.wins) return null;
+  const totalComposition = new Map(ownedArmy);
+  return {
+    composition: new Map(),
+    totalComposition,
+    military: ExpNumber.ZERO,
+    totalCost: [],
+    research: { ids: [], costs: [] },
+    formations: new Map(optimized.formations),
+    orders: new Map(optimized.orders),
+    ...(optimized.battleMetrics
+      ? { battleMetrics: optimized.battleMetrics }
+      : {}),
+  };
 };
 
 export const optimizeBattleTactics = (
@@ -1385,6 +1657,7 @@ export const optimizeBattleTactics = (
   formationChoices?: readonly FormationId[],
   orderChoices?: readonly OrderId[],
   onProgress?: SimulatorProgress,
+  historicalSeeds: readonly SimulatorHistoricalSeed[] = [],
 ): SimulatorResult | null => {
   const encounter = encounterDefinitions.find(({ key }) => key === battleId);
   if (!encounter) return null;
@@ -1517,6 +1790,19 @@ export const optimizeBattleTactics = (
       plan.orders,
       battleId,
     );
+  let lastReportedPlan: SimulatorResult | null = null;
+  const reportImprovement = (
+    plan: SimulatorResult,
+    phase: string,
+  ): void => {
+    if (!onProgress) return;
+    const improved =
+      !lastReportedPlan || planIsBetter(plan, lastReportedPlan, context);
+    if (improved) {
+      lastReportedPlan = plan;
+    }
+    onProgress(lastReportedPlan ?? plan, phase, improved);
+  };
 
   let formations = assignDefaults(
     availableFormations,
@@ -1524,31 +1810,332 @@ export const optimizeBattleTactics = (
     DEFAULT_FORMATION,
   );
   let orders = assignDefaults(availableOrders, initialOrders, DEFAULT_ORDER);
-  let best = solveMinimumArmy(
-    battleId,
-    candidates,
-    context,
-    requireMixed,
-    ownedArmy,
-    formations,
-    orders,
-  );
-  if (!best) {
-    formations = assignDefaults(
+  let best: SimulatorResult | null = null;
+  const allowedUnitIds = new Set([
+    ...candidates.map(({ key }) => key),
+    ...ownedArmy.keys(),
+  ]);
+  const usableHistoricalSeeds = historicalSeeds.flatMap((seed) => {
+    const playerArmy = seed.playerArmy.filter(({ unitId }) =>
+      allowedUnitIds.has(unitId),
+    );
+    return playerArmy.length > 0 ? [{ playerArmy }] : [];
+  });
+  const optimizedSeedTactics: (readonly [
+    ReadonlyMap<string, FormationId>,
+    ReadonlyMap<string, OrderId>,
+  ])[] = [];
+  for (const seed of usableHistoricalSeeds) {
+
+    const seedArmy = new Map<string, ExpNumber>();
+    for (const { unitId, count } of seed.playerArmy) {
+      const parsedCount = ExpNumber.from(count);
+      if (!parsedCount.isFinite || !parsedCount.gt(ExpNumber.ZERO)) continue;
+      seedArmy.set(
+        unitId,
+        (seedArmy.get(unitId) ?? ExpNumber.ZERO).add(parsedCount),
+      );
+    }
+    if (seedArmy.size === 0) continue;
+
+    const seedAdditional = new Map<string, ExpNumber>();
+    for (const [unitId, count] of seedArmy) {
+      const additional = ExpNumber.max(
+        ExpNumber.ZERO,
+        count.sub(ownedArmy.get(unitId) ?? ExpNumber.ZERO),
+      );
+      if (additional.gt(ExpNumber.ZERO)) seedAdditional.set(unitId, additional);
+    }
+    const seedFormations = assignDefaults(
       availableFormations,
-      new Map(),
+      new Map(seed.playerArmy.map(({ unitId, formation }) => [unitId, formation])),
       DEFAULT_FORMATION,
     );
-    orders = assignDefaults(availableOrders, new Map(), DEFAULT_ORDER);
-    best = solveMinimumArmy(
+    const seedOrders = assignDefaults(
+      availableOrders,
+      new Map(seed.playerArmy.map(({ unitId, order }) => [unitId, order])),
+      DEFAULT_ORDER,
+    );
+    const seedTotal = mergeSimulatorArmy(ownedArmy, seedAdditional);
+    const tunedSeed = optimizeOwnedArmyTactics(
+      battleId,
+      context,
+      seedTotal,
+      availableFormations,
+      availableOrders,
+      seedFormations,
+      seedOrders,
+    );
+    if (!tunedSeed) continue;
+    const winningFormations = tunedSeed.formations;
+    const winningOrders = tunedSeed.orders;
+    optimizedSeedTactics.push([
+      assignDefaults(availableFormations, winningFormations, DEFAULT_FORMATION),
+      assignDefaults(availableOrders, winningOrders, DEFAULT_ORDER),
+    ]);
+    if (!tunedSeed.wins) continue;
+
+    const trimmed = trimUnderTactics(
+      seedAdditional,
+      ownedArmy,
+      winningFormations,
+      winningOrders,
+      battleId,
+      context,
+    );
+    const totalComposition = mergeSimulatorArmy(ownedArmy, trimmed);
+    const seedPlan = withMetrics({
+      composition: trimmed,
+      totalComposition,
+      military: compositionCost(trimmed, context),
+      totalCost: sumCosts(trimmed, context),
+      research: context.getResearch(additionalUnitIds(ownedArmy, trimmed)),
+      formations: winningFormations,
+      orders: winningOrders,
+    });
+    if (
+      !context.winsWithFormationsAndOrders(
+        seedPlan.totalComposition,
+        seedPlan.formations,
+        seedPlan.orders,
+        battleId,
+      )
+    ) continue;
+    const improvesBest =
+      !best || planIsBetter(seedPlan, withMetrics(best), context);
+    if (improvesBest) lastReportedPlan = seedPlan;
+    onProgress?.(
+      seedPlan,
+      "Saved starting army wins after formation/order optimization",
+      improvesBest,
+    );
+    if (improvesBest) {
+      best = seedPlan;
+      formations = new Map(winningFormations);
+      orders = new Map(winningOrders);
+    }
+  }
+
+  const defaultFormations = assignDefaults(
+    availableFormations,
+    new Map(),
+    DEFAULT_FORMATION,
+  );
+  const defaultOrders = assignDefaults(
+    availableOrders,
+    new Map(),
+    DEFAULT_ORDER,
+  );
+  const tacticSeeds: (readonly [
+    ReadonlyMap<string, FormationId>,
+    ReadonlyMap<string, OrderId>,
+  ])[] = [
+    [formations, orders],
+    ...optimizedSeedTactics,
+    [defaultFormations, defaultOrders],
+  ];
+  const uniqueTacticSeeds = tacticSeeds
+    .filter(([seedFormations, seedOrders], index, all) => {
+      const key = `${formatTactics(seedFormations)}|${formatTactics(seedOrders)}`;
+      return all.findIndex(([otherFormations, otherOrders]) =>
+        `${formatTactics(otherFormations)}|${formatTactics(otherOrders)}` === key,
+      ) === index;
+    })
+    .slice(0, 5);
+
+  let winningCountCeiling: Map<string, ExpNumber> | undefined;
+  // Always establish a balanced-army ceiling, even when a smaller win was
+  // found under one fixed tactic set. It gives the later unit-removal search a
+  // known winning army and tests each saved starting tactic independently.
+  if (candidates.length > 0) {
+    for (const [seedFormations, seedOrders] of uniqueTacticSeeds) {
+      for (let count = 1; count <= 2 ** 28; count *= 2) {
+        const balancedArmy = new Map(
+          candidates.map(({ key }) => [key, ExpNumber.fromNumber(count)]),
+        );
+        const balancedTotal = mergeSimulatorArmy(ownedArmy, balancedArmy);
+        const wins = context.winsWithFormationsAndOrders(
+          balancedTotal,
+          seedFormations,
+          seedOrders,
+          battleId,
+        );
+        console.debug(
+          `[Battle Simulator] ${battleId}: balanced ceiling test ` +
+            `${count}/unit, ${candidates.length} unit types; ` +
+            `units [${candidates.map(({ key }) => key).join(", ")}]; ` +
+            `formations {${formatTactics(seedFormations)}}; ` +
+            `orders {${formatTactics(seedOrders)}}; ${wins ? "WIN" : "loss"}`,
+        );
+        if (!wins) continue;
+
+        winningCountCeiling ??= new Map();
+        for (const [unitId, count] of balancedArmy) {
+          winningCountCeiling.set(
+            unitId,
+            ExpNumber.max(
+              winningCountCeiling.get(unitId) ?? ExpNumber.ZERO,
+              count,
+            ),
+          );
+        }
+        const ceilingPlan = withMetrics({
+          composition: balancedArmy,
+          totalComposition: balancedTotal,
+          military: compositionCost(balancedArmy, context),
+          totalCost: sumCosts(balancedArmy, context),
+          research: context.getResearch(additionalUnitIds(ownedArmy, balancedArmy)),
+          formations: seedFormations,
+          orders: seedOrders,
+        });
+        const improvesBest =
+          !best || planIsBetter(ceilingPlan, withMetrics(best), context);
+        if (improvesBest) lastReportedPlan = ceilingPlan;
+        onProgress?.(
+          ceilingPlan,
+          `Balanced army ceiling wins at ${count} of each candidate unit`,
+          improvesBest,
+        );
+        if (improvesBest) {
+          best = ceilingPlan;
+          formations = new Map(seedFormations);
+          orders = new Map(seedOrders);
+        }
+
+        const startingComposition = trimUnderTactics(
+          balancedArmy,
+          ownedArmy,
+          seedFormations,
+          seedOrders,
+          battleId,
+          context,
+        );
+        const startingTotal = mergeSimulatorArmy(ownedArmy, startingComposition);
+        const startingPlan = withMetrics({
+          composition: startingComposition,
+          totalComposition: startingTotal,
+          military: compositionCost(startingComposition, context),
+          totalCost: sumCosts(startingComposition, context),
+          research: context.getResearch(
+            additionalUnitIds(ownedArmy, startingComposition),
+          ),
+          formations: seedFormations,
+          orders: seedOrders,
+        });
+        const ceilingWasTrimmed =
+          startingComposition.size !== balancedArmy.size ||
+          [...balancedArmy].some(
+            ([unitId, count]) =>
+              !startingComposition.get(unitId)?.eq(count),
+          );
+        if (ceilingWasTrimmed) {
+          const improvesBest =
+            !best || planIsBetter(startingPlan, withMetrics(best), context);
+          if (improvesBest) {
+            best = startingPlan;
+            lastReportedPlan = startingPlan;
+            formations = new Map(seedFormations);
+            orders = new Map(seedOrders);
+          }
+          onProgress?.(
+            startingPlan,
+            "Reduced balanced ceiling before formation/order search",
+            improvesBest,
+          );
+        }
+
+        // Search tactics on the reduced winning army, not the ceiling-sized one.
+        const tuned = optimizeOwnedArmyTactics(
+          battleId,
+          context,
+          startingTotal,
+          availableFormations,
+          availableOrders,
+          seedFormations,
+          seedOrders,
+        );
+        const winningFormations = tuned?.formations ?? seedFormations;
+        const winningOrders = tuned?.orders ?? seedOrders;
+        const trimmed = trimUnderTactics(
+          startingComposition,
+          ownedArmy,
+          winningFormations,
+          winningOrders,
+          battleId,
+          context,
+        );
+        const totalComposition = mergeSimulatorArmy(ownedArmy, trimmed);
+        const balancedPlan = withMetrics({
+          composition: trimmed,
+          totalComposition,
+          military: compositionCost(trimmed, context),
+          totalCost: sumCosts(trimmed, context),
+          research: context.getResearch(additionalUnitIds(ownedArmy, trimmed)),
+          formations: winningFormations,
+          orders: winningOrders,
+        });
+        if (
+          context.winsWithFormationsAndOrders(
+            balancedPlan.totalComposition,
+            balancedPlan.formations,
+            balancedPlan.orders,
+            battleId,
+          )
+        ) {
+          const improvesBest =
+            !best || planIsBetter(balancedPlan, withMetrics(best), context);
+          if (improvesBest) lastReportedPlan = balancedPlan;
+          onProgress?.(
+            balancedPlan,
+            "Trimmed the balanced winning ceiling and re-optimized tactics",
+            improvesBest,
+          );
+          if (improvesBest) {
+            best = balancedPlan;
+            formations = new Map(winningFormations);
+            orders = new Map(winningOrders);
+          }
+        }
+        break;
+      }
+    }
+  }
+  const armySolveSeeds = [
+    [formations, orders] as const,
+    ...optimizedSeedTactics,
+    [defaultFormations, defaultOrders] as const,
+  ].filter(([seedFormations, seedOrders], index, all) => {
+    const key = `${formatTactics(seedFormations)}|${formatTactics(seedOrders)}`;
+    return all.findIndex(([otherFormations, otherOrders]) =>
+      `${formatTactics(otherFormations)}|${formatTactics(otherOrders)}` === key,
+    ) === index;
+  }).slice(0, 5);
+  for (const [seedFormations, seedOrders] of armySolveSeeds) {
+    const solved = solveMinimumArmy(
       battleId,
       candidates,
       context,
       requireMixed,
       ownedArmy,
-      formations,
-      orders,
+      seedFormations,
+      seedOrders,
+      winningCountCeiling,
     );
+    if (!solved) continue;
+    const candidatePlan = withMetrics(solved);
+    const improvesBest =
+      !best || planIsBetter(candidatePlan, withMetrics(best), context);
+    if (improvesBest) lastReportedPlan = candidatePlan;
+    onProgress?.(
+      candidatePlan,
+      "Winning army found after balanced ceiling and tactic refinement",
+      improvesBest,
+    );
+    if (improvesBest) {
+      best = candidatePlan;
+      formations = new Map(seedFormations);
+      orders = new Map(seedOrders);
+    }
   }
   if (!best) return null;
 
@@ -1587,7 +2174,7 @@ export const optimizeBattleTactics = (
   registerParetoPlan(bestResult);
   let bestCost = compositionCost(bestResult.composition, context);
   console.log(`[OPT START] ${battleId} cand=${candidates.length}: bestCost=${bestCost.toString()}`);
-  onProgress?.(bestResult, "Minimum army for the current tactics");
+  reportImprovement(bestResult, "Winning plan found for the current tactics");
 
   let attempts = 0;
   let exploratoryAttempts = 0;
@@ -1642,6 +2229,7 @@ export const optimizeBattleTactics = (
       ownedArmy,
       docFormations,
       docOrders,
+      winningCountCeiling,
     );
     if (docSolved) {
       const docPlan = withMetrics(docSolved);
@@ -1652,7 +2240,7 @@ export const optimizeBattleTactics = (
         orders = new Map(docOrders);
         bestCost = compositionCost(bestResult.composition, context);
         console.log(`[OPT DOC ${doc}] ${battleId} cand=${candidates.length}: bestCost=${bestCost.toString()}`);
-        onProgress?.(bestResult, `Re-solved army under ${doc} doctrine`);
+        reportImprovement(bestResult, `Re-solved army under ${doc} doctrine`);
       }
     }
   }
@@ -1662,7 +2250,23 @@ export const optimizeBattleTactics = (
   for (;;) {
     if (tacticIteration >= maximumTacticIterations) break;
     tacticIteration += 1;
-    const tacticalUnitIds = [...bestResult.totalComposition.keys()];
+    const tacticalUnitIds = [...bestResult.totalComposition.keys()].sort(
+      (left, right) => {
+        const leftDefinition = findUnitDefinition(left);
+        const rightDefinition = findUnitDefinition(right);
+        const leftPower = leftDefinition
+          ? unitPower(leftDefinition.stats).mul(
+              bestResult.totalComposition.get(left) ?? ExpNumber.ZERO,
+            )
+          : ExpNumber.ZERO;
+        const rightPower = rightDefinition
+          ? unitPower(rightDefinition.stats).mul(
+              bestResult.totalComposition.get(right) ?? ExpNumber.ZERO,
+            )
+          : ExpNumber.ZERO;
+        return rightPower.compareTo(leftPower);
+      },
+    );
     let next:
       | {
           readonly composition: SimulatorArmy;
@@ -1688,9 +2292,9 @@ export const optimizeBattleTactics = (
     const consider = (
       trialFormations: ReadonlyMap<string, FormationId>,
       trialOrders: ReadonlyMap<string, OrderId>,
-    ): void => {
+    ): string => {
       const trialKey = tacticKey(trialFormations, trialOrders);
-      if (visitedTactics.has(trialKey)) return;
+      if (visitedTactics.has(trialKey)) return "already tested";
       const currentArmyWins = context.winsWithFormationsAndOrders(
         bestResult.totalComposition,
         trialFormations,
@@ -1717,7 +2321,7 @@ export const optimizeBattleTactics = (
             };
           }
         }
-        return;
+        return "loss with current army";
       }
 
       let reachesAtFraction = false;
@@ -1742,7 +2346,7 @@ export const optimizeBattleTactics = (
         );
         if (reachesAtFraction) break;
       }
-      if (!reachesAtFraction) return;
+      if (!reachesAtFraction) return "win at current army; no reduced army won";
 
       const trimmed = trimUnderTactics(
         bestResult.composition,
@@ -1765,7 +2369,7 @@ export const optimizeBattleTactics = (
         formations: trialFormations,
         orders: trialOrders,
       });
-      if (!isWinningPlan(candidatePlan)) return;
+      if (!isWinningPlan(candidatePlan)) return "loss after count trimming";
       registerParetoPlan(candidatePlan);
       const improvesBest = planIsBetter(candidatePlan, bestResult, context);
       if (
@@ -1780,6 +2384,7 @@ export const optimizeBattleTactics = (
           plan: candidatePlan,
         };
       }
+      return improvesBest ? "WIN; cheaper army" : "WIN; not cheaper";
     };
 
     for (const unitId of tacticalUnitIds) {
@@ -1788,10 +2393,10 @@ export const optimizeBattleTactics = (
         const trialFormations = new Map(formations);
         trialFormations.set(unitId, formation);
         attempts += 1;
-        consider(trialFormations, orders);
-        onProgress?.(
+        const outcome = consider(trialFormations, orders);
+        reportImprovement(
           bestResult,
-          `Testing ${unitId}: ${formation} (${attempts})`,
+          `Testing ${unitId}: formation ${formation} (${attempts}) — ${outcome}`,
         );
       }
       for (const order of availableOrders) {
@@ -1799,8 +2404,11 @@ export const optimizeBattleTactics = (
         const trialOrders = new Map(orders);
         trialOrders.set(unitId, order);
         attempts += 1;
-        consider(formations, trialOrders);
-        onProgress?.(bestResult, `Testing ${unitId}: ${order} (${attempts})`);
+        const outcome = consider(formations, trialOrders);
+        reportImprovement(
+          bestResult,
+          `Testing ${unitId}: order ${order} (${attempts}) — ${outcome}`,
+        );
       }
     }
     if (!next) {
@@ -1839,10 +2447,10 @@ export const optimizeBattleTactics = (
         trialFormations.set(first.unitId, first.formation);
         trialFormations.set(second.unitId, second.formation);
         attempts += 1;
-        consider(trialFormations, orders);
-        onProgress?.(
+        const outcome = consider(trialFormations, orders);
+        reportImprovement(
           bestResult,
-          `Testing combination: ${first.unitId} ${first.formation} + ${second.unitId} ${second.formation} (${attempts})`,
+          `Testing combination: ${first.unitId} ${first.formation} + ${second.unitId} ${second.formation} (${attempts}) — ${outcome}`,
         );
       }
     }
@@ -1867,23 +2475,30 @@ export const optimizeBattleTactics = (
       ownedArmy,
       formations,
       orders,
+      winningCountCeiling,
     );
+    let improvedPlan: SimulatorPlan | undefined;
     if (reSolved) {
       const resolvedPlan = withMetrics(reSolved);
       if (planIsBetter(resolvedPlan, bestResult, context)) {
-        bestResult = resolvedPlan;
-      } else if (!next) {
-        break;
+        improvedPlan = resolvedPlan;
       }
-    } else if (next && planIsBetter(next.plan, bestResult, context)) {
-      bestResult = next.plan;
-    } else {
-      break;
     }
+    if (
+      next &&
+      planIsBetter(next.plan, bestResult, context) &&
+      (!improvedPlan || planIsBetter(next.plan, improvedPlan, context))
+    ) {
+      improvedPlan = next.plan;
+    }
+    if (!improvedPlan) break;
+    bestResult = improvedPlan;
+    formations = new Map(bestResult.formations);
+    orders = new Map(bestResult.orders);
     registerParetoPlan(bestResult);
     bestCost = compositionCost(bestResult.composition, context);
     console.log(`[OPT ITER ${tacticIteration}] cand=${candidates.length}: bestCost=${bestCost.toString()}`);
-    onProgress?.(
+    reportImprovement(
       bestResult,
       `Re-solved army after tactic change (${attempts})`,
     );

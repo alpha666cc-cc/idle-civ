@@ -19,9 +19,8 @@ import type { OrderId } from "./orders";
 import { DEFAULT_ORDER } from "./orders";
 import {
   optimizeBattleTactics,
+  optimizeOwnedArmyTactics,
   proveMinimumMilitaryWinner,
-  solveMinimumArmy,
-  solveOwnedArmyTactics,
   type SimulatorArmy,
   type SimulatorOwnedArmy,
   type SimulatorTotalArmy,
@@ -31,6 +30,7 @@ import {
   type SimulatorBattleMetrics,
   type SimulatorPlan,
   type SimulatorResult,
+  type SimulatorHistoricalSeed,
 } from "./battleSimulator";
 import type { ResourceKey } from "./attributes";
 
@@ -98,6 +98,7 @@ export type WorkerInput = {
   requireMixed: boolean;
   currentFormations?: [string, FormationId][];
   currentOrders?: [string, OrderId][];
+  historicalSeeds?: SimulatorHistoricalSeed[];
 };
 
 export type SerializedSimulatorPlan = {
@@ -223,6 +224,7 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
     requireMixed,
     currentFormations,
     currentOrders,
+    historicalSeeds = [],
   } = event.data;
 
   try {
@@ -420,8 +422,8 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
     }));
 
     // Test current tactics first, but still search alternatives for cheaper wins.
-    const currentFormationsMap = new Map<string, FormationId>(currentFormations ?? []);
-    const currentOrdersMap = new Map<string, OrderId>(currentOrders ?? []);
+    let currentFormationsMap = new Map<string, FormationId>(currentFormations ?? []);
+    let currentOrdersMap = new Map<string, OrderId>(currentOrders ?? []);
 
     // Step 0: Check if the already-owned army can win with tactics alone (no purchases needed).
     // If so, cost is 0, which is the proven global minimum.
@@ -432,7 +434,7 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
       });
       await tick();
 
-      const ownedWin = solveOwnedArmyTactics(
+      const ownedTactics = optimizeOwnedArmyTactics(
         battleId,
         context,
         ownedArmy,
@@ -442,16 +444,15 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
         currentOrdersMap,
       );
 
-      if (ownedWin) {
+      if (ownedTactics?.wins) {
         const fullResult = serializeResult(
-          ownedWin.composition,
-          ownedWin.totalComposition,
-          ownedWin.military,
-          ownedWin.totalCost,
-          ownedWin.formations,
-          ownedWin.orders,
+          new Map(),
+          ownedArmy,
+          ExpNumber.ZERO,
+          [],
+          ownedTactics.formations,
+          ownedTactics.orders,
           {
-            ...ownedWin,
             alternatives: [],
             searchStats: {
               tacticTests: 0,
@@ -469,82 +470,19 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
           phase: "Victory with current army! No purchases needed.",
           result: fullResult,
         });
-        await tick();
-        post({ type: "done", result: fullResult });
-        return;
       }
+      if (ownedTactics) {
+        currentFormationsMap = new Map(ownedTactics.formations);
+        currentOrdersMap = new Map(ownedTactics.orders);
+      }
+      await tick();
     }
-
-    post({ type: "progress", phase: "Solving under current tactics…" });
-    await tick();
 
     post({
       type: "progress",
-      phase: "Optimising formations and re-solving minimum army…",
+      phase: "Optimizing formations/orders across starting armies…",
     });
     await tick();
-
-    const defaultFormations = new Map(
-      [...candidateIds, ...ownedArmy.keys()].map((unitId) => [
-        unitId,
-        DEFAULT_FORMATION,
-      ]),
-    );
-    const defaultOrders = new Map(
-      [...candidateIds, ...ownedArmy.keys()].map((unitId) => [
-        unitId,
-        DEFAULT_ORDER,
-      ]),
-    );
-    let firstWin = solveMinimumArmy(
-      battleId,
-      candidateDefs,
-      context,
-      requireMixed,
-      ownedArmy,
-      currentFormationsMap,
-      currentOrdersMap,
-    );
-    if (!firstWin) {
-      firstWin = solveMinimumArmy(
-        battleId,
-        candidateDefs,
-        context,
-        requireMixed,
-        ownedArmy,
-        defaultFormations,
-        defaultOrders,
-      );
-    }
-
-    if (firstWin) {
-      post({
-        type: "progress",
-        phase: "Winning plan found; refining the cost ceiling…",
-        result: serializeResult(
-          firstWin.composition,
-          firstWin.totalComposition,
-          firstWin.military,
-          firstWin.totalCost,
-          firstWin.formations,
-          firstWin.orders,
-          {
-            ...firstWin,
-            alternatives: [],
-            searchStats: {
-              tacticTests: 0,
-              armyRefinementTests: 0,
-              paretoPlansFound: 1,
-              paretoPlansTruncated: false,
-              proofStatus: "searching",
-              armyCompositionsTested: 0,
-              tacticalSetupsTested: 0,
-            },
-          },
-        ),
-      });
-      await tick();
-    }
 
     const refined = optimizeBattleTactics(
       battleId,
@@ -556,8 +494,39 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
       currentOrdersMap,
       availableFormations,
       availableOrders,
+      (intermediate, phase, improved) => {
+        const formatArmy = (army: ReadonlyMap<string, ExpNumber>): string =>
+          [...army]
+            .map(([unitId, count]) => `${unitId}:${count.toString()}`)
+            .join(", ") || "(none)";
+        const formatTactics = (tactics: ReadonlyMap<string, string>): string =>
+          [...tactics]
+            .map(([unitId, tactic]) => `${unitId}:${tactic}`)
+            .join(", ") || "standard";
+        console.debug(
+          `[Battle Simulator] ${battleId}: ${phase}` +
+            (improved ? " — new best winning plan" : "") +
+            `; army {${formatArmy(intermediate.totalComposition)}}; ` +
+            `formations {${formatTactics(intermediate.formations)}}; ` +
+            `orders {${formatTactics(intermediate.orders)}}`,
+        );
+        post({
+          type: "progress",
+          phase: improved ? `Better winning plan found: ${phase}` : phase,
+          result: serializeResult(
+            intermediate.composition,
+            intermediate.totalComposition,
+            intermediate.military,
+            intermediate.totalCost,
+            intermediate.formations,
+            intermediate.orders,
+            intermediate,
+          ),
+        });
+      },
+      historicalSeeds,
     );
-    const result = refined ?? firstWin;
+    const result = refined;
     if (result) {
       post({
         type: "progress",
@@ -595,7 +564,12 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
           ownedArmy,
           availableFormations,
           result,
-          (intermediate, armyCompositionsTested, tacticalSetupsTested) =>
+          (intermediate, armyCompositionsTested, tacticalSetupsTested) => {
+            console.debug(
+              `[Battle Simulator] ${battleId}: proof tested ` +
+                `${armyCompositionsTested} armies and ` +
+                `${tacticalSetupsTested} formation/order setups`,
+            );
             post({
               type: "progress",
               phase:
@@ -610,7 +584,8 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
                 intermediate.orders,
                 intermediate,
               ),
-            }),
+            });
+          },
           tick,
         )
       : null;

@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-09T10:58:39.647Z",
+  "seeds": [
+    {
+      "battleId": "age1_boss_iron_collapse",
+      "source": "checkpoint:b8-prep.json",
+      "playerArmy": [
+        {"unitId":"slinger","count":"9.29e2","formation":"standard","order":"standard"},
+        {"unitId":"canoe","count":"6.47e2","formation":"standard","order":"standard"},
+        {"unitId":"archer_prehist","count":"8.52e2","formation":"standard","order":"standard"},
+        {"unitId":"trireme_bronze","count":"2.5e2","formation":"standard","order":"standard"},
+        {"unitId":"bowman_bronze","count":"6.22e2","formation":"standard","order":"standard"},
+        {"unitId":"catapult_ancient","count":"5.31e2","formation":"standard","order":"standard"},
+        {"unitId":"cavalry_iron","count":"4.38e2","formation":"standard","order":"standard"},
+        {"unitId":"war_galley_iron","count":"3.05e2","formation":"standard","order":"standard"},
+        {"unitId":"spearman_iron","count":"5.1e2","formation":"standard","order":"standard"},
+        {"unitId":"chariot_iron","count":"2.86e2","formation":"standard","order":"standard"},
+        {"unitId":"swordsman_iron","count":"9.88e2","formation":"standard","order":"standard"},
+        {"unitId":"quinquereme","count":"3.57e2","formation":"standard","order":"standard"},
+        {"unitId":"ballista","count":"4.43e2","formation":"standard","order":"standard"},
+        {"unitId":"elephant_iron","count":"3.5e2","formation":"standard","order":"standard"},
+        {"unitId":"berserker","count":"3.347e3","formation":"standard","order":"standard"}
+      ]
+    },
+    {
+      "battleId": "age2_1_marathon",
+      "source": "battle-log:battle-debug-age2_1_marathon-2026-11-09T10-25-34-465Z.json",
+      "playerArmy": [
+        {"unitId":"spearman_iron","count":"5.1e2","formation":"frontline","order":"standard"},
+        {"unitId":"swordsman_iron","count":"9.88e2","formation":"frontline","order":"standard"},
+        {"unitId":"chariot_iron","count":"2.86e2","formation":"rush","order":"standard"},
+        {"unitId":"war_galley_iron","count":"3.05e2","formation":"rush","order":"standard"},
+        {"unitId":"elephant_iron","count":"3.5e2","formation":"frontline","order":"standard"},
+        {"unitId":"ballista","count":"1.001e3","formation":"rush","order":"standard"},
+        {"unitId":"quinquereme","count":"7.58e2","formation":"rush","order":"standard"},
+        {"unitId":"berserker","count":"7.168e3","formation":"frontline","order":"standard"},
+        {"unitId":"legionary","count":"2.7151e4","formation":"frontline","order":"standard"},
+        {"unitId":"hoplite","count":"2.6254e4","formation":"frontline","order":"standard"},
+        {"unitId":"companion","count":"6.85e2","formation":"frontline","order":"standard"},
+        {"unitId":"archer_classical","count":"8.184e3","formation":"rush","order":"standard"}
+      ]
+    },
+    {
+      "battleId": "age2_1_marathon",
+      "source": "battle-log:battle-debug-age2_1_marathon-2026-11-09T10-21-43-385Z.json",
+      "playerArmy": [
+        {"unitId":"spearman_iron","count":"2.616e3","formation":"rush","order":"standard"},
+        {"unitId":"swordsman_iron","count":"2.404e3","formation":"rush","order":"standard"},
+        {"unitId":"chariot_iron","count":"1.361e3","formation":"rush","order":"standard"},
+        {"unitId":"war_galley_iron","count":"7.96e2","formation":"frontline","order":"standard"},
+        {"unitId":"elephant_iron","count":"1e3","formation":"rush","order":"standard"},
+        {"unitId":"ballista","count":"1.069e3","formation":"backline","order":"standard"},
+        {"unitId":"quinquereme","count":"6.52e2","formation":"frontline","order":"standard"},
+        {"unitId":"berserker","count":"6.076e3","formation":"rush","order":"standard"},
+        {"unitId":"legionary","count":"1.7954e4","formation":"rush","order":"standard"},
+        {"unitId":"hoplite","count":"1.925e4","formation":"rush","order":"standard"},
+        {"unitId":"companion","count":"1.4416e4","formation":"rush","order":"standard"},
+        {"unitId":"archer_classical","count":"9.327e3","formation":"standard","order":"standard"}
+      ]
+    },
+    {
+      "battleId": "age2_1_marathon",
+      "source": "checkpoint:age2-fork-post-b8.json",
+      "playerArmy": [
+        {"unitId":"war_galley_iron","count":"7.96e2","formation":"frontline","order":"standard"},
+        {"unitId":"spearman_iron","count":"2.616e3","formation":"rush","order":"standard"},
+        {"unitId":"chariot_iron","count":"1.361e3","formation":"rush","order":"standard"},
+        {"unitId":"swordsman_iron","count":"2.404e3","formation":"rush","order":"standard"},
+        {"unitId":"quinquereme","count":"6.52e2","formation":"frontline","order":"standard"},
+        {"unitId":"ballista","count":"1.069e3","formation":"backline","order":"standard"},
+        {"unitId":"elephant_iron","count":"1e3","formation":"rush","order":"standard"},
+        {"unitId":"berserker","count":"6.076e3","formation":"rush","order":"standard"},
+        {"unitId":"companion","count":"1.4416e4","formation":"rush","order":"standard"},
+        {"unitId":"hoplite","count":"1.925e4","formation":"rush","order":"standard"},
+        {"unitId":"legionary","count":"1.7954e4","formation":"rush","order":"standard"},
+        {"unitId":"archer_classical","count":"9.327e3","formation":"standard","order":"standard"}
+      ]
+    },
+    {
+      "battleId": "age2_2_cannae",
+      "source": "checkpoint:before b10.json",
+      "playerArmy": [
+        {"unitId":"war_galley_iron","count":"7.96e2","formation":"standard","order":"standard"},
+        {"unitId":"spearman_iron","count":"4.182e3","formation":"turtle","order":"standard"},
+        {"unitId":"chariot_iron","count":"1.361e3","formation":"frontline","order":"standard"},
+        {"unitId":"swordsman_iron","count":"3.837e3","formation":"turtle","order":"standard"},
+        {"unitId":"quinquereme","count":"6.52e2","formation":"rush","order":"standard"},
+        {"unitId":"ballista","count":"1.458e3","formation":"backline","order":"standard"},
+        {"unitId":"elephant_iron","count":"2.034e3","formation":"standard","order":"standard"},
+        {"unitId":"berserker","count":"1.0319e4","formation":"rush","order":"standard"},
+        {"unitId":"companion","count":"1.6121e4","formation":"rush","order":"standard"},
+        {"unitId":"hoplite","count":"3.2063e4","formation":"rush","order":"standard"},
+        {"unitId":"legionary","count":"3.2067e4","formation":"turtle","order":"standard"},
+        {"unitId":"archer_classical","count":"1.0224e4","formation":"rush","order":"standard"},
+        {"unitId":"assassin","count":"1.469e4","formation":"standard","order":"standard"}
+      ]
+    },
+    {
+      "battleId": "age2_2_cannae",
+      "source": "checkpoint:before b10-2.json",
+      "playerArmy": [
+        {"unitId":"war_galley_iron","count":"1.287e3","formation":"rush","order":"standard"},
+        {"unitId":"spearman_iron","count":"4.461e3","formation":"frontline","order":"standard"},
+        {"unitId":"chariot_iron","count":"2.335e3","formation":"frontline","order":"standard"},
+        {"unitId":"swordsman_iron","count":"4.399e3","formation":"frontline","order":"standard"},
+        {"unitId":"quinquereme","count":"1.163e3","formation":"rush","order":"standard"},
+        {"unitId":"ballista","count":"1.563e3","formation":"backline","order":"standard"},
+        {"unitId":"elephant_iron","count":"1.734e3","formation":"rush","order":"standard"},
+        {"unitId":"berserker","count":"1.0951e4","formation":"frontline","order":"standard"},
+        {"unitId":"archer_classical","count":"1.3775e4","formation":"backline","order":"standard"},
+        {"unitId":"hoplite","count":"4.7927e4","formation":"rush","order":"standard"},
+        {"unitId":"legionary","count":"4.3991e4","formation":"rush","order":"standard"},
+        {"unitId":"companion","count":"2.0847e4","formation":"rush","order":"standard"},
+        {"unitId":"assassin","count":"1.2328e4","formation":"rush","order":"standard"}
+      ]
+    },
+    {
+      "battleId": "age2_2_cannae",
+      "source": "checkpoint:b9-240.json",
+      "playerArmy": [
+        {"unitId":"war_galley_iron","count":"2.452e3","formation":"standard","order":"standard"},
+        {"unitId":"spearman_iron","count":"8.214e3","formation":"standard","order":"standard"},
+        {"unitId":"chariot_iron","count":"4.426e3","formation":"standard","order":"standard"},
+        {"unitId":"swordsman_iron","count":"8.021e3","formation":"standard","order":"standard"},
+        {"unitId":"quinquereme","count":"6.52e2","formation":"frontline","order":"standard"},
+        {"unitId":"ballista","count":"3.317e3","formation":"backline","order":"standard"},
+        {"unitId":"elephant_iron","count":"3.374e3","formation":"rush","order":"standard"},
+        {"unitId":"berserker","count":"2.2477e4","formation":"rush","order":"standard"},
+        {"unitId":"companion","count":"3.4452e4","formation":"standard","order":"standard"},
+        {"unitId":"hoplite","count":"7.7674e4","formation":"rush","order":"standard"},
+        {"unitId":"legionary","count":"7.929e4","formation":"rush","order":"standard"},
+        {"unitId":"archer_classical","count":"2.3384e4","formation":"standard","order":"standard"}
+      ]
+    },
+    {
+      "battleId": "age3_1_tours",
+      "source": "checkpoint:a3-b12-bug.json",
+      "playerArmy": [
+        {"unitId":"hoplite","count":"8.60927e5","formation":"turtle","order":"standard"},
+        {"unitId":"companion","count":"3.45293e5","formation":"frontline","order":"standard"},
+        {"unitId":"assassin","count":"3.84651e5","formation":"turtle","order":"standard"},
+        {"unitId":"trader_classical","count":"5.3513e4","formation":"frontline","order":"standard"},
+        {"unitId":"fire_ship","count":"6.4958e4","formation":"standard","order":"standard"},
+        {"unitId":"onager","count":"1.32901e5","formation":"rush","order":"standard"},
+        {"unitId":"knight","count":"9.20814e5","formation":"frontline","order":"standard"},
+        {"unitId":"man_at_arms","count":"4.23712e5","formation":"frontline","order":"standard"},
+        {"unitId":"longbow","count":"1.391862e6","formation":"rush","order":"same_tag"}
+      ]
+    },
+    {
+      "battleId": "age3_1_tours",
+      "source": "checkpoint:a3-b11-8h30.json",
+      "playerArmy": [
+        {"unitId":"hoplite","count":"8.60927e5","formation":"turtle","order":"standard"},
+        {"unitId":"companion","count":"3.45293e5","formation":"rush","order":"standard"},
+        {"unitId":"assassin","count":"3.84651e5","formation":"rush","order":"standard"},
+        {"unitId":"trader_classical","count":"5.3513e4","formation":"rush","order":"standard"},
+        {"unitId":"fire_ship","count":"6.4958e4","formation":"standard","order":"standard"},
+        {"unitId":"onager","count":"1.32901e5","formation":"turtle","order":"standard"},
+        {"unitId":"knight","count":"9.20814e5","formation":"rush","order":"standard"},
+        {"unitId":"man_at_arms","count":"4.23712e5","formation":"rush","order":"standard"},
+        {"unitId":"longbow","count":"1.391862e6","formation":"backline","order":"same_tag"}
+      ]
+    },
+    {
+      "battleId": "age3_2_hastings",
+      "source": "checkpoint:a3-b12-2j.json",
+      "playerArmy": [
+        {"unitId":"hoplite","count":"1.218909e6","formation":"frontline","order":"standard"},
+        {"unitId":"companion","count":"5.36246e5","formation":"frontline","order":"standard"},
+        {"unitId":"assassin","count":"6.35445e5","formation":"frontline","order":"standard"},
+        {"unitId":"fire_ship","count":"1.0028e5","formation":"rush","order":"standard"},
+        {"unitId":"onager","count":"1.97893e5","formation":"rush","order":"focus_strong"},
+        {"unitId":"knight","count":"9.52704e5","formation":"rush","order":"standard"},
+        {"unitId":"man_at_arms","count":"5.4821e5","formation":"frontline","order":"standard"},
+        {"unitId":"longbow","count":"1.493596e6","formation":"skirmish","order":"focus_strong"},
+        {"unitId":"crossbow","count":"4.34603e5","formation":"rush","order":"standard"},
+        {"unitId":"longship","count":"1.49834e5","formation":"skirmish","order":"standard"},
+        {"unitId":"cog","count":"2.39149e5","formation":"rush","order":"standard"},
+        {"unitId":"trebuchet","count":"1.46085e5","formation":"rush","order":"standard"},
+        {"unitId":"caravel","count":"9.8451e4","formation":"skirmish","order":"standard"}
+      ]
+    }
+  ]
+}

@@ -13,6 +13,14 @@ npm run dev
 
 The repository also includes VS Code Run and Debug configuration under `.vscode/`.
 
+## Battle simulator seeds
+
+The dev battle simulator reads starting armies from
+[`src/game/data/battleSeeds.json`](src/game/data/battleSeeds.json). After a full run,
+save the relevant checkpoint(s) and run `npm run gen:battle-seeds` to rebuild this
+file from matching `saves/` checkpoints and winning battle logs in
+`saves/auto/battle/`. Review the generated changes before committing them.
+
 ## Assets & credits
 
 Unit icons are from [game-icons.net](https://game-icons.net/) (CC BY 3.0), vendored

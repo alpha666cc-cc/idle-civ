@@ -10,11 +10,20 @@ import { defineConfig, type Plugin } from "vite";
 // `saves/auto/` (gitignored, like every other save). It exists only under
 // `vite dev`; a production build has no server and falls back to the save's dev
 // section plus the manual download in Dev Tools.
-const devLogDirectory = path.resolve(process.cwd(), "saves", "auto");
+const savesDirectory = path.resolve(process.cwd(), "saves");
+const devLogDirectory = path.join(savesDirectory, "auto");
+const battleSeedFile = path.resolve(
+  process.cwd(),
+  "src",
+  "game",
+  "data",
+  "battleSeeds.json",
+);
 const devLogEndpoint = "/__dev-log";
 const battleDebugDirectory = path.join(devLogDirectory, "battle");
 const battleDebugEndpoint = "/__battle-debug";
 const battleDebugFilePrefix = "/__battle-debug/";
+const battleSeedsEndpoint = "/__battle-debug-seeds";
 const maxLogBytes = 8 * 1024 * 1024;
 
 /** Only ever write a plain `.json` file name, inside `saves/auto`. */
@@ -87,6 +96,69 @@ const battleDebugWriter = (): Plugin => ({
   name: "idle-civ-battle-debug",
   apply: "serve",
   configureServer(server) {
+    server.middlewares.use((request, response, next) => {
+      const requestUrl = request.url ?? "/";
+      const pathname = requestUrl.split("?")[0];
+      if (pathname !== battleSeedsEndpoint) {
+        next();
+        return;
+      }
+
+      const reply = (status: number, body: string): void => {
+        response.statusCode = status;
+        response.setHeader("Content-Type", "application/json; charset=utf-8");
+        response.end(body);
+      };
+      if (request.method !== "GET") {
+        reply(405, JSON.stringify({ error: "GET only" }));
+        return;
+      }
+
+      const battleId = new URL(requestUrl, "http://localhost").searchParams.get(
+        "battleId",
+      );
+      if (!battleId || !/^[A-Za-z0-9_-]+$/.test(battleId)) {
+        reply(400, JSON.stringify({ error: "invalid battleId" }));
+        return;
+      }
+
+      void (async () => {
+        const parsed: unknown = JSON.parse(
+          await readFile(battleSeedFile, "utf8"),
+        );
+        if (
+          !parsed ||
+          typeof parsed !== "object" ||
+          !("schemaVersion" in parsed) ||
+          parsed.schemaVersion !== 1 ||
+          !("seeds" in parsed) ||
+          !Array.isArray(parsed.seeds)
+        ) {
+          throw new Error("battle seed file has an unsupported schema");
+        }
+        const seeds = parsed.seeds.flatMap((entry) => {
+          if (
+            !entry ||
+            typeof entry !== "object" ||
+            !("battleId" in entry) ||
+            entry.battleId !== battleId ||
+            !("playerArmy" in entry) ||
+            !Array.isArray(entry.playerArmy)
+          ) {
+            return [];
+          }
+          return [{ playerArmy: entry.playerArmy }];
+        });
+        reply(
+          200,
+          JSON.stringify({ seeds, scanned: parsed.seeds.length }),
+        );
+      })().catch((error: unknown) => {
+        console.error("[battle seeds] could not read static seed data", error);
+        reply(500, JSON.stringify({ error: "could not read battle seed file" }));
+      });
+    });
+
     server.middlewares.use(battleDebugEndpoint, (request, response) => {
       const reply = (status: number, body: string): void => {
         response.statusCode = status;

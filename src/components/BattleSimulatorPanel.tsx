@@ -117,8 +117,9 @@ export default function BattleSimulatorPanel({
       <div className="dev-tools-heading">
         <h3>Battle simulator</h3>
         <p className="dev-tools-copy">
-          Shows the first winning setup as soon as it is found, then exhaustively
-          checks lower-military-cost armies and available tactics to prove the
+          Shows the first winning setup as soon as it is found, then updates it
+          whenever a better army, formation, or order is found. It continues
+          checking lower-military-cost armies and available tactics to prove the
           cheapest winning plan for the selected units. Unit stats use current
           and required research bonuses; recruit costs use your current
           discounts. The enemy uses prior-age and unlock research plus its
