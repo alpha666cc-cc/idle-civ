@@ -9,6 +9,7 @@ import {
   type BattleSimulation,
   type StackSnapshot,
 } from "../game/battle";
+import { buildBattleDebugLog } from "../game/battleDebugLog";
 import { findFormationDefinition, type FormationId } from "../game/formations";
 import type { ExpNumber } from "../game/expNumber";
 import {
@@ -176,6 +177,7 @@ export default function ArmyPanel({
     if (!battle) return;
     if (sim !== null && !battleDone) return;
     if (sim !== null && sim.outcome === "player") return;
+    const playerArmy = gameState.getArmyStacks();
     const result = gameState.simulateEncounter(battle.key);
     if (!result) return;
     const debugFileName = `battle-debug-${battle.key}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
@@ -185,7 +187,7 @@ export default function ArmyPanel({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: debugFileName,
-        text: JSON.stringify(result, null, 2),
+        text: JSON.stringify(buildBattleDebugLog(result, playerArmy), null, 2),
       }),
     })
       .then((response) => {
