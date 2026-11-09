@@ -747,7 +747,7 @@ describe("simulation event snapshots", () => {
 describe("age-1 planned funding costs", () => {
   it("combines whole-army and prerequisite-research costs by resource", () => {
     const plan = {
-      composition: new Map<string, number>(),
+      composition: new Map<string, ExpNumber>(),
       totalComposition: new Map<string, ExpNumber>(),
       military: ExpNumber.ZERO,
       totalCost: [
@@ -957,7 +957,7 @@ describe("required progression strategy", () => {
       enteredAges: ["age0"],
     });
     const plan = {
-      composition: new Map<string, number>(),
+      composition: new Map<string, ExpNumber>(),
       totalComposition: new Map<string, ExpNumber>(),
       military: ExpNumber.ZERO,
       totalCost: [],
@@ -1745,7 +1745,7 @@ describe("required progression strategy", () => {
     // rather than on the shortfall. Which of those should win is a policy call
     // that has not been settled; the plan-exhaustion contract below is
     // independent of it and is what this gate protects.
-    const recommended = plan?.composition.get("warrior") ?? 0;
+    const recommended = plan?.composition.get("warrior")?.toNumber() ?? 0;
     const afterPurchase = state.buyUnit("warrior", recommended);
     const remainingPlan = getSimulatorBattlePlan(afterPurchase);
     expect(remainingPlan?.totalComposition).toBe(plan?.totalComposition);

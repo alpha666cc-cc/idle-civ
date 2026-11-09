@@ -101,7 +101,7 @@ export type WorkerInput = {
 };
 
 export type SerializedSimulatorPlan = {
-  composition: [string, number][];
+  composition: [string, SerializedExpNumber][];
   totalComposition: [string, SerializedExpNumber][];
   military: SerializedExpNumber;
   totalCost: { resource: string; base: SerializedExpNumber }[];
@@ -162,7 +162,7 @@ const serializeResult = (
     "alternatives" | "searchStats"
   >,
 ): SerializedSimulatorResult => ({
-  composition: [...composition.entries()],
+  composition: [...composition.entries()].map(([id, n]) => [id, serExp(n)]),
   totalComposition: [...totalComposition.entries()].map(([id, n]) => [id, serExp(n)]),
   military: serExp(military),
   totalCost: totalCost.map(({ resource, base }) => ({ resource, base: serExp(base) })),
@@ -176,7 +176,10 @@ const serializeResult = (
 });
 
 const serializePlan = (plan: SimulatorPlan): SerializedSimulatorPlan => ({
-  composition: [...plan.composition.entries()],
+  composition: [...plan.composition.entries()].map(([id, n]) => [
+    id,
+    serExp(n),
+  ]),
   totalComposition: [...plan.totalComposition.entries()].map(([id, n]) => [
     id,
     serExp(n),

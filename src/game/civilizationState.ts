@@ -2285,7 +2285,10 @@ export class CivilizationState {
   }
 
   /** Cost of the next `count` units, growing with the number already owned. */
-  getUnitCost(unitId: string, count: number = 1): BuildingCost[] {
+  getUnitCost(
+    unitId: string,
+    count: number | ExpNumber = 1,
+  ): BuildingCost[] {
     return this.costSeries(
       this.getUnitCostParameters(unitId),
       this.getUnitCount(unitId),
@@ -2300,7 +2303,7 @@ export class CivilizationState {
    */
   costSeriesFrom(
     parameters: readonly CostParameters[],
-    count: number,
+    count: number | ExpNumber,
   ): BuildingCost[] {
     return this.costSeries(parameters, ExpNumber.ZERO, count);
   }
@@ -2408,7 +2411,7 @@ export class CivilizationState {
   private costSeries(
     parameters: readonly CostParameters[],
     buildingsAlreadyBuilt: ExpNumber,
-    count: number,
+    count: number | ExpNumber,
   ): BuildingCost[] {
     return calculateCostSeries(parameters, buildingsAlreadyBuilt, count);
   }

@@ -18,9 +18,15 @@ const linearSlope = (unitBase: ExpNumber, unitFactor: ExpNumber): ExpNumber =>
 const exponentCurve = (
   unitBase: ExpNumber,
   unitFactor: ExpNumber,
-  n: number,
+  n: number | ExpNumber,
   exponent: number,
-): ExpNumber => unitBase.mul(unitFactor.pow(Math.pow(n, exponent) - 1));
+): ExpNumber => {
+  const factorPower =
+    typeof n === "number"
+      ? ExpNumber.fromNumber(Math.pow(n, exponent) - 1)
+      : n.pow(exponent).sub(ExpNumber.ONE);
+  return unitBase.mul(unitFactor.pow(factorPower));
+};
 
 const crossoverToExponentCurve = (
   unitBase: ExpNumber,
@@ -67,49 +73,66 @@ const crossoverToExponentCurve = (
 export const calculateCostSeries = (
   parameters: readonly CostParameters[],
   alreadyBuilt: ExpNumber,
-  count: number,
+  count: number | ExpNumber,
 ): BuildingCost[] => {
-  const owned = alreadyBuilt.toNumber();
+  const owned = alreadyBuilt;
+  const requested = ExpNumber.max(
+    ExpNumber.ZERO,
+    count instanceof ExpNumber ? count : ExpNumber.fromNumber(count),
+  );
+  const one = ExpNumber.ONE;
   return parameters.map(({ cost, unitBase, unitFactor, reductions }) => {
     const exponent = cost.exponent;
-    if (count <= 0) return { ...cost, base: ExpNumber.ZERO };
+    if (!requested.gt(ExpNumber.ZERO)) {
+      return { ...cost, base: ExpNumber.ZERO };
+    }
     const crossover = crossoverToExponentCurve(
       unitBase,
       unitFactor,
       exponent,
     );
+    const crossoverNumber = ExpNumber.fromNumber(crossover);
     const slope = linearSlope(unitBase, unitFactor);
     const linearSum = (n: number): ExpNumber =>
       unitBase
         .mul(ExpNumber.fromNumber(n))
         .add(slope.mul(ExpNumber.fromNumber((n * (n - 1)) / 2)));
-    const cumulative = (n: number): ExpNumber =>
-      n <= crossover
-        ? linearSum(n)
+    const cumulative = (n: ExpNumber): ExpNumber =>
+      n.lte(crossoverNumber)
+        ? linearSum(n.toNumber())
         : linearSum(crossover).add(
             exponentCurve(unitBase, unitFactor, n, exponent).sub(
-              exponentCurve(unitBase, unitFactor, crossover, exponent),
+              exponentCurve(unitBase, unitFactor, crossoverNumber, exponent),
             ),
           );
-    const unitPrice = (n: number): ExpNumber =>
+    const unitPrice = (n: ExpNumber): ExpNumber =>
       cumulative(n)
-        .sub(cumulative(n - 1))
+        .sub(cumulative(n.sub(one)))
         .mul(reductions.percent);
     let clamped = 0;
     if (reductions.flat.gt(ExpNumber.ZERO)) {
-      const window = Math.min(count, flatClampWindow);
-      while (clamped < window) {
-        if (unitPrice(owned + clamped + 1).gt(reductions.flat)) break;
+      while (
+        clamped < flatClampWindow &&
+        ExpNumber.fromNumber(clamped).lt(requested)
+      ) {
+        if (
+          unitPrice(owned.add(ExpNumber.fromNumber(clamped + 1))).gt(
+            reductions.flat,
+          )
+        ) {
+          break;
+        }
         clamped += 1;
       }
     }
-    const remaining = count - clamped;
-    const gross = cumulative(owned + count)
-      .sub(cumulative(owned + clamped))
+    const clampedCount = ExpNumber.fromNumber(clamped);
+    const remaining = requested.sub(clampedCount);
+    const gross = cumulative(owned.add(requested))
+      .sub(cumulative(owned.add(clampedCount)))
       .mul(reductions.percent);
     const payable = ExpNumber.max(
       ExpNumber.ZERO,
-      gross.sub(reductions.flat.mul(ExpNumber.fromNumber(remaining))),
+      gross.sub(reductions.flat.mul(remaining)),
     );
     const floored = payable.floor();
     const snapped = payable

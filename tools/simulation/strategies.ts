@@ -142,12 +142,12 @@ const ageTwoProductionTargets: readonly BuildingKey[] = [
 const ageTwoProductionTargetCount = 1800;
 const ageTwoTownHallTarget: { building: BuildingKey; targetCount: number } = {
   building: "townHall",
-  targetCount: 100,
+  targetCount: 1000,
 };
 const ageTwoRequiredInfrastructureTargets: readonly {
   building: BuildingKey;
   targetCount: number;
-}[] = [{ building: "university", targetCount: 600 }];
+}[] = [{ building: "university", targetCount: 450 }];
 const ageTwoOptionalInfrastructureTargets: readonly {
   building: BuildingKey;
   targetCount: number;
@@ -1164,8 +1164,8 @@ const getFirstSimulatorUnit = (
   plan: SimulatorResult,
 ): { readonly unitId: string; readonly count: number } | null => {
   for (const [unitId, count] of plan.composition) {
-    if (count > 0 && state.isUnitAvailable(unitId)) {
-      return { unitId, count };
+    if (count.gt(ExpNumber.ZERO) && state.isUnitAvailable(unitId)) {
+      return { unitId, count: count.toNumber() };
     }
   }
   return null;
@@ -1193,13 +1193,13 @@ const getSimulatorUnitActions = (
   if (!plan) return [];
   const actions: SimulationAction[] = [];
   for (const [unitId, count] of plan.composition) {
-    if (count <= 0 || !state.isUnitAvailable(unitId)) continue;
+    if (!count.gt(ExpNumber.ZERO) || !state.isUnitAvailable(unitId)) continue;
     const maxAffordable = state.getMaxAffordableUnits(unitId);
     if (maxAffordable <= 0) continue;
     actions.push({
       type: "buyUnit",
       unitId,
-      count: Math.min(count, maxAffordable),
+      count: ExpNumber.min(count, ExpNumber.fromNumber(maxAffordable)).toNumber(),
     });
   }
   return actions;
@@ -1209,7 +1209,7 @@ const getRemainingSimulatorPlan = (
   state: CivilizationState,
   plan: SimulatorResult,
 ): SimulatorResult => {
-  const composition = new Map<string, number>();
+  const composition = new Map<string, ExpNumber>();
   let unchanged = true;
   for (const [unitId, targetCount] of plan.totalComposition) {
     const missing = targetCount
@@ -1217,7 +1217,7 @@ const getRemainingSimulatorPlan = (
       .ceil()
       .toNumber();
     if (Number.isFinite(missing) && missing > 0) {
-      composition.set(unitId, missing);
+      composition.set(unitId, ExpNumber.fromNumber(missing));
     }
     if (missing !== targetCount.toNumber()) unchanged = false;
   }
@@ -1565,48 +1565,6 @@ const gatherForPurchase = (
   })[0].resource;
 };
 
-const getCheapestHousingAction = (
-  state: CivilizationState,
-): SimulationAction | null => {
-  if (
-    !state.isBuildingAvailable("people") ||
-    !state.population.gt(ExpNumber.ZERO) ||
-    !state.population.gte(state.maximumPopulation.floor())
-  ) {
-    return null;
-  }
-  if (state.canBuild("house")) {
-    return { type: "build", building: "house", count: 1 };
-  }
-  if (state.canBuild("townHall")) {
-    return { type: "build", building: "townHall", count: 1 };
-  }
-
-  const nextHousing =
-    state.canBuild("house") || !state.canBuild("townHall")
-      ? "house"
-      : "townHall";
-  const costs = state.getBuildingCost(
-    nextHousing,
-    state.getBuildingCount(nextHousing),
-    1,
-  );
-  const missing = costs
-    .filter(
-      ({ resource, base }) =>
-        state.resources[resource].lt(base) &&
-        isResourceGatherable(state, resource as ResourceKey),
-    )
-    .sort((left, right) => {
-      const leftDeficit = left.base.sub(state.resources[left.resource]);
-      const rightDeficit = right.base.sub(state.resources[right.resource]);
-      if (leftDeficit.gt(rightDeficit)) return -1;
-      if (rightDeficit.gt(leftDeficit)) return 1;
-      return left.resource.localeCompare(right.resource);
-    });
-  return missing[0] ? { type: "gather", resource: missing[0].resource } : null;
-};
-
 /**
  * Base strategy class with common utilities.
  */
@@ -1706,7 +1664,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     return 4;
   }
 
-  protected getBuildingPriority(): BuildingPriority {
+  protected getBuildingPriority(_state: CivilizationState): BuildingPriority {
     return [
       { building: "people", weight: 10 },
       { building: "house", weight: 8 },
@@ -1932,7 +1890,7 @@ abstract class BaseStrategy implements SimulationStrategy {
       }));
     }
 
-    for (const { building, targetCount } of this.getBuildingPriority()) {
+    for (const { building, targetCount } of this.getBuildingPriority(state)) {
       if (
         targetCount !== undefined &&
         state.getBuildingCount(building) >= targetCount
@@ -2162,8 +2120,13 @@ abstract class BaseStrategy implements SimulationStrategy {
     priority: BuildingPriority,
   ): BuildingKey | null {
     for (const { building, targetCount } of priority) {
-      // Check if at target count
+      // Check if at target count (if specified)
       if (targetCount && (state.builtBuildings[building] || 0) >= targetCount) {
+        continue;
+      }
+
+      // Check if at capacity (hard limit)
+      if (state.isBuildingAtCapacity(building)) {
         continue;
       }
 
@@ -2184,9 +2147,16 @@ abstract class BaseStrategy implements SimulationStrategy {
     priority: BuildingPriority,
   ): string | null {
     for (const { building, targetCount } of priority) {
+      // Check if at target count (if specified)
       if (targetCount && (state.builtBuildings[building] || 0) >= targetCount) {
         continue;
       }
+
+      // Check if at capacity (hard limit)
+      if (state.isBuildingAtCapacity(building)) {
+        continue;
+      }
+
       if (state.getBuildFailureReason(building) === "resources") {
         const costs = state.getBuildingCost(
           building,
@@ -2274,7 +2244,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     if (workerAction) return workerAction;
 
     // Priority 6: Build buildings (try to build multiple if affordable)
-    const building = this.findBestBuilding(state, this.getBuildingPriority());
+    const building = this.findBestBuilding(state, this.getBuildingPriority(state));
     if (building) {
       // Check how many we can afford
       const maxAffordable = state.getMaxAffordableBuildings(building);
@@ -2320,7 +2290,7 @@ abstract class BaseStrategy implements SimulationStrategy {
     // If we want a building but can't afford it, actively gather its missing resources.
     const priorityGather = this.findPriorityBuildingToGatherFor(
       state,
-      this.getBuildingPriority(),
+      this.getBuildingPriority(state),
     );
     if (priorityGather) {
       return this.focusWorkersForGather(
@@ -2484,11 +2454,6 @@ export class CheapestStrategy extends BaseStrategy {
       if (unitActions.length > 0) return unitActions[0];
     }
 
-    const housingAction = getCheapestHousingAction(state);
-    if (housingAction) {
-      return this.focusWorkersForGather(state, housingAction, context);
-    }
-
     const candidate = getCheapestPurchaseCandidate(state);
     if (candidate && isPurchaseAffordable(state, candidate)) {
       return withMaxAffordableCount(state, candidate);
@@ -2570,7 +2535,7 @@ export class BalancedStrategy extends BaseStrategy {
     };
   }
 
-  protected getBuildingPriority(): BuildingPriority {
+  protected getBuildingPriority(_state: CivilizationState): BuildingPriority {
     return [
       { building: "people", weight: 10 },
       { building: "house", weight: 9 },
@@ -2648,7 +2613,7 @@ class PlayerOpeningWoodStrategy extends PlayerOpeningStrategy {
     };
   }
 
-  protected getBuildingPriority(): BuildingPriority {
+  protected getBuildingPriority(_state: CivilizationState): BuildingPriority {
     return [
       { building: "people", weight: 10 },
       { building: "house", weight: 9 },
@@ -2700,7 +2665,7 @@ export class ProductionStrategy extends BaseStrategy {
     };
   }
 
-  protected getBuildingPriority(): BuildingPriority {
+  protected getBuildingPriority(_state: CivilizationState): BuildingPriority {
     return [
       { building: "people", weight: 10 },
       { building: "house", weight: 9 },
@@ -2750,7 +2715,7 @@ export class MilitaryStrategy extends BaseStrategy {
     };
   }
 
-  protected getBuildingPriority(): BuildingPriority {
+  protected getBuildingPriority(_state: CivilizationState): BuildingPriority {
     return [
       { building: "people", weight: 10 },
       { building: "house", weight: 9 },
@@ -2813,7 +2778,7 @@ export class FastAgeStrategy extends BaseStrategy {
     };
   }
 
-  protected getBuildingPriority(): BuildingPriority {
+  protected getBuildingPriority(_state: CivilizationState): BuildingPriority {
     return [
       { building: "people", weight: 10 },
       { building: "house", weight: 10 },
@@ -2864,7 +2829,7 @@ export class EconomyStrategy extends BaseStrategy {
     };
   }
 
-  protected getBuildingPriority(): BuildingPriority {
+  protected getBuildingPriority(_state: CivilizationState): BuildingPriority {
     return [
       { building: "people", weight: 10 },
       { building: "house", weight: 9 },
@@ -3076,7 +3041,7 @@ export class PlayerStrategy extends ResearchStrategy {
     }
     if (state?.getCurrentAge()?.key === "age2") {
       const researchAffordable = state.hasResourcesForResearch();
-      const scienceShare = researchAffordable ? 0.05 : 0.5;
+      const scienceShare = researchAffordable ? 0.05 : 0.2;
       const rest = 1 - scienceShare;
       return {
         food: rest * 0.4,
@@ -3186,7 +3151,28 @@ export class PlayerStrategy extends ResearchStrategy {
       : action;
   }
 
-  protected getBuildingPriority(): BuildingPriority {
+  protected getBuildingPriority(_state: CivilizationState): BuildingPriority {
+    const currentAge = _state.getCurrentAge();
+    const inAge2 = currentAge?.key === "age2";
+
+    // In Age 2, use unlimited expansion (no targetCount)
+    // Town hall has higher priority because it expands capacity for other buildings
+    if (inAge2) {
+      return [
+        { building: "people", weight: 10 },
+        { building: "townHall", weight: 9 },
+        { building: "house", weight: 8 },
+        { building: "farm", weight: 7 },
+        { building: "lumberYard", weight: 6 },
+        { building: "quarry", weight: 5 },
+        { building: "goldMine", weight: 4 },
+        { building: "university", weight: 4 },
+        { building: "barracks", weight: 3 },
+        { building: "smithy", weight: 3 },
+      ];
+    }
+
+    // In Age 0-1, use static targetCount for progression
     return [
       { building: "people", weight: 10 },
       { building: "house", weight: 9, targetCount: 100 },
@@ -3206,10 +3192,13 @@ export class PlayerStrategy extends ResearchStrategy {
     context: SimulationContext,
   ): SimulationAction | null {
     const targetPopulation = getAgeRouteTargetPopulation(state);
+    // In Age 2, ignore the population target to allow unlimited expansion
+    const inAge2 = state.getCurrentAge()?.key === "age2";
     if (
-      targetPopulation <= 0 ||
+      !inAge2 &&
+      (targetPopulation <= 0 ||
       state.population.gte(ExpNumber.fromNumber(targetPopulation)) ||
-      state.population.lt(state.maximumPopulation.floor())
+      state.population.lt(state.maximumPopulation.floor()))
     ) {
       return null;
     }
@@ -3347,6 +3336,20 @@ export class PlayerStrategy extends ResearchStrategy {
       building,
       targetCount,
     } of ageTwoRequiredInfrastructureTargets) {
+      // If building is at capacity, prioritize town hall expansion to increase capacity
+      if (state.isBuildingAtCapacity(building)) {
+        const townHallAction = this.getBuildingTargetAction(
+          state,
+          ageTwoTownHallTarget.building,
+          ageTwoTownHallTarget.targetCount,
+          context,
+        );
+        if (townHallAction) {
+          if (townHallAction.type === "build") return townHallAction;
+          deferredEconomyAction ??= townHallAction;
+        }
+      }
+
       const infrastructureAction = this.getBuildingTargetAction(
         state,
         building,
@@ -3371,6 +3374,20 @@ export class PlayerStrategy extends ResearchStrategy {
       }
 
       if (state.getBuildingCount(building) < ageTwoProductionTargetCount) {
+        // If building is at capacity, prioritize town hall expansion to increase capacity
+        if (state.isBuildingAtCapacity(building)) {
+          const townHallAction = this.getBuildingTargetAction(
+            state,
+            ageTwoTownHallTarget.building,
+            ageTwoTownHallTarget.targetCount,
+            context,
+          );
+          if (townHallAction) {
+            if (townHallAction.type === "build") return townHallAction;
+            deferredEconomyAction ??= townHallAction;
+          }
+        }
+
         const buildingAction = this.getBuildingTargetAction(
           state,
           building,
@@ -3409,6 +3426,97 @@ export class PlayerStrategy extends ResearchStrategy {
         context,
       )
     );
+  }
+
+  /**
+   * Check if an enhancer upgrade should be bought based on affordability.
+   * Returns true if the upgrade can be afforded within 10 minutes (600 seconds)
+   * of current production rates.
+   */
+  private shouldBuyEnhancerUpgrade(
+    state: CivilizationState,
+    upgradeKey: string,
+  ): boolean {
+    const upgrade = upgradeDefinitions.find(({ key }) => key === upgradeKey);
+    if (!upgrade) return false;
+
+    // Skip if already bought or not unlocked
+    if (state.isUpgradeBought(upgradeKey) || !state.isUpgradeUnlocked(upgradeKey)) {
+      return false;
+    }
+
+    const costs = state.getUpgradeCost(upgradeKey);
+    const TEN_MINUTES_SECONDS = 600;
+
+    for (const { resource, base } of costs) {
+      // Calculate production rate for this resource
+      let productionRate = ExpNumber.ZERO;
+      if (producerResourceKeys.includes(resource as ProductionResourceKey)) {
+        productionRate = state.computeResourceRate(
+          resource as ProductionResourceKey,
+        );
+      }
+
+      // If no production, can't afford
+      if (productionRate.lte(ExpNumber.ZERO)) {
+        return false;
+      }
+
+      // Calculate time to afford this resource
+      const currentAmount = state.resources[resource];
+      const needed = base.sub(currentAmount);
+      if (needed.gt(ExpNumber.ZERO)) {
+        const timeToAfford = needed.div(productionRate).toNumber();
+        if (timeToAfford > TEN_MINUTES_SECONDS) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if a building should be bought based on cost vs production.
+   * Returns true if the building can be afforded within 1 second of production.
+   */
+  private shouldBuyBuildingInstantly(
+    state: CivilizationState,
+    buildingKey: BuildingKey,
+  ): boolean {
+    if (!state.isBuildingAvailable(buildingKey)) return false;
+    if (state.isBuildingAtCapacity(buildingKey)) return false;
+
+    const currentCount = state.getBuildingCount(buildingKey);
+    const costs = state.getBuildingCost(buildingKey, currentCount, 1);
+    const ONE_SECOND = 1;
+
+    for (const { resource, base } of costs) {
+      // Calculate production rate for this resource
+      let productionRate = ExpNumber.ZERO;
+      if (producerResourceKeys.includes(resource as ProductionResourceKey)) {
+        productionRate = state.computeResourceRate(
+          resource as ProductionResourceKey,
+        );
+      }
+
+      // If no production, can't afford instantly
+      if (productionRate.lte(ExpNumber.ZERO)) {
+        return false;
+      }
+
+      // Calculate time to afford this resource
+      const currentAmount = state.resources[resource];
+      const needed = base.sub(currentAmount);
+      if (needed.gt(ExpNumber.ZERO)) {
+        const timeToAfford = needed.div(productionRate).toNumber();
+        if (timeToAfford > ONE_SECOND) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   private getBattleTwoInfrastructureAction(
@@ -3560,11 +3668,40 @@ export class PlayerStrategy extends ResearchStrategy {
       });
       if (workerAction) return workerAction;
 
+      // PRIORITY: Always expand housing in Age 2
+      const housingAction = this.getHousingAction(state, context);
+      if (housingAction) return housingAction;
+
+      // Always expand population when under capacity
+      if (state.population.lt(state.maximumPopulation.floor())) {
+        if (state.canBuild("people")) {
+          const affordable = state.getMaxAffordableBuildings("people");
+          if (affordable > 0) {
+            return { type: "build", building: "people", count: affordable };
+          }
+        }
+      }
+
       // After battle 8, build economy before research if university count < 600.
       const battle8Won = state.defeatedEncounters.includes("age2_1_marathon");
       if (battle8Won) {
         const uniCount = state.getBuildingCount("university");
         if (uniCount < 600) {
+          // Expand university capacity first if needed
+          const uniCapacity = state.getBuildingMax("university");
+          if (uniCount >= uniCapacity.floor().toNumber()) {
+            // At capacity - build town halls to expand
+            if (state.canBuild("townHall")) {
+              const affordable = state.getMaxAffordableBuildings("townHall");
+              if (affordable > 0) {
+                return {
+                  type: "build",
+                  building: "townHall",
+                  count: Math.min(affordable, 100),
+                };
+              }
+            }
+          }
           const ageTwoProductionAction = this.getAgeTwoProductionAction(
             state,
             context,
@@ -3589,29 +3726,77 @@ export class PlayerStrategy extends ResearchStrategy {
         }
       }
 
-      // Buy affordable enhancer upgrades first (boosts production).
+      // Buy buildings instantly if they cost less than 1 second of production.
+      // Check economy buildings first, then infrastructure.
       for (const building of [
         "farm",
         "lumberYard",
         "quarry",
         "goldMine",
-        "barracks",
         "university",
+        "barracks",
+        "smithy",
+        "market",
+        "townHall",
+      ] as BuildingKey[]) {
+        if (this.shouldBuyBuildingInstantly(state, building)) {
+          const affordable = state.getMaxAffordableBuildings(building);
+          if (affordable > 0) {
+            return { type: "build", building, count: affordable };
+          }
+        }
+      }
+
+      // Buy affordable enhancer upgrades first (boosts production).
+      // Prioritize enhancers that can be bought within 10 minutes.
+      for (const building of [
+        "quarry",
+        "lumberYard",
+        "goldMine",
+        "university",
+        "farm",
+        "barracks",
         "smithy",
         "market",
       ] as BuildingKey[]) {
-        const upgradeAction = this.getProductionUpgradeAction(
-          state,
-          building,
-          context,
+        // Find the next available enhancer for this building
+        const buildingCount = state.getBuildingCount(building);
+        const nextUpgrade = upgradeDefinitions.find(
+          ({ key, unlock }) =>
+            unlock.building === building &&
+            unlock.threshold <= 10000 &&
+            unlock.threshold <= buildingCount &&
+            !state.isUpgradeBought(key),
         );
-        if (upgradeAction?.type === "buyUpgrade") return upgradeAction;
+        if (nextUpgrade && this.shouldBuyEnhancerUpgrade(state, nextUpgrade.key)) {
+          const upgradeAction = this.getProductionUpgradeAction(
+            state,
+            building,
+            context,
+          );
+          if (upgradeAction?.type === "buyUpgrade") return upgradeAction;
+        }
       }
       // After battle 8, build economy before buying research.
       const battle8Won2 = state.defeatedEncounters.includes("age2_1_marathon");
       if (battle8Won2) {
         const uniCount = state.getBuildingCount("university");
         if (uniCount < 600) {
+          // Expand university capacity first if needed
+          const uniCapacity = state.getBuildingMax("university");
+          if (uniCount >= uniCapacity.floor().toNumber()) {
+            // At capacity - build town halls to expand
+            if (state.canBuild("townHall")) {
+              const affordable = state.getMaxAffordableBuildings("townHall");
+              if (affordable > 0) {
+                return {
+                  type: "build",
+                  building: "townHall",
+                  count: Math.min(affordable, 100),
+                };
+              }
+            }
+          }
           const ageTwoProductionAction = this.getAgeTwoProductionAction(
             state,
             context,
@@ -3659,8 +3844,8 @@ export class PlayerStrategy extends ResearchStrategy {
     const researchAction = this.getResearchAction(state);
     if (researchAction) return researchAction;
 
-    const housingAction = this.getHousingAction(state, context);
-    if (housingAction) return housingAction;
+    const housingAction2 = this.getHousingAction(state, context);
+    if (housingAction2) return housingAction2;
 
     const universityCount = state.getBuildingCount("university");
     if (universityCount < 40 && state.canBuild("university")) {
@@ -3710,7 +3895,7 @@ export class TradeStrategy extends BaseStrategy {
     };
   }
 
-  protected getBuildingPriority(): BuildingPriority {
+  protected getBuildingPriority(_state: CivilizationState): BuildingPriority {
     return [
       { building: "people", weight: 10 },
       { building: "house", weight: 9 },
@@ -3866,7 +4051,7 @@ export class SpeedrunStrategy extends BaseStrategy {
     const plan = getSimulatorBattlePlan(state);
     if (plan) {
       for (const [unitId, count] of plan.composition) {
-        if (count <= 0 || !state.isUnitAvailable(unitId)) continue;
+        if (!count.gt(ExpNumber.ZERO) || !state.isUnitAvailable(unitId)) continue;
         for (const { resource, base } of state.getUnitCost(unitId, count)) {
           demand(resource, base);
         }

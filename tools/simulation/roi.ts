@@ -48,7 +48,7 @@ export type RoiBuyable =
  * `tools/simulation/strategies.ts` and already depends on this file.
  */
 export type BattleRoiPlan = {
-  readonly composition: ReadonlyMap<string, number>;
+  readonly composition: ReadonlyMap<string, ExpNumber>;
   readonly costs: readonly { resource: ResourceKey; base: ExpNumber }[];
   readonly research: readonly string[];
 };
@@ -374,7 +374,9 @@ const uncachedEvaluateBattle = (
     armed = armed.buyResearch(researchId);
   }
   for (const [unitId, count] of plan.composition) {
-    if (count > 0) armed = armed.buyUnit(unitId, count);
+    if (count.gt(ExpNumber.ZERO)) {
+      armed = armed.buyUnit(unitId, count.toNumber());
+    }
   }
   const won = armed.resolveBattle(battleId);
   return won.defeatedEncounters.includes(battleId) ? { armed, won } : null;
@@ -408,8 +410,11 @@ const battleAction = (
     return { type: "launchBattle", encounterId: battleId };
   }
   for (const [unitId, count] of plan.composition) {
-    if (count > 0 && state.isUnitAvailable(unitId)) {
-      const affordable = Math.min(count, state.getMaxAffordableUnits(unitId));
+    if (count.gt(ExpNumber.ZERO) && state.isUnitAvailable(unitId)) {
+      const affordable = Math.min(
+        count.toNumber(),
+        state.getMaxAffordableUnits(unitId),
+      );
       if (affordable > 0) {
         return { type: "buyUnit", unitId, count: affordable };
       }
@@ -821,7 +826,7 @@ const nextRecruitCost = (
   plan: BattleRoiPlan,
 ): readonly BuildingCost[] | null => {
   for (const [unitId, count] of plan.composition) {
-    if (count > 0 && state.isUnitAvailable(unitId)) {
+    if (count.gt(ExpNumber.ZERO) && state.isUnitAvailable(unitId)) {
       return state.freeUnits ? [] : state.getUnitCost(unitId, 1);
     }
   }

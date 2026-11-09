@@ -350,15 +350,22 @@ describe("Wolf Pack: a mixed army is the cheapest answer", () => {
   it("finds a winning mixed army that costs less military than warriors alone", () => {
     const warriorOnly = minimumArmyCost(["warrior"]);
     const mixed = minimumArmyCost(["warrior", "slinger"]);
-    const hasWarriors = (mixed.composition.get("warrior") ?? 0) > 0;
-    const hasSlingers = (mixed.composition.get("slinger") ?? 0) > 0;
+    const hasWarriors = (mixed.composition.get("warrior") ?? ExpNumber.ZERO).gt(
+      ExpNumber.ZERO,
+    );
+    const hasSlingers = (mixed.composition.get("slinger") ?? ExpNumber.ZERO).gt(
+      ExpNumber.ZERO,
+    );
 
     expect(hasWarriors).toBe(true);
     expect(hasSlingers).toBe(true);
     expect(
       winsWithResearch(
         wolfPack,
-        [...mixed.composition.entries()] as [string, number][],
+        [...mixed.composition.entries()].map(([id, count]) => [
+          id,
+          count.toNumber(),
+        ]),
       ),
     ).toBe("player");
     expect(mixed.military.lt(warriorOnly.military)).toBe(true);
@@ -366,7 +373,9 @@ describe("Wolf Pack: a mixed army is the cheapest answer", () => {
 
   it("wins with the planner's minimum-cost mixed recruit count", () => {
     const mixed = minimumArmyCost(["warrior", "slinger"]);
-    const army = [...mixed.composition.entries()] as [string, number][];
+    const army: Army = [...mixed.composition.entries()].map(
+      ([id, count]): [string, number] => [id, count.toNumber()],
+    );
     expect(winsWithResearch(wolfPack, army)).toBe("player");
   });
 

@@ -691,8 +691,11 @@ export class AgeOnePolicy implements SimulationStrategy {
       }
     }
     for (const [unitId, count] of plan.composition) {
-      if (count <= 0 || !state.isUnitAvailable(unitId)) continue;
-      const affordable = Math.min(count, state.getMaxAffordableUnits(unitId));
+      if (!count.gt(ExpNumber.ZERO) || !state.isUnitAvailable(unitId)) continue;
+      const affordable = Math.min(
+        count.toNumber(),
+        state.getMaxAffordableUnits(unitId),
+      );
       if (affordable > 0) return { type: "buyUnit", unitId, count: affordable };
     }
     return null;
@@ -710,13 +713,17 @@ export class AgeOnePolicy implements SimulationStrategy {
   ): SimulationAction | null {
     if (!plan) return null;
     for (const [unitId, count] of plan.composition) {
-      if (count <= 0 || !state.isUnitAvailable(unitId)) continue;
+      if (!count.gt(ExpNumber.ZERO) || !state.isUnitAvailable(unitId)) continue;
       const resource = largestDeficitResource(
         state,
         state.getUnitCost(unitId, 1),
       );
       if (resource) return { type: "gather", resource };
-      return { type: "buyUnit", unitId, count: Math.min(count, 100) };
+      return {
+        type: "buyUnit",
+        unitId,
+        count: ExpNumber.min(count, ExpNumber.fromNumber(100)).toNumber(),
+      };
     }
     return null;
   }
@@ -733,9 +740,13 @@ export class AgeOnePolicy implements SimulationStrategy {
     const overshoot = this.params.armyOvershoot;
     if (overshoot <= 0 || !plan) return true;
     for (const [unitId, count] of plan.composition) {
-      if (count <= 0) continue;
-      const owned = state.getUnitCount(unitId).toNumber();
-      if (owned < count * (1 + overshoot)) return false;
+      if (!count.gt(ExpNumber.ZERO)) continue;
+      const owned = state.getUnitCount(unitId);
+      if (
+        owned.lt(count.mul(ExpNumber.fromNumber(1 + overshoot)))
+      ) {
+        return false;
+      }
     }
     return true;
   }
@@ -886,13 +897,14 @@ export class AgeOnePolicy implements SimulationStrategy {
     if (plan && plan.composition.size > 0) {
       const hasAffordableUnit = [...plan.composition].some(
         ([unitId, count]) =>
-          count > 0 &&
+          count.gt(ExpNumber.ZERO) &&
           state.isUnitAvailable(unitId) &&
           state.getMaxAffordableUnits(unitId) > 0,
       );
       if (hasAffordableUnit) return [];
       const nextUnit = [...plan.composition].find(
-        ([unitId, count]) => count > 0 && state.isUnitAvailable(unitId),
+        ([unitId, count]) =>
+          count.gt(ExpNumber.ZERO) && state.isUnitAvailable(unitId),
       );
       const costs = nextUnit
         ? state

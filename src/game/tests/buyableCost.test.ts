@@ -109,4 +109,29 @@ describe("buyable cost curve crossover", () => {
       ).toBe(true);
     },
   );
+
+  it("prices counts above the JavaScript safe-integer range", () => {
+    const unitBase = ExpNumber.fromNumber(10);
+    const unitFactor = ExpNumber.fromNumber(2);
+    const parameters: CostParameters = {
+      cost: {
+        resource: "food",
+        base: unitBase,
+        factor: 2,
+        exponent: 0.5,
+      },
+      unitBase,
+      unitFactor,
+      reductions,
+    };
+
+    const cost = calculateCostSeries(
+      [parameters],
+      ExpNumber.ZERO,
+      ExpNumber.from("1e20"),
+    )[0].base;
+
+    expect(cost.isFinite).toBe(true);
+    expect(cost.exponent).toBeGreaterThan(1_000_000_000);
+  });
 });

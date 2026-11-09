@@ -15,18 +15,6 @@ import {
 } from "./formations";
 import { orderIds, type OrderId, DEFAULT_ORDER } from "./orders";
 
-import { ExpNumber } from "./expNumber";
-import { findUnitDefinition } from "./units";
-import { encounterDefinitions } from "./encounters";
-import type { BuildingCost } from "./buildings";
-import type { ResourceKey } from "./attributes";
-import {
-  formationIds,
-  type FormationId,
-  DEFAULT_FORMATION,
-} from "./formations";
-import { orderIds, type OrderId, DEFAULT_ORDER } from "./orders";
-
 /** Minimum-army simulator (dev tools only): cheapest winning army per battle. */
 export type SimulatorArmy = ReadonlyMap<string, ExpNumber>;
 /** Units already owned by the player. Their counts remain ExpNumbers. */
@@ -80,7 +68,7 @@ export type SimulatorProgress = (
   phase: string,
 ) => void;
 export type BattleSimulatorContext = {
-  getCost: (unitId: string, count: number) => BuildingCost[];
+  getCost: (unitId: string, count: ExpNumber) => BuildingCost[];
   getResearch: (unitIds: readonly string[]) => SimulatorResearch;
   wins: (composition: SimulatorTotalArmy, battleId: string) => boolean;
   /** Test a composition with specific formation assignments. */
@@ -121,19 +109,16 @@ export const mergeSimulatorArmy = (
     if (count.gt(ExpNumber.ZERO)) total.set(unitId, count);
   }
   for (const [unitId, count] of additionalArmy) {
-    if (count <= 0) continue;
+    if (!count.gt(ExpNumber.ZERO)) continue;
     total.set(
       unitId,
-      (total.get(unitId) ?? ExpNumber.ZERO).add(ExpNumber.fromNumber(count)),
+      (total.get(unitId) ?? ExpNumber.ZERO).add(count),
     );
   }
   return total;
 };
 
-// No upper limit on probe sizes — end-game battles may have 1e150+ units.
-// The ExpNumber type handles up to ~10^(1.8e308), so the simulation math is fine.
-// The solver probe sizes must not constrain the search.
-const maximumProbe = Number.MAX_SAFE_INTEGER;
+const maximumProbe = ExpNumber.from("1e308");
 const maximumPasses = 1_000_000;
 const maximumPairedFormationTrials = 128;
 const maximumParetoPlans = 12;
@@ -316,10 +301,10 @@ export const proveMinimumMilitaryWinner = async (
     return proven;
   }
 
-  const militaryCostAt = (unitId: string, count: number): ExpNumber =>
+  const militaryCostAt = (unitId: string, count: ExpNumber): ExpNumber =>
     militaryOf(context.getCost(unitId, count));
   const maximumCountFor = (unitId: string): number => {
-    const first = militaryCostAt(unitId, 1);
+    const first = militaryCostAt(unitId, ExpNumber.ONE);
     if (first.lte(ExpNumber.ZERO)) {
       throw new Error(
         `Cannot prove a finite search: ${unitId} has no positive military cost.`,
@@ -327,7 +312,9 @@ export const proveMinimumMilitaryWinner = async (
     }
     let low = 0;
     let high = 1;
-    while (militaryCostAt(unitId, high).lte(bestCost)) {
+    while (
+      militaryCostAt(unitId, ExpNumber.fromNumber(high)).lte(bestCost)
+    ) {
       low = high;
       if (high === Number.MAX_SAFE_INTEGER) {
         throw new Error(
@@ -338,7 +325,11 @@ export const proveMinimumMilitaryWinner = async (
     }
     while (low < high - 1) {
       const middle = low + Math.ceil((high - low) / 2);
-      if (militaryCostAt(unitId, middle).lte(bestCost)) low = middle;
+      if (
+        militaryCostAt(unitId, ExpNumber.fromNumber(middle)).lte(bestCost)
+      ) {
+        low = middle;
+      }
       else high = middle;
     }
     return low;
@@ -472,9 +463,11 @@ export const proveMinimumMilitaryWinner = async (
   // Sort candidates by cost per unit descending so that higher-cost units
   // branch-prune early in the search tree.
   const sortedCandidates = [...candidates].sort((a, b) =>
-    militaryCostAt(b.key, 1).compareTo(militaryCostAt(a.key, 1)),
+    militaryCostAt(b.key, ExpNumber.ONE).compareTo(
+      militaryCostAt(a.key, ExpNumber.ONE),
+    ),
   );
-  const composition = new Map<string, number>();
+  const composition = new Map<string, ExpNumber>();
   const asyncEnumerate = async (
     index: number,
     armyCost: ExpNumber,
@@ -488,10 +481,10 @@ export const proveMinimumMilitaryWinner = async (
     const maximum = limits.get(key) ?? 0;
     for (let count = 0; count <= maximum; count += 1) {
       const next = new Map(composition);
-      if (count > 0) next.set(key, count);
+      if (count > 0) next.set(key, ExpNumber.fromNumber(count));
       const nextCost = minimumMilitaryCost(next, context);
       if (!nextCost.lt(bestCost)) break;
-      if (count > 0) composition.set(key, count);
+      if (count > 0) composition.set(key, ExpNumber.fromNumber(count));
       await asyncEnumerate(index + 1, nextCost);
       composition.delete(key);
     }
@@ -718,10 +711,10 @@ export const compositionCost = (
 const withCount = (
   composition: SimulatorArmy,
   unitId: string,
-  count: number,
+  count: ExpNumber,
 ): SimulatorArmy => {
   const next = new Map(composition);
-  if (count <= 0) next.delete(unitId);
+  if (!count.gt(ExpNumber.ZERO)) next.delete(unitId);
   else next.set(unitId, count);
   return next;
 };
@@ -810,21 +803,27 @@ export const solveMinimumArmy = (
   // the result monotone in the candidate set: an extra candidate can only add a
   // seed, so it can never make the answer dearer than it already was.
   const seeds: SimulatorArmy[] = [];
-  // Solo probe — no upper limit, the while loop will find the winning count
-  // or continue until hi exceeds reasonable bounds (handled by number range).
+  const two = ExpNumber.fromNumber(2);
   for (const unit of candidates) {
     if (!findUnitDefinition(unit.key)) continue;
-    let lo = 1;
-    let hi = 1;
-    while (!wins(new Map([[unit.key, hi]]))) {
-      hi *= 2;
+    let low = ExpNumber.ONE;
+    let high = ExpNumber.ONE;
+    while (!wins(new Map([[unit.key, high]]))) {
+      if (high.gte(maximumProbe)) {
+        high = ExpNumber.ZERO;
+        break;
+      }
+      high = high.mul(two);
     }
-    while (lo < hi) {
-      const mid = Math.floor((lo + hi) / 2);
-      if (wins(new Map([[unit.key, mid]]))) hi = mid;
-      else lo = mid + 1;
+    if (high.isZero) continue;
+    while (low.lt(high)) {
+      let middle = low.add(high).div(two).floor();
+      if (!middle.gt(low)) middle = low.add(ExpNumber.ONE);
+      if (!middle.lt(high)) break;
+      if (wins(new Map([[unit.key, middle]]))) high = middle;
+      else low = middle.add(ExpNumber.ONE);
     }
-    seeds.push(new Map([[unit.key, lo]]));
+    seeds.push(new Map([[unit.key, high]]));
   }
   // Some battles require complementary roles: neither the siege unit nor the
   // naval unit can win alone, but their combination can. Seed the hill-climb
@@ -846,8 +845,8 @@ export const solveMinimumArmy = (
         if (
           !wins(
             new Map([
-              [left.key, maxPower],
-              [right.key, maxPower],
+              [left.key, ExpNumber.fromNumber(maxPower)],
+              [right.key, ExpNumber.fromNumber(maxPower)],
             ]),
           )
         ) {
@@ -859,8 +858,8 @@ export const solveMinimumArmy = (
           if (
             !wins(
               new Map([
-                [left.key, leftCount],
-                [right.key, maxPower],
+                [left.key, ExpNumber.fromNumber(leftCount)],
+                [right.key, ExpNumber.fromNumber(maxPower)],
               ]),
             )
           ) {
@@ -875,8 +874,8 @@ export const solveMinimumArmy = (
             if (
               wins(
                 new Map([
-                  [left.key, leftCount],
-                  [right.key, powers[mid]],
+                  [left.key, ExpNumber.fromNumber(leftCount)],
+                  [right.key, ExpNumber.fromNumber(powers[mid])],
                 ]),
               )
             ) {
@@ -887,8 +886,8 @@ export const solveMinimumArmy = (
           }
           seeds.push(
             new Map([
-              [left.key, leftCount],
-              [right.key, powers[lo]],
+              [left.key, ExpNumber.fromNumber(leftCount)],
+              [right.key, ExpNumber.fromNumber(powers[lo])],
             ]),
           );
         }
@@ -920,32 +919,46 @@ export const solveMinimumArmy = (
       passes += 1;
       for (const [unitId, count] of [...current]) {
         const bases = [
-          withCount(current, unitId, Math.ceil(count / 2)),
-          withCount(current, unitId, 0),
+          withCount(current, unitId, count.div(two).ceil()),
+          withCount(current, unitId, ExpNumber.ZERO),
         ];
         for (const base of bases) {
           for (const other of ids) {
             if (other === unitId) continue;
-            let add = 1;
+            let add = ExpNumber.ONE;
             let found = false;
-            while (add <= maximumProbe) {
-              const trial = withCount(base, other, (base.get(other) ?? 0) + add);
+            while (add.lte(maximumProbe)) {
+              const trial = withCount(
+                base,
+                other,
+                (base.get(other) ?? ExpNumber.ZERO).add(add),
+              );
               if (wins(trial)) {
                 found = true;
                 break;
               }
-              add *= 2;
+              add = add.mul(two);
             }
             if (!found) continue;
-            let lo = 1;
-            let hi = add;
-            while (lo < hi) {
-              const mid = Math.floor((lo + hi) / 2);
-              const trial = withCount(base, other, (base.get(other) ?? 0) + mid);
-              if (wins(trial)) hi = mid;
-              else lo = mid + 1;
+            let low = ExpNumber.ONE;
+            let high = add;
+            while (low.lt(high)) {
+              let middle = low.add(high).div(two).floor();
+              if (!middle.gt(low)) middle = low.add(ExpNumber.ONE);
+              if (!middle.lt(high)) break;
+              const trial = withCount(
+                base,
+                other,
+                (base.get(other) ?? ExpNumber.ZERO).add(middle),
+              );
+              if (wins(trial)) high = middle;
+              else low = middle.add(ExpNumber.ONE);
             }
-            const next = withCount(base, other, (base.get(other) ?? 0) + lo);
+            const next = withCount(
+              base,
+              other,
+              (base.get(other) ?? ExpNumber.ZERO).add(high),
+            );
             const cost = compositionCost(next, context);
             if (cost.lt(currentCost) && wins(next)) {
               current = next;
@@ -971,14 +984,16 @@ export const solveMinimumArmy = (
   }
   if (!best) return null;
   for (const [unitId, count] of [...best]) {
-    let lo = 0;
+    let lo = ExpNumber.ZERO;
     let hi = count;
-    while (lo < hi) {
-      const mid = Math.floor((lo + hi) / 2);
+    while (lo.lt(hi)) {
+      let mid = lo.add(hi).div(ExpNumber.fromNumber(2)).floor();
+      if (!mid.gt(lo)) mid = lo.add(ExpNumber.ONE);
+      if (!mid.lt(hi)) break;
       if (wins(withCount(best, unitId, mid))) hi = mid;
-      else lo = mid + 1;
+      else lo = mid.add(ExpNumber.ONE);
     }
-    best = withCount(best, unitId, lo);
+    best = withCount(best, unitId, hi);
   }
   bestCost = compositionCost(best, context);
   const totalComposition = mergeSimulatorArmy(ownedArmy, best);
@@ -1048,17 +1063,19 @@ export const trimUnderTactics = (
     );
   const trimmed = new Map(composition);
   for (const [unitId, count] of [...trimmed]) {
-    let lo = 0;
+    let lo = ExpNumber.ZERO;
     let hi = count;
-    while (lo < hi) {
-      const mid = Math.floor((lo + hi) / 2);
+    while (lo.lt(hi)) {
+      let mid = lo.add(hi).div(ExpNumber.fromNumber(2)).floor();
+      if (!mid.gt(lo)) mid = lo.add(ExpNumber.ONE);
+      if (!mid.lt(hi)) break;
       const trial = new Map(trimmed);
       trial.set(unitId, mid);
       if (wins(trial)) hi = mid;
-      else lo = mid + 1;
+      else lo = mid.add(ExpNumber.ONE);
     }
-    if (lo <= 0) trimmed.delete(unitId);
-    else trimmed.set(unitId, lo);
+    if (!hi.gt(ExpNumber.ZERO)) trimmed.delete(unitId);
+    else trimmed.set(unitId, hi);
   }
   return trimmed;
 };
@@ -1707,12 +1724,12 @@ export const optimizeBattleTactics = (
       for (const fraction of [0.5, 0.75, 1]) {
         const probeArmy = new Map<string, ExpNumber>(ownedArmy);
         for (const [unitId, count] of bestResult.composition) {
-          const probeCount = Math.floor(count * fraction);
-          if (probeCount > 0) {
+          const probeCount = count.mul(ExpNumber.fromNumber(fraction)).floor();
+          if (probeCount.gt(ExpNumber.ZERO)) {
             probeArmy.set(
               unitId,
               (probeArmy.get(unitId) ?? ExpNumber.ZERO).add(
-                ExpNumber.fromNumber(probeCount),
+                probeCount,
               ),
             );
           }
@@ -1898,10 +1915,13 @@ export const optimizeBattleTactics = (
   const refinementPlans = [...paretoPlans].slice(0, maximumParetoPlans);
   for (const basePlan of refinementPlans) {
     for (const scale of armyRefinementScales) {
-      const scaled = new Map<string, number>();
+      const scaled = new Map<string, ExpNumber>();
       for (const [unitId, count] of basePlan.composition) {
-        const refinedCount = Math.min(maximumProbe, Math.ceil(count * scale));
-        if (refinedCount > 0) scaled.set(unitId, refinedCount);
+        const refinedCount = ExpNumber.min(
+          maximumProbe,
+          count.mul(ExpNumber.fromNumber(scale)).ceil(),
+        );
+        if (refinedCount.gt(ExpNumber.ZERO)) scaled.set(unitId, refinedCount);
       }
       if (
         scaled.size !== basePlan.composition.size ||
@@ -1915,7 +1935,9 @@ export const optimizeBattleTactics = (
     for (const { key: unitId } of candidates) {
       for (const additionalCount of armyReinforcementSteps) {
         const reinforced = new Map(basePlan.composition);
-        const count = (reinforced.get(unitId) ?? 0) + additionalCount;
+        const count = (reinforced.get(unitId) ?? ExpNumber.ZERO).add(
+          ExpNumber.fromNumber(additionalCount),
+        );
         reinforced.set(unitId, count);
         addRefinementCandidate(reinforced, basePlan);
       }

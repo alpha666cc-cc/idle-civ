@@ -329,7 +329,7 @@ describe("simulation ROI evaluation", () => {
       workers: { military: 50 },
     });
     const planBattle = (_candidateState: CivilizationState) => ({
-      composition: new Map([["warrior", 10]]),
+      composition: new Map([["warrior", ExpNumber.fromNumber(10)]]),
       costs: [
         {
           resource: "military" as ResourceKey,

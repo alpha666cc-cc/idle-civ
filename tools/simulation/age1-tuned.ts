@@ -137,8 +137,11 @@ export class TunedPlayer extends PlayerStrategy {
     if (!plan) return [];
     const actions: SimulationAction[] = [];
     for (const [unitId, count] of plan.composition) {
-      if (count <= 0 || !state.isUnitAvailable(unitId)) continue;
-      const affordable = Math.min(count, state.getMaxAffordableUnits(unitId));
+      if (!count.gt(ExpNumber.ZERO) || !state.isUnitAvailable(unitId)) continue;
+      const affordable = ExpNumber.min(
+        count,
+        ExpNumber.fromNumber(state.getMaxAffordableUnits(unitId)),
+      ).toNumber();
       if (affordable > 0) {
         actions.push({ type: "buyUnit", unitId, count: affordable });
       }

@@ -2,7 +2,7 @@
 import { parentPort, workerData } from "node:worker_threads";
 import { loadSaveData } from "../../src/game/saveSystem.js";
 import { GameSimulation } from "./simulation.js";
-import { getStrategy, setAdaptiveWorkerFunding } from "./strategies.js";
+import { getStrategy, setAdaptiveWorkerFunding, getSimulatorCacheStats } from "./strategies.js";
 
 setAdaptiveWorkerFunding(
   workerData.adaptiveWorkerFundingEnabled,
@@ -57,6 +57,8 @@ const battleTimes = result.finalState.defeatedEncounters.map(
   },
 );
 
+const cacheStats = getSimulatorCacheStats();
+
 parentPort?.postMessage({
   strategyName: strategy.name,
   result: {
@@ -72,4 +74,5 @@ parentPort?.postMessage({
   },
   battleTimes,
   runTime,
+  cacheStats,
 });

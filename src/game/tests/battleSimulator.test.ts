@@ -20,10 +20,10 @@ const ownedWarriors = (count: number): SimulatorOwnedArmy =>
   new Map([["warrior", ExpNumber.fromNumber(count)]]);
 
 const context = () => ({
-  getCost: (_unitId: string, count: number) => [
+  getCost: (_unitId: string, count: ExpNumber) => [
     {
       resource: "military" as const,
-      base: ExpNumber.fromNumber(count * 20),
+      base: count.mul(ExpNumber.fromNumber(20)),
       factor: 1,
       exponent: 0.5,
     },
@@ -96,7 +96,7 @@ describe("battle simulator current army", () => {
 
     expect(result).not.toBeNull();
     if (!result) return;
-    expect(result.composition.get("warrior")).toBe(1);
+    expect(result.composition.get("warrior")?.toNumber()).toBe(1);
     expect(result.totalComposition.get("warrior")?.toNumber()).toBe(5);
     expect(result.military.toNumber()).toBe(20);
     expect(result.orders.size).toBeGreaterThanOrEqual(0);
@@ -159,8 +159,8 @@ describe("battle simulator current army", () => {
     const total = mergeSimulatorArmy(
       ownedWarriors(2),
       new Map([
-        ["warrior", 3],
-        ["slinger", 4],
+        ["warrior", ExpNumber.fromNumber(3)],
+        ["slinger", ExpNumber.fromNumber(4)],
       ]),
     );
 

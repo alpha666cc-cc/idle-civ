@@ -537,7 +537,9 @@ function App() {
           newIds.length > 0
             ? gameState.getResearchForUnitTypes(newIds)
             : { ids: [], costs: [] };
-        const composition = new Map(plan.composition);
+        const composition = new Map(
+          plan.composition.map(([id, count]) => [id, deserExp(count)]),
+        );
         const totalCostMap = new Map<ResourceKey, ExpNumber>();
         for (const [unitId, count] of composition) {
           for (const { resource, base } of gameState.getUnitCost(

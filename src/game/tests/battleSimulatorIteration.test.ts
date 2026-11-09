@@ -114,7 +114,7 @@ const candidatesFor = (battleAge: number) =>
 
 /** Cost of the additional recruits only, the number the iteration minimises. */
 const recruitMilitary = (
-  composition: ReadonlyMap<string, number>,
+  composition: ReadonlyMap<string, ExpNumber>,
 ): number =>
   [...composition.entries()].reduce(
     (total, [unitId, count]) =>
@@ -131,7 +131,7 @@ const contextFor = (battleId: string) => {
   const wins = (composition: SimulatorTotalArmy): boolean =>
     simulate(composition, new Map(), new Map(), battleId);
   return {
-    getCost: (unitId: string, count: number) =>
+    getCost: (unitId: string, count: ExpNumber) =>
       state.getUnitCost(unitId, count),
     getResearch: (ids: readonly string[]) =>
       state.getResearchForUnitTypes(ids),
@@ -186,13 +186,42 @@ const runSolverOver = (
 };
 
 describe("optimizeBattleTactics iteration", () => {
+  it("probes solo armies beyond the safe integer range", () => {
+    const candidate: SimulatorCandidate = { key: "warrior" };
+    const required = ExpNumber.from("1e20");
+    const wins = (army: SimulatorTotalArmy): boolean =>
+      (army.get("warrior") ?? ExpNumber.ZERO).gte(required);
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.from(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins,
+      winsWithFormations: (army) => wins(army),
+      winsWithFormationsAndOrders: (army) => wins(army),
+    };
+
+    const result = solveMinimumArmy(marathon, [candidate], context);
+    const recruitCount = result?.composition.get("warrior");
+
+    expect(recruitCount?.gt(ExpNumber.fromNumber(Number.MAX_SAFE_INTEGER))).toBe(
+      true,
+    );
+    expect(recruitCount?.gte(required)).toBe(true);
+  });
+
   it("re-solves under cheaper tactics and publishes intermediate armies", () => {
     const candidate: SimulatorCandidate = { key: "warrior" };
     const context: BattleSimulatorContext = {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
@@ -219,11 +248,13 @@ describe("optimizeBattleTactics iteration", () => {
       ["standard", "frontline", "backline"],
       ["standard"],
       (intermediate) => {
-        progress.push(intermediate.composition.get("warrior") ?? 0);
+        progress.push(
+          intermediate.composition.get("warrior")?.toNumber() ?? 0,
+        );
       },
     );
 
-    expect(result?.composition.get("warrior")).toBe(1);
+    expect(result?.composition.get("warrior")?.toNumber()).toBe(1);
     expect(result?.formations.get("warrior")).toBe("frontline");
     expect(progress).toContain(2);
     expect(progress).toContain(1);
@@ -235,15 +266,17 @@ describe("optimizeBattleTactics iteration", () => {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
         {
           resource: "wood",
-          base: ExpNumber.fromNumber(
-            count === 1 ? 5 : count === 2 ? 0 : count * 5,
-          ),
+          base: count.eq(ExpNumber.ONE)
+            ? ExpNumber.fromNumber(5)
+            : count.eq(ExpNumber.fromNumber(2))
+              ? ExpNumber.ZERO
+              : count.mul(ExpNumber.fromNumber(5)),
           factor: 1,
           exponent: 0.5,
         },
@@ -281,10 +314,12 @@ describe("optimizeBattleTactics iteration", () => {
     );
 
     if (!result) throw new Error("Expected winning plans to be found");
-    expect(result.composition.get("warrior")).toBe(1);
+    expect(result.composition.get("warrior")?.toNumber()).toBe(1);
     expect(result.battleMetrics?.playerCasualtyRate).toBe(0);
     expect(result.alternatives).toHaveLength(1);
-    expect(result.alternatives?.[0].composition.get("warrior")).toBe(2);
+    expect(
+      result.alternatives?.[0].composition.get("warrior")?.toNumber(),
+    ).toBe(2);
     expect(result.alternatives?.[0].totalCost).toEqual([
       { resource: "military", base: ExpNumber.fromNumber(2) },
       { resource: "wood", base: ExpNumber.ZERO },
@@ -307,7 +342,7 @@ describe("optimizeBattleTactics iteration", () => {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
@@ -355,7 +390,7 @@ describe("optimizeBattleTactics iteration", () => {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
@@ -415,7 +450,7 @@ describe("optimizeBattleTactics iteration", () => {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
@@ -481,7 +516,7 @@ describe("optimizeBattleTactics iteration", () => {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
@@ -555,13 +590,13 @@ describe("optimizeBattleTactics iteration", () => {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
         {
           resource: "wood",
-          base: ExpNumber.fromNumber(10 - count),
+          base: ExpNumber.fromNumber(10).sub(count),
           factor: 1,
           exponent: 0.5,
         },
@@ -597,9 +632,11 @@ describe("optimizeBattleTactics iteration", () => {
 
     if (!result) throw new Error("Expected winning configurations");
     const plans = [result, ...(result.alternatives ?? [])];
-    expect(plans.map(({ composition }) => composition.get("warrior"))).toEqual([
-      1, 2, 3, 4, 5, 9,
-    ]);
+    expect(
+      plans.map(({ composition }) =>
+        composition.get("warrior")?.toNumber(),
+      ),
+    ).toEqual([1, 2, 3, 4, 5, 9]);
     expect(
       plans.map(({ battleMetrics }) => battleMetrics?.playerCasualtyRate),
     ).toEqual([1, 0.5, 1 / 3, 0.25, 0.2, 1 / 9]);
@@ -611,7 +648,7 @@ describe("optimizeBattleTactics iteration", () => {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
@@ -656,7 +693,7 @@ describe("optimizeBattleTactics iteration", () => {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
@@ -688,7 +725,7 @@ describe("optimizeBattleTactics iteration", () => {
       ["standard"],
     );
 
-    expect(result?.composition.get("legionary")).toBe(1);
+    expect(result?.composition.get("legionary")?.toNumber()).toBe(1);
     expect(result?.formations.get("hoplite")).toBe("turtle");
   });
 
@@ -697,7 +734,7 @@ describe("optimizeBattleTactics iteration", () => {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
@@ -729,7 +766,7 @@ describe("optimizeBattleTactics iteration", () => {
       ["standard"],
     );
 
-    expect(result?.composition.get("legionary")).toBe(1);
+    expect(result?.composition.get("legionary")?.toNumber()).toBe(1);
     expect(result?.formations.get("warrior")).toBe("frontline");
     expect(result?.formations.get("slinger")).toBe("backline");
   });
@@ -892,7 +929,7 @@ describe("optimizeBattleTactics iteration", () => {
       getCost: (_unitId, count) => [
         {
           resource: "military",
-          base: ExpNumber.fromNumber(count),
+          base: ExpNumber.from(count),
           factor: 1,
           exponent: 0.5,
         },
@@ -908,7 +945,7 @@ describe("optimizeBattleTactics iteration", () => {
       },
     };
     const initial: SimulatorResult = {
-      composition: new Map([["warrior", 4]]),
+      composition: new Map([["warrior", ExpNumber.fromNumber(4)]]),
       totalComposition: new Map([["warrior", ExpNumber.fromNumber(4)]]),
       military: ExpNumber.fromNumber(4),
       totalCost: [
@@ -927,11 +964,12 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       ["standard", "turtle"],
       initial,
-      (plan: SimulatorResult) => progress.push(plan.composition.get("warrior") ?? 0),
+      (plan: SimulatorResult) =>
+        progress.push(plan.composition.get("warrior")?.toNumber() ?? 0),
       async () => {},
     );
 
-    expect(result.composition.get("warrior")).toBe(2);
+    expect(result.composition.get("warrior")?.toNumber()).toBe(2);
     expect(result.formations.get("warrior")).toBe("turtle");
     expect(result.searchStats?.proofStatus).toBe("proven");
     expect(result.searchStats?.armyCompositionsTested).toBe(3);
