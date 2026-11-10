@@ -26,11 +26,9 @@ const validFormations = new Set([
   "pike_square",
 ]);
 const validOrders = new Set([
-  "standard",
   "focus_weak",
   "focus_strong",
   "focus_counter",
-  "same_tag",
   "protect_ranged",
 ]);
 const maxSeedsPerBattle = 8;
@@ -62,8 +60,14 @@ const normalizeArmy = (
       battleAge < 2
         ? "standard"
         : formations[unitId] ?? entry.formation ?? "standard";
+    const rawOrder =
+      battleAge < 3
+        ? "focus_weak"
+        : orders[unitId] ?? entry.order ?? "focus_weak";
     const order =
-      battleAge < 3 ? "standard" : orders[unitId] ?? entry.order ?? "standard";
+      rawOrder === "standard" || rawOrder === "same_tag"
+        ? "focus_weak"
+        : rawOrder;
     if (
       typeof unitId !== "string" ||
       !/^[A-Za-z0-9_-]+$/.test(unitId) ||

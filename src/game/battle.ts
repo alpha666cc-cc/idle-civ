@@ -47,15 +47,16 @@ export type ArmyStack = {
   readonly unitId: string;
   readonly count: ExpNumber;
   readonly stats: UnitStats;
-  /** How this stack picks its target and screens its allies; `standard` if unset. */
+  /** How this stack picks targets and screens allies; Hunt the weak is the default. */
   readonly order?: BattleOrder;
+  readonly targetDomain?: UnitDomain;
+  readonly targetTag?: string;
   /** Formation: positioning + stat trades; `standard` if unset. */
   readonly formation?: FormationId;
 };
 
 /** Battle targeting orders (re-exported from orders.ts for convenience) */
 export type BattleOrder = OrderId;
-export const standardOrder = DEFAULT_ORDER;
 export const battleOrders = orderDefinitions.map(
   (def) => def.id,
 ) as readonly BattleOrder[];
@@ -219,6 +220,8 @@ type Fighter = {
   hpPool: ExpNumber;
   /** The order this stack was told to fight under. */
   readonly order: BattleOrder;
+  readonly targetDomain?: UnitDomain;
+  readonly targetTag?: string;
   /** The formation this stack uses for positioning and stat trades. */
   readonly formation: FormationId;
   /** Attack-only advance; formation position remains unchanged for targeting. */
@@ -290,7 +293,9 @@ const buildFighters = (
           initialCount: stack.count,
           hpPool: hitPoints.mul(stack.count),
           initialHpPool: hitPoints.mul(stack.count),
-          order: stack.order ?? standardOrder,
+          order: stack.order ?? DEFAULT_ORDER,
+          targetDomain: stack.targetDomain,
+          targetTag: stack.targetTag,
           formation,
           attackAdvance: 0,
         },
@@ -402,16 +407,6 @@ const counterTargets = (
   foes.filter((foe) => attacker.bonusVs.some((tag) => foe.tags.includes(tag)));
 
 /**
- * `standard` is exactly the pre-orders rule — fire at the weakest reachable pool
- * — so a battle with no orders set resolves bit-for-bit as it did before orders
- * existed. It deliberately does *not* prefer a countered target; that is what
- * `focus_counter` is for, and folding it in here would silently retune every
- * battle in the game for players who never touch the control.
- */
-const pickStandardTarget = (foes: readonly Fighter[]): Fighter =>
-  weakestFirst(foes);
-
-/**
  * Which foe a stack shoots, by its targeting order. Every order falls back to a reachable
  * target, so an order never makes a stack idle while enemies are in range.
  */
@@ -419,6 +414,18 @@ const pickTargetByOrder = (
   attacker: Fighter,
   foes: readonly Fighter[],
 ): Fighter => {
+  const targetTag = attacker.targetTag;
+  const domainTargets = attacker.targetDomain
+    ? foes.filter((foe) => foe.domain === attacker.targetDomain)
+    : [];
+  if (domainTargets.length > 0) return weakestFirst(domainTargets);
+  if (targetTag) {
+    const tagTargets = foes.filter((foe) =>
+      foe.tags.includes(targetTag),
+    );
+    if (tagTargets.length > 0) return weakestFirst(tagTargets);
+  }
+
   switch (attacker.order) {
     case "focus_counter": {
       const counters = counterTargets(attacker, foes);
@@ -431,34 +438,15 @@ const pickTargetByOrder = (
         (strongest, foe) => (foe.hpPool.gt(strongest.hpPool) ? foe : strongest),
         foes[0],
       );
-    case "same_tag": {
-      const same = foes.filter((foe) =>
-        foe.tags.some((tag) => attacker.tags.includes(tag)),
-      );
-      return same.length > 0 ? same[0] : foes[0];
-    }
     case "protect_ranged":
-    case "standard":
     default:
-      return pickStandardTarget(foes);
+      return weakestFirst(foes);
   }
 };
 
 /**
- * Screening: a stack that is holding the line, standing to the rear, or guarding
- * the shooters draws fire that was aimed at a protected ally. Only a protected
- * target is screened, so a front line still takes the hits meant for it.
- *
- * A fixed share of the damage is split across the living screens, and the rest
- * lands on the intended target. All of it is still dealt, so screening trades a
- * body's survival for its allies' rather than adding or removing damage.
- *
- * The share is deliberately small. A screen is one stack standing in for another,
- * and the redirected fire is aimed at it precisely because it is nearest — at a
- * higher share the screen dies in the opening rounds, the enemy then focuses
- * whatever is left, and the order loses battles that were already won. A small
- * share lets a tanky screen blunt the volley that would have deleted a fragile
- * ally, which is the whole point of holding a line.
+ * Ground infantry normally screen ranged and siege allies. The protect order
+ * lets any unit screen any ally and adds another 25% share to normal screens.
  */
 const screeningShare = 0.25;
 
@@ -471,23 +459,54 @@ const applyScreening = (
   const protectedTarget = target.tags.some(
     (tag) => tag === "ranged" || tag === "siege",
   );
-  if (!protectedTarget) return damage;
-  const screens = targetAllies.filter(
-    (ally) =>
+  const livingAllies = targetAllies.filter((ally) => {
+    return (
       ally.unitId !== target.unitId &&
-      livingCount(ally).gt(ExpNumber.ZERO) &&
-      ally.domain === "ground" &&
-      ally.tags.includes("infantry"),
+      livingCount(ally).gt(ExpNumber.ZERO)
+    );
+  });
+  const normalScreens =
+    protectedTarget
+      ? livingAllies.filter(
+          (ally) =>
+            ally.domain === "ground" && ally.tags.includes("infantry"),
+        )
+      : [];
+  const protectScreens = livingAllies.filter(
+    (ally) => ally.order === "protect_ranged",
   );
-  if (screens.length === 0) return damage;
-  const shared = damage.mul(ExpNumber.fromNumber(screeningShare));
-  const each = shared.div(ExpNumber.fromNumber(screens.length));
-  for (const screen of screens) {
+  const screenShares = new Map<Fighter, number>();
+  const addScreenPool = (screens: readonly Fighter[]) => {
+    if (screens.length === 0) return;
+    const sharePerScreen = screeningShare / screens.length;
+    for (const screen of screens) {
+      screenShares.set(
+        screen,
+        (screenShares.get(screen) ?? 0) + sharePerScreen,
+      );
+    }
+  };
+  addScreenPool(normalScreens);
+  addScreenPool(protectScreens);
+  const totalShare = [...screenShares.values()].reduce(
+    (total, share) => total + share,
+    0,
+  );
+  if (totalShare === 0) return damage;
+  const cappedShare = Math.min(0.5, totalShare);
+  const shared = damage.mul(ExpNumber.fromNumber(cappedShare));
+  for (const [fighter, share] of screenShares) {
     // Each screen's share is damage aimed at it, so apply the full matchup
     // multiplier (formation damageTakenVs/damageDealtVs, bonusVs, domain).
-    const screenMultiplier = matchupMultiplier(attacker, screen);
-    const reduced = each.mul(ExpNumber.fromNumber(screenMultiplier));
-    screen.hpPool = ExpNumber.max(ExpNumber.ZERO, screen.hpPool.sub(reduced));
+    const allocatedShare = cappedShare * (share / totalShare);
+    const screenMultiplier = matchupMultiplier(attacker, fighter);
+    const reduced = damage
+      .mul(ExpNumber.fromNumber(allocatedShare))
+      .mul(ExpNumber.fromNumber(screenMultiplier));
+    fighter.hpPool = ExpNumber.max(
+      ExpNumber.ZERO,
+      fighter.hpPool.sub(reduced),
+    );
   }
   // The target takes the rest of the damage, which is the original minus what was screened(matchup excluded).
   return damage.sub(shared);
@@ -624,7 +643,7 @@ const simulateBattleInternal = (
             .slice(0, 1)
         : foes;
       if (eligible.length === 0) continue;
-      // The stack's order decides the target; `standard` finishes off the weakest.
+      // The stack's order decides the target; Hunt the weak selects the weakest.
       const target = pickTargetByOrder(attacker, eligible);
       const attackerBefore = livingCount(attacker);
       const targetBefore = livingCount(target);
@@ -656,9 +675,11 @@ const simulateBattleInternal = (
       // Raw damage before any resistances — each unit that actually takes a
       // share (screen or target) applies its own matchup multiplier after
       // screening decides who takes what.
+      const attackOrderMultiplier =
+        attacker.order === "protect_ranged" ? 0.75 : 1;
       const intendedDamage = attackers
         .mul(attacker.stats.attack)
-        .mul(ExpNumber.fromNumber(hitChance));
+        .mul(ExpNumber.fromNumber(hitChance * attackOrderMultiplier));
       const damage = applyScreening(
         target,
         intendedDamage,

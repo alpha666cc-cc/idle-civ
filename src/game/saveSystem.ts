@@ -14,10 +14,11 @@ import {
 } from "./buildings";
 import { type BattleOrder } from "./battle";
 import { snapshotGuids } from "./dataIds";
-import { orderIds } from "./orders";
+import { DEFAULT_ORDER, orderIds } from "./orders";
 import type { DevLogDocument } from "./devLog";
 import { ExpNumber } from "./expNumber";
 import { CivilizationState } from "./civilizationState";
+import { unitDomainIds, unitTagIds, type UnitDomain } from "./units";
 import { emptyStatistics, type Statistics } from "./statistics";
 import {
   clampTradeIntensity,
@@ -44,7 +45,7 @@ import { formationIds, type FormationId } from "./formations";
  */
 
 /** Bump when the shape changes; `migrateSaveData` handles older documents. */
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 /** How a save travels: the same document, three encodings. */
 export type SaveFormat = "base64" | "json" | "xml";
@@ -152,6 +153,9 @@ export type SaveData = {
   readonly unitOrders?: Record<string, string>;
   /** Formations per unit id, added in version 7; empty for older documents. */
   readonly unitFormations?: Record<string, string>;
+  /** Per-unit target selectors, added in version 9. */
+  readonly unitTargetDomains?: Record<string, string>;
+  readonly unitTargetTags?: Record<string, string>;
   /** Enabled trade routes per resource id, added in version 6. */
   readonly tradeRoutes?: SerializedTradeRoutes;
   readonly devProductionMultiplier: string;
@@ -275,6 +279,21 @@ export const migrateSaveData = (data: SaveData): SaveData => {
       `The save was written by a newer build (version ${data.version}).`,
     );
   }
+  // v8 → v9: targeting selectors are optional, and the old standard order
+  // becomes the new default, Hunt the weak.
+  if (data.version === 8) {
+    return {
+      ...data,
+      version: SAVE_VERSION,
+      unitOrders: Object.fromEntries(
+        Object.entries(data.unitOrders ?? {}).filter(
+          ([, order]) => order !== "standard" && order !== DEFAULT_ORDER,
+        ),
+      ),
+      unitTargetDomains: data.unitTargetDomains ?? {},
+      unitTargetTags: data.unitTargetTags ?? {},
+    };
+  }
   // v7 → v8: timed worker diversity starts at ×1 in existing saves.
   if (data.version === 7) {
     return {
@@ -303,7 +322,7 @@ export const migrateSaveData = (data: SaveData): SaveData => {
       workerDiversityMultiplier: "1e0",
     };
   }
-  // v4 → v5: battle orders did not exist, so every old document starts on standard.
+  // v4 → v5: battle orders did not exist, so old saves use the default order.
   if (data.version === 4) {
     return {
       ...data,
@@ -708,6 +727,14 @@ export const remapSaveIds = (
       string,
       string
     >,
+    unitTargetDomains: remapRecord(
+      data.unitTargetDomains ?? {},
+      false,
+    ) as Record<string, string>,
+    unitTargetTags: remapRecord(data.unitTargetTags ?? {}, false) as Record<
+      string,
+      string
+    >,
     buildingCostOverrides: remapRecord(
       data.buildingCostOverrides ?? {},
       true,
@@ -912,6 +939,8 @@ export const collectReferencedIds = (state: CivilizationState): string[] => {
     ...Object.keys(countBuildings(state.builtBuildings)),
     ...Object.keys(state.unitCounts),
     ...Object.keys(state.unitOrders),
+    ...Object.keys(state.unitTargetDomains),
+    ...Object.keys(state.unitTargetTags),
     ...Object.keys(state.statistics.buildingsBuiltByKey),
     ...Object.keys(state.buildingCostOverrides),
     ...Object.keys(state.resources),
@@ -968,10 +997,20 @@ export const createSaveData = (
       value.toString(),
     ]),
   ),
-  // Only real (non-standard) orders are written; absence means standard on load.
+  // Only non-default orders are stored; absence means Hunt the weak.
   unitOrders: Object.fromEntries(
     Object.entries(state.unitOrders).filter(
       (entry): entry is [string, BattleOrder] => entry[1] !== undefined,
+    ),
+  ),
+  unitTargetDomains: Object.fromEntries(
+    Object.entries(state.unitTargetDomains).filter(
+      (entry): entry is [string, UnitDomain] => entry[1] !== undefined,
+    ),
+  ),
+  unitTargetTags: Object.fromEntries(
+    Object.entries(state.unitTargetTags).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined,
     ),
   ),
   // Only real (non-standard) formations are written; absence means standard on load.
@@ -1036,10 +1075,29 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
 
   const unitOrders: Partial<Record<string, BattleOrder>> = {};
   for (const [key, value] of Object.entries(data.unitOrders ?? {})) {
-    // A save may name an order this build no longer knows, or one the loaded
-    // age has not discovered; both fall back to `standard` rather than throwing.
-    if (!orderIds.includes(value as BattleOrder)) continue;
-    unitOrders[key] = value as BattleOrder;
+    const order = value === "standard" ? DEFAULT_ORDER : value;
+    // Unknown or age-locked orders fall back to Hunt the weak.
+    if (
+      !orderIds.includes(order as BattleOrder) ||
+      order === DEFAULT_ORDER
+    ) {
+      continue;
+    }
+    unitOrders[key] = order as BattleOrder;
+  }
+
+  const unitTargetDomains: Partial<Record<string, UnitDomain>> = {};
+  for (const [key, value] of Object.entries(data.unitTargetDomains ?? {})) {
+    if (unitDomainIds.includes(value as UnitDomain)) {
+      unitTargetDomains[key] = value as UnitDomain;
+    }
+  }
+
+  const unitTargetTags: Partial<Record<string, string>> = {};
+  for (const [key, value] of Object.entries(data.unitTargetTags ?? {})) {
+    if (!unitTargetDomains[key] && unitTagIds.includes(value)) {
+      unitTargetTags[key] = value;
+    }
   }
 
   const unitFormations: Partial<Record<string, FormationId>> = {};
@@ -1092,5 +1150,7 @@ export const loadSaveData = (data: SaveData): CivilizationState => {
     unitFormations,
     tradeRoutes,
     ExpNumber.from(data.workerDiversityMultiplier ?? 1),
+    unitTargetDomains,
+    unitTargetTags,
   );
 };

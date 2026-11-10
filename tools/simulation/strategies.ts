@@ -17,7 +17,7 @@ import { researchDefinitions } from "../../src/game/research.js";
 import { upgradeDefinitions } from "../../src/game/upgrades.js";
 import { type ArmyStack } from "../../src/game/battle.js";
 import { type FormationId } from "../../src/game/formations.js";
-import { type OrderId } from "../../src/game/orders.js";
+import { DEFAULT_ORDER, type OrderId } from "../../src/game/orders.js";
 import {
   simulatorCandidates,
   solveMinimumArmy,
@@ -1005,7 +1005,7 @@ const simulatorContext = (state: CivilizationState): BattleSimulatorContext => {
       .sort(([left], [right]) => left.localeCompare(right))
       .map(
         ([unitId, count]) =>
-          `${unitId}:${count.toString()}:${formations.get(unitId) ?? "standard"}:${orders.get(unitId) ?? "standard"}`,
+          `${unitId}:${count.toString()}:${formations.get(unitId) ?? "standard"}:${orders.get(unitId) ?? DEFAULT_ORDER}`,
       )
       .join(",");
     const key = `${combatStateKey}|${battleId}|${armyKey}`;

@@ -40,13 +40,17 @@ import {
   armyPower,
   simulateBattle,
   simulateBattleOutcome,
-  standardOrder,
   type ArmyStack,
   type BattleOrder,
   type BattleSimulation,
   type BattleOutcome,
 } from "./battle";
-import { ordersForAge } from "./orders";
+import {
+  DEFAULT_ORDER,
+  ordersForAge,
+  targetingCapabilitiesForAge,
+  type TargetingCapabilityId,
+} from "./orders";
 import {
   costTargetMatchesBuyable,
   collectCostReductions,
@@ -101,8 +105,11 @@ import {
   maximumArmor,
   parseUnitStatTarget,
   unitDefinitions,
+  unitDomainIds,
   unitMatchesStatTarget,
+  unitTagIds,
   type UnitDefinition,
+  type UnitDomain,
   type UnitStatKey,
   type UnitStats,
 } from "./units";
@@ -427,9 +434,8 @@ export class CivilizationState {
   /** Units owned per unit id. Casualties never touch this (armies are restored). */
   readonly unitCounts: Record<string, ExpNumber>;
   /**
-   * The order each owned unit type fights under, keyed by unit id. Absent means
-   * `standard`. Only orders the current age has discovered are stored, so a
-   * save written later than the player's age cannot smuggle in a locked order.
+   * The order each owned unit type fights under, keyed by unit id. Absence means
+   * Hunt the weak, the default. Only unlocked orders are stored.
    */
   readonly unitOrders: Partial<Record<string, BattleOrder>>;
   /**
@@ -437,6 +443,8 @@ export class CivilizationState {
    * `standard`. Only formations the current age has discovered are stored.
    */
   readonly unitFormations: Partial<Record<string, FormationId>>;
+  readonly unitTargetDomains: Partial<Record<string, UnitDomain>>;
+  readonly unitTargetTags: Partial<Record<string, string>>;
   /**
    * Trade routes keyed by resource (Trade tab). Only enabled routes are kept;
    * how many may run at once is the `tradeRoutes` stat, so a later bonus opens
@@ -473,6 +481,8 @@ export class CivilizationState {
     unitFormations: Partial<Record<string, FormationId>> = {},
     tradeRoutes: TradeRouteMap = {},
     workerDiversityMultiplier = ExpNumber.ONE,
+    unitTargetDomains: Partial<Record<string, UnitDomain>> = {},
+    unitTargetTags: Partial<Record<string, string>> = {},
   ) {
     this.resources = resources;
     this.workers = workers;
@@ -489,6 +499,8 @@ export class CivilizationState {
     this.unitCounts = unitCounts;
     this.unitOrders = unitOrders;
     this.unitFormations = unitFormations;
+    this.unitTargetDomains = unitTargetDomains;
+    this.unitTargetTags = unitTargetTags;
     this.tradeRoutes = tradeRoutes;
     this.devProductionMultiplier = devProductionMultiplier;
     this.freeBuildings = freeBuildings;
@@ -3177,23 +3189,24 @@ export class CivilizationState {
           stats,
           order: this.getUnitOrder(unit.key),
           formation: this.getUnitFormation(unit.key),
+          targetDomain: this.getUnitTargetDomain(unit.key),
+          targetTag: this.getUnitTargetTag(unit.key),
         });
       }
     }
     return stacks;
   }
 
-  /** The order a unit type fights under; `standard` when none is set. */
+  /** The order a unit type fights under; Hunt the weak is the default. */
   getUnitOrder(unitId: string): BattleOrder {
     const order = this.unitOrders[unitId];
-    return order && this.isOrderUnlocked(order) ? order : standardOrder;
+    return order && this.isOrderUnlocked(order) ? order : DEFAULT_ORDER;
   }
 
   /** Every order the player's current age has discovered. */
   getAvailableOrders(): readonly BattleOrder[] {
     const currentAge = this.getCurrentAge();
-    // Before the first age is entered the player still fights the opening battle,
-    // which is standard-only, so an unknown age falls back to age 0.
+    // Before the first age is entered the player still fights the opening battle.
     const ageIndex = currentAge
       ? ageDefinitions.findIndex(({ key }) => key === currentAge.key)
       : 0;
@@ -3206,14 +3219,14 @@ export class CivilizationState {
   }
 
   /**
-   * Set (or clear, with `standard`) the order a unit type fights under. Returns
+   * Set (or clear, with Hunt the weak) the order a unit type fights under. Returns
    * `this` unchanged for an unknown unit, a locked order, or a no-op change, so
    * callers can test `next === state`.
    */
   setUnitOrder(unitId: string, order: BattleOrder): CivilizationState {
     if (!findUnitDefinition(unitId) || !this.isOrderUnlocked(order))
       return this;
-    if (order === standardOrder) {
+    if (order === DEFAULT_ORDER) {
       if (this.unitOrders[unitId] === undefined) return this;
       const { [unitId]: _removed, ...rest } = this.unitOrders;
       return this.withState(
@@ -3257,6 +3270,98 @@ export class CivilizationState {
       this.unitFormations,
       this.tradeRoutes,
     );
+  }
+
+  getAvailableTargetingCapabilities(): readonly TargetingCapabilityId[] {
+    return targetingCapabilitiesForAge(this.enteredAges.length);
+  }
+
+  getAvailableTargetDomains(): readonly UnitDomain[] {
+    return this.getAvailableTargetingCapabilities().includes("target_domain")
+      ? unitDomainIds
+      : [];
+  }
+
+  getAvailableTargetTags(): readonly string[] {
+    return this.getAvailableTargetingCapabilities().includes("tag_focus")
+      ? unitTagIds
+      : [];
+  }
+
+  getUnitTargetDomain(unitId: string): UnitDomain | undefined {
+    if (
+      !this.getAvailableTargetingCapabilities().includes("target_domain") ||
+      !findUnitDefinition(unitId)
+    ) {
+      return undefined;
+    }
+    const domain = this.unitTargetDomains[unitId];
+    return domain && unitDomainIds.includes(domain) ? domain : undefined;
+  }
+
+  setUnitTargetDomain(
+    unitId: string,
+    domain: UnitDomain | undefined,
+  ): CivilizationState {
+    if (
+      !findUnitDefinition(unitId) ||
+      !this.getAvailableTargetingCapabilities().includes("target_domain") ||
+      (domain !== undefined && !unitDomainIds.includes(domain))
+    ) {
+      return this;
+    }
+    if (
+      this.unitTargetDomains[unitId] === domain &&
+      (domain === undefined || !this.unitTargetTags[unitId])
+    ) {
+      return this;
+    }
+    const next = { ...this.unitTargetDomains };
+    const nextTags = { ...this.unitTargetTags };
+    if (domain === undefined) delete next[unitId];
+    else {
+      next[unitId] = domain;
+      delete nextTags[unitId];
+    }
+    return this.withTacticalTargets(next, nextTags);
+  }
+
+  getUnitTargetTag(unitId: string): string | undefined {
+    if (
+      !this.getAvailableTargetingCapabilities().includes("tag_focus") ||
+      !findUnitDefinition(unitId)
+    ) {
+      return undefined;
+    }
+    const tag = this.unitTargetTags[unitId];
+    return tag && unitTagIds.includes(tag) ? tag : undefined;
+  }
+
+  setUnitTargetTag(
+    unitId: string,
+    tag: string | undefined,
+  ): CivilizationState {
+    if (
+      !findUnitDefinition(unitId) ||
+      !this.getAvailableTargetingCapabilities().includes("tag_focus") ||
+      (tag !== undefined && !unitTagIds.includes(tag))
+    ) {
+      return this;
+    }
+    if (
+      this.unitTargetTags[unitId] === tag &&
+      (tag === undefined || !this.unitTargetDomains[unitId])
+    ) {
+      return this;
+    }
+    const next = { ...this.unitTargetTags };
+    const nextDomains = { ...this.unitTargetDomains };
+    if (tag === undefined) delete next[unitId];
+    else {
+      next[unitId] = tag;
+      delete nextDomains[unitId];
+    }
+    return this.withTacticalTargets(nextDomains, next);
   }
 
   /** The formation a unit type uses; `standard` when none is set. */
@@ -4023,6 +4128,8 @@ export class CivilizationState {
     unitFormations = this.unitFormations,
     tradeRoutes = this.tradeRoutes,
     workerDiversityMultiplier = this.workerDiversityMultiplier,
+    unitTargetDomains = this.unitTargetDomains,
+    unitTargetTags = this.unitTargetTags,
   ): CivilizationState {
     return new CivilizationState(
       resources,
@@ -4046,6 +4153,37 @@ export class CivilizationState {
       unitFormations,
       tradeRoutes,
       workerDiversityMultiplier,
+      unitTargetDomains,
+      unitTargetTags,
+    );
+  }
+
+  private withTacticalTargets(
+    unitTargetDomains: Partial<Record<string, UnitDomain>>,
+    unitTargetTags: Partial<Record<string, string>>,
+  ): CivilizationState {
+    return this.withState(
+      this.resources,
+      this.buildingCostOverrides,
+      this.builtBuildings,
+      this.autoClicksPerSecond,
+      this.boughtUpgrades,
+      this.defeatedEncounters,
+      this.enteredAges,
+      this.earnedAchievements,
+      this.statistics,
+      this.unitCounts,
+      this.devProductionMultiplier,
+      this.freeBuildings,
+      this.freeUnits,
+      this.freeUpgrades,
+      this.boughtResearch,
+      this.unitOrders,
+      this.unitFormations,
+      this.tradeRoutes,
+      this.workerDiversityMultiplier,
+      unitTargetDomains,
+      unitTargetTags,
     );
   }
 

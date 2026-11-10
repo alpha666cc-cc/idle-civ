@@ -399,7 +399,7 @@ for (const formation of formationDefinitions) {
   }
   // Formations are revealed when they are unlocked (age entry or research)
   formation.seen = formation.unlockAge === 0;
-  // Namespace the id to avoid collisions with orders (both have "standard")
+  // Namespace the id to keep formation records distinct from tactical orders.
   const namespacedId = `formation:${formation.id}`;
   const formationProxy = new (class extends GameObject {
     name: string;
@@ -442,7 +442,7 @@ for (const formation of formationDefinitions) {
 for (const order of orderDefinitions) {
   // Orders are revealed when their age unlocks
   order.seen = order.unlockAge === 0;
-  // Namespace the id to avoid collisions with formations (both have "standard")
+  // Namespace tactical ids so formation and order records remain distinct.
   const namespacedId = `order:${order.id}`;
   const orderProxy = new (class extends GameObject {
     name: string;

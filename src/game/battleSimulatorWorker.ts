@@ -502,7 +502,7 @@ self.onmessage = async (event: MessageEvent<WorkerInput>) => {
         const formatTactics = (tactics: ReadonlyMap<string, string>): string =>
           [...tactics]
             .map(([unitId, tactic]) => `${unitId}:${tactic}`)
-            .join(", ") || "standard";
+            .join(", ") || "(default)";
         console.debug(
           `[Battle Simulator] ${battleId}: ${phase}` +
             (improved ? " — new best winning plan" : "") +

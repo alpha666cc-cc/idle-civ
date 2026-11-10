@@ -402,6 +402,20 @@ describe("migration", () => {
     expect(migrated.workerDiversityMultiplier).toBe("1e0");
   });
 
+  it("migrates the old standard order to Hunt the weak", () => {
+    const old = {
+      ...sampleSave(),
+      version: 8,
+      unitOrders: { warrior: "standard" },
+    };
+    const migrated = migrateSaveData(old);
+
+    expect(migrated.version).toBe(SAVE_VERSION);
+    expect(migrated.unitOrders).toEqual({});
+    expect(migrated.unitTargetDomains).toEqual({});
+    expect(migrated.unitTargetTags).toEqual({});
+  });
+
   it("refuses to down-convert a newer document", () => {
     const future = { ...sampleSave(), version: SAVE_VERSION + 5 };
     expect(() => migrateSaveData(future)).toThrow(/newer build/);
@@ -469,6 +483,36 @@ describe("loading a state", () => {
     expect(restored.freeBuildings).toBe(true);
     expect(restored.freeUnits).toBe(false);
     expect(restored.freeUpgrades).toBe(true);
+  });
+
+  it("round-trips one target selector and normalizes older conflicting saves", () => {
+    const entered = new CivilizationState(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      ["age0", "age1", "age2", "age3", "age4", "age5"],
+    );
+    const source = entered
+      .setUnitTargetDomain("warrior", "naval")
+      .setUnitTargetTag("warrior", "ranged");
+    const restored = loadSaveData(createSaveData(source, "target-selectors", 1));
+
+    expect(restored.getUnitTargetDomain("warrior")).toBeUndefined();
+    expect(restored.getUnitTargetTag("warrior")).toBe("ranged");
+
+    const conflictingSave: SaveData = {
+      ...createSaveData(entered, "conflicting-target-selectors", 1),
+      unitTargetDomains: { warrior: "naval" },
+      unitTargetTags: { warrior: "ranged" },
+    };
+    const normalized = loadSaveData(conflictingSave);
+    expect(normalized.getUnitTargetDomain("warrior")).toBe("naval");
+    expect(normalized.getUnitTargetTag("warrior")).toBeUndefined();
   });
 
   it("keeps the free-upgrade dev flag across a worker change", () => {

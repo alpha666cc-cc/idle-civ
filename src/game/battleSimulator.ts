@@ -672,8 +672,8 @@ export const findOptimalFormations = (
 /**
  * Find optimal targeting order assignments for a given army composition.
  * Tries all available orders for each unit type and returns the winning combination.
- * Returns empty map if no order combination wins (falls back to standard).
- * Prefers standard when multiple assignments win.
+ * Returns empty map if no order combination wins (falls back to Hunt the weak).
+ * Prefers Hunt the weak when multiple assignments win.
  */
 export const findOptimalOrders = (
   composition: SimulatorTotalArmy,
@@ -685,10 +685,10 @@ export const findOptimalOrders = (
   const unitIds = [...composition.keys()];
   if (unitIds.length === 0) return new Map();
 
-  // Prefer standard whenever multiple order assignments win.
+  // Prefer Hunt the weak whenever multiple order assignments win.
   const sortedOrders = [...availableOrders].sort((a, b) => {
-    if (a === "standard") return -1;
-    if (b === "standard") return 1;
+    if (a === DEFAULT_ORDER) return -1;
+    if (b === DEFAULT_ORDER) return 1;
     return a.localeCompare(b);
   });
 
@@ -1153,7 +1153,7 @@ export const solveMinimumArmy = (
         );
 
   // Find optimal targeting orders for the winning army
-  // Use standard order for Age 0/2, all available orders for Age 3+
+  // Use Hunt the weak for Age 0/2, all available orders for Age 3+
   const availableOrders =
     encounter && encounter.age >= 3 ? orderIds : [DEFAULT_ORDER];
 
@@ -1417,7 +1417,9 @@ export const optimizeOwnedArmyTactics = (
 
   const keyOrders: OrderId[] = [DEFAULT_ORDER];
   for (const ord of ["focus_weak", "focus_strong", "focus_counter"] as const) {
-    if (availableOrders.includes(ord)) keyOrders.push(ord);
+    if (ord !== DEFAULT_ORDER && availableOrders.includes(ord)) {
+      keyOrders.push(ord);
+    }
   }
 
   const isBetterTactic = (

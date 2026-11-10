@@ -305,7 +305,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard", "frontline", "backline"],
-      ["standard"],
+      ["focus_weak"],
       (intermediate, _phase, improved) => {
         if (improved) {
           progress.push({
@@ -355,7 +355,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard", "turtle"],
-      ["standard", "focus_weak"],
+      ["focus_weak"],
       undefined,
       [
         {
@@ -370,7 +370,7 @@ describe("optimizeBattleTactics iteration", () => {
               unitId: "archer_prehist",
               count: "1e6",
               formation: "standard",
-              order: "standard",
+              order: "focus_weak",
             },
           ],
         },
@@ -433,7 +433,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard", "frontline"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     if (!result) throw new Error("Expected winning plans to be found");
@@ -495,7 +495,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard", "frontline"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     if (!result) throw new Error("Expected a winning formation");
@@ -549,7 +549,7 @@ describe("optimizeBattleTactics iteration", () => {
       formations,
       new Map(),
       ["standard", "frontline"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     if (!result) throw new Error("Expected the owned army to win");
@@ -613,7 +613,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard", "frontline"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     if (!result) throw new Error("Expected a winning formation and army");
@@ -685,7 +685,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard", "frontline"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     if (!result) throw new Error("Expected a winning formation and army");
@@ -750,7 +750,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     if (!result) throw new Error("Expected winning configurations");
@@ -803,7 +803,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     if (!result) throw new Error("Expected the owned army to win");
@@ -845,7 +845,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map([["hoplite", "standard"]]),
       new Map(),
       ["standard", "turtle"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     expect(result?.composition.get("legionary")?.toNumber()).toBe(1);
@@ -886,7 +886,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard", "frontline", "backline"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     expect(result?.composition.get("legionary")?.toNumber()).toBe(1);
@@ -1076,7 +1076,7 @@ describe("optimizeBattleTactics iteration", () => {
       ],
       research: { ids: [], costs: [] },
       formations: new Map([["warrior", "standard"]]),
-      orders: new Map([["warrior", "standard"]]),
+      orders: new Map([["warrior", "focus_weak"]]),
     };
     const progress: number[] = [];
 
@@ -1145,7 +1145,7 @@ describe("optimizeBattleTactics iteration", () => {
       context,
       army,
       ["standard", "turtle"],
-      ["standard", "focus_weak"],
+      ["focus_weak"],
     );
 
     expect(result).not.toBeNull();
@@ -1176,7 +1176,7 @@ describe("optimizeBattleTactics iteration", () => {
       context,
       army,
       ["standard", "frontline"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     expect(result?.wins).toBe(false);
@@ -1206,7 +1206,7 @@ describe("optimizeBattleTactics iteration", () => {
       context,
       army,
       ["standard", "frontline"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     expect(result?.wins).toBe(true);
@@ -1243,7 +1243,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard"],
-      ["standard"],
+      ["focus_weak"],
       (_plan, phase) => phases.push(phase),
     );
 
@@ -1314,7 +1314,7 @@ describe("optimizeBattleTactics iteration", () => {
       new Map(),
       new Map(),
       ["standard", "frontline"],
-      ["standard"],
+      ["focus_weak"],
       (plan, phase) => {
         phases.push(phase);
         if (phase.startsWith("Balanced army ceiling wins")) {

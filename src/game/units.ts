@@ -13,6 +13,7 @@ import { GameObject } from "./gameObject";
  * damage it survives or deals, so they stay plain numbers.
  */
 export type UnitDomain = "ground" | "air" | "naval";
+export const unitDomainIds: readonly UnitDomain[] = ["ground", "air", "naval"];
 
 export type UnitStatKey =
   | "hp"
@@ -183,6 +184,10 @@ const unitStrengthScale = (data: UnitData): number => {
 export const unitDefinitions: UnitDefinition[] = (unitData as UnitData[]).map(
   toUnitDefinition,
 );
+
+export const unitTagIds: readonly string[] = [
+  ...new Set(unitDefinitions.flatMap(({ tags }) => tags)),
+].sort();
 
 export const findUnitDefinition = (
   unitId: string,

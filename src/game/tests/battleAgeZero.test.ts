@@ -18,7 +18,11 @@ import {
   simulateBattleOutcome,
   type BattleOrder,
 } from "../battle";
-import { ordersForAge } from "../orders";
+import {
+  DEFAULT_ORDER,
+  ordersForAge,
+  targetingCapabilitiesForAge,
+} from "../orders";
 import {
   simulatorCandidates,
   solveMinimumArmy,
@@ -402,6 +406,222 @@ describe("Wolf Pack: a mixed army is the cheapest answer", () => {
     );
   });
 
+  it("lets a protecting boat screen an infantry ally for 25% of the attack", () => {
+    const slinger = state.getUnitStats("slinger");
+    const warrior = state.getUnitStats("warrior");
+    const canoe = state.getUnitStats("canoe");
+    if (!slinger || !warrior || !canoe)
+      throw new Error("Unit stats are missing.");
+    const battle = simulateBattle(
+      [{ unitId: "slinger", count: ExpNumber.ONE, stats: slinger }],
+      [
+        { unitId: "warrior", count: ExpNumber.ONE, stats: warrior },
+        {
+          unitId: "canoe",
+          count: ExpNumber.fromNumber(2),
+          stats: canoe,
+          order: "protect_ranged",
+        },
+      ],
+      { maxRounds: 5 },
+    );
+    const screenedAttack = battle.rounds
+      .flatMap((round) => round.attacks)
+      .find(
+        (attack) =>
+          attack.attackerId === "slinger" &&
+          attack.targetId === "warrior" &&
+          attack.screening.some((screen) => screen.unitId === "canoe"),
+      );
+
+    expect(screenedAttack).toBeDefined();
+    expect(
+      screenedAttack?.screening
+        .find((screen) => screen.unitId === "canoe")
+        ?.damage.div(screenedAttack.intendedDamage)
+        .toNumber(),
+    ).toBeCloseTo(0.25);
+  });
+
+  it("reduces Protect Ranged attack damage by 25%", () => {
+    const warrior = state.getUnitStats("warrior");
+    const wolf = state.getUnitStats("wolf");
+    if (!warrior || !wolf) throw new Error("Unit stats are missing.");
+    const ordinary = simulateBattle(
+      [{ unitId: "warrior", count: ExpNumber.ONE, stats: warrior }],
+      [{ unitId: "wolf", count: ExpNumber.ONE, stats: wolf }],
+      { maxRounds: 5 },
+    );
+    const protecting = simulateBattle(
+      [
+        {
+          unitId: "warrior",
+          count: ExpNumber.ONE,
+          stats: warrior,
+          order: "protect_ranged",
+        },
+      ],
+      [{ unitId: "wolf", count: ExpNumber.ONE, stats: wolf }],
+      { maxRounds: 5 },
+    );
+    const ordinaryDamage = ordinary.rounds
+      .flatMap((round) => round.attacks)
+      .find((attack) => attack.attackerId === "warrior")?.intendedDamage;
+    const protectingDamage = protecting.rounds
+      .flatMap((round) => round.attacks)
+      .find((attack) => attack.attackerId === "warrior")?.intendedDamage;
+
+    if (!ordinaryDamage || !protectingDamage)
+      throw new Error("Expected both battles to include a warrior attack.");
+    expect(protectingDamage.div(ordinaryDamage).toNumber()).toBeCloseTo(0.75);
+  });
+
+  it("keeps the normal screening share at 25% across multiple screeners", () => {
+    const slinger = state.getUnitStats("slinger");
+    const warrior = state.getUnitStats("warrior");
+    const spearman = state.getUnitStats("spearman_bronze");
+    if (!slinger || !warrior || !spearman)
+      throw new Error("Unit stats are missing.");
+    const battle = simulateBattle(
+      [{ unitId: "slinger", count: ExpNumber.ONE, stats: slinger }],
+      [
+        { unitId: "slinger", count: ExpNumber.ONE, stats: slinger },
+        { unitId: "warrior", count: ExpNumber.ONE, stats: warrior },
+        {
+          unitId: "spearman_bronze",
+          count: ExpNumber.ONE,
+          stats: spearman,
+        },
+      ],
+      { maxRounds: 5 },
+    );
+    const screenedAttack = battle.rounds
+      .flatMap((round) => round.attacks)
+      .find(
+        (attack) =>
+          attack.attackerId === "slinger" &&
+          attack.targetId === "slinger" &&
+          attack.screening.length === 2,
+      );
+
+    expect(screenedAttack).toBeDefined();
+    expect(
+      screenedAttack?.screening
+        .reduce((total, screen) => total.add(screen.damage), ExpNumber.ZERO)
+        .div(screenedAttack.intendedDamage)
+        .toNumber(),
+    ).toBeCloseTo(0.25);
+  });
+
+  it("caps the combined normal and protective screening pools at 50%", () => {
+    const slinger = state.getUnitStats("slinger");
+    const warrior = state.getUnitStats("warrior");
+    const spearman = state.getUnitStats("spearman_bronze");
+    if (!slinger || !warrior || !spearman)
+      throw new Error("Unit stats are missing.");
+    const battle = simulateBattle(
+      [{ unitId: "slinger", count: ExpNumber.ONE, stats: slinger }],
+      [
+        { unitId: "slinger", count: ExpNumber.ONE, stats: slinger },
+        {
+          unitId: "warrior",
+          count: ExpNumber.ONE,
+          stats: warrior,
+          order: "protect_ranged",
+        },
+        {
+          unitId: "spearman_bronze",
+          count: ExpNumber.ONE,
+          stats: spearman,
+          order: "protect_ranged",
+        },
+      ],
+      { maxRounds: 5 },
+    );
+    const screenedAttack = battle.rounds
+      .flatMap((round) => round.attacks)
+      .find(
+        (attack) =>
+          attack.attackerId === "slinger" &&
+          attack.targetId === "slinger" &&
+          attack.screening.length === 2,
+      );
+
+    expect(screenedAttack).toBeDefined();
+    expect(
+      screenedAttack?.screening
+        .reduce((total, screen) => total.add(screen.damage), ExpNumber.ZERO)
+        .div(screenedAttack.intendedDamage)
+        .toNumber(),
+    ).toBeCloseTo(0.5);
+  });
+
+  it("prioritizes a selected target domain", () => {
+    const slinger = state.getUnitStats("slinger");
+    const warrior = state.getUnitStats("warrior");
+    const canoe = state.getUnitStats("canoe");
+    if (!slinger || !warrior || !canoe)
+      throw new Error("Unit stats are missing.");
+    const battle = simulateBattle(
+      [
+        {
+          unitId: "slinger",
+          count: ExpNumber.ONE,
+          stats: slinger,
+          targetDomain: "naval",
+        },
+      ],
+      [
+        { unitId: "warrior", count: ExpNumber.ONE, stats: warrior },
+        { unitId: "canoe", count: ExpNumber.ONE, stats: canoe },
+      ],
+      { maxRounds: 5 },
+    );
+    const targetedAttack = battle.rounds
+      .flatMap((round) => round.attacks)
+      .find(
+        (attack) =>
+          attack.attackerId === "slinger" &&
+          attack.reachableTargets.includes("canoe") &&
+          attack.reachableTargets.includes("warrior"),
+      );
+
+    expect(targetedAttack?.targetId).toBe("canoe");
+  });
+
+  it("prioritizes a selected target tag independently of domain", () => {
+    const slinger = state.getUnitStats("slinger");
+    const warrior = state.getUnitStats("warrior");
+    const canoe = state.getUnitStats("canoe");
+    if (!slinger || !warrior || !canoe)
+      throw new Error("Unit stats are missing.");
+    const battle = simulateBattle(
+      [
+        {
+          unitId: "slinger",
+          count: ExpNumber.ONE,
+          stats: slinger,
+          targetTag: "infantry",
+        },
+      ],
+      [
+        { unitId: "warrior", count: ExpNumber.ONE, stats: warrior },
+        { unitId: "canoe", count: ExpNumber.ONE, stats: canoe },
+      ],
+      { maxRounds: 5 },
+    );
+    const targetedAttack = battle.rounds
+      .flatMap((round) => round.attacks)
+      .find(
+        (attack) =>
+          attack.attackerId === "slinger" &&
+          attack.reachableTargets.includes("canoe") &&
+          attack.reachableTargets.includes("warrior"),
+      );
+
+    expect(targetedAttack?.targetId).toBe("warrior");
+  });
+
   it("makes hulls the cheap marginal buy once an army is already held", () => {
     // 8 hulls (4.06e5 military) versus the 18 slingers (4.00e5) that finish the
     // stack. This used to be a clear 4.8e5 < 6.5e5 undercut; the age-1 rebalance
@@ -473,7 +693,7 @@ describe("battle orders", () => {
       state.getEnemyStacks(firstFire),
     );
     const explicit = simulateBattle(
-      army([["warrior", 8]], { warrior: "standard" }),
+      army([["warrior", 8]], { warrior: DEFAULT_ORDER }),
       state.getEnemyStacks(firstFire),
     );
     expect(explicit.rounds).toEqual(plain.rounds);
@@ -502,26 +722,89 @@ describe("battle orders", () => {
     // For now, skip it.
   });
 
-  it("keeps standard an unlocked order in every age", () => {
+  it("keeps Hunt the weak unlocked as the default in every age", () => {
     for (let age = 0; age <= 7; age += 1) {
-      expect(ordersForAge(age)).toContain("standard");
+      expect(ordersForAge(age)).toContain("focus_weak");
     }
   });
 
   it("holds the tactical orders back until the classical ages", () => {
-    expect(ordersForAge(0)).toEqual(["standard"]);
-    expect(ordersForAge(1)).toEqual(["standard"]);
-    expect(ordersForAge(2)).toEqual(["standard"]); // Age 2: formations only, no targeting orders
+    expect(ordersForAge(0)).toEqual(["focus_weak"]);
+    expect(ordersForAge(1)).toEqual(["focus_weak"]);
+    expect(ordersForAge(2)).toEqual(["focus_weak"]); // Age 2: formations only, no extra orders
     expect(ordersForAge(3)).toContain("focus_counter");
-    expect(ordersForAge(3)).toContain("same_tag");
+    expect(ordersForAge(3)).toContain("protect_ranged");
+    expect(ordersForAge(3).map(String)).not.toContain("target_domain");
+    expect(targetingCapabilitiesForAge(4)).toEqual([]);
+    expect(targetingCapabilitiesForAge(5)).toEqual(["target_domain"]);
+    expect(targetingCapabilitiesForAge(6)).toEqual([
+      "target_domain",
+      "tag_focus",
+    ]);
   });
 
   it("gates orders on the age the player has reached", () => {
     const start = new CivilizationState();
-    expect(start.getAvailableOrders()).toEqual(["standard"]);
+    expect(start.getAvailableOrders()).toEqual(["focus_weak"]);
+    expect(start.getUnitOrder("warrior")).toBe("focus_weak");
     expect(start.isOrderUnlocked("focus_counter")).toBe(false);
     // A locked order is refused, leaving the state untouched.
     expect(start.setUnitOrder("warrior", "focus_counter")).toBe(start);
+  });
+
+  it("unlocks domain and tag selectors as mutually exclusive choices", () => {
+    const ageFour = new CivilizationState(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      ["age0", "age1", "age2", "age3"],
+    );
+    expect(ageFour.getAvailableTargetDomains()).toEqual([]);
+    expect(
+      ageFour.setUnitTargetDomain("warrior", "naval"),
+    ).toBe(ageFour);
+
+    const ageFive = new CivilizationState(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      ["age0", "age1", "age2", "age3", "age4"],
+    );
+    const targeted = ageFive.setUnitTargetDomain("warrior", "naval");
+    expect(targeted).not.toBe(ageFive);
+    expect(targeted.getUnitTargetDomain("warrior")).toBe("naval");
+    expect(targeted.getAvailableTargetTags()).toEqual([]);
+    expect(targeted.tick().getUnitTargetDomain("warrior")).toBe("naval");
+
+    const ageSix = new CivilizationState(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      ["age0", "age1", "age2", "age3", "age4", "age5"],
+    );
+    const tagSelected = ageSix
+      .setUnitTargetDomain("warrior", "naval")
+      .setUnitTargetTag("warrior", "ranged");
+    expect(tagSelected.getUnitTargetDomain("warrior")).toBeUndefined();
+    expect(tagSelected.getUnitTargetTag("warrior")).toBe("ranged");
+    const domainSelected = tagSelected.setUnitTargetDomain("warrior", "naval");
+    expect(domainSelected.getUnitTargetDomain("warrior")).toBe("naval");
+    expect(domainSelected.getUnitTargetTag("warrior")).toBeUndefined();
   });
 
   it("stores an unlocked formation and clears it back to standard", () => {
@@ -558,7 +841,7 @@ describe("battle orders", () => {
 
   it("ignores an unknown unit id", () => {
     const start = new CivilizationState();
-    expect(start.setUnitOrder("not_a_unit", "standard")).toBe(start);
+    expect(start.setUnitOrder("not_a_unit", DEFAULT_ORDER)).toBe(start);
   });
 
   it("ships a label and a hint for every order", () => {

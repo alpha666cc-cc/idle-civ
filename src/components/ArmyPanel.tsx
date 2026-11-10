@@ -14,8 +14,10 @@ import { findFormationDefinition, type FormationId } from "../game/formations";
 import type { ExpNumber } from "../game/expNumber";
 import {
   findUnitDefinition,
+  unitDomainLabels,
   unitStatKeys,
   unitStatLabels,
+  type UnitDomain,
 } from "../game/units";
 import { unitIcon, unitTone } from "./unitIcons";
 
@@ -299,6 +301,15 @@ export default function ArmyPanel({
           const formation = gameState.getUnitFormation(unit.key);
           const orders = gameState.getAvailableOrders();
           const order = gameState.getUnitOrder(unit.key);
+          const targetDomains = gameState.getAvailableTargetDomains();
+          const targetDomain = gameState.getUnitTargetDomain(unit.key);
+          const targetTags = gameState.getAvailableTargetTags();
+          const targetTag = gameState.getUnitTargetTag(unit.key);
+          const targetSelector = targetDomain
+            ? `domain:${targetDomain}`
+            : targetTag
+              ? `tag:${targetTag}`
+              : "";
           return (
             <article key={unit.key} className="unit-card">
               <div className="unit-card-head">
@@ -356,7 +367,7 @@ export default function ArmyPanel({
                 </label>
               )}
 
-              {ageIndex >= 3 && orders.length > 1 && (
+              {orders.length > 1 && (
                 <label className="unit-order">
                   <span className="unit-order-label">Targeting</span>
                   <select
@@ -378,6 +389,56 @@ export default function ArmyPanel({
                         {battleOrderLabels[option]}
                       </option>
                     ))}
+                  </select>
+                </label>
+              )}
+              {(targetDomains.length > 0 || targetTags.length > 0) && (
+                <label className="unit-order">
+                  <span className="unit-order-label">Target priority</span>
+                  <select
+                    className="unit-order-select"
+                    value={targetSelector}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setGameState((current) => {
+                        if (value.startsWith("domain:")) {
+                          return current.setUnitTargetDomain(
+                            unit.key,
+                            value.slice("domain:".length) as UnitDomain,
+                          );
+                        }
+                        if (value.startsWith("tag:")) {
+                          return current.setUnitTargetTag(
+                            unit.key,
+                            value.slice("tag:".length),
+                          );
+                        }
+                        return current
+                          .setUnitTargetDomain(unit.key, undefined)
+                          .setUnitTargetTag(unit.key, undefined);
+                      });
+                    }}
+                    aria-label={`Target priority for ${unit.name}`}
+                  >
+                    <option value="">Any target</option>
+                    {targetDomains.length > 0 && (
+                      <optgroup label="Domain">
+                        {targetDomains.map((domain) => (
+                          <option key={domain} value={`domain:${domain}`}>
+                            {unitDomainLabels[domain]}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {targetTags.length > 0 && (
+                      <optgroup label="Tag">
+                        {targetTags.map((tag) => (
+                          <option key={tag} value={`tag:${tag}`}>
+                            {tag.charAt(0).toUpperCase() + tag.slice(1)}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </label>
               )}

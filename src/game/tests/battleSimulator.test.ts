@@ -187,7 +187,7 @@ describe("battle simulator current army", () => {
       mockContext,
       owned,
       ["standard", "turtle", "frontline"],
-      ["standard", "focus_weak"],
+      ["focus_weak"],
     );
 
     expect(result).not.toBeNull();
@@ -208,7 +208,7 @@ describe("battle simulator current army", () => {
       mockContext,
       owned,
       ["standard", "turtle"],
-      ["standard"],
+      ["focus_weak"],
     );
 
     expect(result).toBeNull();

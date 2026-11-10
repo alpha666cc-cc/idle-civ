@@ -1,15 +1,9 @@
 [
   {
-    "id": "standard",
-    "name": "Standard",
-    "description": "Fire at the weakest stack you can reach.",
-    "unlockAge": 0
-  },
-  {
     "id": "focus_weak",
-    "name": "Finish the weakest",
-    "description": "Concentrate on the smallest remaining stack.",
-    "unlockAge": 3
+    "name": "Hunt the weak",
+    "description": "Prioritize the weakest reachable enemy.",
+    "unlockAge": 0
   },
   {
     "id": "focus_strong",
@@ -19,20 +13,26 @@
   },
   {
     "id": "focus_counter",
-    "name": "Hunt the armoured",
+    "name": "Focus Counters",
     "description": "Prefer the enemy your unit counters; fall back if it has none.",
     "unlockAge": 3
   },
   {
-    "id": "same_tag",
-    "name": "Match their kind",
-    "description": "Pick a foe of your own kind, or the first you can reach.",
-    "unlockAge": 3
+    "id": "target_domain",
+    "name": "Target domain",
+    "description": "Choose a domain to prioritize among reachable enemies.",
+    "unlockAge": 5
+  },
+  {
+    "id": "tag_focus",
+    "name": "Target tag",
+    "description": "Choose a tag to prioritize within the selected domain.",
+    "unlockAge": 6
   },
   {
     "id": "protect_ranged",
-    "name": "Guard the shooters",
-    "description": "Body-guard the ranged line, absorbing fire for it.",
+    "name": "Protect allies",
+    "description": "Screen any ally from attacks; normal screens protect an extra 25%, but attacks deal 25% less damage.",
     "unlockAge": 3
   }
 ]

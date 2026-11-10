@@ -220,7 +220,7 @@ livingCount = ceil(hpPool / hitPoints)
 | starting gap | **maximum army range + 1** | Round 0 deployment; no unit is in range |
 | `maximumRounds` | **101** | unresolved by then ⇒ `stalemate`, counted as a loss |
 | `bonusVsMultiplier` | **1.5** | damage multiplier against a countered tag |
-| `screeningShare` | **0.25** | share of damage redirected to screens |
+| `screeningShare` | **0.25** | normal and protective screening pools; combined cap **0.50** |
 
 ### One round (one second of playback)
 
@@ -252,64 +252,47 @@ data: a formation may declare `damageDealtVs` (e.g. `pike_square` deals ×1.5 vs
 `cavalry`, ×0.8 vs `ranged`) and/or `damageTakenVs` (e.g. `turtle` takes ×0.7
 from any `ranged` attacker — missile-fire resistance).
 
-### Target selection — the eight orders
+### Target selection — orders and target selectors
 
-> ### ⚠ There are NO selectable orders in Age 0 or Age 1
-> 
-> `ordersForAge(0)` and `ordersForAge(1)` both return **exactly one** entry:
-> `standard`. Verified against the live engine:
-> 
-> | age | orders available | count |
-> | --- | --- | --- |
-> | **0 Ancient** | `standard` | **1** |
-> | **1 Iron** | `standard` | **1** |
-> | 2 Classical | `standard`, `frontline`, `backline`, `focus_counter`, `focus_weak`, `focus_strong` | 6 |
-> | 3+ | all eight | 8 |
-> 
-> The other seven unlock in Age 2 and Age 3. **Any strategy, model or optimiser
-> reasoning about the Age-1 objective must assume `standard` for every unit,
-> because there is no other option available.** Do not budget time for order
-> selection at Age 1 — the Army tab's order picker cannot offer anything else
-> yet, and `getAvailableOrders()` returns the age-0 list (just `standard`)
-> until the settlement enters its first age.
-> 
-> Because `standard` is the pre-orders rule verbatim, this also means the Age-1
-> battles behave exactly as they did before orders existed: **every stack fires
-> at the weakest reachable pool.**
+`Hunt the weak` (`focus_weak`) is the default from Age 0; `standard` is no longer
+a selectable order. Existing saves translate their old `standard` value to
+`focus_weak`.
 
-Orders change **targeting and screening only** — never damage, range or speed,
-so an order can move the cost of a battle but not invalidate a unit's stats.
-`standard` is bit-for-bit the pre-orders rule and deliberately does *not* prefer
-a countered target; folding that in would silently retune every battle for
-players who never touch the control.
-
-| order | targets |
+| unlock age | selectable orders |
 | --- | --- |
-| `standard` | weakest reachable stack |
-| `focus_weak` | smallest remaining stack |
-| `focus_strong` | largest remaining stack |
-| `focus_counter` | weakest foe whose tags the attacker counters, else any |
-| `same_tag` | a foe sharing one of your tags, else first reachable |
-| `frontline` | nearest melee line (lowest `range`) |
-| `backline` | furthest-reaching foe |
-| `protect_ranged` | standard targeting, but draws fire for ranged allies |
+| 0–2 | `focus_weak` |
+| 3+ | `focus_weak`, `focus_strong`, `focus_counter`, `protect_ranged` |
 
-Every order falls back to a reachable target, so an order never makes a stack
-idle while enemies are in range. An order is **per unit type**, not per stack
-instance — one army, one order per type, so it always describes the whole of
-that type.
+| order | behavior |
+| --- | --- |
+| `focus_weak` | target the reachable enemy with the lowest remaining HP pool |
+| `focus_strong` | target the reachable enemy with the highest remaining HP pool |
+| `focus_counter` | target the weakest reachable foe whose tags the attacker counters, else the weakest |
+| `protect_ranged` | retains weak-targeting behavior, screens allies, and deals 25 % less attack damage |
 
-At **Age 0–1 only `standard` exists** (see the warning above), so the remaining
-seven are forward-looking: they matter from Age 2, not for an Age-1 strategy.
+Target priority is a separate per-unit selector, independent of the order.
+Choose either a domain or a tag; setting one clears the other:
+
+| unlock age | selector | behavior |
+| --- | --- | --- |
+| 5 | `target_domain` | choose a domain to prioritize among reachable enemies |
+| 6 | `tag_focus` | choose a tag to prioritize among reachable enemies |
+
+If the selected domain or tag has a reachable target, the weakest matching foe
+is chosen. If it does not, the selected order applies. Every choice falls back
+to a reachable target, and settings are per unit type.
 
 ### Screening
 
-A stack whose order is `protect_ranged`, or whose `range <= 3` (fragile), is
-protected. Its `frontline`/`protect_ranged` allies split **25 %** of the damage
-aimed at it. All of it is still dealt — screening trades a body's survival for
-its allies' rather than adding or removing damage. The share is small on
-purpose: at a higher share the screen dies in the opening rounds, the enemy
-focuses whatever is left, and the order loses battles that were already won.
+Ground infantry normally screen ranged and siege allies for **25 % total** of
+an attack, shared evenly among eligible screeners. `protect_ranged` units can
+screen any ally and provide a separate **25 % total** pool, shared evenly among
+eligible protectors. The combined share is capped at **50 %**; a normal
+screener with `protect_ranged` can receive from both pools. With no protective
+order, screening remains the previous 25 % total, so earlier-age battles keep
+their existing screening behavior. The intended damage is divided between the
+target and screens before each recipient's matchup modifiers are applied.
+Screening redirects damage; it does not add or remove it.
 
 ### Outcome and consequences
 
@@ -922,7 +905,7 @@ Defined in code (`src/game/attributes.ts`), not in a payload: gatherables
 
 This is the rock-paper-scissors surface, and it is where naval balance lives.
 
-- `tags` — unit classes, used for `same_tag` battle orders.
+- `tags` — unit classes, used by the `tag_focus` target selector and `bonusVs`.
 - `canHit` — which domains this unit may target at all.
 - `bonusVs` — **tag list this unit deals a damage bonus against** (e.g.
   `spearman_bronze` and `catapult_ancient` both have `bonusVs: ["armored"]`).
