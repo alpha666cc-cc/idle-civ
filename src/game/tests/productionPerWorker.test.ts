@@ -7,6 +7,7 @@ import {
   findAttributeDefinition,
   type ProductionResourceKey,
 } from "../attributes";
+import type { BuildingKey } from "../buildings";
 import { CivilizationState } from "../civilizationState";
 import { ExpNumber } from "../expNumber";
 import { emptyStatistics } from "../statistics";
@@ -33,11 +34,12 @@ const stateWithBonusesAndWorkers = (
   workerDiversityMultiplier = ExpNumber.ONE,
   resources = emptyResourceAmounts(),
   earnedAchievementIds: string[] = [],
+  builtBuildings: Partial<Record<BuildingKey, number>> = {},
 ): CivilizationState =>
   new CivilizationState(
     resources,
     { ...emptyWorkerAssignments(), ...workers },
-    {},
+    builtBuildings,
     emptyResourceFactors(),
     {},
     0,
@@ -502,24 +504,38 @@ describe("productionPerWorker attributes", () => {
       );
     });
 
-    it("applies diversity to worker output, not clicks, or before Age 3", () => {
+    it("applies diversity as a production multiplier after Age 3", () => {
       const workers = workersAt(100_000);
-      const beforeAge3 = stateWithBonusesAndWorkers([], workers, ["age1"]);
-      const age3 = stateWithBonusesAndWorkers([], workers, ["age1", "age2"]);
-      const ramped = tickFor(age3, 30);
+      const baseline = stateWithBonusesAndWorkers(
+        [],
+        workers,
+        ["age1", "age2"],
+        ExpNumber.ONE,
+        emptyResourceAmounts(),
+        [],
+        { university: 1 },
+      );
+      const diversity = stateWithBonusesAndWorkers(
+        [],
+        workers,
+        ["age1", "age2"],
+        ExpNumber.fromNumber(2),
+        emptyResourceAmounts(),
+        [],
+        { university: 1 },
+      );
 
-      const diversityFactor = ramped
-        .getProductionFactors("food")
-        .additional.find(([source]) => source === "worker diversity")?.[1];
-      const workerFactor = ramped
-        .getProductionFactors("food")
-        .additional.find(([source]) => typeof source !== "string")?.[1];
-      expect(diversityFactor?.toNumber()).toBeCloseTo(
-        workerFactor?.toNumber() ?? 0,
+      const factors = diversity.getProductionFactors("science");
+      const diversityFactor = factors.multiplicative.find(
+        ([source]) => source === "worker diversity",
+      )?.[1];
+      expect(diversityFactor?.toNumber()).toBeCloseTo(2, 9);
+      expect(diversity.computeResourceRate("science").toNumber()).toBeCloseTo(
+        baseline.computeResourceRate("science").toNumber() * 2,
         9,
       );
-      expect(beforeAge3.computeClickGain("food").toNumber()).toBeCloseTo(
-        age3.computeClickGain("food").toNumber(),
+      expect(diversity.computeClickGain("science").toNumber()).toBeCloseTo(
+        baseline.computeClickGain("science").toNumber() * 2,
         9,
       );
     });

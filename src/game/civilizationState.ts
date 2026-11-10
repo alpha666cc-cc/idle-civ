@@ -1372,48 +1372,44 @@ export class CivilizationState {
 
     }
 
-    // Worker efficiency belongs on worker output only; it must not multiply
-    // building production or other flat additions for this resource.
     const workerBase = workerProduction.workers.mul(
       isProductionKey
         ? this.getAttributeValue(`${resourceKey}ProductionPerWorker`)
         : ExpNumber.ZERO,
     );
-    const workerAdditional: ResourceFactor[] = [
-      [workerProduction, workerBase],
-    ];
-    if (
-      isProductionKey &&
-      workerBase.gt(ExpNumber.ZERO) &&
-      workerDiversityMultiplier.gt(ExpNumber.ONE)
-    ) {
-      workerAdditional.push([
-        "worker diversity",
-        workerBase.mul(workerDiversityMultiplier.sub(ExpNumber.ONE)),
-      ]);
-    }
+    const additional: ResourceFactor[] = isProductionKey
+      ? [[workerProduction, workerBase]]
+      : [];
     if (
       workerProduction.autoClickProduction.gt(ExpNumber.ZERO) &&
       this.isResourceGatherable(resourceKey)
     ) {
-      workerAdditional.push([
+      additional.push([
         "dev auto clicker",
         workerProduction.autoClickProduction,
       ] as ResourceFactor);
     }
 
+    const multiplicative = [
+      ...factors.multiplicative,
+      ...buildingFactors.multiplicative,
+      ...bonusFactors.multiplicative,
+    ];
+    if (
+      isProductionKey &&
+      workerDiversityMultiplier.gt(ExpNumber.ONE)
+    ) {
+      multiplicative.push(["worker diversity", workerDiversityMultiplier]);
+    }
+
     return {
       additional: [
-        ...(isProductionKey ? workerAdditional : []),
+        ...additional,
         ...factors.additional,
         ...buildingFactors.additional,
         ...bonusFactors.additional,
       ],
-      multiplicative: [
-        ...factors.multiplicative,
-        ...buildingFactors.multiplicative,
-        ...bonusFactors.multiplicative,
-      ],
+      multiplicative,
       additiveMultiplier: [
         ...factors.additiveMultiplier,
         ...buildingFactors.additiveMultiplier,
@@ -1824,10 +1820,7 @@ export class CivilizationState {
     return {
       ...totals,
       base,
-      result: base
-        .add(totals.additional)
-        .mul(totals.totalMultiplier)
-        .sub(totals.drain),
+      result: base.add(totals.result),
     };
   }
 
@@ -2553,7 +2546,7 @@ export class CivilizationState {
       ...this.resourceFactors,
       [resourceKey]: {
         ...factors,
-        [factorType]: [...factors[factorType], factor],
+        [factorType]: [...(factors[factorType] ?? []), factor],
       },
     });
   }
