@@ -189,7 +189,11 @@ export default function ArmyPanel({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: debugFileName,
-        text: JSON.stringify(buildBattleDebugLog(result, playerArmy), null, 2),
+        text: JSON.stringify(
+          buildBattleDebugLog(result, playerArmy, enemyStacks),
+          null,
+          2,
+        ),
       }),
     })
       .then((response) => {

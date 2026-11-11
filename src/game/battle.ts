@@ -136,7 +136,7 @@ const bonusVsMultiplier = 1.5;
  * Apply formation stat bonuses to unit stats.
  * `standard` formation has no bonuses, so it returns stats unchanged.
  */
-const applyFormationStats = (
+export const getEffectiveBattleStats = (
   stats: UnitStats,
   formation: FormationId,
 ): UnitStats => {
@@ -274,7 +274,7 @@ const buildFighters = (
       if (!definition || stack.count.lte(ExpNumber.ZERO)) return [];
       const formation = stack.formation ?? DEFAULT_FORMATION;
       // `standard` formation has no stat bonuses, so this is a no-op for Age 0/1
-      const effectiveStats = applyFormationStats(stack.stats, formation);
+      const effectiveStats = getEffectiveBattleStats(stack.stats, formation);
       const hitPoints = effectiveStats.hp.div(
         ExpNumber.ONE.sub(
           ExpNumber.fromNumber(Math.min(effectiveStats.armor, 0.9)),

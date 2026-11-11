@@ -205,7 +205,7 @@ for (const name of battleLogs) {
       !isRecord(record) ||
       record.outcome !== "player" ||
       !isRecord(record.setup) ||
-      record.setup.schemaVersion !== 1
+      ![1, 2].includes(record.setup.schemaVersion)
     ) {
       continue;
     }

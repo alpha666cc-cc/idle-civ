@@ -566,6 +566,11 @@
         "value": 10
       },
       {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 1.5
+      },
+      {
         "type": "costReductionFactor",
         "destination": "allBuildings.costs.all.factor",
         "value": 0.81
@@ -585,43 +590,43 @@
     "enemyArmy": [
       {
         "unitId": "longbow",
-        "count": 2e8,
+        "count": 1e8,
         "label": "Saxon archer line",
         "formation": "backline"
       },
       {
         "unitId": "knight",
-        "count": 1e8,
+        "count": 5e7,
         "label": "Norman cavalry",
         "formation": "rush"
       },
       {
         "unitId": "man_at_arms",
-        "count": 2e8,
+        "count": 1e8,
         "label": "Shield infantry",
         "formation": "frontline"
       },
       {
         "unitId": "companion",
-        "count": 1e7,
+        "count": 5e6,
         "label": "Mounted retainers",
         "formation": "rush"
       },
       {
         "unitId": "trebuchet",
-        "count": 1e6,
+        "count": 5e5,
         "label": "Siege crews",
         "formation": "backline"
       },
       {
         "unitId": "longship",
-        "count": 80000,
+        "count": 100000,
         "label": "Fire ships",
         "formation": "frontline"
       },
       {
         "unitId": "caravel",
-        "count": 80000,
+        "count": 20000,
         "label": "Supply ships",
         "formation": "backline"
       }
@@ -631,6 +636,11 @@
         "type": "attributeMultiplier",
         "destination": "military",
         "value": 50
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "science",
+        "value": 10
       },
       {
         "type": "costReductionFactor",

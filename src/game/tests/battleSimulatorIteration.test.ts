@@ -852,6 +852,46 @@ describe("optimizeBattleTactics iteration", () => {
     expect(result?.formations.get("hoplite")).toBe("turtle");
   });
 
+  it("only keeps later tactic changes that win with 80% of recruit stacks", () => {
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.from(count),
+          factor: 1,
+          exponent: 0.5,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: (army, formations) => {
+        const count = army.get("warrior") ?? ExpNumber.ZERO;
+        const required = formations.get("warrior") === "backline" ? 9 : 10;
+        return count.gte(ExpNumber.fromNumber(required));
+      },
+      winsWithFormationsAndOrders: (army, formations) => {
+        const count = army.get("warrior") ?? ExpNumber.ZERO;
+        const required = formations.get("warrior") === "backline" ? 9 : 10;
+        return count.gte(ExpNumber.fromNumber(required));
+      },
+    };
+
+    const result = optimizeBattleTactics(
+      marathon,
+      [{ key: "warrior" }],
+      context,
+      false,
+      new Map(),
+      new Map(),
+      new Map(),
+      ["standard", "backline"],
+      ["focus_weak"],
+    );
+
+    expect(result?.composition.get("warrior")?.toNumber()).toBe(10);
+    expect(result?.formations.get("warrior")).toBe("standard");
+  });
+
   it("finds a cheaper army that needs two formation changes together", () => {
     const context: BattleSimulatorContext = {
       getCost: (_unitId, count) => [
@@ -1362,5 +1402,98 @@ describe("optimizeBattleTactics iteration", () => {
 
     expect(trimmed.size).toBe(1);
     expect([...trimmed.values()][0]?.eq(ExpNumber.ONE)).toBe(true);
+  });
+
+  it("trims a stack to its last winning count", () => {
+    const composition = new Map([["warrior", ExpNumber.fromNumber(10)]]);
+    const context: BattleSimulatorContext = {
+      getCost: () => [],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army) =>
+        (army.get("warrior") ?? ExpNumber.ZERO).gte(
+          ExpNumber.fromNumber(6),
+        ),
+    };
+
+    const trimmed = trimUnderTactics(
+      composition,
+      new Map(),
+      new Map(),
+      new Map(),
+      marathon,
+      context,
+    );
+    const oneLess = new Map(trimmed);
+    oneLess.set(
+      "warrior",
+      (oneLess.get("warrior") ?? ExpNumber.ZERO).sub(ExpNumber.ONE),
+    );
+
+    expect(trimmed.get("warrior")?.toNumber()).toBe(6);
+    expect(
+      context.winsWithFormationsAndOrders(
+        oneLess,
+        new Map(),
+        new Map(),
+        marathon,
+      ),
+    ).toBe(false);
+  });
+
+  it("terminates trimming when nearby ExpNumbers have different mantissas", () => {
+    const composition = new Map([
+      ["warrior", new ExpNumber(1, 1.182581, 6)],
+    ]);
+    const winningThreshold = new ExpNumber(
+      1,
+      1.1825809999999999,
+      6,
+    );
+    const context: BattleSimulatorContext = {
+      getCost: () => [],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army) =>
+        (army.get("warrior") ?? ExpNumber.ZERO).gte(winningThreshold),
+    };
+
+    const trimmed = trimUnderTactics(
+      composition,
+      new Map(),
+      new Map(),
+      new Map(),
+      marathon,
+      context,
+    );
+
+    expect(trimmed.get("warrior")?.toNumber()).toBe(1_182_581);
+  });
+
+  it("trims very large stacks in ExpNumber precision", () => {
+    const threshold = ExpNumber.from("1e80");
+    const context: BattleSimulatorContext = {
+      getCost: () => [],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army) =>
+        (army.get("warrior") ?? ExpNumber.ZERO).gte(threshold),
+    };
+
+    const trimmed = trimUnderTactics(
+      new Map([["warrior", ExpNumber.from("1e100")]]),
+      new Map(),
+      new Map(),
+      new Map(),
+      marathon,
+      context,
+    );
+    const count = trimmed.get("warrior");
+
+    expect(count?.gte(threshold)).toBe(true);
+    expect(count?.lt(ExpNumber.from("1.000000000001e80"))).toBe(true);
   });
 });

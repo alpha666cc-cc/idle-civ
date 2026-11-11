@@ -449,6 +449,10 @@ function App() {
     startTime: number;
   } | null>(null);
   const [battleRoundIndex, setBattleRoundIndex] = useState(0);
+  const resetBattlePlayback = (): void => {
+    setActiveBattle(null);
+    setBattleRoundIndex(0);
+  };
   /** Simulator state — lifted here so it survives Dev Tools tab switches. */
   const [simBattleId, setSimBattleId] = useState("");
   const [simSelected, setSimSelected] = useState<ReadonlySet<string>>(
@@ -1182,6 +1186,7 @@ function App() {
     data: SaveData,
     options: { offlineGain: boolean; source: string },
   ): void => {
+    resetBattlePlayback();
     const repaired = remapSaveIds(
       data,
       (id) =>
@@ -1494,6 +1499,7 @@ function App() {
 
   /** Dev Tools: discard everything and start the first loop over. */
   const resetToStart = (): void => {
+    resetBattlePlayback();
     clearStoredSave();
     saveIdentityRef.current = null;
     setSaveGuid("");
