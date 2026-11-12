@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  compositionCost,
   mergeSimulatorArmy,
   optimizeBattleTactics,
   optimizeOwnedArmyTactics,
@@ -7,6 +8,7 @@ import {
   solveMinimumArmy,
   solveOwnedArmyTactics,
   trimUnderTactics,
+  trimUnderTacticsBest,
   type BattleSimulatorContext,
   type SimulatorOwnedArmy,
   type SimulatorCandidate,
@@ -1495,5 +1497,118 @@ describe("optimizeBattleTactics iteration", () => {
 
     expect(count?.gte(threshold)).toBe(true);
     expect(count?.lt(ExpNumber.from("1.000000000001e80"))).toBe(true);
+  });
+
+  it("trimUnderTacticsBest escapes the single-stack local optimum", () => {
+    // "cheap" is weak but inexpensive; "pricey" is strong but dear. Winning
+    // needs 100 power. Insertion-order trim deletes cheap outright (pricey:10
+    // already wins alone, cost 1000); trimming pricey first instead leaves the
+    // cheaper {cheap:10, pricey:9} mix (cost 910).
+    const powerOf: Record<string, number> = { cheap: 1, pricey: 10 };
+    const costOf: Record<string, number> = { cheap: 1, pricey: 100 };
+    const context: BattleSimulatorContext = {
+      getCost: (unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(
+            count.toNumber() * (costOf[unitId] ?? 0),
+          ),
+          factor: 1,
+          exponent: 0,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army) =>
+        [...army].reduce(
+          (sum, [unitId, count]) =>
+            sum + count.toNumber() * (powerOf[unitId] ?? 0),
+          0,
+        ) >= 100,
+    };
+    const composition = new Map([
+      ["cheap", ExpNumber.fromNumber(10)],
+      ["pricey", ExpNumber.fromNumber(10)],
+    ]);
+
+    const single = trimUnderTactics(
+      composition,
+      new Map(),
+      new Map(),
+      new Map(),
+      marathon,
+      context,
+    );
+    const best = trimUnderTacticsBest(
+      composition,
+      new Map(),
+      new Map(),
+      new Map(),
+      marathon,
+      context,
+    );
+
+    expect(single.get("cheap")).toBeUndefined();
+    expect(single.get("pricey")?.toNumber()).toBe(10);
+    expect(best.get("cheap")?.toNumber()).toBe(10);
+    expect(best.get("pricey")?.toNumber()).toBe(9);
+    expect(compositionCost(best, context).lt(compositionCost(single, context)))
+      .toBe(true);
+  });
+
+  it("trimUnderTacticsBest is deterministic and never dearer than single-order trim", () => {
+    const context: BattleSimulatorContext = {
+      getCost: (_unitId, count) => [
+        {
+          resource: "military",
+          base: ExpNumber.fromNumber(count.toNumber() * 10),
+          factor: 1,
+          exponent: 0,
+        },
+      ],
+      getResearch: () => ({ ids: [], costs: [] }),
+      wins: () => false,
+      winsWithFormations: () => false,
+      winsWithFormationsAndOrders: (army) =>
+        [...army.values()].reduce(
+          (sum, count) => sum + count.toNumber(),
+          0,
+        ) >= 25,
+    };
+    const composition = new Map([
+      ["warrior", ExpNumber.fromNumber(20)],
+      ["slinger", ExpNumber.fromNumber(20)],
+    ]);
+
+    const first = trimUnderTacticsBest(
+      composition,
+      new Map(),
+      new Map(),
+      new Map(),
+      marathon,
+      context,
+    );
+    const second = trimUnderTacticsBest(
+      composition,
+      new Map(),
+      new Map(),
+      new Map(),
+      marathon,
+      context,
+    );
+    const single = trimUnderTactics(
+      composition,
+      new Map(),
+      new Map(),
+      new Map(),
+      marathon,
+      context,
+    );
+
+    expect([...first.entries()]).toEqual([...second.entries()]);
+    expect(
+      compositionCost(first, context).lte(compositionCost(single, context)),
+    ).toBe(true);
   });
 });

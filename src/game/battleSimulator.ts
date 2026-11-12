@@ -1170,14 +1170,79 @@ export const solveMinimumArmy = (
  * units fixed, recruits variable) still defeats the battle under a fixed
  * tactic set. Owned units are never touched - the caller is only ever charged
  * for additional recruits.
+ *
+ * The pass order matters: whichever unit is visited first gets first claim on
+ * deletion, and unit costs grow superadditively with stack size, so a single
+ * order can strand one expensive type at a huge count. `orderStrategy` selects
+ * the unit visiting order; `trimUnderTacticsBest` runs several and keeps the
+ * cheapest result.
  */
-export const trimUnderTactics = (
+type TrimOrderStrategy =
+  | "insertion"
+  | "countDesc"
+  | "costPerPowerAsc"
+  | "costDesc";
+
+type TrimUnitInfo = {
+  readonly unitId: string;
+  readonly count: ExpNumber;
+  readonly militaryCost: ExpNumber;
+  readonly power: ExpNumber;
+};
+
+const trimUnitInfos = (
+  trimmed: ReadonlyMap<string, ExpNumber>,
+  context: BattleSimulatorContext,
+): TrimUnitInfo[] =>
+  [...trimmed].map(([unitId, count]) => {
+    const definition = findUnitDefinition(unitId);
+    return {
+      unitId,
+      count,
+      militaryCost: militaryOf(context.getCost(unitId, ExpNumber.ONE)),
+      power: definition ? unitPower(definition.stats) : ExpNumber.ZERO,
+    };
+  });
+
+const orderTrimUnits = (
+  infos: readonly TrimUnitInfo[],
+  strategy: TrimOrderStrategy,
+): TrimUnitInfo[] => {
+  if (strategy === "insertion") return [...infos];
+  const sorted = [...infos];
+  if (strategy === "countDesc") {
+    sorted.sort(
+      (a, b) =>
+        b.count.compareTo(a.count) || a.unitId.localeCompare(b.unitId),
+    );
+  } else if (strategy === "costPerPowerAsc") {
+    // Worst keep-value (power per military cost) first. Compared by
+    // cross-multiplication so zero power or cost never divides.
+    sorted.sort(
+      (a, b) =>
+        a.power
+          .mul(b.militaryCost)
+          .compareTo(b.power.mul(a.militaryCost)) ||
+        a.unitId.localeCompare(b.unitId),
+    );
+  } else {
+    sorted.sort(
+      (a, b) =>
+        b.militaryCost.compareTo(a.militaryCost) ||
+        a.unitId.localeCompare(b.unitId),
+    );
+  }
+  return sorted;
+};
+
+const trimOnce = (
   composition: SimulatorArmy,
   ownedArmy: SimulatorOwnedArmy,
   formations: ReadonlyMap<string, FormationId>,
   orders: ReadonlyMap<string, OrderId>,
   battleId: string,
   context: BattleSimulatorContext,
+  orderStrategy: TrimOrderStrategy,
 ): SimulatorArmy => {
   const wins = (trial: SimulatorArmy): boolean =>
     context.winsWithFormationsAndOrders(
@@ -1190,7 +1255,10 @@ export const trimUnderTactics = (
   let changed = true;
   while (changed) {
     changed = false;
-    for (const [unitId, count] of [...trimmed]) {
+    for (const { unitId, count } of orderTrimUnits(
+      trimUnitInfos(trimmed, context),
+      orderStrategy,
+    )) {
       const withoutUnit = new Map(trimmed);
       withoutUnit.delete(unitId);
       if (wins(withoutUnit)) {
@@ -1250,6 +1318,80 @@ export const trimUnderTactics = (
     }
   }
   return trimmed;
+};
+
+export const trimUnderTactics = (
+  composition: SimulatorArmy,
+  ownedArmy: SimulatorOwnedArmy,
+  formations: ReadonlyMap<string, FormationId>,
+  orders: ReadonlyMap<string, OrderId>,
+  battleId: string,
+  context: BattleSimulatorContext,
+): SimulatorArmy =>
+  trimOnce(
+    composition,
+    ownedArmy,
+    formations,
+    orders,
+    battleId,
+    context,
+    "insertion",
+  );
+
+const trimOrderStrategies: readonly TrimOrderStrategy[] = [
+  "insertion",
+  "countDesc",
+  "costPerPowerAsc",
+  "costDesc",
+];
+
+/**
+ * Cost-aware variant of trimUnderTactics: re-trims under several deterministic
+ * unit orderings and keeps the cheapest resulting army (military cost, then
+ * fewest new-research units, then fewest stacks). Use at call sites that run
+ * only a handful of times; the per-tactic-trial hill-climb keeps the cheaper
+ * single-order trim.
+ */
+export const trimUnderTacticsBest = (
+  composition: SimulatorArmy,
+  ownedArmy: SimulatorOwnedArmy,
+  formations: ReadonlyMap<string, FormationId>,
+  orders: ReadonlyMap<string, OrderId>,
+  battleId: string,
+  context: BattleSimulatorContext,
+): SimulatorArmy => {
+  let best: SimulatorArmy | undefined;
+  let bestCost = ExpNumber.ZERO;
+  let bestResearch = Number.POSITIVE_INFINITY;
+  let bestSize = Number.POSITIVE_INFINITY;
+  for (const strategy of trimOrderStrategies) {
+    const trimmed = trimOnce(
+      composition,
+      ownedArmy,
+      formations,
+      orders,
+      battleId,
+      context,
+      strategy,
+    );
+    const cost = compositionCost(trimmed, context);
+    const researchCount = context.getResearch(
+      additionalUnitIds(ownedArmy, trimmed),
+    ).ids.length;
+    if (
+      !best ||
+      cost.lt(bestCost) ||
+      (cost.eq(bestCost) &&
+        (researchCount < bestResearch ||
+          (researchCount === bestResearch && trimmed.size < bestSize)))
+    ) {
+      best = trimmed;
+      bestCost = cost;
+      bestResearch = researchCount;
+      bestSize = trimmed.size;
+    }
+  }
+  return best ?? new Map(composition);
 };
 
 /** "warrior×5 slinger×2" — recruits-only army for the debug log. */
@@ -1892,7 +2034,7 @@ export const optimizeBattleTactics = (
     ]);
     if (!tunedSeed.wins) continue;
 
-    const trimmed = trimUnderTactics(
+    const trimmed = trimUnderTacticsBest(
       seedAdditional,
       ownedArmy,
       winningFormations,
@@ -2026,7 +2168,7 @@ export const optimizeBattleTactics = (
           orders = new Map(seedOrders);
         }
 
-        const startingComposition = trimUnderTactics(
+        const startingComposition = trimUnderTacticsBest(
           balancedArmy,
           ownedArmy,
           seedFormations,
@@ -2082,7 +2224,7 @@ export const optimizeBattleTactics = (
         );
         const winningFormations = tuned?.formations ?? seedFormations;
         const winningOrders = tuned?.orders ?? seedOrders;
-        const trimmed = trimUnderTactics(
+        const trimmed = trimUnderTacticsBest(
           startingComposition,
           ownedArmy,
           winningFormations,
