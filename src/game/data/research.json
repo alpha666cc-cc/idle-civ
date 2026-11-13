@@ -1872,9 +1872,9 @@
         "value": "10"
       },
       {
-        "type": "attributeMultiplier",
-        "destination": "science",
-        "value": "10"
+        "type": "costReductionFactor",
+        "destination": "barracks.costs.all.factor",
+        "value": 0.97
       },
       {
         "type": "attributeMultiplier",

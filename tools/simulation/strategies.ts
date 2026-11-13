@@ -12,7 +12,10 @@ import {
   type BuildingCost,
   type BuildingKey,
 } from "../../src/game/buildings.js";
-import { encounterDefinitions } from "../../src/game/encounters.js";
+import {
+  encounterDefinitions,
+  type EncounterDefinition,
+} from "../../src/game/encounters.js";
 import { researchDefinitions } from "../../src/game/research.js";
 import { upgradeDefinitions } from "../../src/game/upgrades.js";
 import { type ArmyStack } from "../../src/game/battle.js";
@@ -24,6 +27,10 @@ import {
   type BattleSimulatorContext,
   type SimulatorResult,
 } from "../../src/game/battleSimulator.js";
+import {
+  appendProblem,
+  battleProblemForState,
+} from "./battleProblemExport.js";
 import {
   type SimulationStrategy,
   type SimulationAction,
@@ -1128,6 +1135,30 @@ export const getSimulatorCacheStats = () => ({
 /** The simulator's advisory plan for the current battle, or null if unavailable. */
 const simulatorPlanCache = new Map<string, SimulatorResult | null>();
 
+/**
+ * Optional dev hook: when BATTLE_PROBLEM_EXPORT=1, every planner cache miss
+ * appends the self-contained problem the offline Python solver consumes. The
+ * export is scratch-baseline (no owned army/building/upgrades/achievements) and
+ * keyed by the state's exact boughtResearch set.
+ */
+const maybeExportBattleProblem = (
+  state: CivilizationState,
+  battle: EncounterDefinition | undefined,
+): void => {
+  if (process.env.BATTLE_PROBLEM_EXPORT !== "1" || !battle) return;
+  try {
+    appendProblem(
+      battleProblemForState(state, battle, { kind: "state" }),
+      "sim-output/battle-problems/observed.jsonl",
+    );
+  } catch (error) {
+    console.warn(
+      `[Battle Problem Export] failed for ${battle.key}:`,
+      error instanceof Error ? error.message : error,
+    );
+  }
+};
+
 export const getSimulatorBattlePlan = (
   state: CivilizationState,
 ): SimulatorResult | null => {
@@ -1141,6 +1172,7 @@ export const getSimulatorBattlePlan = (
 
   simulatorCacheMisses += 1;
   const battle = getRequiredBattle(state);
+  maybeExportBattleProblem(state, battle);
   const result =
     !battle || candidates.length === 0
       ? null

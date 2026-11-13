@@ -134,7 +134,7 @@
     "description": "Knights and castles. Feudal lords gather wealth across continents.",
     "buildingThreshold": 1.5e6,
     "unlocks": [],
-    "research": { "base": "1e57", "factor": 100, "exponent": 0.65 },
+    "research": { "base": "1e58", "factor": 4.5, "exponent": 1 },
     "bonuses": [
       {
         "type": "attributeFlat",
@@ -143,13 +143,23 @@
       },
       {
         "type": "attributeMultiplier",
+        "destination": "TownHall.capacity",
+        "value": 2
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "productionBuilding.power",
+        "value": 1.2
+      },
+      {
+        "type": "attributeMultiplier",
         "destination": "workerDiversity",
-        "value": 4
+        "value": 2
       },
       {
         "type": "attributeMultiplier",
         "destination": "workerDiversity.Speed",
-        "value": 4
+        "value": 2
       }
     ]
   },
@@ -158,7 +168,7 @@
     "key": "age4",
     "name": "Renaissance",
     "description": "Artillery and exploration. The world grows smaller as empires reach across the sea.",
-    "buildingThreshold": 1.5e8,
+    "buildingThreshold": 1.5e7,
     "unlocks": [],
     "research": { "base": "1e27", "factor": 200000, "exponent": 0.5 },
     "bonuses": [
@@ -179,7 +189,7 @@
     "key": "age5",
     "name": "Industrial",
     "description": "Railways, factories, and mass armies. The scale of war changes forever.",
-    "buildingThreshold": 1.5e9,
+    "buildingThreshold": 1.5e8,
     "unlocks": [],
     "research": { "base": "1e33", "factor": 2000000, "exponent": 0.5 },
     "bonuses": [
@@ -200,7 +210,7 @@
     "key": "age6",
     "name": "Modern / Space",
     "description": "Tanks, aircraft, and orbital weapons. The final age before the stars.",
-    "buildingThreshold": 1.5e10,
+    "buildingThreshold": 1.5e9,
     "unlocks": [],
     "research": { "base": "1e39", "factor": 20000000, "exponent": 0.5 },
     "bonuses": [

@@ -518,13 +518,13 @@
     "enemyArmy": [
       {
         "unitId": "knight",
-        "count": 1e8,
+        "count": 37e6,
         "label": "Cavalry",
         "formation": "rush"
       },
       {
         "unitId": "longbow",
-        "count": 1e8,
+        "count": 5e7,
         "label": "Archer line",
         "formation": "backline"
       },
@@ -536,7 +536,7 @@
       },
       {
         "unitId": "companion",
-        "count": 3500000,
+        "count": 2500000,
         "label": "Mounted reserve",
         "formation": "rush"
       },
@@ -548,13 +548,13 @@
       },
       {
         "unitId": "fire_ship",
-        "count": 250000,
+        "count": 200000,
         "label": "Fire ships",
         "formation": "frontline"
       },
       {
         "unitId": "cog",
-        "count": 250000,
+        "count": 200000,
         "label": "Supply ships",
         "formation": "backline"
       }
@@ -596,37 +596,37 @@
       },
       {
         "unitId": "knight",
-        "count": 5e7,
+        "count": 1e8,
         "label": "Norman cavalry",
         "formation": "rush"
       },
       {
         "unitId": "man_at_arms",
-        "count": 1e8,
+        "count": 1.2e8,
         "label": "Shield infantry",
         "formation": "frontline"
       },
       {
         "unitId": "companion",
-        "count": 5e6,
+        "count": 1e7,
         "label": "Mounted retainers",
         "formation": "rush"
       },
       {
         "unitId": "trebuchet",
-        "count": 5e5,
+        "count": 1e6,
         "label": "Siege crews",
         "formation": "backline"
       },
       {
         "unitId": "longship",
-        "count": 100000,
+        "count": 200000,
         "label": "Fire ships",
         "formation": "frontline"
       },
       {
         "unitId": "caravel",
-        "count": 20000,
+        "count": 50000,
         "label": "Supply ships",
         "formation": "backline"
       }
@@ -638,9 +638,9 @@
         "value": 50
       },
       {
-        "type": "attributeMultiplier",
-        "destination": "science",
-        "value": 10
+        "type": "costReductionFactor",
+        "destination": "university.costs.all.factor",
+        "value": 0.97
       },
       {
         "type": "costReductionFactor",
@@ -717,24 +717,24 @@
     ],
     "bonuses": [
       {
-        "type": "attributeMultiplier",
-        "destination": "military",
-        "value": 1.1
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "unitAll.hp",
-        "value": 1.05
-      },
-      {
-        "type": "attributeMultiplier",
-        "destination": "unitAll.attack",
-        "value": 1.05
+        "type": "costReductionFactor",
+        "destination": "allBuildings.costs.all.factor",
+        "value": 0.79
       },
       {
         "type": "costReductionFactor",
-        "destination": "allBuildings.costs.all.factor",
-        "value": 0.81
+        "destination": "people.costs.all.factor",
+        "value": 0.95
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "metalwork",
+        "value": 50
+      },
+      {
+        "type": "attributeMultiplier",
+        "destination": "stone",
+        "value": 2
       }
     ],
     "unlocks": []

@@ -182,7 +182,8 @@ export default function ArmyPanel({
     const playerArmy = gameState.getArmyStacks();
     const result = gameState.simulateEncounter(battle.key);
     if (!result) return;
-    const debugFileName = `battle-debug-${battle.key}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    const outcomeSuffix = result.outcome === "player" ? "_win" : result.outcome === "enemy" ? "_lose" : "_draw";
+    const debugFileName = `battle-debug-${battle.key}-${new Date().toISOString().replace(/[:.]/g, "-")}${outcomeSuffix}.json`;
     const debugUrl = `${window.location.origin}/__battle-debug/${debugFileName}`;
     void fetch("/__battle-debug", {
       method: "POST",

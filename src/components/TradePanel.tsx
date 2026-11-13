@@ -16,7 +16,6 @@ import type { CivilizationState } from "../game/civilizationState";
 import { ExpNumber } from "../game/expNumber";
 import {
   clampTradeIntensity,
-  DEFAULT_TRADE_SPREAD,
   TRADE_INTENSITY_STOPS,
   tradeIntensityForStop,
   tradeIntensityStop,
@@ -330,7 +329,9 @@ export default function TradePanel({
         </div>
         <div className="trade-metric">
           <span className="metric-label">Buy spread</span>
-          <span className="metric-value">×{DEFAULT_TRADE_SPREAD}</span>
+          <span className="metric-value">
+            ×{fmt(gameState.getAttributeValue("spread"))}
+          </span>
         </div>
         <div className="trade-metric">
           <span className="metric-label">Gold per trade</span>
