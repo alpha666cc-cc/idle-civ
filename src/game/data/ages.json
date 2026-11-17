@@ -139,7 +139,7 @@
       {
         "type": "attributeFlat",
         "destination": "TownHall.power",
-        "value": 0.01
+        "value": 0.9
       },
       {
         "type": "attributeMultiplier",
@@ -147,9 +147,9 @@
         "value": 2
       },
       {
-        "type": "attributeMultiplier",
-        "destination": "productionBuilding.power",
-        "value": 1.2
+        "type": "costReductionFactor",
+        "destination": "allBuildings.costs.gold.factor",
+        "value": 1.07
       },
       {
         "type": "attributeMultiplier",

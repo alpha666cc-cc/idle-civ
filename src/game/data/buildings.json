@@ -232,9 +232,9 @@
       ],
       "bonus": [
         {
-          "type": "attributeFlat",
-          "destination": "allProduction.worker.efficiency",
-          "value": 0.01,
+          "type": "attributeMultiplier",
+          "destination": "advancedProduction.worker.efficiency",
+          "value": 4e-5,
           "power": "exponent"
         }
       ]
